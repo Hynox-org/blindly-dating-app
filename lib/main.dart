@@ -1,6 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'core/security/security_config.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Load connection strings and credentials
+  await dotenv.load(fileName: ".env");
+
+  // Initialize Firebase (requires google-services.json on Android)
+  await Firebase.initializeApp();
+
+  // Initialize App Check and Security
+  await SecurityConfig.initializeAppCheck();
+
+  // Initialize Supabase with SSL Pinning
+  final secureClient = await SecurityConfig.getSSLPinnedClient();
+  await Supabase.initialize(
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+    httpClient: secureClient,
+  );
+
   runApp(const MyApp());
 }
 

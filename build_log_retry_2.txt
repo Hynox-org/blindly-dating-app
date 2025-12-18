@@ -1,0 +1,188 @@
+﻿Running Gradle task 'assembleRelease'...                        
+Warning: The plugin app_links requires Android SDK version 36 or higher.
+For more information about build configuration, see https://flutter.dev/to/review-gradle-config.
+Warning: The plugin flutter_plugin_android_lifecycle requires Android SDK version 36 or higher.
+For more information about build configuration, see https://flutter.dev/to/review-gradle-config.
+Warning: The plugin flutter_secure_storage requires Android SDK version 36 or higher.
+For more information about build configuration, see https://flutter.dev/to/review-gradle-config.
+Warning: The plugin geolocator_android requires Android SDK version 36 or higher.
+For more information about build configuration, see https://flutter.dev/to/review-gradle-config.
+Warning: The plugin google_maps_flutter_android requires Android SDK version 36 or higher.
+For more information about build configuration, see https://flutter.dev/to/review-gradle-config.
+Warning: The plugin package_info_plus requires Android SDK version 36 or higher.
+For more information about build configuration, see https://flutter.dev/to/review-gradle-config.
+Warning: The plugin path_provider_android requires Android SDK version 36 or higher.
+For more information about build configuration, see https://flutter.dev/to/review-gradle-config.
+Warning: The plugin shared_preferences_android requires Android SDK version 36 or higher.
+For more information about build configuration, see https://flutter.dev/to/review-gradle-config.
+Warning: The plugin url_launcher_android requires Android SDK version 36 or higher.
+For more information about build configuration, see https://flutter.dev/to/review-gradle-config.
+flutter : Your project is 
+configured to compile 
+against Android SDK 35, 
+but the following 
+plugin(s) require to be 
+compiled against a higher 
+Android SDK version:
+At line:1 char:1
++ flutter build apk 2>&1 | 
+Out-File -Encoding UTF8 
+build_log_retry_2.tx ...
++ ~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo         
+     : NotSpecified: (You  
+  r project is...id SDK    
+ version::String) [], R    
+emoteException
+    + FullyQualifiedErrorI 
+   d : NativeCommandError
+ 
+- app_links compiles 
+against Android SDK 36
+- flutter_plugin_android_li
+fecycle compiles against 
+Android SDK 36
+- flutter_secure_storage 
+compiles against Android 
+SDK 36
+- geolocator_android 
+compiles against Android 
+SDK 36
+- google_maps_flutter_andro
+id compiles against 
+Android SDK 36
+- package_info_plus 
+compiles against Android 
+SDK 36
+- path_provider_android 
+compiles against Android 
+SDK 36
+- 
+shared_preferences_android 
+compiles against Android 
+SDK 36
+- url_launcher_android 
+compiles against Android 
+SDK 36
+Fix this issue by 
+compiling against the 
+highest Android SDK 
+version (they are backward 
+compatible).
+Add the following to F:\Pro
+jects\Blindly\blindly-datin
+g-app\android\app\build.gra
+dle.kts:
+
+    android {
+        compileSdk = 36
+        ...
+    }
+e: Language version 1.6 is 
+no longer supported; 
+please, use version 1.8 or 
+greater.
+e: file:///C:/Users/Prem/Ap
+pData/Local/Pub/Cache/hoste
+d/pub.dev/fluttertoast-8.2.
+8/android/src/main/kotlin/i
+o/github/ponnamkarthik/toas
+t/fluttertoast/FlutterToast
+Plugin.kt:9:48 Unresolved 
+reference 'Registrar'.
+e: file:///C:/Users/Prem/Ap
+pData/Local/Pub/Cache/hoste
+d/pub.dev/fluttertoast-8.2.
+8/android/src/main/kotlin/i
+o/github/ponnamkarthik/toas
+t/fluttertoast/MethodCallHa
+ndlerImpl.kt:18:24 
+Unresolved reference 
+'FlutterMain'.
+e: file:///C:/Users/Prem/Ap
+pData/Local/Pub/Cache/hoste
+d/pub.dev/fluttertoast-8.2.
+8/android/src/main/kotlin/i
+o/github/ponnamkarthik/toas
+t/fluttertoast/MethodCallHa
+ndlerImpl.kt:74:35 
+Unresolved reference 
+'FlutterMain'.
+e: file:///C:/Users/Prem/Ap
+pData/Local/Pub/Cache/hoste
+d/pub.dev/fluttertoast-8.2.
+8/android/src/main/kotlin/i
+o/github/ponnamkarthik/toas
+t/fluttertoast/MethodCallHa
+ndlerImpl.kt:90:39 
+Unresolved reference 
+'FlutterMain'.
+
+FAILURE: Build completed 
+with 2 failures.
+
+1: Task failed with an 
+exception.
+-----------
+* What went wrong:
+Execution failed for task '
+:sentry_flutter:compileRele
+aseKotlin'.
+> A failure occurred while 
+executing org.jetbrains.kot
+lin.compilerRunner.GradleCo
+mpilerRunnerWithWorkers$Gra
+dleKotlinCompilerWorkAction
+   > Compilation error. 
+See log for more details
+
+* Try:
+> Run with --stacktrace 
+option to get the stack 
+trace.
+> Run with --info or 
+--debug option to get more 
+log output.
+> Run with --scan to get 
+full insights.
+> Get more help at 
+https://help.gradle.org.
+===========================
+===========================
+========================
+
+2: Task failed with an 
+exception.
+-----------
+* What went wrong:
+Execution failed for task '
+:fluttertoast:compileReleas
+eKotlin'.
+> A failure occurred while 
+executing org.jetbrains.kot
+lin.compilerRunner.GradleCo
+mpilerRunnerWithWorkers$Gra
+dleKotlinCompilerWorkAction
+   > Compilation error. 
+See log for more details
+
+* Try:
+> Run with --stacktrace 
+option to get the stack 
+trace.
+> Run with --info or 
+--debug option to get more 
+log output.
+> Run with --scan to get 
+full insights.
+> Get more help at 
+https://help.gradle.org.
+===========================
+===========================
+========================
+
+BUILD FAILED in 21s
+Running Gradle task 'assembleRelease'...                           21.6s
+Gradle task 
+assembleRelease failed 
+with exit code 1
