@@ -54,7 +54,7 @@ This guide details the manual steps required to complete the infrastructure init
     - Click on the **SQL Editor** icon (sidebar).
 
 2.  **Run Migration**:
-    - Open the file `backend/supabase/migrations/v1__schema.sql` from this repo.
+    - Open the file `base/supabase/migrations/v1__schema.sql` from this repo.
     - Copy the entire SQL content.
     - Paste it into the Supabase SQL Editor.
     - Click **RUN**.
