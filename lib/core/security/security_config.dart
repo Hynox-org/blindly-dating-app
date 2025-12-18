@@ -6,6 +6,8 @@ import 'package:http/io_client.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 
+import 'package:flutter/foundation.dart';
+
 class SecurityConfig {
   static final _storage = const FlutterSecureStorage();
 
@@ -13,8 +15,21 @@ class SecurityConfig {
   static Future<void> initializeAppCheck() async {
     // Initialize Firebase App Check
     await FirebaseAppCheck.instance.activate(
-      androidProvider: AndroidProvider.playIntegrity,
+      androidProvider: kDebugMode
+          ? AndroidProvider.debug
+          : AndroidProvider.playIntegrity,
+      appleProvider: kDebugMode
+          ? AppleProvider.debug
+          : AppleProvider.deviceCheck,
     );
+
+    // Debug: Print App Check Token
+    try {
+      final token = await FirebaseAppCheck.instance.getToken();
+      print("APP CHECK VERIFIED: Token received: $token");
+    } catch (e) {
+      print("APP CHECK ERROR: Failed to get token: $e");
+    }
   }
 
   // SSL/TLS Pinning Configuration
@@ -54,7 +69,13 @@ class SecurityConfig {
       bool isValid = _pinnedHashes.contains(base64Hash);
 
       if (!isValid) {
-        // print("SECURITY ALERT: Certificate mismatch! Server presented: $base64Hash");
+        print(
+          "SECURITY ALERT: Certificate mismatch! Server presented: $base64Hash",
+        );
+      } else {
+        print(
+          "SSL PINNING VERIFIED: Server presented valid certificate: $base64Hash",
+        );
       }
 
       return isValid;
