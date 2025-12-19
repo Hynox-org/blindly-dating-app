@@ -30,6 +30,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  country_code_picker: ^3.0.0
+  flutter_svg: ^2.0.0  # Add this line
 
   # State Management
   flutter_riverpod: ^2.5.1
@@ -88,6 +90,29 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  assets:
+    - assets/images/logo.png 
+    - assets/images/left.png
+    - assets/images/facebook.png
+    - assets/images/google.png
+    - assets/images/telephone.png
+    - assets/images/signin.png
+    - assets/images/blindly.png
+  fonts:
+    # - family: Agile
+      # fonts:
+      #   - asset:  assets/fonts/Agile-Bold.ttf
+      #     weight: 700
+    
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter/static/Inter_28pt-Regular.ttf
+          weight: 400
+    
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins/Poppins-Regular.ttf
+          weight: 400
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg
