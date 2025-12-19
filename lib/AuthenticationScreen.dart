@@ -123,15 +123,15 @@ bool _isValidPassword(String password) {
 }
 
 // Strong password validation (optional - use if you want stricter rules)
-String? _validateStrongPassword(String password) {
-  if (password.isEmpty) return 'Password is required';
-  if (password.length < 8) return 'Password must be at least 8 characters';
-  if (!password.contains(RegExp(r'[A-Z]'))) return 'Must contain uppercase letter';
-  if (!password.contains(RegExp(r'[a-z]'))) return 'Must contain lowercase letter';
-  if (!password.contains(RegExp(r'[0-9]'))) return 'Must contain a number';
-  if (!password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'))) return 'Must contain special character';
-  return null;
-}
+// String? _validateStrongPassword(String password) {
+//   if (password.isEmpty) return 'Password is required';
+//   if (password.length < 8) return 'Password must be at least 8 characters';
+//   if (!password.contains(RegExp(r'[A-Z]'))) return 'Must contain uppercase letter';
+//   if (!password.contains(RegExp(r'[a-z]'))) return 'Must contain lowercase letter';
+//   if (!password.contains(RegExp(r'[0-9]'))) return 'Must contain a number';
+//   if (!password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'))) return 'Must contain special character';
+//   return null;
+// }
 
   Future<void> _handlePhoneContinue() async {
     final phone = _phoneController.text.trim();
@@ -454,19 +454,16 @@ Widget build(BuildContext context) {
             children: [
               SizedBox(height: 40),
               Image.asset(
-                'assets/images/logo.png',
+                'assests/images/logo.png',
                 width: 60,
                 height: 60,
               ),
               SizedBox(height: 8),
-              Text(
-                'BLINDLY',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.5,
-                ),
+              Image.asset(
+                'assests/images/blindly-text-logo.png',
+                width: 120, // Adjust width as needed
+                height: 30, // Adjust height as needed
+                fit: BoxFit.contain,
               ),
               SizedBox(height: 4),
               Text(
@@ -503,7 +500,7 @@ Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Image.asset(
-            'assets/images/signin.png',
+            'assests/images/signin.png',
             width: 20,
             height: 20,
           ),
@@ -550,7 +547,7 @@ Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Image.asset(
-            'assets/images/facebook.png',
+            'assests/images/facebook.png',
             width: 20,
             height: 20,
           ),
@@ -597,7 +594,7 @@ Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Image.asset(
-            'assets/images/google.png',
+            'assests/images/google.png',
             width: 20,
             height: 20,
           ),
@@ -644,7 +641,7 @@ Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Image.asset(
-            'assets/images/telephone.png',
+            'assests/images/telephone.png',
             width: 20,
             height: 20,
             // color: Colors.(#e6c97a), // Print the image white to match button color

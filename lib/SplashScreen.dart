@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -47,7 +46,7 @@ class _SplashScreenState extends State<SplashScreen> {
                     width: 80,
                     height: 80,
                     child: Image.asset(
-                      'assets/images/logo.png',
+                      'assests/images/logo.png',
                       width: 80,
                       height: 80,
                     ),
@@ -55,7 +54,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   const SizedBox(height: 12),
                   // Replaced Text widget with Image
                   Image.asset(
-                    'assets/images/blindly.png',
+                    'assests/images/blindly-text-logo.png',
                     width: 120, // Adjust width as needed
                     height: 30, // Adjust height as needed
                     fit: BoxFit.contain,

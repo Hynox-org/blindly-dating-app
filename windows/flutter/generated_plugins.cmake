@@ -3,12 +3,10 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  agora_rtc_engine
   app_links
   firebase_core
-  geolocator_windows
-  iris_method_channel
-  permission_handler_windows
+  flutter_secure_storage_windows
+  sentry_flutter
   url_launcher_windows
 )
 

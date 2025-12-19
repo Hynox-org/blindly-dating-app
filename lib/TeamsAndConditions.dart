@@ -32,13 +32,7 @@ class _TermsScreenState extends State<TermsScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         automaticallyImplyLeading: false,
-        // leading: IconButton(
-        //   icon: Icon(
-        //   Icons.arrow_back_ios,
-        //   color: Color.fromRGBO(0, 0, 0, 1),
-        // ),
-        //   onPressed: () => Navigator.pop(context),
-        // ),
+        centerTitle: true, 
         title: const Text(
           'Community guidelines',
           textAlign: TextAlign.center,

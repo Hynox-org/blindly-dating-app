@@ -42,25 +42,29 @@ class _AgeSelectorScreenState extends State<AgeSelectorScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        // Title - Centered
+        centerTitle: true, 
+        title:const Text(
+          "What's your age?",
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: Color.fromRGBO(0, 0, 0, 1),
+          ),
+        ),
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
           child: Column(
             children: [
               const SizedBox(height: 20),
-              
-              // Title - Centered
-              const Text(
-                "What's your age?",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Color.fromRGBO(0, 0, 0, 1),
-                ),
-              ),
-              const SizedBox(height: 8),
               
               // Subtitle - Centered
               const Text(

@@ -18,14 +18,14 @@ class WelcomeScreen extends StatelessWidget {
                 children: [
                   const SizedBox(height: 40),
                   Image.asset(
-                    'assets/images/logo.png',
+                    'assests/images/logo.png',
                     width: 60,
                     height: 60,
                   ),
                   const SizedBox(height: 8),
                   // Replaced Text widget with Image
                   Image.asset(
-                    'assets/images/blindly.png',
+                    'assests/images/blindly-text-logo.png',
                     width: 120, // Adjust width as needed
                     height: 28, // Adjust height as needed
                     fit: BoxFit.contain,
