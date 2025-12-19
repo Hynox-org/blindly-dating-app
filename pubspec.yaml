@@ -30,6 +30,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  country_code_picker: ^3.0.0
 
   # State Management
   flutter_riverpod: ^2.6.1
@@ -133,3 +134,11 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assests/fonts/Inter/static/Inter_28pt-Regular.ttf
+    
+    - family: Poppins
+      fonts:
+        - asset: assests/fonts/Poppins/Poppins-Regular.ttf
