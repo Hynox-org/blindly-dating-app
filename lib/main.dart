@@ -15,6 +15,7 @@ import 'features/onboarding/screens/age_selection_screen.dart';
 import 'core/theme/app_theme.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/utils/logging_navigator_observer.dart';
+import 'shared/widgets/theme_switcher.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -60,6 +61,15 @@ class MyApp extends ConsumerWidget {
         '/terms': (context) => const TermsScreen(),
         '/age-selector': (context) => const AgeSelectorScreen(),
         '/home': (context) => const HomeScreen(),
+      },
+      builder: (context, child) {
+        return Stack(
+          children: [
+            if (child != null) child,
+            if (const bool.fromEnvironment('dart.vm.product') == false)
+              const Positioned(right: 20, bottom: 20, child: ThemeSwitcher()),
+          ],
+        );
       },
 
       // Alternative: If you want to use go_router later, uncomment this:

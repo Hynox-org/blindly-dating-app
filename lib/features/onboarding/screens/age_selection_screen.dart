@@ -46,21 +46,21 @@ class _AgeSelectorScreenState extends State<AgeSelectorScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         automaticallyImplyLeading: false,
         // Title - Centered
         centerTitle: true,
-        title: const Text(
+        title: Text(
           "What's your age?",
           textAlign: TextAlign.center,
           style: TextStyle(
             fontFamily: 'Poppins',
             fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: Color.fromRGBO(0, 0, 0, 1),
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ),
@@ -72,13 +72,13 @@ class _AgeSelectorScreenState extends State<AgeSelectorScreen> {
               const SizedBox(height: 20),
 
               // Subtitle - Centered
-              const Text(
+              Text(
                 'This help us show you relevant age profiles and find your matches',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 13,
-                  color: Color.fromRGBO(0, 0, 0, 1),
+                  color: Theme.of(context).colorScheme.onSurface,
                   height: 1.4,
                 ),
               ),
@@ -109,15 +109,15 @@ class _AgeSelectorScreenState extends State<AgeSelectorScreen> {
                     child: Container(
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? const Color(0xFF4A5D4F)
-                            : Colors.white,
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(
                           25,
                         ), // Rounded corners
                         border: Border.all(
                           color: isSelected
-                              ? const Color(0xFF4A5D4F)
-                              : const Color(0xFFE0E0E0),
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).dividerColor,
                           width: 1,
                         ),
                         boxShadow: [
@@ -136,8 +136,8 @@ class _AgeSelectorScreenState extends State<AgeSelectorScreen> {
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                             color: isSelected
-                                ? Colors.white
-                                : const Color.fromRGBO(0, 0, 0, 1),
+                                ? Theme.of(context).colorScheme.onPrimary
+                                : Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       ),
@@ -152,8 +152,8 @@ class _AgeSelectorScreenState extends State<AgeSelectorScreen> {
               ElevatedButton(
                 onPressed: _isLoading ? null : _continue,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4A5D4F),
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   minimumSize: const Size(double.infinity, 52),
                   elevation: 0,
@@ -162,9 +162,9 @@ class _AgeSelectorScreenState extends State<AgeSelectorScreen> {
                       25,
                     ), // Rounded corners for button
                   ),
-                  disabledBackgroundColor: const Color(
-                    0xFF4A5D4F,
-                  ).withOpacity(0.6),
+                  disabledBackgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primary.withOpacity(0.6),
                 ),
                 child: _isLoading
                     ? const SizedBox(
@@ -175,13 +175,13 @@ class _AgeSelectorScreenState extends State<AgeSelectorScreen> {
                           strokeWidth: 2,
                         ),
                       )
-                    : const Text(
+                    : Text(
                         'Continue',
                         style: TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
-                          color: Color.fromRGBO(230, 201, 122, 1),
+                          color: Theme.of(context).colorScheme.onPrimary,
                         ),
                       ),
               ),

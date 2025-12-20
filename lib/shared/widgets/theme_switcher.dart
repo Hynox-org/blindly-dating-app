@@ -10,47 +10,56 @@ class ThemeSwitcher extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentTheme = ref.watch(themeModeProvider);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color:
+              Theme.of(context).cardTheme.color?.withOpacity(0.9) ??
+              Colors.white.withOpacity(0.9),
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(
+            color: Theme.of(context).dividerColor.withOpacity(0.1),
+            width: 1,
           ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: AppThemeMode.values.map((mode) {
-          final isSelected = currentTheme == mode;
-          final color = _getThemeIconColor(mode);
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: AppThemeMode.values.map((mode) {
+            final isSelected = currentTheme == mode;
+            final color = _getThemeIconColor(mode, context);
 
-          return GestureDetector(
-            onTap: () => ref.read(themeModeProvider.notifier).setTheme(mode),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              padding: const EdgeInsets.all(10),
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                color: isSelected ? color.withOpacity(0.2) : Colors.transparent,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isSelected ? color : Colors.transparent,
-                  width: 2,
+            return GestureDetector(
+              onTap: () {
+                ref.read(themeModeProvider.notifier).setTheme(mode);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                padding: const EdgeInsets.all(8),
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? color.withOpacity(0.2)
+                      : Colors.transparent,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  _getThemeIcon(mode),
+                  color: isSelected ? color : Colors.grey.withOpacity(0.5),
+                  size: 20,
                 ),
               ),
-              child: Icon(
-                _getThemeIcon(mode),
-                color: isSelected ? color : Colors.grey,
-                size: 24,
-              ),
-            ),
-          );
-        }).toList(),
+            );
+          }).toList(),
+        ),
       ),
     );
   }
@@ -58,22 +67,22 @@ class ThemeSwitcher extends ConsumerWidget {
   IconData _getThemeIcon(AppThemeMode mode) {
     switch (mode) {
       case AppThemeMode.normal:
-        return Icons.wb_sunny_outlined;
+        return Icons.wb_sunny_rounded;
       case AppThemeMode.premium:
-        return Icons.star_border_rounded;
+        return Icons.star_rounded;
       case AppThemeMode.incognito:
-        return Icons.visibility_off_outlined;
+        return Icons.visibility_off_rounded;
     }
   }
 
-  Color _getThemeIconColor(AppThemeMode mode) {
+  Color _getThemeIconColor(AppThemeMode mode, BuildContext context) {
     switch (mode) {
       case AppThemeMode.normal:
-        return const Color(0xFF414833);
+        return const Color(0xFF4A5D4F);
       case AppThemeMode.premium:
         return const Color(0xFFE6C97A);
       case AppThemeMode.incognito:
-        return Colors.white;
+        return Colors.black;
     }
   }
 }

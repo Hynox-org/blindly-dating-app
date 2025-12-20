@@ -31,9 +31,8 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(milliseconds: 4500),
     );
 
-    _initAnimations();
-
-    _mainController.forward();
+    // _initAnimations(); // Remove from here
+    // _mainController.forward(); // Remove from here
 
     _mainController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
@@ -42,6 +41,18 @@ class _SplashScreenState extends State<SplashScreen>
         });
       }
     });
+  }
+
+  bool _isInitialized = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isInitialized) {
+      _initAnimations();
+      _mainController.forward();
+      _isInitialized = true;
+    }
   }
 
   void _initAnimations() {
@@ -58,8 +69,8 @@ class _SplashScreenState extends State<SplashScreen>
     // Background Color Transition
     _backgroundColor =
         ColorTween(
-          begin: const Color(0xFFE6C97A), // Secondary Gold
-          end: const Color(0xFFFFFFFF), // White
+          begin: Theme.of(context).colorScheme.secondary, // Secondary Gold
+          end: Theme.of(context).colorScheme.surface, // White
         ).animate(
           CurvedAnimation(
             parent: _mainController,
@@ -185,7 +196,7 @@ class _BokehBackgroundState extends State<_BokehBackground>
             // Moving Blobs
             _buildBlob(
               Alignment(math.sin(_controller.value * 2 * math.pi) * 0.5, -0.2),
-              const Color(0xFF414833).withOpacity(0.2),
+              const Color(0xFF4A5D4F).withOpacity(0.2),
               150,
             ),
             _buildBlob(
@@ -195,7 +206,7 @@ class _BokehBackgroundState extends State<_BokehBackground>
             ),
             _buildBlob(
               const Alignment(0.4, 0.4),
-              const Color(0xFF414833).withOpacity(0.1),
+              const Color(0xFF4A5D4F).withOpacity(0.1),
               180,
             ),
           ],

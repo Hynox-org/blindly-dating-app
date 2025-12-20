@@ -1,19 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:country_code_picker/country_code_picker.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/auth_providers.dart';
+import '../repositories/auth_repository.dart';
+import '../../../core/utils/app_logger.dart';
 
 enum AuthMethod { selection, phone, phoneOTP, email, emailOTP, apple }
 
-class AuthenticationScreen extends StatefulWidget {
+class AuthenticationScreen extends ConsumerStatefulWidget {
   final bool isNewUser;
 
   const AuthenticationScreen({super.key, this.isNewUser = false});
 
   @override
-  _AuthenticationScreenState createState() => _AuthenticationScreenState();
+  ConsumerState<AuthenticationScreen> createState() =>
+      _AuthenticationScreenState();
 }
 
-class _AuthenticationScreenState extends State<AuthenticationScreen> {
+class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
   AuthMethod _currentMethod = AuthMethod.selection;
 
   // Controllers
@@ -191,17 +196,35 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
     HapticFeedback.mediumImpact();
     setState(() => _isLoading = true);
 
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      final fullPhone = '$_countryCode$phone';
+      AppLogger.info('AUTH_SCREEN: Initiating phone continue for: $fullPhone');
 
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-        _phoneNumber = phone;
-        _currentMethod = AuthMethod.phoneOTP;
-      });
-      _clearOTPFields();
-      _startResendTimer();
+      await ref.read(authRepositoryProvider).signInWithPhone(fullPhone);
+
+      AppLogger.info(
+        'AUTH_SCREEN: Phone continue success, switching to OTP screen',
+      );
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _phoneNumber = fullPhone;
+          _currentMethod = AuthMethod.phoneOTP;
+        });
+        _clearOTPFields();
+        _startResendTimer();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -218,16 +241,28 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
     HapticFeedback.mediumImpact();
     setState(() => _isLoading = true);
 
-    await Future.delayed(Duration(seconds: 2));
+    try {
+      await ref.read(authRepositoryProvider).verifyPhoneOTP(_phoneNumber, otp);
 
-    if (mounted) {
-      HapticFeedback.heavyImpact();
-      setState(() => _isLoading = false);
+      if (mounted) {
+        HapticFeedback.heavyImpact();
+        setState(() => _isLoading = false);
 
-      if (widget.isNewUser) {
-        Navigator.pushNamed(context, '/terms');
-      } else {
-        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        if (widget.isNewUser) {
+          Navigator.pushNamed(context, '/terms');
+        } else {
+          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Verification failed: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
@@ -284,16 +319,28 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
     HapticFeedback.mediumImpact();
     setState(() => _isLoading = true);
 
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      await ref.read(authRepositoryProvider).signInWithEmail(email);
 
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-        _email = email;
-        _currentMethod = AuthMethod.emailOTP;
-      });
-      _clearOTPFields();
-      _startResendTimer();
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _email = email;
+          _currentMethod = AuthMethod.emailOTP;
+        });
+        _clearOTPFields();
+        _startResendTimer();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -310,12 +357,24 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
     HapticFeedback.mediumImpact();
     setState(() => _isLoading = true);
 
-    await Future.delayed(Duration(seconds: 2));
+    try {
+      await ref.read(authRepositoryProvider).verifyEmailOTP(_email, otp);
 
-    if (mounted) {
-      HapticFeedback.heavyImpact();
-      setState(() => _isLoading = false);
-      Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+      if (mounted) {
+        HapticFeedback.heavyImpact();
+        setState(() => _isLoading = false);
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Verification failed: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -359,25 +418,42 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
     HapticFeedback.mediumImpact();
     setState(() => _isLoading = true);
 
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      await ref
+          .read(authRepositoryProvider)
+          .signInWithPassword(email, password);
 
-    if (mounted) {
-      setState(() => _isLoading = false);
-      Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Login failed: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF5F5F5),
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
         toolbarHeight: 56, // Add this - standard height
         titleSpacing: 0, // Already have this
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: Color.fromRGBO(0, 0, 0, 1)),
+          icon: Icon(
+            Icons.arrow_back_ios,
+            color: Theme.of(context).appBarTheme.foregroundColor,
+          ),
           onPressed: () {
             HapticFeedback.lightImpact();
             if (_currentMethod == AuthMethod.selection) {
@@ -399,26 +475,15 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
             }
           },
         ),
-        title: _currentMethod != AuthMethod.selection
-            ? Text(
-                _getAppBarTitle(),
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Color.fromRGBO(0, 0, 0, 1),
-                ),
-              )
-            : Text(
-                'Blindly',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Color.fromRGBO(0, 0, 0, 1),
-                ),
-              ),
-        centerTitle: _currentMethod == AuthMethod.selection,
+        title: Text(
+          _getAppBarTitle(),
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).appBarTheme.foregroundColor,
+          ),
+        ),
       ),
       body: _currentMethod != AuthMethod.selection
           ? _buildCurrentScreen() // Remove SafeArea wrapper
@@ -439,7 +504,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
       case AuthMethod.apple:
         return 'Login with Apple'; // Updated
       default:
-        return '';
+        return 'Blindly';
     }
   }
 
@@ -475,7 +540,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
               fontFamily: 'Poppins',
               fontSize: 26,
               fontWeight: FontWeight.bold,
-              color: Color.fromRGBO(0, 0, 0, 1),
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           Spacer(),
@@ -491,13 +556,22 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                 style:
                     OutlinedButton.styleFrom(
                       padding: EdgeInsets.symmetric(vertical: 15),
-                      side: BorderSide(color: Color(0xFFE0E0E0), width: 1),
-                      backgroundColor: Colors.white,
+                      side: BorderSide(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.12),
+                        width: 1,
+                      ),
+                      backgroundColor: Colors.transparent,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15),
                       ),
                     ).copyWith(
-                      backgroundColor: WidgetStateProperty.all(Colors.white),
+                      backgroundColor: WidgetStateProperty.all(
+                        Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white.withOpacity(0.05)
+                            : Colors.white,
+                      ),
                       overlayColor: WidgetStateProperty.resolveWith<Color?>((
                         Set<WidgetState> states,
                       ) {
@@ -510,13 +584,17 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.apple, size: 20, color: Colors.black),
+                    Icon(
+                      Icons.apple,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                     SizedBox(width: 12),
                     Text(
                       'Continue with Apple',
                       style: TextStyle(
                         fontFamily: 'Poppins',
-                        color: Color.fromRGBO(0, 0, 0, 1),
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                       ),
@@ -528,15 +606,28 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
 
               // Google button
               OutlinedButton(
-                onPressed: () {
+                onPressed: () async {
                   HapticFeedback.mediumImpact();
-                  _changeMethod(AuthMethod.email);
+                  try {
+                    await ref.read(authRepositoryProvider).signInWithGoogle();
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Google Sign-In failed: $e')),
+                      );
+                    }
+                  }
                 },
                 style:
                     OutlinedButton.styleFrom(
                       padding: EdgeInsets.symmetric(vertical: 15),
-                      side: BorderSide(color: Color(0xFFE0E0E0), width: 1),
-                      backgroundColor: Colors.white,
+                      side: BorderSide(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.12),
+                        width: 1,
+                      ),
+                      backgroundColor: Colors.transparent,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15),
                       ),
@@ -560,7 +651,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                       'Continue with Google',
                       style: TextStyle(
                         fontFamily: 'Poppins',
-                        color: Color.fromRGBO(0, 0, 0, 1),
+                        color: Colors.black,
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                       ),
@@ -578,8 +669,8 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                 },
                 style:
                     ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF4A5D4F),
-                      foregroundColor: Colors.white,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
                       padding: EdgeInsets.symmetric(vertical: 15),
                       elevation: 0,
                       shape: RoundedRectangleBorder(
@@ -587,9 +678,11 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                       ),
                     ).copyWith(
                       backgroundColor: WidgetStateProperty.all(
-                        Color(0xFF4A5D4F),
+                        Theme.of(context).colorScheme.primary,
                       ),
-                      foregroundColor: WidgetStateProperty.all(Colors.white),
+                      foregroundColor: WidgetStateProperty.all(
+                        Theme.of(context).colorScheme.onPrimary,
+                      ),
                       overlayColor: WidgetStateProperty.resolveWith<Color?>((
                         Set<WidgetState> states,
                       ) {
@@ -605,14 +698,14 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                     Icon(
                       Icons.phone_android_rounded,
                       size: 20,
-                      color: Color.fromRGBO(230, 201, 122, 1),
+                      color: Theme.of(context).colorScheme.onPrimary,
                     ),
                     SizedBox(width: 12),
                     Text(
                       'Continue with Mobile number',
                       style: TextStyle(
                         fontFamily: 'Poppins',
-                        color: Color.fromRGBO(230, 201, 122, 1),
+                        color: Theme.of(context).colorScheme.onPrimary,
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                       ),
@@ -630,7 +723,9 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 11,
-                      color: Colors.grey[600],
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.7),
                       height: 1.4,
                     ),
                     children: [
@@ -638,14 +733,20 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                       TextSpan(
                         text: 'terms',
                         style: TextStyle(
-                          color: Color.fromRGBO(0, 0, 0, 1), // Pure black
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface, // Pure black
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                       TextSpan(text: '. See how we use your data in our '),
                       TextSpan(
                         text: 'privacy policy',
                         style: TextStyle(
-                          color: Color.fromRGBO(0, 0, 0, 1), // Pure black
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface, // Pure black
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                       TextSpan(text: '.'),
@@ -672,7 +773,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
             style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 14,
-              color: Color.fromRGBO(0, 0, 0, 1), // Pure black
+              color: Theme.of(context).colorScheme.onSurface, // Pure black
               height: 1.4,
             ),
           ),
@@ -685,7 +786,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                   fontFamily: 'Poppins',
                   fontSize: 14,
                   height: 1.4,
-                  color: Color.fromRGBO(0, 0, 0, 1),
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               SizedBox(width: 80),
@@ -694,7 +795,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                 style: TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 14,
-                  color: Color.fromRGBO(0, 0, 0, 1), // Pure black
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],
@@ -717,7 +818,10 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                   showCountryOnly: false,
                   showOnlyCountryWhenClosed: false,
                   padding: EdgeInsets.zero,
-                  textStyle: TextStyle(fontFamily: 'Poppins'),
+                  textStyle: TextStyle(
+                    fontFamily: 'Poppins',
+                    color: Colors.black,
+                  ),
                 ),
               ),
               SizedBox(width: 12),
@@ -731,11 +835,14 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                   ],
                   style: TextStyle(
                     fontFamily: 'Poppins',
-                    color: Color.fromRGBO(0, 0, 0, 1),
+                    color: Colors.black,
                   ), // Dark grey text
                   decoration: InputDecoration(
                     hintText: 'e.g. 9876543210',
-                    hintStyle: TextStyle(fontFamily: 'Poppins'),
+                    hintStyle: TextStyle(
+                      fontFamily: 'Poppins',
+                      color: Colors.grey,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Color(0xFFE0E0E0)),
@@ -746,7 +853,9 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFF4A5D4F)),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                     ),
                     filled: true,
                     fillColor: Colors.white,
@@ -765,7 +874,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                 style: TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 11,
-                  color: Color.fromRGBO(0, 0, 0, 1), // Pure black
+                  color: Theme.of(context).colorScheme.onSurface, // Pure black
                   height: 1.4,
                 ),
                 children: [
@@ -773,14 +882,20 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                   TextSpan(
                     text: 'terms',
                     style: TextStyle(
-                      color: Color.fromRGBO(0, 0, 0, 1), // Pure black
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface, // Pure black
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                   TextSpan(text: '. See how we use your data in our '),
                   TextSpan(
                     text: 'privacy policy',
                     style: TextStyle(
-                      color: Color.fromRGBO(0, 0, 0, 1), // Pure black
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface, // Pure black
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                   TextSpan(text: '.'),
@@ -802,8 +917,12 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                     borderRadius: BorderRadius.circular(15),
                   ),
                 ).copyWith(
-                  backgroundColor: WidgetStateProperty.all(Color(0xFF4A5D4F)),
-                  foregroundColor: WidgetStateProperty.all(Colors.white),
+                  backgroundColor: WidgetStateProperty.all(
+                    Theme.of(context).colorScheme.primary,
+                  ),
+                  foregroundColor: WidgetStateProperty.all(
+                    Theme.of(context).colorScheme.onPrimary,
+                  ),
                   overlayColor: WidgetStateProperty.resolveWith<Color?>((
                     Set<WidgetState> states,
                   ) {
@@ -828,7 +947,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                       fontFamily: 'Poppins',
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: Color.fromRGBO(230, 201, 122, 1),
+                      color: Theme.of(context).colorScheme.onPrimary,
                     ),
                   ),
           ),
@@ -849,12 +968,11 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 14,
-                color: Color.fromRGBO(0, 0, 0, 1), // Pure black
+                color: Theme.of(context).colorScheme.onSurface, // Pure black
               ),
               children: [
                 TextSpan(
-                  text:
-                      'Enter the code we\'ve sent by text to $_countryCode $_phoneNumber. ',
+                  text: 'Enter the code we\'ve sent by text to $_phoneNumber. ',
                 ),
                 WidgetSpan(
                   child: GestureDetector(
@@ -866,7 +984,9 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         decoration: TextDecoration.underline,
-                        color: Color.fromRGBO(0, 0, 0, 1), // Pure black
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface, // Pure black
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -893,6 +1013,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                     fontFamily: 'Poppins',
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
+                    color: Colors.black,
                   ),
                   decoration: InputDecoration(
                     counterText: '',
@@ -907,7 +1028,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                        color: Color(0xFF4A5D4F),
+                        color: Theme.of(context).colorScheme.primary,
                         width: 2,
                       ),
                     ),
@@ -953,7 +1074,9 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 14,
-                      color: _canResend ? Color(0xFF4A5D4F) : Colors.grey[600],
+                      color: _canResend
+                          ? Theme.of(context).colorScheme.primary
+                          : Colors.grey[600],
                       fontWeight: _canResend
                           ? FontWeight.w500
                           : FontWeight.w400,
@@ -978,8 +1101,12 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                     borderRadius: BorderRadius.circular(15),
                   ),
                 ).copyWith(
-                  backgroundColor: WidgetStateProperty.all(Color(0xFF4A5D4F)),
-                  foregroundColor: WidgetStateProperty.all(Colors.white),
+                  backgroundColor: WidgetStateProperty.all(
+                    Theme.of(context).colorScheme.primary,
+                  ),
+                  foregroundColor: WidgetStateProperty.all(
+                    Theme.of(context).colorScheme.onPrimary,
+                  ),
                   overlayColor: WidgetStateProperty.resolveWith<Color?>((
                     Set<WidgetState> states,
                   ) {
@@ -1004,7 +1131,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                       fontFamily: 'Poppins',
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: Color.fromRGBO(230, 201, 122, 1),
+                      color: Theme.of(context).colorScheme.onPrimary,
                     ),
                   ),
           ),
@@ -1034,7 +1161,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
             style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 14,
-              color: Color.fromRGBO(0, 0, 0, 1),
+              color: Colors.grey,
             ),
           ),
           SizedBox(height: 8),
@@ -1046,10 +1173,10 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                 RegExp(r'\s'),
               ), // No spaces allowed
             ],
-            style: TextStyle(fontFamily: 'Poppins'),
+            style: TextStyle(fontFamily: 'Poppins', color: Colors.black),
             decoration: InputDecoration(
               hintText: 'Abcd@gmail.com',
-              hintStyle: TextStyle(fontFamily: 'Poppins'),
+              hintStyle: TextStyle(fontFamily: 'Poppins', color: Colors.grey),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(color: Color(0xFFE0E0E0)),
@@ -1060,7 +1187,9 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(0xFF4A5D4F)),
+                borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               ),
               filled: true,
               fillColor: Colors.white,
@@ -1072,17 +1201,17 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
             style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 14,
-              color: Color.fromRGBO(0, 0, 0, 1),
+              color: Colors.grey,
             ),
           ),
           SizedBox(height: 8),
           TextField(
             controller: _passwordController,
             obscureText: _obscurePassword,
-            style: TextStyle(fontFamily: 'Poppins'),
+            style: TextStyle(fontFamily: 'Poppins', color: Colors.black),
             decoration: InputDecoration(
               hintText: 'Vignesh@98',
-              hintStyle: TextStyle(fontFamily: 'Poppins'),
+              hintStyle: TextStyle(fontFamily: 'Poppins', color: Colors.grey),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(color: Color(0xFFE0E0E0)),
@@ -1116,7 +1245,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                 'Forgot your password?',
                 style: TextStyle(
                   fontFamily: 'Poppins',
-                  color: Color.fromRGBO(0, 0, 0, 1), // Pure black
+                  color: Theme.of(context).colorScheme.onSurface, // Pure black
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -1139,14 +1268,18 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                   TextSpan(
                     text: 'terms',
                     style: TextStyle(
-                      color: Color.fromRGBO(0, 0, 0, 1), // Pure black
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface, // Pure black
                     ),
                   ),
                   TextSpan(text: '. See how we use your data in our '),
                   TextSpan(
                     text: 'privacy policy',
                     style: TextStyle(
-                      color: Color.fromRGBO(0, 0, 0, 1), // Pure black
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface, // Pure black
                     ),
                   ),
                   TextSpan(text: '.'),
@@ -1168,8 +1301,12 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                     borderRadius: BorderRadius.circular(15),
                   ),
                 ).copyWith(
-                  backgroundColor: WidgetStateProperty.all(Color(0xFF4A5D4F)),
-                  foregroundColor: WidgetStateProperty.all(Colors.white),
+                  backgroundColor: WidgetStateProperty.all(
+                    Theme.of(context).colorScheme.primary,
+                  ),
+                  foregroundColor: WidgetStateProperty.all(
+                    Theme.of(context).colorScheme.onPrimary,
+                  ),
                   overlayColor: WidgetStateProperty.resolveWith<Color?>((
                     Set<WidgetState> states,
                   ) {
@@ -1215,7 +1352,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 14,
-                color: Color.fromRGBO(0, 0, 0, 1),
+                color: Theme.of(context).colorScheme.onSurface,
               ),
               children: [
                 TextSpan(
@@ -1231,7 +1368,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         decoration: TextDecoration.underline,
-                        color: Color(0xFF4A5D4F),
+                        color: Theme.of(context).colorScheme.primary,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
@@ -1259,6 +1396,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                     fontFamily: 'Poppins',
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
+                    color: Colors.black,
                   ),
                   decoration: InputDecoration(
                     counterText: '',
@@ -1273,7 +1411,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                        color: Color(0xFF4A5D4F),
+                        color: Theme.of(context).colorScheme.primary,
                         width: 2,
                       ),
                     ),
@@ -1319,7 +1457,9 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 14,
-                      color: _canResend ? Color(0xFF4A5D4F) : Colors.grey[600],
+                      color: _canResend
+                          ? Theme.of(context).colorScheme.primary
+                          : Colors.grey[600],
                       fontWeight: _canResend
                           ? FontWeight.w500
                           : FontWeight.w400,
@@ -1344,8 +1484,12 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                     borderRadius: BorderRadius.circular(15),
                   ),
                 ).copyWith(
-                  backgroundColor: WidgetStateProperty.all(Color(0xFF4A5D4F)),
-                  foregroundColor: WidgetStateProperty.all(Colors.white),
+                  backgroundColor: WidgetStateProperty.all(
+                    Theme.of(context).colorScheme.primary,
+                  ),
+                  foregroundColor: WidgetStateProperty.all(
+                    Theme.of(context).colorScheme.onPrimary,
+                  ),
                   overlayColor: WidgetStateProperty.resolveWith<Color?>((
                     Set<WidgetState> states,
                   ) {
@@ -1370,7 +1514,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                       fontFamily: 'Poppins',
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: Color.fromRGBO(230, 201, 122, 1),
+                      color: Theme.of(context).colorScheme.onPrimary,
                     ),
                   ),
           ),
@@ -1391,7 +1535,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
             style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 14,
-              color: Color.fromRGBO(0, 0, 0, 1), // Pure black
+              color: Theme.of(context).colorScheme.onSurface, // Pure black
             ),
           ),
           SizedBox(height: 20),
@@ -1400,7 +1544,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
             style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 14,
-              color: Color.fromRGBO(0, 0, 0, 1),
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           SizedBox(height: 4),
@@ -1421,7 +1565,9 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(0xFF4A5D4F)),
+                borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               ),
               filled: true,
               fillColor: Colors.white,
@@ -1433,7 +1579,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
             style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 14,
-              color: Color.fromRGBO(0, 0, 0, 1),
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           SizedBox(height: 4),
@@ -1477,7 +1623,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                 'Forgot your password?',
                 style: TextStyle(
                   fontFamily: 'Poppins',
-                  color: Color.fromRGBO(0, 0, 0, 1), // Pure black
+                  color: Theme.of(context).colorScheme.onSurface, // Pure black
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -1500,14 +1646,18 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                   TextSpan(
                     text: 'terms',
                     style: TextStyle(
-                      color: Color.fromRGBO(0, 0, 0, 1), // Pure black
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface, // Pure black
                     ),
                   ),
                   TextSpan(text: '. See how we use your data in our '),
                   TextSpan(
                     text: 'privacy policy',
                     style: TextStyle(
-                      color: Color.fromRGBO(0, 0, 0, 1), // Pure black
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface, // Pure black
                     ),
                   ),
                   TextSpan(text: '.'),
@@ -1529,8 +1679,12 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                     borderRadius: BorderRadius.circular(15),
                   ),
                 ).copyWith(
-                  backgroundColor: WidgetStateProperty.all(Color(0xFF4A5D4F)),
-                  foregroundColor: WidgetStateProperty.all(Colors.white),
+                  backgroundColor: WidgetStateProperty.all(
+                    Theme.of(context).colorScheme.primary,
+                  ),
+                  foregroundColor: WidgetStateProperty.all(
+                    Theme.of(context).colorScheme.onPrimary,
+                  ),
                   overlayColor: WidgetStateProperty.resolveWith<Color?>((
                     Set<WidgetState> states,
                   ) {
@@ -1555,7 +1709,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                       fontFamily: 'Poppins',
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: Color.fromRGBO(230, 201, 122, 1),
+                      color: Theme.of(context).colorScheme.onPrimary,
                     ),
                   ),
           ),

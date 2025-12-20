@@ -53,11 +53,11 @@ class AppTheme {
     brightness: Brightness.light,
     scaffoldBackgroundColor: const Color(0xFFF5F5F5),
     colorScheme: const ColorScheme.light(
-      primary: Color(0xFF414833),
+      primary: Color(0xFF4A5D4F),
       onPrimary: Color(0xFFE6C97A),
       surface: Color(0xFFFFFFFF),
       onSurface: Color(0xFF000000),
-      secondary: Color(0xFF414833),
+      secondary: Color(0xFF4A5D4F),
     ),
     textTheme: GoogleFonts.interTextTheme(
       ThemeData.light().textTheme,

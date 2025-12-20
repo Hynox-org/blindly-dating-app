@@ -26,20 +26,22 @@ class _TermsScreenState extends State<TermsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // White background
+      backgroundColor: Theme.of(
+        context,
+      ).scaffoldBackgroundColor, // Use theme background
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         automaticallyImplyLeading: false,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           'Community guidelines',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontFamily: 'Poppins',
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Color.fromRGBO(0, 0, 0, 1),
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ),
@@ -53,12 +55,12 @@ class _TermsScreenState extends State<TermsScreen> {
                 children: [
                   const SizedBox(height: 12),
                   // Welcome text
-                  const Text(
+                  Text(
                     'Welcome to our community! To ensure safe and positive experience for every one, we ask that you follow simple guidelines.',
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 13,
-                      color: Color.fromRGBO(0, 0, 0, 1),
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -118,8 +120,8 @@ class _TermsScreenState extends State<TermsScreen> {
                 ElevatedButton(
                   onPressed: _isLoading ? null : _proceed,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4A5D4F),
-                    foregroundColor: Colors.white,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     minimumSize: const Size(double.infinity, 50),
                     elevation: 0,
@@ -136,13 +138,13 @@ class _TermsScreenState extends State<TermsScreen> {
                             strokeWidth: 2,
                           ),
                         )
-                      : const Text(
+                      : Text(
                           'Agree & Continue',
                           style: TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
-                            color: Color.fromRGBO(230, 201, 122, 1),
+                            color: Theme.of(context).colorScheme.onPrimary,
                           ),
                         ),
                 ),
@@ -153,15 +155,15 @@ class _TermsScreenState extends State<TermsScreen> {
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 11,
-                      color: Color.fromRGBO(0, 0, 0, 1),
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
-                    children: const [
+                    children: [
                       TextSpan(text: 'By Continue, you agree to our '),
                       TextSpan(
                         text: 'terms',
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          color: Color.fromRGBO(0, 0, 0, 1),
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       TextSpan(text: '. See how we use your data in our '),
@@ -169,7 +171,7 @@ class _TermsScreenState extends State<TermsScreen> {
                         text: 'privacy policy',
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          color: Color.fromRGBO(0, 0, 0, 1),
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       TextSpan(text: '.'),
@@ -189,9 +191,12 @@ class _TermsScreenState extends State<TermsScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.12),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -205,20 +210,20 @@ class _TermsScreenState extends State<TermsScreen> {
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 13,
               fontWeight: FontWeight.bold,
-              color: Color.fromRGBO(0, 0, 0, 1),
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 6),
           Text(
             description,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 12,
-              color: Color.fromRGBO(0, 0, 0, 1),
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ],

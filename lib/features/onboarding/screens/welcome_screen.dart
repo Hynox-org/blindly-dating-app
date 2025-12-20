@@ -7,7 +7,7 @@ class WelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
@@ -21,9 +21,12 @@ class WelcomeScreen extends StatelessWidget {
                   // Replaced Text widget with Image
                   Image.asset(
                     'assests/images/blindly-text-logo.png',
-                    width: 200, // Adjust width as needed
-                    height: 200, // Adjust height as needed
+                    width: 200,
+                    height: 200,
                     fit: BoxFit.contain,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
                   ),
                   const SizedBox(height: 8),
                 ],
@@ -32,8 +35,8 @@ class WelcomeScreen extends StatelessWidget {
               const Spacer(),
 
               // Center text
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20.0),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
                 child: Text(
                   'Real connections start here!',
                   textAlign: TextAlign.center,
@@ -42,7 +45,7 @@ class WelcomeScreen extends StatelessWidget {
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
                     height: 1.3,
-                    color: Colors.black,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -66,8 +69,12 @@ class WelcomeScreen extends StatelessWidget {
                     },
                     style:
                         ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF4A5D4F),
-                          foregroundColor: Colors.white,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onPrimary,
                           padding: const EdgeInsets.symmetric(vertical: 15),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(15),
@@ -76,10 +83,10 @@ class WelcomeScreen extends StatelessWidget {
                           shadowColor: Colors.black.withOpacity(0.05),
                         ).copyWith(
                           backgroundColor: WidgetStateProperty.all(
-                            const Color(0xFF4A5D4F),
+                            Theme.of(context).colorScheme.primary,
                           ),
                           foregroundColor: WidgetStateProperty.all(
-                            Colors.white,
+                            Theme.of(context).colorScheme.onPrimary,
                           ),
                           overlayColor: WidgetStateProperty.resolveWith<Color?>(
                             (Set<WidgetState> states) {
@@ -90,13 +97,13 @@ class WelcomeScreen extends StatelessWidget {
                             },
                           ),
                         ),
-                    child: const Text(
+                    child: Text(
                       'Create an account',
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: Color.fromRGBO(230, 201, 122, 1),
+                        color: Theme.of(context).colorScheme.onPrimary,
                       ),
                     ),
                   ),
@@ -114,22 +121,28 @@ class WelcomeScreen extends StatelessWidget {
                     },
                     style:
                         OutlinedButton.styleFrom(
-                          foregroundColor: Colors.black,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onSurface,
                           padding: const EdgeInsets.symmetric(vertical: 15),
-                          side: const BorderSide(
-                            color: Color(0xFFE0E0E0),
+                          side: BorderSide(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withOpacity(0.12),
                             width: 1,
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(15),
                           ),
-                          backgroundColor: Colors.white,
+                          backgroundColor: Colors.transparent,
                         ).copyWith(
                           foregroundColor: WidgetStateProperty.all(
-                            Colors.black,
+                            Theme.of(context).colorScheme.onSurface,
                           ),
                           backgroundColor: WidgetStateProperty.all(
-                            Colors.white,
+                            Theme.of(context).brightness == Brightness.dark
+                                ? Colors.white.withOpacity(0.05)
+                                : Colors.white,
                           ),
                           overlayColor: WidgetStateProperty.resolveWith<Color?>(
                             (Set<WidgetState> states) {
@@ -140,13 +153,13 @@ class WelcomeScreen extends StatelessWidget {
                             },
                           ),
                         ),
-                    child: const Text(
+                    child: Text(
                       'I have an account',
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: Colors.black,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -159,15 +172,17 @@ class WelcomeScreen extends StatelessWidget {
                         style: TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 11,
-                          color: Colors.black87,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.7),
                           height: 1.4,
                         ),
-                        children: const [
+                        children: [
                           TextSpan(text: 'By signing up, '),
                           TextSpan(
                             text: 'you agree to our terms',
                             style: TextStyle(
-                              color: Colors.black,
+                              color: Theme.of(context).colorScheme.onSurface,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -175,7 +190,10 @@ class WelcomeScreen extends StatelessWidget {
                           TextSpan(text: 'data in our '),
                           TextSpan(
                             text: 'privacy policy',
-                            style: TextStyle(color: Colors.black),
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           TextSpan(text: '.'),
                         ],
