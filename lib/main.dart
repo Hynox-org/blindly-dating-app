@@ -4,19 +4,22 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/security/security_config.dart';
-import 'core/router/app_router.dart';
 
 // Import your existing screens
-import 'SplashScreen.dart';
-import 'Welcomescreen.dart';
-import 'AuthenticationScreen.dart';
-import 'TeamsAndConditions.dart';
-import 'HomeScreen.dart';
-import 'AgeSelectionScreen.dart';
+import 'features/splash/screens/splash_screen.dart';
+import 'features/onboarding/screens/welcome_screen.dart';
+import 'features/auth/screens/authentication_screen.dart';
+import 'features/onboarding/screens/terms_and_conditions_screen.dart';
+import 'features/home/screens/home_screen.dart';
+import 'features/onboarding/screens/age_selection_screen.dart';
+import 'core/theme/app_theme.dart';
+import 'core/providers/theme_provider.dart';
+import 'core/utils/logging_navigator_observer.dart';
+import 'shared/widgets/theme_switcher.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Load connection strings and credentials
   await dotenv.load(fileName: ".env");
 
@@ -43,19 +46,14 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // You can still use the router provider if needed
-    // final router = ref.watch(routerProvider);
+    final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp(
       title: 'Blindly',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primaryColor: const Color(0xFF4A5D4F),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF4A5D4F),
-        ),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.getThemeData(themeMode),
       initialRoute: '/', // start at splash
+      navigatorObservers: [LoggingNavigatorObserver()],
       routes: {
         '/': (context) => const SplashScreen(),
         '/welcome': (context) => const WelcomeScreen(),
@@ -64,7 +62,16 @@ class MyApp extends ConsumerWidget {
         '/age-selector': (context) => const AgeSelectorScreen(),
         '/home': (context) => const HomeScreen(),
       },
-      
+      builder: (context, child) {
+        return Stack(
+          children: [
+            if (child != null) child,
+            if (const bool.fromEnvironment('dart.vm.product') == false)
+              const Positioned(right: 20, bottom: 20, child: ThemeSwitcher()),
+          ],
+        );
+      },
+
       // Alternative: If you want to use go_router later, uncomment this:
       // routerConfig: router,
     );

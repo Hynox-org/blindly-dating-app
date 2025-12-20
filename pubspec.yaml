@@ -106,6 +106,7 @@ flutter:
   assets:
     - .env
     - assests/images/
+    - assests/icons/
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
 
@@ -138,7 +139,7 @@ flutter:
     - family: Inter
       fonts:
         - asset: assests/fonts/Inter/static/Inter_28pt-Regular.ttf
-    
+
     - family: Poppins
       fonts:
         - asset: assests/fonts/Poppins/Poppins-Regular.ttf
