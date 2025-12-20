@@ -4,6 +4,7 @@ import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_providers.dart';
 import '../repositories/auth_repository.dart';
+import '../../onboarding/providers/onboarding_providers.dart';
 import '../../../core/utils/app_logger.dart';
 
 enum AuthMethod { selection, phone, phoneOTP, email, emailOTP, apple }
@@ -246,12 +247,32 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
 
       if (mounted) {
         HapticFeedback.heavyImpact();
-        setState(() => _isLoading = false);
 
-        if (widget.isNewUser) {
-          Navigator.pushNamed(context, '/terms');
-        } else {
-          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        try {
+          final userId = ref.read(authRepositoryProvider).currentUser?.id;
+          if (userId != null) {
+            await ref.read(authRepositoryProvider).createProfile(userId);
+          }
+
+          if (mounted) {
+            setState(() => _isLoading = false);
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/home',
+              (route) => false,
+            );
+          }
+        } catch (e) {
+          AppLogger.error('Error creating profile', e);
+          if (mounted) {
+            setState(() => _isLoading = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to create profile: ${e.toString()}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
         }
       }
     } catch (e) {
@@ -362,8 +383,33 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
 
       if (mounted) {
         HapticFeedback.heavyImpact();
-        setState(() => _isLoading = false);
-        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+
+        try {
+          final userId = ref.read(authRepositoryProvider).currentUser?.id;
+          if (userId != null) {
+            await ref.read(authRepositoryProvider).createProfile(userId);
+          }
+
+          if (mounted) {
+            setState(() => _isLoading = false);
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/home',
+              (route) => false,
+            );
+          }
+        } catch (e) {
+          AppLogger.error('Error creating profile', e);
+          if (mounted) {
+            setState(() => _isLoading = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to create profile: ${e.toString()}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -423,9 +469,34 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
           .read(authRepositoryProvider)
           .signInWithPassword(email, password);
 
-      if (mounted) {
-        setState(() => _isLoading = false);
-        Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+      // Check onboarding status
+      try {
+        final userId = ref.read(authRepositoryProvider).currentUser?.id;
+        if (userId != null) {
+          final isOnboarded = await ref
+              .read(onboardingRepositoryProvider)
+              .checkOnboardingStatus(userId);
+
+          if (mounted) {
+            setState(() => _isLoading = false);
+            if (isOnboarded) {
+              Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+            } else {
+              Navigator.pushNamed(context, '/terms');
+            }
+          }
+        } else {
+          if (mounted) {
+            setState(() => _isLoading = false);
+            Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+          }
+        }
+      } catch (e) {
+        AppLogger.error('Error checking onboarding status', e);
+        if (mounted) {
+          setState(() => _isLoading = false);
+          Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+        }
       }
     } catch (e) {
       if (mounted) {

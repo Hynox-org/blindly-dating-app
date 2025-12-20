@@ -1,15 +1,17 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math' as math;
+import '../../auth/providers/auth_providers.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
+class _SplashScreenState extends ConsumerState<SplashScreen>
     with TickerProviderStateMixin {
   late AnimationController _mainController;
 
@@ -34,11 +36,24 @@ class _SplashScreenState extends State<SplashScreen>
     // _initAnimations(); // Remove from here
     // _mainController.forward(); // Remove from here
 
-    _mainController.addStatusListener((status) {
+    _mainController.addStatusListener((status) async {
       if (status == AnimationStatus.completed) {
-        Future.delayed(const Duration(milliseconds: 200), () {
-          if (mounted) Navigator.pushReplacementNamed(context, '/welcome');
-        });
+        // Check for existing session
+        final user = ref.read(authRepositoryProvider).currentUser;
+
+        if (user != null) {
+          if (mounted) {
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/home',
+              (route) => false,
+            );
+          }
+        } else {
+          if (mounted) {
+            Navigator.pushReplacementNamed(context, '/welcome');
+          }
+        }
       }
     });
   }
