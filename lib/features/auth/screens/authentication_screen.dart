@@ -425,6 +425,56 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
     }
   }
 
+  Future<void> _resendPhoneOTP() async {
+    _startResendTimer();
+    try {
+      AppLogger.info('AUTH_SCREEN: Resending phone OTP to $_phoneNumber');
+      await ref.read(authRepositoryProvider).signInWithPhone(_phoneNumber);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('OTP sent successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to resend OTP: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _resendEmailOTP() async {
+    _startResendTimer();
+    try {
+      AppLogger.info('AUTH_SCREEN: Resending email OTP to $_email');
+      await ref.read(authRepositoryProvider).signInWithEmail(_email);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('OTP sent successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to resend OTP: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _handleAppleContinue() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
@@ -623,6 +673,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              /*
               // Apple button
               OutlinedButton(
                 onPressed: () {
@@ -679,7 +730,9 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                 ),
               ),
               SizedBox(height: 12),
+              */
 
+              /*
               // Google button
               OutlinedButton(
                 onPressed: () async {
@@ -736,6 +789,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                 ),
               ),
               SizedBox(height: 12),
+              */
 
               // Mobile number button
               ElevatedButton(
@@ -881,7 +935,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   border: Border.all(color: Color(0xFFE0E0E0)),
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -896,8 +950,17 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   padding: EdgeInsets.zero,
                   textStyle: TextStyle(
                     fontFamily: 'Poppins',
-                    color: Colors.black,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
+                  dialogTextStyle: TextStyle(
+                    fontFamily: 'Poppins',
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                  searchStyle: TextStyle(
+                    fontFamily: 'Poppins',
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                  dialogBackgroundColor: Theme.of(context).colorScheme.surface,
                 ),
               ),
               SizedBox(width: 12),
@@ -934,7 +997,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                       ),
                     ),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: Theme.of(context).colorScheme.surface,
                     counterText: '',
                   ),
                 ),
@@ -1138,7 +1201,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             children: [
               Expanded(
                 child: TextButton(
-                  onPressed: _canResend ? _startResendTimer : null,
+                  onPressed: _canResend ? _resendPhoneOTP : null,
                   style: TextButton.styleFrom(
                     padding: EdgeInsets.zero,
                     alignment: Alignment.centerLeft,
@@ -1521,7 +1584,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             children: [
               Expanded(
                 child: TextButton(
-                  onPressed: _canResend ? _startResendTimer : null,
+                  onPressed: _canResend ? _resendEmailOTP : null,
                   style: TextButton.styleFrom(
                     padding: EdgeInsets.zero,
                     alignment: Alignment.centerLeft,

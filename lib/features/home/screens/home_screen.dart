@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../auth/providers/auth_providers.dart';
 import '../presentation/widgets/pending_steps_card.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
         title: Image.asset(
@@ -13,6 +15,20 @@ class HomeScreen extends StatelessWidget {
           height: 24,
           fit: BoxFit.contain,
         ),
+        actions: [
+          IconButton(
+            onPressed: () async {
+              await ref.read(authRepositoryProvider).signOut();
+              if (context.mounted) {
+                // Use Navigator because main.dart uses MaterialApp routes, not GoRouter
+                Navigator.of(
+                  context,
+                ).pushNamedAndRemoveUntil('/welcome', (route) => false);
+              }
+            },
+            icon: const Icon(Icons.logout),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),

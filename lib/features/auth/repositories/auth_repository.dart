@@ -95,7 +95,9 @@ class AuthRepository {
   /// Creates a profile for the user.
   Future<void> createProfile(String userId) async {
     try {
-      await _client.from('profiles').upsert({'user_id': userId});
+      await _client.from('profiles').upsert({
+        'user_id': userId,
+      }, onConflict: 'user_id');
       AppLogger.info('AUTH_REPO: Profile created/updated for user: $userId');
     } catch (e, stackTrace) {
       AppLogger.error('AUTH_REPO: Failed to create profile', e, stackTrace);
