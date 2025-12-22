@@ -6,6 +6,7 @@ import '../providers/auth_providers.dart';
 import '../repositories/auth_repository.dart';
 import '../../onboarding/providers/onboarding_providers.dart';
 import '../../../core/utils/app_logger.dart';
+import '../../onboarding/presentation/screens/onboarding_shell.dart';
 
 enum AuthMethod { selection, phone, phoneOTP, email, emailOTP, apple }
 
@@ -256,9 +257,9 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
 
           if (mounted) {
             setState(() => _isLoading = false);
-            Navigator.pushNamedAndRemoveUntil(
+            Navigator.pushAndRemoveUntil(
               context,
-              '/home',
+              MaterialPageRoute(builder: (_) => const OnboardingShell()),
               (route) => false,
             );
           }
@@ -392,9 +393,9 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
 
           if (mounted) {
             setState(() => _isLoading = false);
-            Navigator.pushNamedAndRemoveUntil(
+            Navigator.pushAndRemoveUntil(
               context,
-              '/home',
+              MaterialPageRoute(builder: (_) => const OnboardingShell()),
               (route) => false,
             );
           }
@@ -482,7 +483,11 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             if (isOnboarded) {
               Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
             } else {
-              Navigator.pushNamed(context, '/terms');
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const OnboardingShell()),
+                (route) => false,
+              );
             }
           }
         } else {

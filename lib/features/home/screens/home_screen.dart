@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../presentation/widgets/pending_steps_card.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -24,6 +25,8 @@ class HomeScreen extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 30),
+            const PendingStepsCard(),
+            const SizedBox(height: 10),
             Card(
               elevation: 4,
               child: Padding(

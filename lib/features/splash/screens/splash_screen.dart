@@ -2,7 +2,9 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math' as math;
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../auth/providers/auth_providers.dart';
+import '../../onboarding/presentation/screens/onboarding_shell.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -33,22 +35,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       duration: const Duration(milliseconds: 4500),
     );
 
-    // _initAnimations(); // Remove from here
-    // _mainController.forward(); // Remove from here
-
     _mainController.addStatusListener((status) async {
       if (status == AnimationStatus.completed) {
         // Check for existing session
         final user = ref.read(authRepositoryProvider).currentUser;
 
         if (user != null) {
-          if (mounted) {
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              '/home',
-              (route) => false,
-            );
-          }
+          // Check onboarding status
+          await _checkOnboardingAndNavigate(user.id);
         } else {
           if (mounted) {
             Navigator.pushReplacementNamed(context, '/welcome');
@@ -56,6 +50,37 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         }
       }
     });
+  }
+
+  Future<void> _checkOnboardingAndNavigate(String userId) async {
+    // We'll use a direct Supabase call for speed or reuse repo if possible.
+    // Since we are in ConsumerStateful, we can use ref.
+    // However, we need to import OnboardingRepository.
+    // Let's assume we can fetch it.
+    try {
+      final profile = await Supabase.instance.client
+          .from('profiles')
+          .select('onboarding_status')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+      final status = profile?['onboarding_status'] as String? ?? 'in_progress';
+
+      if (!mounted) return;
+
+      if (status == 'complete') {
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+      } else {
+        // Navigate to Onboarding Shell
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const OnboardingShell()),
+        );
+      }
+    } catch (e) {
+      // Fallback to welcome or retry
+      if (mounted) Navigator.pushReplacementNamed(context, '/welcome');
+    }
   }
 
   bool _isInitialized = false;
@@ -84,7 +109,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     // Background Color Transition
     _backgroundColor =
         ColorTween(
-          begin: Theme.of(context).colorScheme.secondary, // Secondary Gold
+          begin: Theme.of(context).colorScheme.onPrimary, // Secondary Gold
           end: Theme.of(context).colorScheme.surface, // White
         ).animate(
           CurvedAnimation(
