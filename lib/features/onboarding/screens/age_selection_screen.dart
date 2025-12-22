@@ -23,14 +23,13 @@ class _AgeSelectorScreenState extends State<AgeSelectorScreen> {
     'Age: 32-38',
   ];
 
+  String? _errorMessage;
+
   Future<void> _continue() async {
     if (_selectedAgeRange == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select your age range'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      setState(() {
+        _errorMessage = 'Please select your age range';
+      });
       return;
     }
 
@@ -103,6 +102,7 @@ class _AgeSelectorScreenState extends State<AgeSelectorScreen> {
                     onTap: () {
                       setState(() {
                         _selectedAgeRange = ageRange;
+                        _errorMessage = null;
                       });
                     },
                     borderRadius: BorderRadius.circular(25), // Rounded corners
@@ -185,6 +185,20 @@ class _AgeSelectorScreenState extends State<AgeSelectorScreen> {
                         ),
                       ),
               ),
+              const SizedBox(height: 20),
+              if (_errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: Text(
+                    _errorMessage!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
               const SizedBox(height: 20),
             ],
           ),

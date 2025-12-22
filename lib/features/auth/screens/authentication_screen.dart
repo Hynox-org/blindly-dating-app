@@ -40,6 +40,8 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
   bool _isLoading = false;
   int _resendTimer = 30;
   bool _canResend = false;
+  String? _inlineError;
+  String? _inlineSuccess;
 
   @override
   void initState() {
@@ -158,23 +160,17 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
 
     // Check if empty
     if (phone.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter your phone number'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
+      if (phone.isEmpty) {
+        setState(() => _inlineError = 'Please enter your phone number');
+        return;
+      }
     }
 
     // Check if contains only digits
     if (!RegExp(r'^[0-9]+$').hasMatch(phone)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Phone number must contain only digits'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      setState(() {
+        _inlineError = 'Phone number must contain only digits';
+      });
       return;
     }
 
@@ -189,9 +185,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
         message = 'Please enter a valid 10-digit phone number';
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.red),
-      );
+      setState(() => _inlineError = message);
       return;
     }
 
@@ -219,13 +213,10 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        setState(() {
+          _isLoading = false;
+          _inlineError = 'Error: ${e.toString()}';
+        });
       }
     }
   }
@@ -234,9 +225,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
     String otp = _otpControllers.map((c) => c.text).join();
 
     if (otp.length != 6) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Please enter complete OTP')));
+      setState(() => _inlineError = 'Please enter complete OTP');
       return;
     }
 
@@ -266,25 +255,19 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
         } catch (e) {
           AppLogger.error('Error creating profile', e);
           if (mounted) {
-            setState(() => _isLoading = false);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Failed to create profile: ${e.toString()}'),
-                backgroundColor: Colors.red,
-              ),
-            );
+            setState(() {
+              _isLoading = false;
+              _inlineError = 'Failed to create profile: ${e.toString()}';
+            });
           }
         }
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Verification failed: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        setState(() {
+          _isLoading = false;
+          _inlineError = 'Verification failed: ${e.toString()}';
+        });
       }
     }
   }
@@ -295,48 +278,21 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
 
     // Check if fields are empty
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill all fields'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      setState(() => _inlineError = 'Please fill all fields');
       return;
     }
 
     // Validate email format
     if (!_isValidEmail(email)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a valid email address'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      setState(() => _inlineError = 'Please enter a valid email address');
       return;
     }
 
     // Validate password
     if (!_isValidPassword(password)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password must be at least 6 characters'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      setState(() => _inlineError = 'Password must be at least 6 characters');
       return;
     }
-
-    // Optional: Use strong password validation
-    // String? passwordError = _validateStrongPassword(password);
-    // if (passwordError != null) {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     SnackBar(
-    //       content: Text(passwordError),
-    //       backgroundColor: Colors.red,
-    //     ),
-    //   );
-    //   return;
-    // }
 
     HapticFeedback.mediumImpact();
     setState(() => _isLoading = true);
@@ -355,13 +311,10 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        setState(() {
+          _isLoading = false;
+          _inlineError = 'Error: ${e.toString()}';
+        });
       }
     }
   }
@@ -370,9 +323,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
     String otp = _otpControllers.map((c) => c.text).join();
 
     if (otp.length != 6) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Please enter complete OTP')));
+      setState(() => _inlineError = 'Please enter complete OTP');
       return;
     }
 
@@ -402,25 +353,19 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
         } catch (e) {
           AppLogger.error('Error creating profile', e);
           if (mounted) {
-            setState(() => _isLoading = false);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Failed to create profile: ${e.toString()}'),
-                backgroundColor: Colors.red,
-              ),
-            );
+            setState(() {
+              _isLoading = false;
+              _inlineError = 'Failed to create profile: ${e.toString()}';
+            });
           }
         }
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Verification failed: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        setState(() {
+          _isLoading = false;
+          _inlineError = 'Verification failed: ${e.toString()}';
+        });
       }
     }
   }
@@ -431,21 +376,11 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
       AppLogger.info('AUTH_SCREEN: Resending phone OTP to $_phoneNumber');
       await ref.read(authRepositoryProvider).signInWithPhone(_phoneNumber);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('OTP sent successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        setState(() => _inlineSuccess = 'OTP sent successfully');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to resend OTP: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        setState(() => _inlineError = 'Failed to resend OTP: ${e.toString()}');
       }
     }
   }
@@ -456,21 +391,11 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
       AppLogger.info('AUTH_SCREEN: Resending email OTP to $_email');
       await ref.read(authRepositoryProvider).signInWithEmail(_email);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('OTP sent successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        setState(() => _inlineSuccess = 'OTP sent successfully');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to resend OTP: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        setState(() => _inlineError = 'Failed to resend OTP: ${e.toString()}');
       }
     }
   }
@@ -481,34 +406,19 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
 
     // Check if fields are empty
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill all fields'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      setState(() => _inlineError = 'Please fill all fields');
       return;
     }
 
     // Validate email format
     if (!_isValidEmail(email)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a valid email address'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      setState(() => _inlineError = 'Please enter a valid email address');
       return;
     }
 
     // Validate password
     if (!_isValidPassword(password)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password must be at least 6 characters'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      setState(() => _inlineError = 'Password must be at least 6 characters');
       return;
     }
 
@@ -555,13 +465,10 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Login failed: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        setState(() {
+          _isLoading = false;
+          _inlineError = 'Login failed: ${e.toString()}';
+        });
       }
     }
   }
@@ -741,9 +648,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     await ref.read(authRepositoryProvider).signInWithGoogle();
                   } catch (e) {
                     if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Google Sign-In failed: $e')),
-                      );
+                      setState(() => _inlineError = 'Google Sign-In failed: $e');
                     }
                   }
                 },
@@ -966,6 +871,10 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               SizedBox(width: 12),
               Expanded(
                 child: TextField(
+                  onChanged: (_) => setState(() {
+                    _inlineError = null;
+                    _inlineSuccess = null;
+                  }),
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
                   maxLength: 10,
@@ -1043,6 +952,27 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             ),
           ),
           SizedBox(height: 16),
+          if (_inlineError != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Text(
+                _inlineError!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: 13,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          if (_inlineSuccess != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Text(
+                _inlineSuccess!,
+                style: const TextStyle(color: Colors.green, fontSize: 13),
+                textAlign: TextAlign.center,
+              ),
+            ),
           ElevatedButton(
             onPressed: _isLoading ? null : _handlePhoneContinue,
             style:
@@ -1175,6 +1105,10 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     fillColor: Colors.white,
                   ),
                   onChanged: (value) {
+                    setState(() {
+                      _inlineError = null;
+                      _inlineSuccess = null;
+                    });
                     if (value.isNotEmpty) {
                       HapticFeedback.selectionClick();
                       if (index < 5) {
@@ -1227,6 +1161,27 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             ],
           ),
           Spacer(),
+          if (_inlineError != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Text(
+                _inlineError!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: 13,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          if (_inlineSuccess != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Text(
+                _inlineSuccess!,
+                style: const TextStyle(color: Colors.green, fontSize: 13),
+                textAlign: TextAlign.center,
+              ),
+            ),
           ElevatedButton(
             onPressed: _isLoading ? null : _handlePhoneOTPVerify,
             style:
@@ -1305,6 +1260,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
           ),
           SizedBox(height: 8),
           TextField(
+            onChanged: (_) => setState(() => _inlineError = null),
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             inputFormatters: [
@@ -1345,6 +1301,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
           ),
           SizedBox(height: 8),
           TextField(
+            onChanged: (_) => setState(() => _inlineError = null),
             controller: _passwordController,
             obscureText: _obscurePassword,
             style: TextStyle(fontFamily: 'Poppins', color: Colors.black),
@@ -1427,6 +1384,18 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             ),
           ),
           SizedBox(height: 16),
+          if (_inlineError != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Text(
+                _inlineError!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: 13,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
           ElevatedButton(
             onPressed: _isLoading ? null : _handleEmailContinue,
             style:
@@ -1558,6 +1527,10 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     fillColor: Colors.white,
                   ),
                   onChanged: (value) {
+                    setState(() {
+                      _inlineError = null;
+                      _inlineSuccess = null;
+                    });
                     if (value.isNotEmpty) {
                       HapticFeedback.selectionClick();
                       if (index < 5) {
@@ -1610,6 +1583,27 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             ],
           ),
           Spacer(),
+          if (_inlineError != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Text(
+                _inlineError!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: 13,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          if (_inlineSuccess != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Text(
+                _inlineSuccess!,
+                style: const TextStyle(color: Colors.green, fontSize: 13),
+                textAlign: TextAlign.center,
+              ),
+            ),
           ElevatedButton(
             onPressed: _isLoading ? null : _handleEmailOTPVerify,
             style:
@@ -1688,6 +1682,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
           ),
           SizedBox(height: 4),
           TextField(
+            onChanged: (_) => setState(() => _inlineError = null),
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             style: TextStyle(fontFamily: 'Poppins'),
@@ -1723,6 +1718,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
           ),
           SizedBox(height: 4),
           TextField(
+            onChanged: (_) => setState(() => _inlineError = null),
             controller: _passwordController,
             obscureText: _obscurePassword,
             style: TextStyle(fontFamily: 'Poppins'),
@@ -1805,6 +1801,18 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             ),
           ),
           SizedBox(height: 16),
+          if (_inlineError != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Text(
+                _inlineError!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: 13,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
           ElevatedButton(
             onPressed: _isLoading ? null : _handleAppleContinue,
             style:

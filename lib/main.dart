@@ -14,6 +14,8 @@ import 'features/home/screens/home_screen.dart';
 import 'features/onboarding/screens/age_selection_screen.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/logging_navigator_observer.dart';
+import 'core/utils/nav_key.dart';
+import 'features/auth/providers/auth_state_listener.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,10 +47,14 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
       title: 'Blindly',
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.theme,
       initialRoute: '/', // start at splash
       navigatorObservers: [LoggingNavigatorObserver()],
+      builder: (context, child) {
+        return AuthStateListenerWrapper(child: child!);
+      },
       routes: {
         '/': (context) => const SplashScreen(),
         '/welcome': (context) => const WelcomeScreen(),

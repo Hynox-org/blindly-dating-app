@@ -104,4 +104,41 @@ class AuthRepository {
       throw Exception('Failed to create profile: $e');
     }
   }
+
+  /// Checks if the current session is expired.
+  bool isSessionExpired() {
+    final session = _client.auth.currentSession;
+    if (session == null) {
+      return true;
+    }
+    // expiresAt is in seconds since epoch.
+    // We add a buffer (e.g. 60 seconds) to consider it expired slightly before actual expiry to be safe.
+    final expiresAt = DateTime.fromMillisecondsSinceEpoch(
+      session.expiresAt! * 1000,
+    );
+    return DateTime.now().isAfter(
+      expiresAt.subtract(const Duration(seconds: 60)),
+    );
+  }
+
+  /// Refreshes the session if needed.
+  /// This is usually handled automatically by the SDK, but can be called manually.
+  Future<void> recoverSession() async {
+    final session = _client.auth.currentSession;
+    if (session != null) {
+      // Refreshing the session handled by the SDK when making calls,
+      // but explicitly we can just get the session which might trigger refresh logic internal to the SDK
+      // or we can use refreshSession() if available, but verifyOTP/signIn usually sets this up.
+      // For Supabase Flutter v2, refreshing is automatic.
+      // If we really need to force a refresh, there isn't a direct public method always exposed easily without a refresh token flow,
+      // but effectively checking state is enough.
+      // However, if we want to ensure we have a valid session to proceed:
+      try {
+        await _client.auth.refreshSession();
+      } catch (e) {
+        AppLogger.error('AUTH_REPO: Failed to refresh session', e);
+        // If refresh fails, it likely means the session is truly dead.
+      }
+    }
+  }
 }
