@@ -680,7 +680,17 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                 onPressed: () async {
                   HapticFeedback.mediumImpact();
                   try {
-                    await ref.read(authRepositoryProvider).signInWithGoogle();
+                    // 1. Call the repository and capture the result
+                    final user = await ref
+                        .read(authRepositoryProvider)
+                        .signInWithGoogle();
+
+                    // 2. Check if the user is valid and the widget is still on screen
+                    if (user != null && mounted) {
+                      // 3. Navigate successfully to your Home Screen
+                      // Make sure '/home' matches the route name in your MaterialApp
+                      Navigator.of(context).pushReplacementNamed('/home');
+                    }
                   } catch (e) {
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -691,21 +701,22 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                 },
                 style:
                     OutlinedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 15),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
                       side: BorderSide(
                         color: Theme.of(
                           context,
                         ).colorScheme.onSurface.withOpacity(0.12),
                         width: 1,
                       ),
-                      backgroundColor: Colors.transparent,
+                      backgroundColor:
+                          Colors.white, // Set background directly here
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15),
                       ),
                     ).copyWith(
-                      backgroundColor: WidgetStateProperty.all(Colors.white),
+                      // Optional: Add the ripple effect color if you want specific customization
                       overlayColor: WidgetStateProperty.resolveWith<Color?>((
-                        Set<WidgetState> states,
+                        states,
                       ) {
                         if (states.contains(WidgetState.pressed)) {
                           return Colors.black.withOpacity(0.03);
@@ -716,9 +727,11 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    // ⚠️ Note: Ensure your folder is named 'assests' or 'assets'.
+                    // Standard is 'assets', but I kept your spelling just in case.
                     Image.asset('assests/icons/google-icon.png', height: 20),
-                    SizedBox(width: 12),
-                    Text(
+                    const SizedBox(width: 12),
+                    const Text(
                       'Continue with Google',
                       style: TextStyle(
                         fontFamily: 'Poppins',
@@ -730,7 +743,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   ],
                 ),
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
 
               // Mobile number button
               ElevatedButton(
