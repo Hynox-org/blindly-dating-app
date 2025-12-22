@@ -1,5 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/utils/app_logger.dart';
+import '../../../core/security/jwt_validator.dart';
 
 class AuthRepository {
   final SupabaseClient _client;
@@ -13,10 +15,43 @@ class AuthRepository {
 
   AuthRepository(this._client);
 
+  /// Checks if the user has exceeded the OTP rate limit (3 attempts per 10 minutes).
+  Future<void> _checkOtpRateLimit(String identifier) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key =
+        'otp_limit_${identifier.replaceAll(RegExp(r'\W'), '')}'; // Sanitize key
+    final now = DateTime.now().millisecondsSinceEpoch;
+    const windowDuration = 10 * 60 * 1000; // 10 minutes in ms
+    const maxAttempts = 3;
+
+    List<String> attempts = prefs.getStringList(key) ?? [];
+
+    // Filter attempts within the time window
+    attempts.retainWhere((ts) {
+      final timestamp = int.tryParse(ts) ?? 0;
+      return now - timestamp < windowDuration;
+    });
+
+    if (attempts.length >= maxAttempts) {
+      AppLogger.warning('AUTH_REPO: Rate limit exceeded for $identifier');
+      throw const AuthException(
+        'Too many OTP attempts. Please wait 10 minutes before trying again.',
+        statusCode: '429',
+      );
+    }
+
+    // Record new attempt
+    attempts.add(now.toString());
+    await prefs.setStringList(key, attempts);
+  }
+
   /// Signs in with phone number by sending an OTP via Supabase.
   Future<void> signInWithPhone(String phone) async {
     // Strip the '+' prefix if it exists to match Supabase Test Number configuration
     final formattedPhone = phone.startsWith('+') ? phone.substring(1) : phone;
+
+    // Check Rate Limit before calling API
+    await _checkOtpRateLimit(formattedPhone);
 
     AppLogger.info(
       'SUPABASE AUTH: Attempting to sign in with phone (stripped): $formattedPhone',
@@ -48,6 +83,9 @@ class AuthRepository {
   /// Signs in with email by sending an OTP (Magic Link or OTP).
   /// Note: Blindly flow uses OTP according to UI.
   Future<void> signInWithEmail(String email) async {
+    // Check Rate Limit
+    await _checkOtpRateLimit(email);
+
     await _client.auth.signInWithOtp(email: email, shouldCreateUser: true);
   }
 
@@ -111,14 +149,22 @@ class AuthRepository {
     if (session == null) {
       return true;
     }
-    // expiresAt is in seconds since epoch.
-    // We add a buffer (e.g. 60 seconds) to consider it expired slightly before actual expiry to be safe.
-    final expiresAt = DateTime.fromMillisecondsSinceEpoch(
-      session.expiresAt! * 1000,
-    );
-    return DateTime.now().isAfter(
-      expiresAt.subtract(const Duration(seconds: 60)),
-    );
+    // Basic expiry check
+    final now = DateTime.now();
+    if (session.expiresAt != null) {
+      final expiresAt = DateTime.fromMillisecondsSinceEpoch(
+        session.expiresAt! * 1000,
+      );
+      return now.isAfter(expiresAt.subtract(const Duration(seconds: 60)));
+    }
+
+    // Explicit JWT validation middleware
+    if (!JwtValidator.validateToken(session.accessToken)) {
+      AppLogger.warning('AUTH_REPO: Session token failed validation.');
+      return true;
+    }
+
+    return false;
   }
 
   /// Refreshes the session if needed.

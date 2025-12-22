@@ -11,7 +11,6 @@ class SelfieInstructionsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return BaseOnboardingStepScreen(
       title: 'Verify it\'s you',
-      child: const Center(child: Text('Selfie Verification Instructions')),
       nextLabel: 'I\'m Ready',
       onNext: () {
         Navigator.of(
@@ -22,6 +21,7 @@ class SelfieInstructionsScreen extends ConsumerWidget {
       onSkip: () {
         ref.read(onboardingProvider.notifier).skipStep('selfie_capture');
       },
+      child: const Center(child: Text('Selfie Verification Instructions')),
     );
   }
 }

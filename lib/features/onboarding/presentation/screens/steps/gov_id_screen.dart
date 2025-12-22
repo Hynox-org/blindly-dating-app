@@ -10,7 +10,6 @@ class GovIdScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return BaseOnboardingStepScreen(
       title: 'Government ID',
-      child: const Center(child: Text('Upload ID Card')),
       nextLabel: 'Upload',
       onNext: () {
         ref.read(onboardingProvider.notifier).completeStep('gov_id_optional');
@@ -19,6 +18,7 @@ class GovIdScreen extends ConsumerWidget {
       onSkip: () {
         ref.read(onboardingProvider.notifier).skipStep('gov_id_optional');
       },
+      child: const Center(child: Text('Upload ID Card')),
     );
   }
 }

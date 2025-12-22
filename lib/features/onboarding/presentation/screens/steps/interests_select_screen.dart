@@ -10,7 +10,6 @@ class InterestsSelectScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return BaseOnboardingStepScreen(
       title: 'Your Interests',
-      child: const Center(child: Text('Interests Selection Chips')),
       onNext: () {
         ref.read(onboardingProvider.notifier).completeStep('interests_select');
       },
@@ -18,6 +17,7 @@ class InterestsSelectScreen extends ConsumerWidget {
       onSkip: () {
         ref.read(onboardingProvider.notifier).skipStep('interests_select');
       },
+      child: const Center(child: Text('Interests Selection Chips')),
     );
   }
 }

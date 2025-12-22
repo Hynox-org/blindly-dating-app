@@ -10,13 +10,13 @@ class TermsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return BaseOnboardingStepScreen(
       title: 'Terms of Service',
-      child: const Center(
-        child: Text('Terms and Conditions Content Placeholder'),
-      ),
       nextLabel: 'I Accept',
       onNext: () {
         ref.read(onboardingProvider.notifier).completeStep('terms_accept');
       },
+      child: const Center(
+        child: Text('Terms and Conditions Content Placeholder'),
+      ),
     );
   }
 }

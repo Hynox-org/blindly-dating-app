@@ -10,7 +10,6 @@ class LifestylePrefsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return BaseOnboardingStepScreen(
       title: 'Lifestyle Preferences',
-      child: const Center(child: Text('Smoking, Drinking, etc.')),
       onNext: () {
         ref.read(onboardingProvider.notifier).completeStep('lifestyle_prefs');
       },
@@ -18,6 +17,7 @@ class LifestylePrefsScreen extends ConsumerWidget {
       onSkip: () {
         ref.read(onboardingProvider.notifier).skipStep('lifestyle_prefs');
       },
+      child: const Center(child: Text('Smoking, Drinking, etc.')),
     );
   }
 }

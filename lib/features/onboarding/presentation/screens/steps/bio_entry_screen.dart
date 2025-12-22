@@ -17,6 +17,13 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
   Widget build(BuildContext context) {
     return BaseOnboardingStepScreen(
       title: 'Describe yourself',
+      onNext: () {
+        ref.read(onboardingProvider.notifier).completeStep('bio_entry');
+      },
+      showSkipButton: true,
+      onSkip: () {
+        ref.read(onboardingProvider.notifier).skipStep('bio_entry');
+      },
       child: TextField(
         controller: _controller,
         maxLines: 5,
@@ -25,13 +32,6 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
           border: OutlineInputBorder(),
         ),
       ),
-      onNext: () {
-        ref.read(onboardingProvider.notifier).completeStep('bio_entry');
-      },
-      showSkipButton: true,
-      onSkip: () {
-        ref.read(onboardingProvider.notifier).skipStep('bio_entry');
-      },
     );
   }
 }

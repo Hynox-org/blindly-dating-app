@@ -13,6 +13,12 @@ class AppLogger {
     }
   }
 
+  static void warning(String message) {
+    if (kDebugMode) {
+      print('⚠️ WARNING: $message');
+    }
+  }
+
   static void error(String message, [dynamic error, StackTrace? stackTrace]) {
     if (kDebugMode) {
       print('❌ ERROR: $message');

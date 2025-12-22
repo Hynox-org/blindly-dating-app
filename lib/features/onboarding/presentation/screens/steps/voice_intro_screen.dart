@@ -10,7 +10,6 @@ class VoiceIntroScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return BaseOnboardingStepScreen(
       title: 'Record a Voice Intro',
-      child: const Center(child: Text('Microphone Button Placeholder')),
       onNext: () {
         ref.read(onboardingProvider.notifier).completeStep('voice_intro');
       },
@@ -18,6 +17,7 @@ class VoiceIntroScreen extends ConsumerWidget {
       onSkip: () {
         ref.read(onboardingProvider.notifier).skipStep('voice_intro');
       },
+      child: const Center(child: Text('Microphone Button Placeholder')),
     );
   }
 }

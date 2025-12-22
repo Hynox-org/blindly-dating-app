@@ -10,12 +10,12 @@ class PermissionsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return BaseOnboardingStepScreen(
       title: 'App Permissions',
-      child: const Center(child: Text('We need permissions for...')),
       nextLabel: 'Grant Permissions',
       onNext: () {
         // In real app, request permissions here
         ref.read(onboardingProvider.notifier).completeStep('permissions');
       },
+      child: const Center(child: Text('We need permissions for...')),
     );
   }
 }

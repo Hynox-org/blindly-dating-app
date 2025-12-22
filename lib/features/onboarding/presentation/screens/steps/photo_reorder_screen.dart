@@ -10,7 +10,6 @@ class PhotoReorderScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return BaseOnboardingStepScreen(
       title: 'Arranging photos',
-      child: const Center(child: Text('Drag and Drop Photos')),
       onNext: () {
         ref.read(onboardingProvider.notifier).completeStep('photo_reorder');
       },
@@ -18,6 +17,7 @@ class PhotoReorderScreen extends ConsumerWidget {
       onSkip: () {
         ref.read(onboardingProvider.notifier).skipStep('photo_reorder');
       },
+      child: const Center(child: Text('Drag and Drop Photos')),
     );
   }
 }

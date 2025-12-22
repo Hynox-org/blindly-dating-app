@@ -10,7 +10,6 @@ class ProfilePromptsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return BaseOnboardingStepScreen(
       title: 'Add some personality',
-      child: const Center(child: Text('Profile Prompts List')),
       nextLabel: 'Finish',
       onNext: () {
         ref.read(onboardingProvider.notifier).completeOnboarding();
@@ -21,6 +20,7 @@ class ProfilePromptsScreen extends ConsumerWidget {
             .read(onboardingProvider.notifier)
             .completeOnboarding(skippedStepKey: 'profile_prompts');
       },
+      child: const Center(child: Text('Profile Prompts List')),
     );
   }
 }

@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_providers.dart';
-import '../repositories/auth_repository.dart';
 import '../../onboarding/providers/onboarding_providers.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../onboarding/presentation/screens/onboarding_shell.dart';

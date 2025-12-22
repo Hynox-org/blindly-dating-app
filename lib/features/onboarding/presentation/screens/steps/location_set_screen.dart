@@ -10,11 +10,11 @@ class LocationSetScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return BaseOnboardingStepScreen(
       title: 'Set your Location',
-      child: const Center(child: Text('Location Permission Request')),
       nextLabel: 'Enable Location',
       onNext: () {
         ref.read(onboardingProvider.notifier).completeStep('location_set');
       },
+      child: const Center(child: Text('Location Permission Request')),
     );
   }
 }

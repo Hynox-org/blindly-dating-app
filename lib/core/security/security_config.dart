@@ -7,13 +7,23 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 
 import 'package:flutter/foundation.dart';
+import 'device_security.dart';
 
 class SecurityConfig {
   static final _storage = const FlutterSecureStorage();
 
   // Initialize App Check (Placeholder for Firebase implementation)
   static Future<void> initializeAppCheck() async {
-    // Initialize Firebase App Check
+    // 1. Check Device Security (Root/Jailbreak)
+    final isCompromised = await DeviceSecurity.isDeviceCompromised();
+    if (isCompromised) {
+      print(
+        "SECURITY ALERT: Device environment is compromised (Rooted/Jailbroken).",
+      );
+      // You might want to disable certain features or log to analytics here.
+    }
+
+    // 2. Initialize Firebase App Check
     await FirebaseAppCheck.instance.activate(
       androidProvider: kDebugMode
           ? AndroidProvider.debug

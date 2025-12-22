@@ -11,7 +11,6 @@ class SelfieCaptureScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return BaseOnboardingStepScreen(
       title: 'Smile!',
-      child: const Center(child: Text('Camera Viewfinder')),
       nextLabel: 'Capture',
       onNext: () async {
         // 1. Show processing screen (visual only)
@@ -48,6 +47,7 @@ class SelfieCaptureScreen extends ConsumerWidget {
         Navigator.of(context).pop();
         ref.read(onboardingProvider.notifier).skipStep('selfie_capture');
       },
+      child: const Center(child: Text('Camera Viewfinder')),
     );
   }
 }
