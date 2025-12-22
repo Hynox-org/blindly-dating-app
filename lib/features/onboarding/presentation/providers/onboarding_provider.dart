@@ -119,7 +119,6 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     }
   }
 
-  // Load a specific step configuration (used for local jumps/revisits)
   Future<void> jumpToStep(String stepKey) async {
     state = state.copyWith(isLoading: true);
     try {

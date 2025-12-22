@@ -35,8 +35,6 @@ class _SingleStepShellState extends ConsumerState<SingleStepShell> {
   @override
   void initState() {
     super.initState();
-    // Initialize provider to specifically load this step configuration
-    // without affecting the 'in_progress' pointer in DB yet.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(onboardingProvider.notifier).jumpToStep(widget.stepKey);
     });
@@ -45,8 +43,9 @@ class _SingleStepShellState extends ConsumerState<SingleStepShell> {
   @override
   Widget build(BuildContext context) {
     ref.listen(onboardingProvider, (previous, next) {
-      // If the step key changes, it means the user completed/skipped the step.
-      // We pop the shell.
+      // Ignore if loading, or if the key hasn't been set yet (still initializing jump)
+      if (next.isLoading || next.currentStepKey == null) return;
+
       if (next.currentStepKey != widget.stepKey) {
         if (mounted) Navigator.pop(context);
       }
