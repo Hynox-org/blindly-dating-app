@@ -31,24 +31,21 @@ class SelfieCaptureScreen extends ConsumerWidget {
         // BUT we pushed a new route. So we must POP the processing screen.
 
         if (context.mounted) {
-          // We don't need to pop if the Shell replaces everything?
-          // No, Navigator stack is above Shell body.
-          // So we should pop the processing screen.
-          // OR, better: SelfieProcessingScreen shouldn't be a route, it should be the body?
-          // But we are in a click handler.
-
-          // Let's assume SelfieProcessingScreen pops itself or we pop it.
-          // But SelfieProcessingScreen currently has logic to "completeStep". We need to remove that.
-
-          // Simplest:
-          ref.read(onboardingProvider.notifier).completeStep('selfie_capture');
-          // The Shell will update. The Processing screen is on top.
-          // We need to pop the processing screen so the user sees the new Shell body (Gov ID).
+          // 1. Pop the Processing Screen
           Navigator.of(context).pop();
+
+          // 2. Pop the Capture Screen (returns to Instructions which is the Shell body? No, Instructions pushed Capture)
+          Navigator.of(context).pop();
+
+          // 3. Mark step as complete
+          // This will trigger the Shell (underneath) to update to the next step (Gov ID)
+          ref.read(onboardingProvider.notifier).completeStep('selfie_capture');
         }
       },
       showSkipButton: true,
       onSkip: () {
+        // If user skips from inside camera, pop back
+        Navigator.of(context).pop();
         ref.read(onboardingProvider.notifier).skipStep('selfie_capture');
       },
     );

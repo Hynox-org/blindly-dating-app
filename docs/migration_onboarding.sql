@@ -74,14 +74,13 @@ VALUES
 ('location_set', 'Set Location', 7, true, 'basic_profile', 30, 0),
 ('photo_upload', 'Upload Photos', 8, true, 'photos', 90, 0),
 ('photo_reorder', 'Reorder Photos', 9, false, 'photos', 30, 1),
-('selfie_instructions', 'Selfie Verification', 10, false, 'verification', 45, 2),
-('selfie_capture', 'Capture Selfie', 11, false, 'verification', 60, 2),
-('gov_id_optional', 'Government ID (Optional)', 12, false, 'verification', 120, 1),
-('bio_entry', 'Write Bio', 13, false, 'enrichment', 60, 3),
-('interests_select', 'Choose Interests', 14, false, 'enrichment', 45, 2),
-('lifestyle_prefs', 'Lifestyle Preferences', 15, false, 'enrichment', 40, 2),
-('voice_intro', 'Record Voice Intro', 16, false, 'enrichment', 75, 1),
-('profile_prompts', 'Add Profile Prompts', 17, false, 'enrichment', 75, 1)
+('selfie_capture', 'Selfie Verification', 10, false, 'verification', 100, 2),
+('gov_id_optional', 'Government ID (Optional)', 11, false, 'verification', 120, 1),
+('bio_entry', 'Write Bio', 12, false, 'enrichment', 60, 3),
+('interests_select', 'Choose Interests', 13, false, 'enrichment', 45, 2),
+('lifestyle_prefs', 'Lifestyle Preferences', 14, false, 'enrichment', 40, 2),
+('voice_intro', 'Record Voice Intro', 15, false, 'enrichment', 75, 1),
+('profile_prompts', 'Add Profile Prompts', 16, false, 'enrichment', 75, 1)
 ON CONFLICT (step_key) DO UPDATE SET 
 step_position = EXCLUDED.step_position,
 step_name = EXCLUDED.step_name;

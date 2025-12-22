@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/onboarding_provider.dart';
+import 'selfie_capture_screen.dart';
 import 'base_onboarding_step_screen.dart';
 
 class SelfieInstructionsScreen extends ConsumerWidget {
@@ -13,14 +14,13 @@ class SelfieInstructionsScreen extends ConsumerWidget {
       child: const Center(child: Text('Selfie Verification Instructions')),
       nextLabel: 'I\'m Ready',
       onNext: () {
-        ref
-            .read(onboardingProvider.notifier)
-            .completeStep('selfie_instructions');
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const SelfieCaptureScreen()));
       },
       showSkipButton: true,
       onSkip: () {
-        // Skipping verification moves to next section
-        ref.read(onboardingProvider.notifier).skipStep('selfie_instructions');
+        ref.read(onboardingProvider.notifier).skipStep('selfie_capture');
       },
     );
   }

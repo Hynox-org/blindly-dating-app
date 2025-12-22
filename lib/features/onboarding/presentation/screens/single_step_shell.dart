@@ -13,7 +13,7 @@ import 'steps/location_set_screen.dart';
 import 'steps/photo_upload_screen.dart';
 import 'steps/photo_reorder_screen.dart';
 import 'steps/selfie_instructions_screen.dart';
-import 'steps/selfie_capture_screen.dart';
+// import 'steps/selfie_capture_screen.dart'; // Mapped via instructions now
 import 'steps/selfie_processing_screen.dart';
 import 'steps/gov_id_screen.dart';
 import 'steps/bio_entry_screen.dart';
@@ -85,10 +85,9 @@ class _SingleStepShellState extends ConsumerState<SingleStepShell> {
         return const PhotoUploadScreen();
       case 'photo_reorder':
         return const PhotoReorderScreen();
-      case 'selfie_instructions':
-        return const SelfieInstructionsScreen();
       case 'selfie_capture':
-        return const SelfieCaptureScreen();
+        // Unified Flow: Start with instructions
+        return const SelfieInstructionsScreen();
       case 'selfie_processing':
         return const SelfieProcessingScreen();
       case 'gov_id_optional':
