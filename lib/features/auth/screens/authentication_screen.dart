@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_providers.dart';
@@ -59,6 +60,17 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
       f.dispose();
     }
     super.dispose();
+  }
+
+  String _getFriendlyErrorMessage(dynamic error) {
+    if (error is AuthException) {
+      if (error.statusCode == '429' ||
+          (error.message.contains('Too many OTP attempts'))) {
+        return 'Too many attempts. Please wait a while before trying again.';
+      }
+      return error.message;
+    }
+    return 'Error: ${error.toString()}';
   }
 
   void _startResendTimer() {
@@ -214,7 +226,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _inlineError = 'Error: ${e.toString()}';
+          _inlineError = _getFriendlyErrorMessage(e);
         });
       }
     }
@@ -265,7 +277,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _inlineError = 'Verification failed: ${e.toString()}';
+          _inlineError = _getFriendlyErrorMessage(e);
         });
       }
     }
@@ -273,23 +285,16 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
 
   Future<void> _handleEmailContinue() async {
     final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
 
     // Check if fields are empty
-    if (email.isEmpty || password.isEmpty) {
-      setState(() => _inlineError = 'Please fill all fields');
+    if (email.isEmpty) {
+      setState(() => _inlineError = 'Please enter your email');
       return;
     }
 
     // Validate email format
     if (!_isValidEmail(email)) {
       setState(() => _inlineError = 'Please enter a valid email address');
-      return;
-    }
-
-    // Validate password
-    if (!_isValidPassword(password)) {
-      setState(() => _inlineError = 'Password must be at least 6 characters');
       return;
     }
 
@@ -312,7 +317,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _inlineError = 'Error: ${e.toString()}';
+          _inlineError = _getFriendlyErrorMessage(e);
         });
       }
     }
@@ -363,7 +368,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _inlineError = 'Verification failed: ${e.toString()}';
+          _inlineError = _getFriendlyErrorMessage(e);
         });
       }
     }
@@ -379,7 +384,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _inlineError = 'Failed to resend OTP: ${e.toString()}');
+        setState(() => _inlineError = _getFriendlyErrorMessage(e));
       }
     }
   }
@@ -394,7 +399,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _inlineError = 'Failed to resend OTP: ${e.toString()}');
+        setState(() => _inlineError = _getFriendlyErrorMessage(e));
       }
     }
   }
@@ -530,9 +535,9 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
       case AuthMethod.phoneOTP:
         return 'Verify your number'; // Updated
       case AuthMethod.email:
-        return 'Login with Gmail'; // Already correct
+        return 'Login with Email';
       case AuthMethod.emailOTP:
-        return 'Verify your google'; // Updated
+        return 'Verify your email';
       case AuthMethod.apple:
         return 'Login with Apple'; // Updated
       default:
@@ -694,6 +699,63 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               ),
               SizedBox(height: 12),
               */
+
+              // Email button
+              ElevatedButton(
+                onPressed: () {
+                  HapticFeedback.mediumImpact();
+                  _changeMethod(AuthMethod.email);
+                },
+                style:
+                    ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.surface,
+                      foregroundColor: Theme.of(context).colorScheme.onSurface,
+                      padding: EdgeInsets.symmetric(vertical: 15),
+                      elevation: 0,
+                      side: BorderSide(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                    ).copyWith(
+                      backgroundColor: WidgetStateProperty.all(
+                        Theme.of(context).colorScheme.surface,
+                      ),
+                      overlayColor: WidgetStateProperty.resolveWith<Color?>((
+                        Set<WidgetState> states,
+                      ) {
+                        if (states.contains(WidgetState.pressed)) {
+                          return Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.05);
+                        }
+                        return null;
+                      }),
+                    ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.email_outlined,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                    SizedBox(width: 12),
+                    Text(
+                      'Continue with Email',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        color: Theme.of(context).colorScheme.onSurface,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: 12),
 
               // Mobile number button
               ElevatedButton(
@@ -1290,62 +1352,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             ),
           ),
           SizedBox(height: 16),
-          Text(
-            'Password',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 14,
-              color: Colors.grey,
-            ),
-          ),
-          SizedBox(height: 8),
-          TextField(
-            onChanged: (_) => setState(() => _inlineError = null),
-            controller: _passwordController,
-            obscureText: _obscurePassword,
-            style: TextStyle(fontFamily: 'Poppins', color: Colors.black),
-            decoration: InputDecoration(
-              hintText: 'Vignesh@98',
-              hintStyle: TextStyle(fontFamily: 'Poppins', color: Colors.grey),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(0xFFE0E0E0)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(0xFFE0E0E0)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(0xFF4A5D4F)),
-              ),
-              filled: true,
-              fillColor: Colors.white,
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                ),
-                onPressed: () {
-                  setState(() => _obscurePassword = !_obscurePassword);
-                },
-              ),
-            ),
-          ),
-          SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () {},
-              child: Text(
-                'Forgot your password?',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  color: Theme.of(context).colorScheme.onSurface, // Pure black
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ),
+          // Password field removed for OTP flow
           Spacer(),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 10.0),

@@ -126,4 +126,45 @@ class OnboardingRepository {
       return false;
     }
   }
+
+  /// Validates that 'complete' status is backed by actual data.
+  /// If data is missing (corruption/manual delete), it effectively "heals" the profile
+  /// by reverting status to 'in_progress' so the user is routed correctly.
+  Future<bool> validateAndFixOnboardingStatus(String userId) async {
+    try {
+      final profile = await getProfileRaw(userId);
+      if (profile == null) return false;
+
+      final status = profile['onboarding_status'] as String? ?? 'in_progress';
+      final rawProgress = profile['steps_progress'];
+      final Map<String, dynamic> stepsProgress = (rawProgress != null)
+          ? Map<String, dynamic>.from(rawProgress)
+          : {};
+
+      // If marked complete, strict validation is required
+      if (status == 'complete') {
+        // 1. Sanity Check: Is progress empty? (User's specific case)
+        if (stepsProgress.isEmpty) {
+          AppLogger.info(
+            'Integrity Check Failed: Status is Complete but Progress is Empty. Reverting to in_progress.',
+          );
+
+          await _supabase
+              .from('profiles')
+              .update({'onboarding_status': 'in_progress'})
+              .eq('user_id', userId);
+
+          return false; // Not complete anymore
+        }
+
+        // Potential future check: verifying all mandatory steps are present.
+        // For now, the empty check covers the "null data" case.
+      }
+
+      return status == 'complete';
+    } catch (e) {
+      AppLogger.info('Error validating onboarding status: $e');
+      return false;
+    }
+  }
 }

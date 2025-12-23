@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../onboarding/presentation/screens/onboarding_shell.dart';
+import '../../onboarding/data/repositories/onboarding_repository.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -57,18 +58,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     // Since we are in ConsumerStateful, we can use ref.
     // However, we need to import OnboardingRepository.
     // Let's assume we can fetch it.
+    // Use the repository to validate and potentially fix the status
     try {
-      final profile = await Supabase.instance.client
-          .from('profiles')
-          .select('onboarding_status')
-          .eq('user_id', userId)
-          .maybeSingle();
-
-      final status = profile?['onboarding_status'] as String? ?? 'in_progress';
+      final isComplete = await ref
+          .read(onboardingRepositoryProvider)
+          .validateAndFixOnboardingStatus(userId);
 
       if (!mounted) return;
 
-      if (status == 'complete') {
+      if (isComplete) {
         Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
       } else {
         // Navigate to Onboarding Shell
@@ -78,7 +76,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         );
       }
     } catch (e) {
-      // Fallback to welcome or retry
       if (mounted) Navigator.pushReplacementNamed(context, '/welcome');
     }
   }

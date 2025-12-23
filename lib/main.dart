@@ -9,9 +9,7 @@ import 'core/security/security_config.dart';
 import 'features/splash/screens/splash_screen.dart';
 import 'features/onboarding/screens/welcome_screen.dart';
 import 'features/auth/screens/authentication_screen.dart';
-import 'features/onboarding/screens/terms_and_conditions_screen.dart';
 import 'features/home/screens/home_screen.dart';
-import 'features/onboarding/screens/age_selection_screen.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/logging_navigator_observer.dart';
 import 'core/utils/nav_key.dart';
@@ -59,12 +57,8 @@ class MyApp extends ConsumerWidget {
         '/': (context) => const SplashScreen(),
         '/welcome': (context) => const WelcomeScreen(),
         '/auth': (context) => const AuthenticationScreen(),
-        '/terms': (context) => const TermsScreen(),
-        '/age-selector': (context) => const AgeSelectorScreen(),
         '/home': (context) => const HomeScreen(),
       },
-      // Alternative: If you want to use go_router later, uncomment this:
-      // routerConfig: router,
     );
   }
 }

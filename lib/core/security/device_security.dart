@@ -1,4 +1,4 @@
-import 'package:flutter_jailbreak_detection/flutter_jailbreak_detection.dart';
+import 'package:safe_device/safe_device.dart';
 import 'package:flutter/services.dart';
 import '../utils/app_logger.dart';
 
@@ -6,7 +6,7 @@ class DeviceSecurity {
   /// Checks if the device is rooted or jailbroken.
   static Future<bool> isDeviceCompromised() async {
     try {
-      bool jailbroken = await FlutterJailbreakDetection.jailbroken;
+      bool jailbroken = await SafeDevice.isJailBroken;
 
       if (jailbroken) {
         AppLogger.warning('SECURITY ALERT: Device is rooted/jailbroken.');
