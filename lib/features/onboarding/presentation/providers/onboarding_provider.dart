@@ -62,11 +62,20 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     try {
       final profile = await _repo.getProfileRaw(user.id);
       if (profile == null) {
-        state = state.copyWith(
-          isLoading: false,
-          errorMessage: "Profile not found",
-        );
-        return;
+        AppLogger.info('Profile missing in OnboardingShell. Auto-creating...');
+        try {
+          // Auto-heal: Create profile if missing
+          await _ref.read(authRepositoryProvider).createProfile(user.id);
+          // Retry init after creation
+          return init();
+        } catch (e) {
+          AppLogger.error('Failed to auto-create profile', e);
+          state = state.copyWith(
+            isLoading: false,
+            errorMessage: "Profile not found and creation failed",
+          );
+          return;
+        }
       }
 
       // 1. Get ordered list of ALL steps

@@ -1,4 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../core/security/jwt_validator.dart';
@@ -73,11 +75,15 @@ class AuthRepository {
   Future<AuthResponse> verifyPhoneOTP(String phone, String token) async {
     final strippedPhone = phone.startsWith('+') ? phone.substring(1) : phone;
 
-    return await _client.auth.verifyOTP(
+    final response = await _client.auth.verifyOTP(
       phone: strippedPhone,
       token: token,
       type: OtpType.sms,
     );
+    if (response.user != null) {
+      await createProfile(response.user!.id);
+    }
+    return response;
   }
 
   /// Signs in with email by sending an OTP (Magic Link or OTP).
@@ -91,11 +97,15 @@ class AuthRepository {
 
   /// Verifies the email OTP.
   Future<AuthResponse> verifyEmailOTP(String email, String token) async {
-    return await _client.auth.verifyOTP(
+    final response = await _client.auth.verifyOTP(
       email: email,
       token: token,
       type: OtpType.email,
     );
+    if (response.user != null) {
+      await createProfile(response.user!.id);
+    }
+    return response;
   }
 
   /// Signs in with email and password.
@@ -113,10 +123,50 @@ class AuthRepository {
 
   /// Sign in with Google (OAuth flow).
   Future<void> signInWithGoogle() async {
-    await _client.auth.signInWithOAuth(
-      OAuthProvider.google,
-      // redirectTo: kIsWeb ? null : 'io.supabase.blindly://login-callback/',
-    );
+    try {
+      // Web Client ID from Google Cloud Console (for Supabase to verify the token)
+      // This is required even for Android/iOS to verify the ID token on the backend.
+      final webClientId = dotenv.env['WEB_CLIENT_ID'];
+      if (webClientId == null) {
+        throw const AuthException('WEB_CLIENT_ID not found in .env');
+      }
+
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        serverClientId: webClientId,
+      );
+
+      // Force account picker by signing out first
+      await googleSignIn.signOut();
+
+      final googleUser = await googleSignIn.signIn();
+      final googleAuth = await googleUser?.authentication;
+
+      if (googleAuth == null) {
+        throw const AuthException('Google Sign-In cancelled or failed');
+      }
+
+      final accessToken = googleAuth.accessToken;
+      final idToken = googleAuth.idToken;
+
+      if (idToken == null) {
+        throw const AuthException('No ID Token found from Google Sign-In');
+      }
+
+      final response = await _client.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: idToken,
+        accessToken: accessToken,
+      );
+
+      if (response.user != null) {
+        await createProfile(response.user!.id);
+      }
+
+      AppLogger.info('AUTH_REPO: Google Sign-In successful');
+    } catch (e, stackTrace) {
+      AppLogger.error('AUTH_REPO: Google Sign-In failed', e, stackTrace);
+      rethrow;
+    }
   }
 
   /// Returns the current user.

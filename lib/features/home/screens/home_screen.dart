@@ -19,12 +19,6 @@ class HomeScreen extends ConsumerWidget {
           IconButton(
             onPressed: () async {
               await ref.read(authRepositoryProvider).signOut();
-              if (context.mounted) {
-                // Use Navigator because main.dart uses MaterialApp routes, not GoRouter
-                Navigator.of(
-                  context,
-                ).pushNamedAndRemoveUntil('/welcome', (route) => false);
-              }
             },
             icon: const Icon(Icons.logout),
           ),

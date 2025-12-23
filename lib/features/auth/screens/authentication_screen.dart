@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:country_code_picker/country_code_picker.dart';
@@ -643,19 +644,83 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               SizedBox(height: 12),
               */
 
-              /*
               // Google button
               OutlinedButton(
-                onPressed: () async {
-                  HapticFeedback.mediumImpact();
-                  try {
-                    await ref.read(authRepositoryProvider).signInWithGoogle();
-                  } catch (e) {
-                    if (mounted) {
-                      setState(() => _inlineError = 'Google Sign-In failed: $e');
-                    }
-                  }
-                },
+                onPressed: _isLoading
+                    ? null
+                    : () async {
+                        HapticFeedback.mediumImpact();
+                        setState(() => _isLoading = true);
+                        try {
+                          await ref
+                              .read(authRepositoryProvider)
+                              .signInWithGoogle();
+
+                          if (mounted) {
+                            // Check onboarding status
+                            try {
+                              final userId = ref
+                                  .read(authRepositoryProvider)
+                                  .currentUser
+                                  ?.id;
+                              if (userId != null) {
+                                final isOnboarded = await ref
+                                    .read(onboardingRepositoryProvider)
+                                    .checkOnboardingStatus(userId);
+
+                                if (mounted) {
+                                  setState(() => _isLoading = false);
+                                  if (isOnboarded) {
+                                    Navigator.pushNamedAndRemoveUntil(
+                                      context,
+                                      '/home',
+                                      (_) => false,
+                                    );
+                                  } else {
+                                    Navigator.pushAndRemoveUntil(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const OnboardingShell(),
+                                      ),
+                                      (route) => false,
+                                    );
+                                  }
+                                }
+                              } else {
+                                // Fallback if no user found (shouldn't happen on success)
+                                if (mounted) {
+                                  setState(() => _isLoading = false);
+                                  Navigator.pushNamedAndRemoveUntil(
+                                    context,
+                                    '/home',
+                                    (_) => false,
+                                  );
+                                }
+                              }
+                            } catch (e) {
+                              AppLogger.error(
+                                'Error checking onboarding status',
+                                e,
+                              );
+                              if (mounted) {
+                                setState(() => _isLoading = false);
+                                Navigator.pushNamedAndRemoveUntil(
+                                  context,
+                                  '/home',
+                                  (_) => false,
+                                );
+                              }
+                            }
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            setState(() {
+                              _isLoading = false;
+                              _inlineError = 'Google Sign-In failed: $e';
+                            });
+                          }
+                        }
+                      },
                 style:
                     OutlinedButton.styleFrom(
                       padding: EdgeInsets.symmetric(vertical: 15),
@@ -680,25 +745,39 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                         return null;
                       }),
                     ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset('assests/icons/google-icon.png', height: 20),
-                    SizedBox(width: 12),
-                    Text(
-                      'Continue with Google',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        color: Colors.black,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
+                child: _isLoading
+                    ? SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.black,
+                          ),
+                        ),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          FaIcon(
+                            FontAwesomeIcons.google,
+                            size: 20,
+                            color: Colors.black,
+                          ),
+                          SizedBox(width: 12),
+                          Text(
+                            'Continue with Google',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              color: Colors.black,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
               ),
               SizedBox(height: 12),
-              */
 
               // Email button
               ElevatedButton(
@@ -736,8 +815,8 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.email_outlined,
+                    FaIcon(
+                      FontAwesomeIcons.solidEnvelope,
                       size: 20,
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
@@ -791,8 +870,8 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.phone_android_rounded,
+                    FaIcon(
+                      FontAwesomeIcons.phone,
                       size: 20,
                       color: Theme.of(context).colorScheme.onPrimary,
                     ),

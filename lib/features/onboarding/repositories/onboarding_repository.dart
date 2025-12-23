@@ -12,11 +12,12 @@ class OnboardingRepository {
     try {
       final response = await _client
           .from('profiles')
-          .select('id')
-          .eq('id', userId)
+          .select('onboarding_status')
+          .eq('user_id', userId)
           .maybeSingle();
 
-      return response != null;
+      if (response == null) return false;
+      return response['onboarding_status'] == 'complete';
     } catch (e, stackTrace) {
       AppLogger.error(
         'ONBOARDING_REPO: Failed to check onboarding status',
