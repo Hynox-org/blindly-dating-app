@@ -42,6 +42,8 @@ final onboardingProvider =
 class OnboardingNotifier extends StateNotifier<OnboardingState> {
   final Ref _ref;
 
+  bool _hasDismissedWelcome = false;
+
   OnboardingNotifier(this._ref) : super(OnboardingState());
 
   OnboardingRepository get _repo => _ref.read(onboardingRepositoryProvider);
@@ -87,6 +89,24 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
       final Map<String, dynamic> stepsProgress = (rawProgress != null)
           ? Map<String, dynamic>.from(rawProgress)
           : {};
+
+      // Check if fresh user (empty progress) AND hasn't dismissed welcome yet
+      bool isFreshUser = stepsProgress.isEmpty;
+      // Alternatively, check strictly if NO steps are marked 'completed' or 'skipped'
+      if (!isFreshUser) {
+        // Double check deep just in case key exists but values are null?
+        // Actually simplest is: if map is empty, they are fresh.
+      }
+
+      if (isFreshUser && !_hasDismissedWelcome) {
+        state = state.copyWith(
+          isLoading: false,
+          currentStepKey: 'pre_onboarding',
+          // No config for this, it's a special state
+          currentStepConfig: null,
+        );
+        return;
+      }
 
       // 3. Determine current step
       // Find the first step that is NOT 'completed'.
@@ -184,5 +204,11 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     // Mark high-level status as complete
     await _repo.completeOnboarding(user.id);
     state = state.copyWith(currentStepKey: 'complete');
+  }
+
+  void dismissWelcome() {
+    _hasDismissedWelcome = true;
+    // Re-run init to proceed to the actual first step
+    init();
   }
 }

@@ -21,6 +21,7 @@ import 'steps/interests_select_screen.dart';
 import 'steps/lifestyle_prefs_screen.dart';
 import 'steps/voice_intro_screen.dart';
 import 'steps/profile_prompts_screen.dart';
+import 'pre_onboarding_welcome_screen.dart';
 
 class OnboardingShell extends ConsumerStatefulWidget {
   const OnboardingShell({super.key});
@@ -75,6 +76,10 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
       );
     }
 
+    if (state.currentStepKey == 'pre_onboarding') {
+      return const Scaffold(body: PreOnboardingWelcomeScreen());
+    }
+
     if (stepConfig == null) {
       return const Scaffold(
         body: Center(child: Text('Onboarding setup incomplete.')),
@@ -82,27 +87,27 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(stepConfig.stepName),
-        leading: stepConfig.isSkippable
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () {
-                  if (Navigator.canPop(context)) Navigator.pop(context);
-                },
-              )
-            : null,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(4.0),
-          child: LinearProgressIndicator(
-            value: (stepConfig.stepPosition) / 20.0, // approx total steps
-            backgroundColor: Colors.grey[200],
-            valueColor: AlwaysStoppedAnimation<Color>(
-              Theme.of(context).primaryColor,
-            ),
-          ),
-        ),
-      ),
+      // appBar: AppBar(
+      //   title: Text(stepConfig.stepName),
+      //   leading: stepConfig.isSkippable
+      //       ? IconButton(
+      //           icon: const Icon(Icons.arrow_back),
+      //           onPressed: () {
+      //             if (Navigator.canPop(context)) Navigator.pop(context);
+      //           },
+      //         )
+      //       : null,
+      //   bottom: PreferredSize(
+      //     preferredSize: const Size.fromHeight(4.0),
+      //     child: LinearProgressIndicator(
+      //       value: (stepConfig.stepPosition) / 20.0, // approx total steps
+      //       backgroundColor: Colors.grey[200],
+      //       valueColor: AlwaysStoppedAnimation<Color>(
+      //         Theme.of(context).primaryColor,
+      //       ),
+      //     ),
+      //   ),
+      // ),
       body: getScreenForStep(stepConfig.stepKey, ref),
     );
   }
@@ -144,6 +149,8 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
         return const VoiceIntroScreen();
       case 'profile_prompts':
         return const ProfilePromptsScreen();
+      case 'pre_onboarding':
+        return const PreOnboardingWelcomeScreen();
       default:
         return Center(child: Text("Screen for $stepKey not implemented"));
     }

@@ -139,11 +139,10 @@ class AuthRepository {
       await googleSignIn.signOut();
 
       final googleUser = await googleSignIn.signIn();
-      final googleAuth = await googleUser?.authentication;
-
-      if (googleAuth == null) {
-        throw const AuthException('Google Sign-In cancelled or failed');
+      if (googleUser == null) {
+        throw const AuthException('Sign in cancelled', statusCode: 'CANCELLED');
       }
+      final googleAuth = await googleUser.authentication;
 
       final accessToken = googleAuth.accessToken;
       final idToken = googleAuth.idToken;

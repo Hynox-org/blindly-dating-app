@@ -94,7 +94,11 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
   }
 
   void _changeMethod(AuthMethod method) {
-    setState(() => _currentMethod = method);
+    setState(() {
+      _currentMethod = method;
+      _inlineError = null;
+      _inlineSuccess = null;
+    });
   }
 
   void _clearOTPFields() {
@@ -714,6 +718,12 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                           }
                         } catch (e) {
                           if (mounted) {
+                            // Ignore cancellation
+                            if (e is AuthException &&
+                                e.statusCode == 'CANCELLED') {
+                              setState(() => _isLoading = false);
+                              return;
+                            }
                             setState(() {
                               _isLoading = false;
                               _inlineError = 'Google Sign-In failed: $e';
