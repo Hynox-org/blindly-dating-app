@@ -2,7 +2,6 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math' as math;
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../onboarding/presentation/screens/onboarding_shell.dart';
 import '../../onboarding/data/repositories/onboarding_repository.dart';
