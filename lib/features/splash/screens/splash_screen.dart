@@ -1,15 +1,20 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math' as math;
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../auth/providers/auth_providers.dart';
+import '../../onboarding/presentation/screens/onboarding_shell.dart';
+import '../../onboarding/data/repositories/onboarding_repository.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
+class _SplashScreenState extends ConsumerState<SplashScreen>
     with TickerProviderStateMixin {
   late AnimationController _mainController;
 
@@ -31,16 +36,48 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(milliseconds: 4500),
     );
 
-    // _initAnimations(); // Remove from here
-    // _mainController.forward(); // Remove from here
-
-    _mainController.addStatusListener((status) {
+    _mainController.addStatusListener((status) async {
       if (status == AnimationStatus.completed) {
-        Future.delayed(const Duration(milliseconds: 200), () {
-          if (mounted) Navigator.pushReplacementNamed(context, '/welcome');
-        });
+        // Check for existing session
+        final user = ref.read(authRepositoryProvider).currentUser;
+
+        if (user != null) {
+          // Check onboarding status
+          await _checkOnboardingAndNavigate(user.id);
+        } else {
+          if (mounted) {
+            Navigator.pushReplacementNamed(context, '/welcome');
+          }
+        }
       }
     });
+  }
+
+  Future<void> _checkOnboardingAndNavigate(String userId) async {
+    // We'll use a direct Supabase call for speed or reuse repo if possible.
+    // Since we are in ConsumerStateful, we can use ref.
+    // However, we need to import OnboardingRepository.
+    // Let's assume we can fetch it.
+    // Use the repository to validate and potentially fix the status
+    try {
+      final isComplete = await ref
+          .read(onboardingRepositoryProvider)
+          .validateAndFixOnboardingStatus(userId);
+
+      if (!mounted) return;
+
+      if (isComplete) {
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+      } else {
+        // Navigate to Onboarding Shell
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const OnboardingShell()),
+        );
+      }
+    } catch (e) {
+      if (mounted) Navigator.pushReplacementNamed(context, '/welcome');
+    }
   }
 
   bool _isInitialized = false;
@@ -69,7 +106,7 @@ class _SplashScreenState extends State<SplashScreen>
     // Background Color Transition
     _backgroundColor =
         ColorTween(
-          begin: Theme.of(context).colorScheme.secondary, // Secondary Gold
+          begin: Theme.of(context).colorScheme.onPrimary, // Secondary Gold
           end: Theme.of(context).colorScheme.surface, // White
         ).animate(
           CurvedAnimation(

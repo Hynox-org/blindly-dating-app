@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/services.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_providers.dart';
-import '../repositories/auth_repository.dart';
+import '../../onboarding/providers/onboarding_providers.dart';
 import '../../../core/utils/app_logger.dart';
+import '../../onboarding/presentation/screens/onboarding_shell.dart';
 
 enum AuthMethod { selection, phone, phoneOTP, email, emailOTP, apple }
 
@@ -38,6 +41,8 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
   bool _isLoading = false;
   int _resendTimer = 30;
   bool _canResend = false;
+  String? _inlineError;
+  String? _inlineSuccess;
 
   @override
   void initState() {
@@ -56,6 +61,17 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
       f.dispose();
     }
     super.dispose();
+  }
+
+  String _getFriendlyErrorMessage(dynamic error) {
+    if (error is AuthException) {
+      if (error.statusCode == '429' ||
+          (error.message.contains('Too many OTP attempts'))) {
+        return 'Too many attempts. Please wait a while before trying again.';
+      }
+      return error.message;
+    }
+    return 'Error: ${error.toString()}';
   }
 
   void _startResendTimer() {
@@ -78,7 +94,11 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
   }
 
   void _changeMethod(AuthMethod method) {
-    setState(() => _currentMethod = method);
+    setState(() {
+      _currentMethod = method;
+      _inlineError = null;
+      _inlineSuccess = null;
+    });
   }
 
   void _clearOTPFields() {
@@ -156,23 +176,17 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
 
     // Check if empty
     if (phone.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter your phone number'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
+      if (phone.isEmpty) {
+        setState(() => _inlineError = 'Please enter your phone number');
+        return;
+      }
     }
 
     // Check if contains only digits
     if (!RegExp(r'^[0-9]+$').hasMatch(phone)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Phone number must contain only digits'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      setState(() {
+        _inlineError = 'Phone number must contain only digits';
+      });
       return;
     }
 
@@ -187,9 +201,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
         message = 'Please enter a valid 10-digit phone number';
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.red),
-      );
+      setState(() => _inlineError = message);
       return;
     }
 
@@ -217,13 +229,10 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        setState(() {
+          _isLoading = false;
+          _inlineError = _getFriendlyErrorMessage(e);
+        });
       }
     }
   }
@@ -232,9 +241,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
     String otp = _otpControllers.map((c) => c.text).join();
 
     if (otp.length != 6) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Please enter complete OTP')));
+      setState(() => _inlineError = 'Please enter complete OTP');
       return;
     }
 
@@ -246,75 +253,55 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
 
       if (mounted) {
         HapticFeedback.heavyImpact();
-        setState(() => _isLoading = false);
 
-        if (widget.isNewUser) {
-          Navigator.pushNamed(context, '/terms');
-        } else {
-          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        try {
+          final userId = ref.read(authRepositoryProvider).currentUser?.id;
+          if (userId != null) {
+            await ref.read(authRepositoryProvider).createProfile(userId);
+          }
+
+          if (mounted) {
+            setState(() => _isLoading = false);
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => const OnboardingShell()),
+              (route) => false,
+            );
+          }
+        } catch (e) {
+          AppLogger.error('Error creating profile', e);
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+              _inlineError = 'Failed to create profile: ${e.toString()}';
+            });
+          }
         }
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Verification failed: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        setState(() {
+          _isLoading = false;
+          _inlineError = _getFriendlyErrorMessage(e);
+        });
       }
     }
   }
 
   Future<void> _handleEmailContinue() async {
     final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
 
     // Check if fields are empty
-    if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill all fields'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    if (email.isEmpty) {
+      setState(() => _inlineError = 'Please enter your email');
       return;
     }
 
     // Validate email format
     if (!_isValidEmail(email)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a valid email address'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      setState(() => _inlineError = 'Please enter a valid email address');
       return;
     }
-
-    // Validate password
-    if (!_isValidPassword(password)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password must be at least 6 characters'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    // Optional: Use strong password validation
-    // String? passwordError = _validateStrongPassword(password);
-    // if (passwordError != null) {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     SnackBar(
-    //       content: Text(passwordError),
-    //       backgroundColor: Colors.red,
-    //     ),
-    //   );
-    //   return;
-    // }
 
     HapticFeedback.mediumImpact();
     setState(() => _isLoading = true);
@@ -333,13 +320,10 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        setState(() {
+          _isLoading = false;
+          _inlineError = _getFriendlyErrorMessage(e);
+        });
       }
     }
   }
@@ -348,9 +332,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
     String otp = _otpControllers.map((c) => c.text).join();
 
     if (otp.length != 6) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Please enter complete OTP')));
+      setState(() => _inlineError = 'Please enter complete OTP');
       return;
     }
 
@@ -362,18 +344,67 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
 
       if (mounted) {
         HapticFeedback.heavyImpact();
-        setState(() => _isLoading = false);
-        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+
+        try {
+          final userId = ref.read(authRepositoryProvider).currentUser?.id;
+          if (userId != null) {
+            await ref.read(authRepositoryProvider).createProfile(userId);
+          }
+
+          if (mounted) {
+            setState(() => _isLoading = false);
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => const OnboardingShell()),
+              (route) => false,
+            );
+          }
+        } catch (e) {
+          AppLogger.error('Error creating profile', e);
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+              _inlineError = 'Failed to create profile: ${e.toString()}';
+            });
+          }
+        }
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Verification failed: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        setState(() {
+          _isLoading = false;
+          _inlineError = _getFriendlyErrorMessage(e);
+        });
+      }
+    }
+  }
+
+  Future<void> _resendPhoneOTP() async {
+    _startResendTimer();
+    try {
+      AppLogger.info('AUTH_SCREEN: Resending phone OTP to $_phoneNumber');
+      await ref.read(authRepositoryProvider).signInWithPhone(_phoneNumber);
+      if (mounted) {
+        setState(() => _inlineSuccess = 'OTP sent successfully');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _inlineError = _getFriendlyErrorMessage(e));
+      }
+    }
+  }
+
+  Future<void> _resendEmailOTP() async {
+    _startResendTimer();
+    try {
+      AppLogger.info('AUTH_SCREEN: Resending email OTP to $_email');
+      await ref.read(authRepositoryProvider).signInWithEmail(_email);
+      if (mounted) {
+        setState(() => _inlineSuccess = 'OTP sent successfully');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _inlineError = _getFriendlyErrorMessage(e));
       }
     }
   }
@@ -384,34 +415,19 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
 
     // Check if fields are empty
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill all fields'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      setState(() => _inlineError = 'Please fill all fields');
       return;
     }
 
     // Validate email format
     if (!_isValidEmail(email)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a valid email address'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      setState(() => _inlineError = 'Please enter a valid email address');
       return;
     }
 
     // Validate password
     if (!_isValidPassword(password)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password must be at least 6 characters'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      setState(() => _inlineError = 'Password must be at least 6 characters');
       return;
     }
 
@@ -423,19 +439,45 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
           .read(authRepositoryProvider)
           .signInWithPassword(email, password);
 
-      if (mounted) {
-        setState(() => _isLoading = false);
-        Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+      // Check onboarding status
+      try {
+        final userId = ref.read(authRepositoryProvider).currentUser?.id;
+        if (userId != null) {
+          final isOnboarded = await ref
+              .read(onboardingRepositoryProvider)
+              .checkOnboardingStatus(userId);
+
+          if (mounted) {
+            setState(() => _isLoading = false);
+            if (isOnboarded) {
+              Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+            } else {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const OnboardingShell()),
+                (route) => false,
+              );
+            }
+          }
+        } else {
+          if (mounted) {
+            setState(() => _isLoading = false);
+            Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+          }
+        }
+      } catch (e) {
+        AppLogger.error('Error checking onboarding status', e);
+        if (mounted) {
+          setState(() => _isLoading = false);
+          Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+        }
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Login failed: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        setState(() {
+          _isLoading = false;
+          _inlineError = 'Login failed: ${e.toString()}';
+        });
       }
     }
   }
@@ -498,9 +540,9 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
       case AuthMethod.phoneOTP:
         return 'Verify your number'; // Updated
       case AuthMethod.email:
-        return 'Login with Gmail'; // Already correct
+        return 'Login with Email';
       case AuthMethod.emailOTP:
-        return 'Verify your google'; // Updated
+        return 'Verify your email';
       case AuthMethod.apple:
         return 'Login with Apple'; // Updated
       default:
@@ -547,6 +589,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              /*
               // Apple button
               OutlinedButton(
                 onPressed: () {
@@ -603,21 +646,91 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                 ),
               ),
               SizedBox(height: 12),
+              */
 
               // Google button
               OutlinedButton(
-                onPressed: () async {
-                  HapticFeedback.mediumImpact();
-                  try {
-                    await ref.read(authRepositoryProvider).signInWithGoogle();
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Google Sign-In failed: $e')),
-                      );
-                    }
-                  }
-                },
+                onPressed: _isLoading
+                    ? null
+                    : () async {
+                        HapticFeedback.mediumImpact();
+                        setState(() => _isLoading = true);
+                        try {
+                          await ref
+                              .read(authRepositoryProvider)
+                              .signInWithGoogle();
+
+                          if (mounted) {
+                            // Check onboarding status
+                            try {
+                              final userId = ref
+                                  .read(authRepositoryProvider)
+                                  .currentUser
+                                  ?.id;
+                              if (userId != null) {
+                                final isOnboarded = await ref
+                                    .read(onboardingRepositoryProvider)
+                                    .checkOnboardingStatus(userId);
+
+                                if (mounted) {
+                                  setState(() => _isLoading = false);
+                                  if (isOnboarded) {
+                                    Navigator.pushNamedAndRemoveUntil(
+                                      context,
+                                      '/home',
+                                      (_) => false,
+                                    );
+                                  } else {
+                                    Navigator.pushAndRemoveUntil(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const OnboardingShell(),
+                                      ),
+                                      (route) => false,
+                                    );
+                                  }
+                                }
+                              } else {
+                                // Fallback if no user found (shouldn't happen on success)
+                                if (mounted) {
+                                  setState(() => _isLoading = false);
+                                  Navigator.pushNamedAndRemoveUntil(
+                                    context,
+                                    '/home',
+                                    (_) => false,
+                                  );
+                                }
+                              }
+                            } catch (e) {
+                              AppLogger.error(
+                                'Error checking onboarding status',
+                                e,
+                              );
+                              if (mounted) {
+                                setState(() => _isLoading = false);
+                                Navigator.pushNamedAndRemoveUntil(
+                                  context,
+                                  '/home',
+                                  (_) => false,
+                                );
+                              }
+                            }
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            // Ignore cancellation
+                            if (e is AuthException &&
+                                e.statusCode == 'CANCELLED') {
+                              setState(() => _isLoading = false);
+                              return;
+                            }
+                            setState(() {
+                              _isLoading = false;
+                              _inlineError = 'Google Sign-In failed: $e';
+                            });
+                          }
+                        }
+                      },
                 style:
                     OutlinedButton.styleFrom(
                       padding: EdgeInsets.symmetric(vertical: 15),
@@ -642,16 +755,87 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                         return null;
                       }),
                     ),
+                child: _isLoading
+                    ? SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.black,
+                          ),
+                        ),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          FaIcon(
+                            FontAwesomeIcons.google,
+                            size: 20,
+                            color: Colors.black,
+                          ),
+                          SizedBox(width: 12),
+                          Text(
+                            'Continue with Google',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              color: Colors.black,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
+              SizedBox(height: 12),
+
+              // Email button
+              ElevatedButton(
+                onPressed: () {
+                  HapticFeedback.mediumImpact();
+                  _changeMethod(AuthMethod.email);
+                },
+                style:
+                    ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.surface,
+                      foregroundColor: Theme.of(context).colorScheme.onSurface,
+                      padding: EdgeInsets.symmetric(vertical: 15),
+                      elevation: 0,
+                      side: BorderSide(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                    ).copyWith(
+                      backgroundColor: WidgetStateProperty.all(
+                        Theme.of(context).colorScheme.surface,
+                      ),
+                      overlayColor: WidgetStateProperty.resolveWith<Color?>((
+                        Set<WidgetState> states,
+                      ) {
+                        if (states.contains(WidgetState.pressed)) {
+                          return Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.05);
+                        }
+                        return null;
+                      }),
+                    ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Image.asset('assests/icons/google-icon.png', height: 20),
+                    FaIcon(
+                      FontAwesomeIcons.solidEnvelope,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                     SizedBox(width: 12),
                     Text(
-                      'Continue with Google',
+                      'Continue with Email',
                       style: TextStyle(
                         fontFamily: 'Poppins',
-                        color: Colors.black,
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                       ),
@@ -659,6 +843,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   ],
                 ),
               ),
+
               SizedBox(height: 12),
 
               // Mobile number button
@@ -695,8 +880,8 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.phone_android_rounded,
+                    FaIcon(
+                      FontAwesomeIcons.phone,
                       size: 20,
                       color: Theme.of(context).colorScheme.onPrimary,
                     ),
@@ -805,7 +990,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   border: Border.all(color: Color(0xFFE0E0E0)),
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -820,13 +1005,26 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   padding: EdgeInsets.zero,
                   textStyle: TextStyle(
                     fontFamily: 'Poppins',
-                    color: Colors.black,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
+                  dialogTextStyle: TextStyle(
+                    fontFamily: 'Poppins',
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                  searchStyle: TextStyle(
+                    fontFamily: 'Poppins',
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                  dialogBackgroundColor: Theme.of(context).colorScheme.surface,
                 ),
               ),
               SizedBox(width: 12),
               Expanded(
                 child: TextField(
+                  onChanged: (_) => setState(() {
+                    _inlineError = null;
+                    _inlineSuccess = null;
+                  }),
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
                   maxLength: 10,
@@ -858,7 +1056,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                       ),
                     ),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: Theme.of(context).colorScheme.surface,
                     counterText: '',
                   ),
                 ),
@@ -904,6 +1102,27 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             ),
           ),
           SizedBox(height: 16),
+          if (_inlineError != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Text(
+                _inlineError!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: 13,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          if (_inlineSuccess != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Text(
+                _inlineSuccess!,
+                style: const TextStyle(color: Colors.green, fontSize: 13),
+                textAlign: TextAlign.center,
+              ),
+            ),
           ElevatedButton(
             onPressed: _isLoading ? null : _handlePhoneContinue,
             style:
@@ -1036,6 +1255,10 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     fillColor: Colors.white,
                   ),
                   onChanged: (value) {
+                    setState(() {
+                      _inlineError = null;
+                      _inlineSuccess = null;
+                    });
                     if (value.isNotEmpty) {
                       HapticFeedback.selectionClick();
                       if (index < 5) {
@@ -1062,7 +1285,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             children: [
               Expanded(
                 child: TextButton(
-                  onPressed: _canResend ? _startResendTimer : null,
+                  onPressed: _canResend ? _resendPhoneOTP : null,
                   style: TextButton.styleFrom(
                     padding: EdgeInsets.zero,
                     alignment: Alignment.centerLeft,
@@ -1088,6 +1311,27 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             ],
           ),
           Spacer(),
+          if (_inlineError != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Text(
+                _inlineError!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: 13,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          if (_inlineSuccess != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Text(
+                _inlineSuccess!,
+                style: const TextStyle(color: Colors.green, fontSize: 13),
+                textAlign: TextAlign.center,
+              ),
+            ),
           ElevatedButton(
             onPressed: _isLoading ? null : _handlePhoneOTPVerify,
             style:
@@ -1166,6 +1410,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
           ),
           SizedBox(height: 8),
           TextField(
+            onChanged: (_) => setState(() => _inlineError = null),
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             inputFormatters: [
@@ -1196,61 +1441,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             ),
           ),
           SizedBox(height: 16),
-          Text(
-            'Password',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 14,
-              color: Colors.grey,
-            ),
-          ),
-          SizedBox(height: 8),
-          TextField(
-            controller: _passwordController,
-            obscureText: _obscurePassword,
-            style: TextStyle(fontFamily: 'Poppins', color: Colors.black),
-            decoration: InputDecoration(
-              hintText: 'Vignesh@98',
-              hintStyle: TextStyle(fontFamily: 'Poppins', color: Colors.grey),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(0xFFE0E0E0)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(0xFFE0E0E0)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(0xFF4A5D4F)),
-              ),
-              filled: true,
-              fillColor: Colors.white,
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                ),
-                onPressed: () {
-                  setState(() => _obscurePassword = !_obscurePassword);
-                },
-              ),
-            ),
-          ),
-          SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () {},
-              child: Text(
-                'Forgot your password?',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  color: Theme.of(context).colorScheme.onSurface, // Pure black
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ),
+          // Password field removed for OTP flow
           Spacer(),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 10.0),
@@ -1288,6 +1479,18 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             ),
           ),
           SizedBox(height: 16),
+          if (_inlineError != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Text(
+                _inlineError!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: 13,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
           ElevatedButton(
             onPressed: _isLoading ? null : _handleEmailContinue,
             style:
@@ -1419,6 +1622,10 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     fillColor: Colors.white,
                   ),
                   onChanged: (value) {
+                    setState(() {
+                      _inlineError = null;
+                      _inlineSuccess = null;
+                    });
                     if (value.isNotEmpty) {
                       HapticFeedback.selectionClick();
                       if (index < 5) {
@@ -1445,7 +1652,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             children: [
               Expanded(
                 child: TextButton(
-                  onPressed: _canResend ? _startResendTimer : null,
+                  onPressed: _canResend ? _resendEmailOTP : null,
                   style: TextButton.styleFrom(
                     padding: EdgeInsets.zero,
                     alignment: Alignment.centerLeft,
@@ -1471,6 +1678,27 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             ],
           ),
           Spacer(),
+          if (_inlineError != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Text(
+                _inlineError!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: 13,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          if (_inlineSuccess != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Text(
+                _inlineSuccess!,
+                style: const TextStyle(color: Colors.green, fontSize: 13),
+                textAlign: TextAlign.center,
+              ),
+            ),
           ElevatedButton(
             onPressed: _isLoading ? null : _handleEmailOTPVerify,
             style:
@@ -1549,6 +1777,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
           ),
           SizedBox(height: 4),
           TextField(
+            onChanged: (_) => setState(() => _inlineError = null),
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             style: TextStyle(fontFamily: 'Poppins'),
@@ -1584,6 +1813,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
           ),
           SizedBox(height: 4),
           TextField(
+            onChanged: (_) => setState(() => _inlineError = null),
             controller: _passwordController,
             obscureText: _obscurePassword,
             style: TextStyle(fontFamily: 'Poppins'),
@@ -1666,6 +1896,18 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             ),
           ),
           SizedBox(height: 16),
+          if (_inlineError != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Text(
+                _inlineError!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: 13,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
           ElevatedButton(
             onPressed: _isLoading ? null : _handleAppleContinue,
             style:

@@ -9,13 +9,11 @@ import 'core/security/security_config.dart';
 import 'features/splash/screens/splash_screen.dart';
 import 'features/onboarding/screens/welcome_screen.dart';
 import 'features/auth/screens/authentication_screen.dart';
-import 'features/onboarding/screens/terms_and_conditions_screen.dart';
 import 'features/home/screens/home_screen.dart';
-import 'features/onboarding/screens/age_selection_screen.dart';
 import 'core/theme/app_theme.dart';
-import 'core/providers/theme_provider.dart';
 import 'core/utils/logging_navigator_observer.dart';
-import 'shared/widgets/theme_switcher.dart';
+import 'core/utils/nav_key.dart';
+import 'features/auth/providers/auth_state_listener.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,35 +43,22 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // You can still use the router provider if needed
-    final themeMode = ref.watch(themeModeProvider);
-
     return MaterialApp(
       title: 'Blindly',
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.getThemeData(themeMode),
+      theme: AppTheme.theme,
       initialRoute: '/', // start at splash
       navigatorObservers: [LoggingNavigatorObserver()],
+      builder: (context, child) {
+        return AuthStateListenerWrapper(child: child!);
+      },
       routes: {
         '/': (context) => const SplashScreen(),
         '/welcome': (context) => const WelcomeScreen(),
         '/auth': (context) => const AuthenticationScreen(),
-        '/terms': (context) => const TermsScreen(),
-        '/age-selector': (context) => const AgeSelectorScreen(),
         '/home': (context) => const HomeScreen(),
       },
-      builder: (context, child) {
-        return Stack(
-          children: [
-            if (child != null) child,
-            if (const bool.fromEnvironment('dart.vm.product') == false)
-              const Positioned(right: 20, bottom: 20, child: ThemeSwitcher()),
-          ],
-        );
-      },
-
-      // Alternative: If you want to use go_router later, uncomment this:
-      // routerConfig: router,
     );
   }
 }

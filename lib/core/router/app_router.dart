@@ -4,8 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../features/splash/screens/splash_screen.dart';
 import '../../features/onboarding/screens/welcome_screen.dart';
 import '../../features/auth/screens/authentication_screen.dart';
-import '../../features/onboarding/screens/terms_and_conditions_screen.dart';
-import '../../features/onboarding/screens/age_selection_screen.dart';
 import '../../features/home/screens/home_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -23,11 +21,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/auth',
         builder: (context, state) => const AuthenticationScreen(),
-      ),
-      GoRoute(path: '/terms', builder: (context, state) => const TermsScreen()),
-      GoRoute(
-        path: '/age-selector',
-        builder: (context, state) => const AgeSelectorScreen(),
       ),
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
     ],

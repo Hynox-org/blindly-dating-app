@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../auth/providers/auth_providers.dart';
+import '../presentation/widgets/pending_steps_card.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
         title: Image.asset(
@@ -12,6 +15,14 @@ class HomeScreen extends StatelessWidget {
           height: 24,
           fit: BoxFit.contain,
         ),
+        actions: [
+          IconButton(
+            onPressed: () async {
+              await ref.read(authRepositoryProvider).signOut();
+            },
+            icon: const Icon(Icons.logout),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -24,6 +35,8 @@ class HomeScreen extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 30),
+            const PendingStepsCard(),
+            const SizedBox(height: 10),
             Card(
               elevation: 4,
               child: Padding(
