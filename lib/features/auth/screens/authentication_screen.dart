@@ -7,6 +7,9 @@ import '../repositories/auth_repository.dart';
 import '../../onboarding/providers/onboarding_providers.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../onboarding/presentation/screens/onboarding_shell.dart';
+import './../../../generated/l10n.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/providers/locale_provider.dart'; // adjust path
 
 enum AuthMethod { selection, phone, phoneOTP, email, emailOTP, apple }
 
@@ -516,71 +519,161 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-        elevation: 0,
-        toolbarHeight: 56, // Add this - standard height
-        titleSpacing: 0, // Already have this
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios,
-            color: Theme.of(context).appBarTheme.foregroundColor,
+@override
+Widget build(BuildContext context) {
+  return Consumer(
+    builder: (context, ref, child) {
+      final currentLocale = ref.watch(localeProvider);
+      final isEnglish = currentLocale?.languageCode == 'en' || currentLocale == null;
+      
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        appBar: AppBar(
+          backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+          elevation: 0,
+          toolbarHeight: 56,
+          titleSpacing: 0,
+          leading: IconButton(
+            icon: Icon(
+              Icons.arrow_back_ios,
+              color: Theme.of(context).appBarTheme.foregroundColor,
+            ),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              if (_currentMethod == AuthMethod.selection) {
+                Navigator.pop(context);
+              } else if (_currentMethod == AuthMethod.phoneOTP) {
+                setState(() {
+                  _currentMethod = AuthMethod.phone;
+                });
+              } else if (_currentMethod == AuthMethod.emailOTP) {
+                setState(() {
+                  _currentMethod = AuthMethod.email;
+                });
+              } else {
+                setState(() {
+                  _currentMethod = AuthMethod.selection;
+                });
+              }
+            },
           ),
-          onPressed: () {
-            HapticFeedback.lightImpact();
-            if (_currentMethod == AuthMethod.selection) {
-              // Go back to previous screen (wherever user came from)
-              Navigator.pop(context);
-            } else if (_currentMethod == AuthMethod.phoneOTP) {
-              setState(() {
-                _currentMethod = AuthMethod.phone;
-              });
-            } else if (_currentMethod == AuthMethod.emailOTP) {
-              setState(() {
-                _currentMethod = AuthMethod.email;
-              });
-            } else {
-              // From phone/email/apple screens, go back to selection
-              setState(() {
-                _currentMethod = AuthMethod.selection;
-              });
-            }
-          },
-        ),
-        title: Text(
-          _getAppBarTitle(),
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).appBarTheme.foregroundColor,
+          title: Text(
+            _getAppBarTitle(),
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).appBarTheme.foregroundColor,
+            ),
           ),
+          actions: [
+            // SAME LANGUAGE SWITCHER AS WELCOME SCREEN
+            Padding(
+              padding: const EdgeInsets.only(right: 12.0),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withOpacity(0.2),
+                  ),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<int>(
+                    value: isEnglish ? 0 : 1,
+                    icon: Icon(
+                      Icons.language,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 20,
+                    ),
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                    items: [
+                      DropdownMenuItem<int>(
+                        value: 0,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'EN',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Text('English'),
+                          ],
+                        ),
+                      ),
+                      DropdownMenuItem<int>(
+                        value: 1,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'TA',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Text('தமிழ்'),
+                          ],
+                        ),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        HapticFeedback.lightImpact();
+                        final nextLocale = value == 0 
+                            ? const Locale('en') 
+                            : const Locale('ta');
+                        ref.read(localeProvider.notifier).state = nextLocale;
+                      }
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-      ),
-      body: _currentMethod != AuthMethod.selection
-          ? _buildCurrentScreen() // Remove SafeArea wrapper
-          : SafeArea(child: _buildCurrentScreen()),
-    );
-  }
+        body: _currentMethod != AuthMethod.selection
+            ? _buildCurrentScreen()
+            : SafeArea(child: _buildCurrentScreen()),
+      );
+    },
+  );
+}
+
 
   String _getAppBarTitle() {
+    final s = S.of(context);
     switch (_currentMethod) {
       case AuthMethod.phone:
-        return 'Can I get your number?'; // Updated
+        return s.authTitlePhone;
       case AuthMethod.phoneOTP:
-        return 'Verify your number'; // Updated
+        return s.authTitlePhoneOtp;
       case AuthMethod.email:
-        return 'Login with Gmail'; // Already correct
+        return s.authTitleEmail;
       case AuthMethod.emailOTP:
-        return 'Verify your google'; // Updated
+        return s.authTitleEmailOtp;
       case AuthMethod.apple:
-        return 'Login with Apple'; // Updated
+        return s.authTitleApple;
       default:
-        return 'Blindly';
+        return s.authTitleSelection;
     }
   }
 
@@ -603,14 +696,16 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
 
   // Selection Screen
   Widget _buildSelectionScreen() {
+    final s = S.of(context);
+
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
       child: Column(
         children: [
-          Column(children: [SizedBox(height: 40)]),
-          Spacer(),
+          Column(children: const [SizedBox(height: 40)]),
+          const Spacer(),
           Text(
-            'Login to a Lovely life',
+            s.authSelectionTitle,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontFamily: 'Poppins',
@@ -619,7 +714,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
-          Spacer(),
+          const Spacer(),
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -631,7 +726,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                 },
                 style:
                     OutlinedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 15),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
                       side: BorderSide(
                         color: Theme.of(
                           context,
@@ -665,9 +760,9 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                       size: 20,
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Text(
-                      'Continue with Apple',
+                      s.authSelectionApple,
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         color: Theme.of(context).colorScheme.onSurface,
@@ -678,7 +773,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   ],
                 ),
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
 
               // Google button
               OutlinedButton(
@@ -688,15 +783,17 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     await ref.read(authRepositoryProvider).signInWithGoogle();
                   } catch (e) {
                     if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Google Sign-In failed: $e')),
-                      );
+                      final msg = s.authGoogleFailed +
+                          (e != null ? ': ${e.toString()}' : '');
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text(msg)));
                     }
                   }
                 },
                 style:
                     OutlinedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 15),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
                       side: BorderSide(
                         color: Theme.of(
                           context,
@@ -722,10 +819,10 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Image.asset('assests/icons/google-icon.png', height: 20),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Text(
-                      'Continue with Google',
-                      style: TextStyle(
+                      s.authSelectionGoogle,
+                      style: const TextStyle(
                         fontFamily: 'Poppins',
                         color: Colors.black,
                         fontSize: 16,
@@ -735,7 +832,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   ],
                 ),
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
 
               // Mobile number button
               ElevatedButton(
@@ -747,7 +844,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.primary,
                       foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                      padding: EdgeInsets.symmetric(vertical: 15),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15),
@@ -776,9 +873,9 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                       size: 20,
                       color: Theme.of(context).colorScheme.onPrimary,
                     ),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Text(
-                      'Continue with Mobile number',
+                      s.authSelectionPhone,
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         color: Theme.of(context).colorScheme.onPrimary,
@@ -790,9 +887,9 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                 ),
               ),
 
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: 10.0),
+                padding: const EdgeInsets.symmetric(horizontal: 10.0),
                 child: RichText(
                   textAlign: TextAlign.center,
                   text: TextSpan(
@@ -805,32 +902,28 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                       height: 1.4,
                     ),
                     children: [
-                      TextSpan(text: 'By signing up, you agree to our '),
+                      TextSpan(text: s.authSelectionFooterPrefix),
                       TextSpan(
-                        text: 'terms',
+                        text: s.authSelectionFooterTerms,
                         style: TextStyle(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface, // Pure black
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      TextSpan(text: '. See how we use your data in our '),
+                      TextSpan(text: s.authSelectionFooterMiddle),
                       TextSpan(
-                        text: 'privacy policy',
+                        text: s.authSelectionFooterPrivacy,
                         style: TextStyle(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface, // Pure black
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      TextSpan(text: '.'),
+                      TextSpan(text: s.authSelectionFooterSuffix),
                     ],
                   ),
                 ),
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
             ],
           ),
         ],
@@ -839,25 +932,27 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
   }
 
   Widget _buildPhoneScreen() {
+    final s = S.of(context);
+
     return Padding(
-      padding: EdgeInsets.all(24.0),
+      padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'We only use phone numbers to make sure everyone on Blindly is real',
+            s.authPhoneInfo,
             style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 14,
-              color: Theme.of(context).colorScheme.onSurface, // Pure black
+              color: Theme.of(context).colorScheme.onSurface,
               height: 1.4,
             ),
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           Row(
             children: [
               Text(
-                'Country',
+                s.authPhoneCountry,
                 style: TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 14,
@@ -865,9 +960,9 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
-              SizedBox(width: 80),
+              const SizedBox(width: 80),
               Text(
-                'Phone number',
+                s.authPhoneNumber,
                 style: TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 14,
@@ -876,13 +971,13 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               ),
             ],
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Row(
             children: [
               Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  border: Border.all(color: Color(0xFFE0E0E0)),
+                  border: Border.all(color: const Color(0xFFE0E0E0)),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: CountryCodePicker(
@@ -890,42 +985,42 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     setState(() => _countryCode = code.dialCode!);
                   },
                   initialSelection: 'IN',
-                  favorite: ['+91', 'IN'],
+                  favorite: const ['+91', 'IN'],
                   showCountryOnly: false,
                   showOnlyCountryWhenClosed: false,
                   padding: EdgeInsets.zero,
-                  textStyle: TextStyle(
+                  textStyle: const TextStyle(
                     fontFamily: 'Poppins',
                     color: Colors.black,
                   ),
                 ),
               ),
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
               Expanded(
                 child: TextField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
                   maxLength: 10,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly, // Only allow digits
+                  inputFormatters:[
+                    FilteringTextInputFormatter.digitsOnly,
                   ],
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontFamily: 'Poppins',
                     color: Colors.black,
-                  ), // Dark grey text
+                  ),
                   decoration: InputDecoration(
-                    hintText: 'e.g. 9876543210',
-                    hintStyle: TextStyle(
+                    hintText: s.authPhoneHint,
+                    hintStyle: const TextStyle(
                       fontFamily: 'Poppins',
                       color: Colors.grey,
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+                      borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+                      borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -941,53 +1036,49 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               ),
             ],
           ),
-          Spacer(),
+          const Spacer(),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 10.0),
+            padding: const EdgeInsets.symmetric(horizontal: 10.0),
             child: RichText(
               textAlign: TextAlign.center,
               text: TextSpan(
                 style: TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 11,
-                  color: Theme.of(context).colorScheme.onSurface, // Pure black
+                  color: Theme.of(context).colorScheme.onSurface,
                   height: 1.4,
                 ),
                 children: [
-                  TextSpan(text: 'By continuing, you agree to our '),
+                  TextSpan(text: s.authPhoneFooterPrefix),
                   TextSpan(
-                    text: 'terms',
+                    text: s.authPhoneFooterTerms,
                     style: TextStyle(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface, // Pure black
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  TextSpan(text: '. See how we use your data in our '),
+                  TextSpan(text: s.authPhoneFooterMiddle),
                   TextSpan(
-                    text: 'privacy policy',
+                    text: s.authPhoneFooterPrivacy,
                     style: TextStyle(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface, // Pure black
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  TextSpan(text: '.'),
+                  TextSpan(text: s.authPhoneFooterSuffix),
                 ],
               ),
             ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           ElevatedButton(
             onPressed: _isLoading ? null : _handlePhoneContinue,
             style:
                 ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF4A5D4F),
+                  backgroundColor: const Color(0xFF4A5D4F),
                   foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: 15),
-                  minimumSize: Size(double.infinity, 50),
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  minimumSize: const Size(double.infinity, 50),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
@@ -1009,7 +1100,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   }),
                 ),
             child: _isLoading
-                ? SizedBox(
+                ? const SizedBox(
                     height: 20,
                     width: 20,
                     child: CircularProgressIndicator(
@@ -1018,7 +1109,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     ),
                   )
                 : Text(
-                    'Continue',
+                    s.authPhoneContinue,
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 16,
@@ -1034,8 +1125,10 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
 
   // Phone OTP Screen
   Widget _buildPhoneOTPScreen() {
+    final s = S.of(context);
+
     return Padding(
-      padding: EdgeInsets.all(24.0),
+      padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1044,25 +1137,21 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 14,
-                color: Theme.of(context).colorScheme.onSurface, // Pure black
+                color: Theme.of(context).colorScheme.onSurface,
               ),
               children: [
-                TextSpan(
-                  text: 'Enter the code we\'ve sent by text to $_phoneNumber. ',
-                ),
+                TextSpan(text: s.authPhoneOtpHint(_phoneNumber)),
                 WidgetSpan(
                   child: GestureDetector(
                     onTap: () {
                       setState(() => _currentMethod = AuthMethod.phone);
                     },
                     child: Text(
-                      'Change number',
+                      s.authPhoneOtpChangeNumber,
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         decoration: TextDecoration.underline,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface, // Pure black
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -1071,7 +1160,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               ],
             ),
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: List.generate(6, (index) {
@@ -1085,7 +1174,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   textAlign: TextAlign.center,
                   keyboardType: TextInputType.number,
                   maxLength: 1,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -1095,11 +1184,11 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     counterText: '',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+                      borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+                      borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -1132,7 +1221,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               );
             }),
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1145,8 +1234,8 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   ),
                   child: Text(
                     _canResend
-                        ? 'Resend code'
-                        : 'The code should arrive within ${_resendTimer}s',
+                        ? s.authOtpResend
+                        : s.authOtpCountdown(_resendTimer),
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 14,
@@ -1160,18 +1249,18 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   ),
                 ),
               ),
-              Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
             ],
           ),
-          Spacer(),
+          const Spacer(),
           ElevatedButton(
             onPressed: _isLoading ? null : _handlePhoneOTPVerify,
             style:
                 ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF4A5D4F),
+                  backgroundColor: const Color(0xFF4A5D4F),
                   foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: 15),
-                  minimumSize: Size(double.infinity, 50),
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  minimumSize: const Size(double.infinity, 50),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
@@ -1193,7 +1282,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   }),
                 ),
             child: _isLoading
-                ? SizedBox(
+                ? const SizedBox(
                     height: 20,
                     width: 20,
                     child: CircularProgressIndicator(
@@ -1202,7 +1291,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     ),
                   )
                 : Text(
-                    'Continue',
+                    s.authOtpContinue,
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 16,
@@ -1218,48 +1307,49 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
 
   // Email Login Screen
   Widget _buildEmailScreen() {
+    final s = S.of(context);
+
     return Padding(
-      padding: EdgeInsets.all(24.0),
+      padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Please enter your login details below',
-            style: TextStyle(
+            s.authEmailIntro,
+            style: const TextStyle(
               fontFamily: 'Poppins',
               fontSize: 14,
-              color: Color.fromRGBO(0, 0, 0, 1), // Pure black
+              color: Color.fromRGBO(0, 0, 0, 1),
             ),
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           Text(
-            'Email',
-            style: TextStyle(
+            s.authEmailLabel,
+            style: const TextStyle(
               fontFamily: 'Poppins',
               fontSize: 14,
               color: Colors.grey,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           TextField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
-            inputFormatters: [
-              FilteringTextInputFormatter.deny(
-                RegExp(r'\s'),
-              ), // No spaces allowed
-            ],
-            style: TextStyle(fontFamily: 'Poppins', color: Colors.black),
+            inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
+            style: const TextStyle(fontFamily: 'Poppins', color: Colors.black),
             decoration: InputDecoration(
-              hintText: 'Abcd@gmail.com',
-              hintStyle: TextStyle(fontFamily: 'Poppins', color: Colors.grey),
+              hintText: s.authEmailHint,
+              hintStyle: const TextStyle(
+                fontFamily: 'Poppins',
+                color: Colors.grey,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+                borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+                borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -1271,34 +1361,37 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               fillColor: Colors.white,
             ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
-            'Password',
-            style: TextStyle(
+            s.authPasswordLabel,
+            style: const TextStyle(
               fontFamily: 'Poppins',
               fontSize: 14,
               color: Colors.grey,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           TextField(
             controller: _passwordController,
             obscureText: _obscurePassword,
-            style: TextStyle(fontFamily: 'Poppins', color: Colors.black),
+            style: const TextStyle(fontFamily: 'Poppins', color: Colors.black),
             decoration: InputDecoration(
-              hintText: 'Vignesh@98',
-              hintStyle: TextStyle(fontFamily: 'Poppins', color: Colors.grey),
+              hintText: s.authPasswordHint,
+              hintStyle: const TextStyle(
+                fontFamily: 'Poppins',
+                color: Colors.grey,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+                borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+                borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(0xFF4A5D4F)),
+                borderSide: const BorderSide(color: Color(0xFF4A5D4F)),
               ),
               filled: true,
               fillColor: Colors.white,
@@ -1312,24 +1405,26 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               ),
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
-              onPressed: () {},
+              onPressed: () {
+                // TODO: implement forgot password flow
+              },
               child: Text(
-                'Forgot your password?',
+                s.authForgotPassword,
                 style: TextStyle(
                   fontFamily: 'Poppins',
-                  color: Theme.of(context).colorScheme.onSurface, // Pure black
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ),
           ),
-          Spacer(),
+          const Spacer(),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 10.0),
+            padding: const EdgeInsets.symmetric(horizontal: 10.0),
             child: RichText(
               textAlign: TextAlign.center,
               text: TextSpan(
@@ -1340,38 +1435,34 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   height: 1.4,
                 ),
                 children: [
-                  TextSpan(text: 'By continuing, you agree to our '),
+                  TextSpan(text: s.authEmailFooterPrefix),
                   TextSpan(
-                    text: 'terms',
+                    text: s.authEmailFooterTerms,
                     style: TextStyle(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface, // Pure black
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
-                  TextSpan(text: '. See how we use your data in our '),
+                  TextSpan(text: s.authEmailFooterMiddle),
                   TextSpan(
-                    text: 'privacy policy',
+                    text: s.authEmailFooterPrivacy,
                     style: TextStyle(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface, // Pure black
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
-                  TextSpan(text: '.'),
+                  TextSpan(text: s.authEmailFooterSuffix),
                 ],
               ),
             ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           ElevatedButton(
             onPressed: _isLoading ? null : _handleEmailContinue,
             style:
                 ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF4A5D4F),
+                  backgroundColor: const Color(0xFF4A5D4F),
                   foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: 15),
-                  minimumSize: Size(double.infinity, 50),
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  minimumSize: const Size(double.infinity, 50),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
@@ -1393,7 +1484,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   }),
                 ),
             child: _isLoading
-                ? SizedBox(
+                ? const SizedBox(
                     height: 20,
                     width: 20,
                     child: CircularProgressIndicator(
@@ -1402,8 +1493,8 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     ),
                   )
                 : Text(
-                    'Continue',
-                    style: TextStyle(
+                    s.authEmailContinue,
+                    style: const TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -1418,8 +1509,10 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
 
   // Email OTP Screen
   Widget _buildEmailOTPScreen() {
+    final s = S.of(context);
+
     return Padding(
-      padding: EdgeInsets.all(24.0),
+      padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1431,16 +1524,14 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                 color: Theme.of(context).colorScheme.onSurface,
               ),
               children: [
-                TextSpan(
-                  text: 'Enter the code we\'ve sent by email to\n$_email. ',
-                ),
+                TextSpan(text: s.authEmailOtpHint(_email)),
                 WidgetSpan(
                   child: GestureDetector(
                     onTap: () {
                       setState(() => _currentMethod = AuthMethod.email);
                     },
                     child: Text(
-                      'Change email',
+                      s.authEmailOtpChangeEmail,
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         decoration: TextDecoration.underline,
@@ -1454,7 +1545,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               ],
             ),
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: List.generate(6, (index) {
@@ -1468,7 +1559,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   textAlign: TextAlign.center,
                   keyboardType: TextInputType.number,
                   maxLength: 1,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -1478,11 +1569,11 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     counterText: '',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+                      borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+                      borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -1515,7 +1606,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               );
             }),
           ),
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1528,8 +1619,8 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   ),
                   child: Text(
                     _canResend
-                        ? 'Resend code'
-                        : 'The code should arrive within ${_resendTimer}s',
+                        ? s.authOtpResend
+                        : s.authOtpCountdown(_resendTimer),
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 14,
@@ -1543,18 +1634,18 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   ),
                 ),
               ),
-              Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
             ],
           ),
-          Spacer(),
+          const Spacer(),
           ElevatedButton(
             onPressed: _isLoading ? null : _handleEmailOTPVerify,
             style:
                 ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF4A5D4F),
+                  backgroundColor: const Color(0xFF4A5D4F),
                   foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: 15),
-                  minimumSize: Size(double.infinity, 50),
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  minimumSize: const Size(double.infinity, 50),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
@@ -1576,7 +1667,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   }),
                 ),
             child: _isLoading
-                ? SizedBox(
+                ? const SizedBox(
                     height: 20,
                     width: 20,
                     child: CircularProgressIndicator(
@@ -1585,7 +1676,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     ),
                   )
                 : Text(
-                    'Continue',
+                    s.authOtpContinue,
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 16,
@@ -1601,43 +1692,45 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
 
   // Apple Login Screen
   Widget _buildAppleScreen() {
+    final s = S.of(context);
+
     return Padding(
-      padding: EdgeInsets.all(24.0),
+      padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Please enter your login details below',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 14,
-              color: Theme.of(context).colorScheme.onSurface, // Pure black
-            ),
-          ),
-          SizedBox(height: 20),
-          Text(
-            'Email',
+            s.authAppleIntro,
             style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 14,
               color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 20),
+          Text(
+            s.authAppleEmailLabel,
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 14,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 4),
           TextField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
-            style: TextStyle(fontFamily: 'Poppins'),
+            style: const TextStyle(fontFamily: 'Poppins'),
             decoration: InputDecoration(
-              hintText: 'Abcd@gmail.com',
-              hintStyle: TextStyle(fontFamily: 'Poppins'),
+              hintText: s.authAppleEmailHint,
+              hintStyle: const TextStyle(fontFamily: 'Poppins'),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+                borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+                borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -1649,34 +1742,34 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               fillColor: Colors.white,
             ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
-            'Password',
+            s.authApplePasswordLabel,
             style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 14,
               color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           TextField(
             controller: _passwordController,
             obscureText: _obscurePassword,
-            style: TextStyle(fontFamily: 'Poppins'),
+            style: const TextStyle(fontFamily: 'Poppins'),
             decoration: InputDecoration(
-              hintText: 'abc@123',
-              hintStyle: TextStyle(fontFamily: 'Poppins'),
+              hintText: s.authApplePasswordHint,
+              hintStyle: const TextStyle(fontFamily: 'Poppins'),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+                borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+                borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(0xFF4A5D4F)),
+                borderSide: const BorderSide(color: Color(0xFF4A5D4F)),
               ),
               filled: true,
               fillColor: Colors.white,
@@ -1690,24 +1783,26 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               ),
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
-              onPressed: () {},
+              onPressed: () {
+                // TODO: forgot password for Apple/email+password flow
+              },
               child: Text(
-                'Forgot your password?',
+                s.authAppleForgotPassword,
                 style: TextStyle(
                   fontFamily: 'Poppins',
-                  color: Theme.of(context).colorScheme.onSurface, // Pure black
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ),
           ),
-          Spacer(),
+          const Spacer(),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 10.0),
+            padding: const EdgeInsets.symmetric(horizontal: 10.0),
             child: RichText(
               textAlign: TextAlign.center,
               text: TextSpan(
@@ -1718,38 +1813,34 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   height: 1.4,
                 ),
                 children: [
-                  TextSpan(text: 'By continuing, you agree to our '),
+                  TextSpan(text: s.authAppleFooterPrefix),
                   TextSpan(
-                    text: 'terms',
+                    text: s.authAppleFooterTerms,
                     style: TextStyle(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface, // Pure black
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
-                  TextSpan(text: '. See how we use your data in our '),
+                  TextSpan(text: s.authAppleFooterMiddle),
                   TextSpan(
-                    text: 'privacy policy',
+                    text: s.authAppleFooterPrivacy,
                     style: TextStyle(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface, // Pure black
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
-                  TextSpan(text: '.'),
+                  TextSpan(text: s.authAppleFooterSuffix),
                 ],
               ),
             ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           ElevatedButton(
             onPressed: _isLoading ? null : _handleAppleContinue,
             style:
                 ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF4A5D4F),
+                  backgroundColor: const Color(0xFF4A5D4F),
                   foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: 15),
-                  minimumSize: Size(double.infinity, 50),
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  minimumSize: const Size(double.infinity, 50),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
@@ -1771,7 +1862,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   }),
                 ),
             child: _isLoading
-                ? SizedBox(
+                ? const SizedBox(
                     height: 20,
                     width: 20,
                     child: CircularProgressIndicator(
@@ -1780,7 +1871,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     ),
                   )
                 : Text(
-                    'Continue',
+                    s.authAppleContinue,
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 16,

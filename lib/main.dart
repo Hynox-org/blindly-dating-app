@@ -3,7 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'generated/l10n.dart';
 import 'core/security/security_config.dart';
+
+// NEW: Locale provider import
+import 'core/providers/locale_provider.dart'; // Create this file
 
 // Import your existing screens
 import 'features/splash/screens/splash_screen.dart';
@@ -37,26 +42,53 @@ void main() async {
     httpClient: secureClient,
   );
 
-  runApp(const ProviderScope(child: MyApp()));
+  runApp(ProviderScope(child: MyApp()));
 }
 
-class MyApp extends ConsumerWidget {
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // You can still use the router provider if needed
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> {
+  @override
+  Widget build(BuildContext context) {
+    // NEW: Watch locale from Riverpod provider
+    final locale = ref.watch(localeProvider);
     final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp(
       title: 'Blindly',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.getThemeData(themeMode),
-      initialRoute: '/', // start at splash
+
+      // --- UPDATED: Use Riverpod locale ---
+      locale: locale, // Now from Riverpod (null = system default)
+      localizationsDelegates: const [
+        S.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: S.delegate.supportedLocales,
+      // -------------------------------------
+
+      initialRoute: '/',
       navigatorObservers: [LoggingNavigatorObserver()],
       routes: {
-        '/': (context) => const SplashScreen(),
-        '/welcome': (context) => const WelcomeScreen(),
+        '/': (context) => WelcomeScreen(
+          onLocaleChanged: (locale) {
+            // NEW: Update Riverpod state instead of local state
+            ref.read(localeProvider.notifier).setLocale(locale);
+          },
+        ),
+        '/welcome': (context) => WelcomeScreen(
+          onLocaleChanged: (locale) {
+            ref.read(localeProvider.notifier).setLocale(locale);
+          },
+        ),
         '/auth': (context) => const AuthenticationScreen(),
         '/terms': (context) => const TermsScreen(),
         '/age-selector': (context) => const AgeSelectorScreen(),
@@ -67,13 +99,14 @@ class MyApp extends ConsumerWidget {
           children: [
             if (child != null) child,
             if (const bool.fromEnvironment('dart.vm.product') == false)
-              const Positioned(right: 20, bottom: 20, child: ThemeSwitcher()),
+              const Positioned(
+                right: 20,
+                bottom: 20,
+                child: ThemeSwitcher(),
+              ),
           ],
         );
       },
-
-      // Alternative: If you want to use go_router later, uncomment this:
-      // routerConfig: router,
     );
   }
 }
