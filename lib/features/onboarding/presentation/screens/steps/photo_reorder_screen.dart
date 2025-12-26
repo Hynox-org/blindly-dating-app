@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../media/providers/media_provider.dart';
 import '../../providers/onboarding_provider.dart';
@@ -91,44 +90,98 @@ class PhotoReorderScreen extends ConsumerWidget {
                         }
                       }
 
-                      return ReorderableGridView.builder(
-                        itemCount: validItems.length,
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.only(
-                          bottom: 100,
-                        ), // Zero horizontal to match Base padding
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 3, // Matches PhotoUploadScreen
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                              childAspectRatio:
-                                  0.85, // Matches PhotoUploadScreen
-                            ),
-                        onReorder: (oldIndex, newIndex) {
-                          ref
-                              .read(mediaProvider.notifier)
-                              .reorderImages(oldIndex, newIndex);
-                        },
-                        itemBuilder: (context, index) {
-                          final entry = validItems[index];
-                          final originalIndex =
-                              entry.key; // Sparse index if needed for delete
-                          final photo = entry.value;
+                      // Mosaic "Bento Box" Layout
+                      if (validItems.isEmpty) return const SizedBox();
 
-                          // Unique key for reordering
-                          final key = ValueKey(photo.path);
+                      // Helper to build item at index (safely)
+                      Widget buildSlot(int index) {
+                        if (index >= validItems.length) {
+                          // Empty slot placeholder if needed, or transparent
+                          return const SizedBox();
+                        }
 
-                          return _buildGridItem(
-                            context,
-                            key,
-                            photo,
-                            index,
-                            () => ref
+                        final entry = validItems[index];
+
+                        return _buildDragTargetItem(
+                          context,
+                          entry.value,
+                          index,
+                          entry.key,
+                          index == 0, // isMain
+                          (from, to) {
+                            ref
                                 .read(mediaProvider.notifier)
-                                .removeImage(originalIndex),
-                          );
-                        },
+                                .reorderImages(from, to);
+                          },
+                          () => ref
+                              .read(mediaProvider.notifier)
+                              .removeImage(entry.key),
+                        );
+                      }
+
+                      return Column(
+                        children: [
+                          // -- ROW 1 (Top Area) --
+                          Flexible(
+                            flex: 2,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // MAIN PHOTO (Index 0) - Big Left
+                                Expanded(flex: 2, child: buildSlot(0)),
+
+                                // Right Column (Index 1 & 2)
+                                if (validItems.length > 1) ...[
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    flex: 1,
+                                    child: Column(
+                                      children: [
+                                        // Index 1
+                                        Expanded(child: buildSlot(1)),
+
+                                        // Index 2
+                                        if (validItems.length > 2) ...[
+                                          const SizedBox(height: 10),
+                                          Expanded(child: buildSlot(2)),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+
+                          // -- ROW 2 (Bottom Area) --
+                          if (validItems.length > 3) ...[
+                            const SizedBox(height: 10),
+                            Flexible(
+                              flex: 1,
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  // Index 3
+                                  Expanded(child: buildSlot(3)),
+
+                                  // Index 4
+                                  if (validItems.length > 4) ...[
+                                    const SizedBox(width: 10),
+                                    Expanded(child: buildSlot(4)),
+                                  ],
+
+                                  // Index 5
+                                  if (validItems.length > 5) ...[
+                                    const SizedBox(width: 10),
+                                    Expanded(child: buildSlot(5)),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+
+                          const SizedBox(height: 30), // Bottom padding
+                        ],
                       );
                     },
                   ),
@@ -138,124 +191,166 @@ class PhotoReorderScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildGridItem(
+  Widget _buildDragTargetItem(
     BuildContext context,
-    Key key,
     File photo,
     int index,
+    int originalIndex,
+    bool isMain,
+    void Function(int, int) onSwap,
     VoidCallback onRemove,
   ) {
-    final isMain = index == 0;
-    return Container(
-      key: key,
-      decoration: BoxDecoration(
-        // color: Colors.white, // Removed to prevent white halo during drag
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Image (Bottom Layer)
-            Image.file(photo, fit: BoxFit.cover),
+    // The data passing around is the VISUAL INDEX (0, 1, 2...)
 
-            // Border Overlay
-            if (isMain)
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: const Color(0xFFE6C97A),
-                    width: 3,
-                    strokeAlign: BorderSide.strokeAlignInside,
-                  ),
-                ),
-              ),
+    Widget buildCardContent({bool isDragging = false}) {
+      return Container(
+        // Allow widget to fill parent
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.file(photo, fit: BoxFit.cover),
 
-            // "Main" Badge (Bottom)
-            if (isMain)
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+              if (isMain) ...[
+                // Shine overlay
+                Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE6C97A).withOpacity(0.95),
-                    borderRadius: const BorderRadius.vertical(
-                      bottom: Radius.circular(0),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.3),
+                      ],
                     ),
                   ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.star, color: Colors.white, size: 14),
-                      SizedBox(width: 4),
-                      Text(
-                        'MAIN PHOTO',
+                ),
+                // Main Badge
+                Positioned(
+                  bottom: 12,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE6C97A),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black26, blurRadius: 8),
+                        ],
+                      ),
+                      child: const Text(
+                        'MAIN',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 10,
                           letterSpacing: 1.0,
+                          fontSize: 10,
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
+              ] else
+                // Strip Number
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Container(
+                    width: 24,
+                    height: 24,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 1.5),
+                    ),
+                    child: Text(
+                      '${index + 1}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
 
-            // Position Indicator (Top Left)
-            // Show for all cards to indicate order
-            Positioned(
-              top: 6,
-              left: 6,
-              child: Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: isMain ? const Color(0xFFE6C97A) : Colors.black54,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1.5),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  '${index + 1}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
+              // Delete Button (Top Right)
+              if (!isDragging)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: GestureDetector(
+                    onTap: onRemove,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(color: Colors.black26, blurRadius: 4),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        size: 16,
+                        color: Colors.black,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-
-            // Delete Button (Top Right)
-            Positioned(
-              top: 6,
-              right: 6,
-              child: GestureDetector(
-                onTap: onRemove,
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(color: Colors.black26, blurRadius: 4),
-                    ],
-                  ),
-                  child: const Icon(Icons.close, size: 16, color: Colors.black),
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
+      );
+    }
+
+    return DragTarget<int>(
+      onWillAccept: (fromIndex) => fromIndex != null && fromIndex != index,
+      onAccept: (fromIndex) {
+        onSwap(fromIndex, index);
+      },
+      builder: (context, candidateData, rejectedData) {
+        final isHovered = candidateData.isNotEmpty;
+
+        return Draggable<int>(
+          data: index,
+          // Fixed size feedback for consistent drag experience
+          feedback: Material(
+            color: Colors.transparent,
+            child: SizedBox(
+              width: 100,
+              height: 100,
+              child: buildCardContent(isDragging: true),
+            ),
+          ),
+          childWhenDragging: Opacity(opacity: 0.3, child: buildCardContent()),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            transform: isHovered
+                ? (Matrix4.identity()..scale(
+                    0.95,
+                  )) // Shrink slightly on hover to indicate "replace me"
+                : Matrix4.identity(),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: isHovered
+                  ? Border.all(color: const Color(0xFFE6C97A), width: 3)
+                  : null,
+            ),
+            child: buildCardContent(),
+          ),
+        );
+      },
     );
   }
 }
