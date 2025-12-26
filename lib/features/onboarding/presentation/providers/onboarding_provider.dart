@@ -206,6 +206,30 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     state = state.copyWith(currentStepKey: 'complete');
   }
 
+  Future<void> goToPreviousStep() async {
+    // 1. Get current list of steps
+    // Ideally should be cached, but fetching is fine
+    try {
+      final allSteps = await _repo.getAllSteps();
+      final currentIndex = allSteps.indexWhere(
+        (s) => s.stepKey == state.currentStepKey,
+      );
+
+      if (currentIndex > 0) {
+        final prevStep = allSteps[currentIndex - 1];
+        await jumpToStep(prevStep.stepKey);
+      } else if (state.currentStepKey == 'pre_onboarding') {
+        // Can't go back from pre-onboarding
+      } else {
+        // If index is 0, check if we came from pre-onboarding?
+        // Or if we are at the very first step, maybe go to pre-onboarding?
+        // For now, assume if index 0, back does nothing or we control it elsewhere.
+      }
+    } catch (e) {
+      AppLogger.error('Failed to go back', e);
+    }
+  }
+
   void dismissWelcome() {
     _hasDismissedWelcome = true;
     // Re-run init to proceed to the actual first step

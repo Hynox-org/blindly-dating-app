@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../providers/onboarding_provider.dart';
+
 class BaseOnboardingStepScreen extends ConsumerWidget {
   final String title;
   final Widget child;
@@ -10,6 +12,7 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
   final String skipLabel;
   final bool showNextButton;
   final bool showSkipButton;
+  final bool showBackButton;
   final Widget? fab;
 
   const BaseOnboardingStepScreen({
@@ -22,6 +25,7 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
     this.skipLabel = 'Skip',
     this.showNextButton = true,
     this.showSkipButton = false,
+    this.showBackButton = false,
     this.fab,
   });
 
@@ -35,13 +39,34 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Title
-              Text(
-                title,
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
+              // Header with Title and optional Back Button
+              Row(
+                children: [
+                  if (showBackButton)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: IconButton(
+                        icon: const Icon(Icons.arrow_back_ios),
+                        onPressed: () {
+                          ref
+                              .read(onboardingProvider.notifier)
+                              .goToPreviousStep();
+                        },
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 24),
 

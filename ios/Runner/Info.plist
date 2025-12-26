@@ -45,6 +45,16 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We need access to your photo library to let you upload profile photos.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>We need access to your camera to let you take profile photos.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>We need access to your microphone for video verification.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We need access to your location to show you matches nearby.</string>
+
 	<!-- Google Sign-in Section -->
 	<key>CFBundleURLTypes</key>
 	<array>
