@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart'; // Ensure intl is available or use manual formatting if fails, but standard flutter usually has it or we add it. I'll check if I can just use manual to be safe.
+// Actually, let's just use manual string interpolation to avoid dependency issues if intl isn't in pubspec.
 import '../../providers/onboarding_provider.dart';
+import '../../../../auth/providers/auth_providers.dart';
+import '../../../data/repositories/onboarding_repository.dart';
 import 'base_onboarding_step_screen.dart';
 
 class BirthDateScreen extends ConsumerStatefulWidget {
@@ -12,35 +16,141 @@ class BirthDateScreen extends ConsumerStatefulWidget {
 
 class _BirthDateScreenState extends ConsumerState<BirthDateScreen> {
   DateTime? _selectedDate;
+  bool _isSaving = false;
+  final TextEditingController _dateController = TextEditingController();
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().subtract(
+        const Duration(days: 365 * 18),
+      ), // Default to 18 years ago
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: Theme.of(context).primaryColor,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+        // Format: DD-MM-YYYY
+        _dateController.text =
+            "${picked.day.toString().padLeft(2, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.year}";
+      });
+    }
+  }
+
+  Future<void> _handleNext() async {
+    if (_selectedDate == null) return;
+
+    setState(() => _isSaving = true);
+
+    try {
+      final user = ref.read(authRepositoryProvider).currentUser;
+      if (user != null) {
+        // Save birth_date to profile
+        // Postgres DATE type expects YYYY-MM-DD string
+        final dateString =
+            "${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}";
+
+        await ref.read(onboardingRepositoryProvider).updateProfileData(
+          user.id,
+          {'birth_date': dateString},
+        );
+      }
+
+      await ref.read(onboardingProvider.notifier).completeStep('birth_date');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save birth date: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return BaseOnboardingStepScreen(
-      title: 'When is your birthday?',
-      child: Center(
-        child: ElevatedButton(
-          onPressed: () async {
-            final picked = await showDatePicker(
-              context: context,
-              initialDate: DateTime(2000),
-              firstDate: DateTime(1900),
-              lastDate: DateTime.now(),
-            );
-            if (picked != null) {
-              setState(() => _selectedDate = picked);
-            }
-          },
-          child: Text(
-            _selectedDate == null
-                ? 'Select Date'
-                : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+      title: "Let's introduce you!",
+      showBackButton: true,
+      nextLabel: 'Continue',
+      isNextEnabled: _selectedDate != null && !_isSaving,
+      isLoading: _isSaving,
+      onNext: _handleNext,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'We need your DOB to create your profile',
+            style: TextStyle(fontSize: 14, color: Colors.black54),
           ),
-        ),
+          const SizedBox(height: 32),
+          const Text(
+            'Date of birth',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          InkWell(
+            onTap: () => _selectDate(context),
+            borderRadius: BorderRadius.circular(12),
+            child: IgnorePointer(
+              // Ignore pointer on TextField to use InkWell tap
+              child: TextField(
+                controller: _dateController,
+                readOnly: true,
+                decoration: InputDecoration(
+                  hintText: 'DD-MM-YYYY',
+                  hintStyle: TextStyle(color: Colors.grey.shade400),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade200),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: Theme.of(context).primaryColor,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+          const Text(
+            // Matches the text in the image provided
+            'Your birthday is used to calculate your age and will be shown your profile. Your full name will not be public',
+            style: TextStyle(fontSize: 12, color: Colors.black54, height: 1.5),
+          ),
+        ],
       ),
-      onNext: () {
-        // if (_selectedDate != null)
-        ref.read(onboardingProvider.notifier).completeStep('birth_date');
-      },
     );
   }
 }
