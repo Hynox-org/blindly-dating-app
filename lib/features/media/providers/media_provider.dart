@@ -196,25 +196,47 @@ class MediaNotifier extends StateNotifier<MediaState> {
 
   Future<void> submitMedia(String userId) async {
     try {
+      print('[MediaProvider] submitMedia called for userId: $userId');
       final validPhotos = state.selectedPhotos.whereType<File>().toList();
 
       if (validPhotos.length < 2) {
+        print('[MediaProvider] Validation failed: Less than 2 photos');
         state = state.copyWith(error: 'Please add at least 2 photos');
         return;
       }
 
       state = state.copyWith(isLoading: true, error: null);
 
+      // Fetch Profile ID
+      print('[MediaProvider] Fetching Profile ID...');
+      final profileId = await _repository.getProfileId(userId);
+      print('[MediaProvider] Profile ID fetched: $profileId');
+
+      if (profileId == null) {
+        print('[MediaProvider] Profile ID is null. Aborting.');
+        state = state.copyWith(isLoading: false, error: 'Profile not found');
+        return;
+      }
+
       final List<Map<String, dynamic>> mediaData = [];
 
+      print(
+        '[MediaProvider] Starting upload for ${validPhotos.length} photos...',
+      );
       for (int i = 0; i < validPhotos.length; i++) {
         final file = validPhotos[i];
+        print(
+          '[MediaProvider] Uploading photo ${i + 1}/${validPhotos.length}...',
+        );
 
         // Upload
         final url = await _repository.uploadImage(file, userId);
+        print(
+          '[MediaProvider] Photo ${i + 1} uploaded successfully. URL: $url',
+        );
 
         mediaData.add({
-          'profile_id': userId,
+          'profile_id': profileId,
           'media_url': url,
           'media_type': 'photo',
           'display_order': i,
@@ -224,10 +246,14 @@ class MediaNotifier extends StateNotifier<MediaState> {
         });
       }
 
+      print('[MediaProvider] Saving media metadata to user_media table...');
       await _repository.saveMedia(mediaData);
+      print('[MediaProvider] Metadata saved successfully.');
 
       state = state.copyWith(isLoading: false);
+      print('[MediaProvider] submitMedia completed successfully.');
     } catch (e) {
+      print('[MediaProvider] Error in submitMedia: $e');
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }

@@ -124,15 +124,19 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen>
   }
 
   String _getDescriptionForPermission(Permission perm) {
-    if (perm == Permission.camera)
+    if (perm == Permission.camera) {
       return 'To take profile photos and verify identity.';
+    }
     if (perm == Permission.photos) return 'To upload photos from your gallery.';
-    if (perm == Permission.locationWhenInUse)
+    if (perm == Permission.locationWhenInUse) {
       return 'To show you matches nearby.';
-    if (perm == Permission.notification)
+    }
+    if (perm == Permission.notification) {
       return 'To alert you of new matches and messages.';
-    if (perm == Permission.microphone)
+    }
+    if (perm == Permission.microphone) {
       return 'For voice and video interactions.';
+    }
     return '';
   }
 
@@ -232,7 +236,7 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen>
                                     scale: 0.8,
                                     child: Switch(
                                       value: isGranted,
-                                      activeColor: const Color(0xFF4A503D),
+                                      activeThumbColor: const Color(0xFF4A503D),
                                       activeTrackColor: const Color(
                                         0xFF4A503D,
                                       ).withOpacity(0.4),

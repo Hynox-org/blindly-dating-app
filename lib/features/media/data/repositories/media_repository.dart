@@ -11,6 +11,21 @@ class MediaRepository {
   final ImagePicker _picker = ImagePicker();
   final SupabaseClient _supabase = Supabase.instance.client;
 
+  /// Get Profile ID from Auth User ID
+  Future<String?> getProfileId(String userId) async {
+    try {
+      final response = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+      return response?['id'] as String?;
+    } catch (e) {
+      throw Exception('Failed to get profile ID: $e');
+    }
+  }
+
   /// Picks multiple images from the gallery
   Future<List<XFile>> pickImagesFromGallery({int maxImages = 6}) async {
     try {
@@ -67,7 +82,7 @@ class MediaRepository {
       result = nextResult;
     }
 
-    return File(result!.path);
+    return File(result.path);
   }
 
   /// Crops an image with custom UI settings
