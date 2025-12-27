@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/onboarding_step_model.dart';
 import '../../../../core/utils/app_logger.dart';
 
+// The Provider Definition
 final onboardingRepositoryProvider = Provider<OnboardingRepository>((ref) {
   return OnboardingRepository(Supabase.instance.client);
 });
@@ -11,6 +12,10 @@ class OnboardingRepository {
   final SupabaseClient _supabase;
 
   OnboardingRepository(this._supabase);
+
+  // ===========================================================================
+  // SECTION 1: CONFIGURATION (Fetching Steps) - [EXISTING CODE]
+  // ===========================================================================
 
   Future<OnboardingStep?> getStepConfig(String stepKey) async {
     try {
@@ -23,7 +28,6 @@ class OnboardingRepository {
       if (response == null) return null;
       return OnboardingStep.fromJson(response);
     } catch (e) {
-      // Fallback or log error
       AppLogger.info('Error fetching step config: $e');
       return null;
     }
@@ -59,24 +63,93 @@ class OnboardingRepository {
     }
   }
 
-  // Updates the status of a specific step in the JSONB map
-  Future<void> updateStepStatus(
-    String userId,
-    String stepKey,
-    String status, // 'completed', 'skipped'
-  ) async {
-    // 1. Fetch current map to ensure we merge correctly
-    // (In a high concurrency implementation, use a Postgres function or jsonb_set)
+  // ===========================================================================
+  // SECTION 2: NEW SPECIFIC ENDPOINTS (Strict Data Handling) - [NEW ADDITION]
+  // This is where we safely update specific profile fields
+  // ===========================================================================
+
+  /// Endpoint 1: Update Display Name
+  Future<void> updateDisplayName(String userId, String name) async {
+    // Safety: Enforce DB limit of 100 chars
+    if (name.length > 100) name = name.substring(0, 100);
+    await _updateProfileField(userId, {'display_name': name});
+  }
+
+  /// Endpoint 2: Update Birth Date
+  /// FIX: Converts DateTime -> "YYYY-MM-DD" string for Postgres DATE type
+  Future<void> updateBirthDate(String userId, DateTime date) async {
+    final dateString = date.toIso8601String().split('T').first;
+    await _updateProfileField(userId, {'birth_date': dateString});
+  }
+
+  /// Endpoint 3: Update Gender
+  /// TRANSLATES UI strings ('Male', 'Female') -> DB Enum ('M', 'F', 'NB', 'Prefer Not')
+  Future<void> updateGender(String userId, String genderLabel) async {
+    String dbValue;
+    
+    // Map the UI text to the Database Enum value
+    switch (genderLabel) {
+      case 'Male': 
+        dbValue = 'M'; 
+        break;
+      case 'Female': 
+        dbValue = 'F'; 
+        break;
+      case 'Non-binary': 
+        dbValue = 'NB'; 
+        break;
+      case 'Prefer not to say': 
+        dbValue = 'Prefer Not'; 
+        break;
+      default:
+        // Fallback or error if something unexpected comes in
+        dbValue = 'Prefer Not';
+    }
+
+    await _updateProfileField(userId, {'gender': dbValue});
+  }
+  /// Endpoint 4: Update Bio
+  Future<void> updateBio(String userId, String bio) async {
+    await _updateProfileField(userId, {'bio': bio});
+  }
+
+  /// Endpoint 5: Update Location
+  Future<void> updateLocationText(String userId, String city, String state, String country) async {
+    await _updateProfileField(userId, {
+      'city': city,
+      'state': state,
+      'country': country,
+    });
+  }
+
+  /// Internal Helper: The logic that actually touches the database
+  Future<void> _updateProfileField(String userId, Map<String, dynamic> updates) async {
+    try {
+      final data = {
+        ...updates,
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+      await _supabase.from('profiles').update(data).eq('user_id', userId);
+      AppLogger.info('REPO: Updated fields: ${updates.keys}');
+    } catch (e) {
+      AppLogger.error('REPO: Update failed for ${updates.keys}', e);
+      throw Exception('Database update failed: $e');
+    }
+  }
+
+  // ===========================================================================
+  // SECTION 3: PROGRESS & STATUS - [EXISTING CODE]
+  // ===========================================================================
+
+  Future<void> updateStepStatus(String userId, String stepKey, String status) async {
     final profile = await getProfileRaw(userId);
     Map<String, dynamic> currentProgress = {};
     if (profile != null && profile['steps_progress'] != null) {
       currentProgress = Map<String, dynamic>.from(profile['steps_progress']);
     }
 
-    // 2. Update key
     currentProgress[stepKey] = status;
 
-    // 3. Save back
     await _supabase
         .from('profiles')
         .update({
@@ -86,12 +159,11 @@ class OnboardingRepository {
         .eq('user_id', userId);
   }
 
-  // Force update complete
   Future<void> completeOnboarding(String userId) async {
     await _supabase
         .from('profiles')
         .update({
-          'onboarding_status': 'complete',
+          'onboarding_status': 'complete', // NOTE: 'complete' (not 'completed') based on your old code
           'updated_at': DateTime.now().toIso8601String(),
         })
         .eq('user_id', userId);
@@ -127,9 +199,10 @@ class OnboardingRepository {
     }
   }
 
-  /// Validates that 'complete' status is backed by actual data.
-  /// If data is missing (corruption/manual delete), it effectively "heals" the profile
-  /// by reverting status to 'in_progress' so the user is routed correctly.
+  // ===========================================================================
+  // SECTION 4: INTEGRITY CHECKS - [EXISTING CODE]
+  // ===========================================================================
+
   Future<bool> validateAndFixOnboardingStatus(String userId) async {
     try {
       final profile = await getProfileRaw(userId);
@@ -141,26 +214,18 @@ class OnboardingRepository {
           ? Map<String, dynamic>.from(rawProgress)
           : {};
 
-      // If marked complete, strict validation is required
       if (status == 'complete') {
-        // 1. Sanity Check: Is progress empty? (User's specific case)
         if (stepsProgress.isEmpty) {
           AppLogger.info(
-            'Integrity Check Failed: Status is Complete but Progress is Empty. Reverting to in_progress.',
+            'Integrity Check Failed: Status is Complete but Progress is Empty. Reverting.',
           );
-
           await _supabase
               .from('profiles')
               .update({'onboarding_status': 'in_progress'})
               .eq('user_id', userId);
-
-          return false; // Not complete anymore
+          return false;
         }
-
-        // Potential future check: verifying all mandatory steps are present.
-        // For now, the empty check covers the "null data" case.
       }
-
       return status == 'complete';
     } catch (e) {
       AppLogger.info('Error validating onboarding status: $e');

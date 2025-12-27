@@ -18,8 +18,7 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen>
 
   final List<Permission> _requiredPermissions = [
     Permission.camera,
-    Permission
-        .photos, // On Android < 13 this maps to storage slightly differently, plugin handles it
+    Permission.photos, // On Android < 13 this maps to storage slightly differently, plugin handles it
     Permission.locationWhenInUse,
     Permission.notification,
     Permission.microphone,
@@ -95,6 +94,8 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen>
     }
   }
 
+  // This prevents the "unused element" warning until you connect it to a button
+  // ignore: unused_element 
   Future<void> _requestAll() async {
     Map<Permission, PermissionStatus> statuses = await _requiredPermissions
         .request();
@@ -154,6 +155,14 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen>
               child: Column(
                 children: [
                   const SizedBox(height: 20),
+                  // Example: If you ever want to use _requestAll, uncomment this button:
+                  /*
+                  ElevatedButton(
+                    onPressed: _requestAll,
+                    child: const Text("Allow All"),
+                  ),
+                  const SizedBox(height: 20),
+                  */
                   Container(
                     width: double.infinity,
                     decoration: BoxDecoration(

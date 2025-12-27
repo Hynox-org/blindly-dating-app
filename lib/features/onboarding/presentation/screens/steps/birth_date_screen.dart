@@ -37,9 +37,28 @@ class _BirthDateScreenState extends ConsumerState<BirthDateScreen> {
           ),
         ),
       ),
-      onNext: () {
-        // if (_selectedDate != null)
-        ref.read(onboardingProvider.notifier).completeStep('birth_date');
+      onNext: () async {
+        // 1. VALIDATION: Check if user picked a date
+        if (_selectedDate == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please select your birth date first.')),
+          );
+          return;
+        }
+
+        try {
+          // 2. SAVE DATA: Call the specific provider function
+          // The Repository will handle the conversion to "YYYY-MM-DD" automatically.
+          await ref.read(onboardingProvider.notifier).saveBirthDate(_selectedDate!);
+
+          // 3. COMPLETE STEP: Move to the next screen
+          ref.read(onboardingProvider.notifier).completeStep('birth_date');
+
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error saving date: $e')),
+          );
+        }
       },
     );
   }

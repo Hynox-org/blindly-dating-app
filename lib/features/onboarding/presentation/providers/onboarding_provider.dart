@@ -1,16 +1,22 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/onboarding_step_model.dart';
-import '../../data/repositories/onboarding_repository.dart';
 import '../../../../features/auth/providers/auth_providers.dart';
 import '../../../../core/utils/app_logger.dart';
 
-// State for the onboarding flow
+// 1. IMPORT THE REPOSITORY FILE (So we know the class type)
+import '../../../onboarding/data/repositories/onboarding_repository.dart';
+
+// 2. IMPORT THE PROVIDER FILE (So we can find 'onboardingRepositoryProvider')
+// import '../providers/onboarding_provider.dart';
+
+// -----------------------------------------------------------------------------
+// STATE CLASS
+// -----------------------------------------------------------------------------
 class OnboardingState {
   final bool isLoading;
   final OnboardingStep? currentStepConfig;
   final String? errorMessage;
   final String? currentStepKey;
-  // We can cache the full progress map if needed for UI, but for now strict derivation is fine.
 
   OnboardingState({
     this.isLoading = true,
@@ -34,108 +40,131 @@ class OnboardingState {
   }
 }
 
+// -----------------------------------------------------------------------------
+// PROVIDER DEFINITION
+// -----------------------------------------------------------------------------
 final onboardingProvider =
     StateNotifierProvider<OnboardingNotifier, OnboardingState>((ref) {
-      return OnboardingNotifier(ref);
-    });
+  return OnboardingNotifier(ref);
+});
 
+// -----------------------------------------------------------------------------
+// NOTIFIER (THE MANAGER)
+// -----------------------------------------------------------------------------
 class OnboardingNotifier extends StateNotifier<OnboardingState> {
   final Ref _ref;
-
   bool _hasDismissedWelcome = false;
 
   OnboardingNotifier(this._ref) : super(OnboardingState());
 
+  // Access the Repository using the provider from 'onboarding_providers.dart'
   OnboardingRepository get _repo => _ref.read(onboardingRepositoryProvider);
 
-  /// Called when the shell initializes.
-  /// Fetches all steps + user progress map to determine WHERE the user is.
+  // ===========================================================================
+  // 🚀 NEW BRIDGE FUNCTIONS (Call these from your UI Screens)
+  // ===========================================================================
+
+  /// Call this from NameEntryScreen
+  Future<void> saveDisplayName(String name) async {
+    final user = _ref.read(authRepositoryProvider).currentUser;
+    if (user != null) {
+      await _repo.updateDisplayName(user.id, name);
+    }
+  }
+
+  /// Call this from BirthDateScreen
+  Future<void> saveBirthDate(DateTime date) async {
+    final user = _ref.read(authRepositoryProvider).currentUser;
+    if (user != null) {
+      await _repo.updateBirthDate(user.id, date);
+    }
+  }
+
+  /// Call this from GenderScreen
+  Future<void> saveGender(String gender) async {
+    final user = _ref.read(authRepositoryProvider).currentUser;
+    if (user != null) {
+      await _repo.updateGender(user.id, gender);
+    }
+  }
+
+  /// Call this from BioScreen
+  Future<void> saveBio(String bio) async {
+    final user = _ref.read(authRepositoryProvider).currentUser;
+    if (user != null) {
+      await _repo.updateBio(user.id, bio);
+    }
+  }
+
+  /// Call this from LocationScreen
+  Future<void> saveLocation(String city, String state, String country) async {
+    final user = _ref.read(authRepositoryProvider).currentUser;
+    if (user != null) {
+      await _repo.updateLocationText(user.id, city, state, country);
+    }
+  }
+
+  // ===========================================================================
+  // NAVIGATION LOGIC (Your existing flow)
+  // ===========================================================================
+
   Future<void> init() async {
     state = state.copyWith(isLoading: true);
     final user = _ref.read(authRepositoryProvider).currentUser;
     if (user == null) {
       state = state.copyWith(
-        isLoading: false,
-        errorMessage: "User not logged in",
-      );
+          isLoading: false, errorMessage: "User not logged in");
       return;
     }
 
     try {
       final profile = await _repo.getProfileRaw(user.id);
+      
+      // Auto-heal logic
       if (profile == null) {
-        AppLogger.info('Profile missing in OnboardingShell. Auto-creating...');
+        AppLogger.info('Profile missing. Auto-creating...');
         try {
-          // Auto-heal: Create profile if missing
           await _ref.read(authRepositoryProvider).createProfile(user.id);
-          // Retry init after creation
           return init();
         } catch (e) {
-          AppLogger.error('Failed to auto-create profile', e);
           state = state.copyWith(
-            isLoading: false,
-            errorMessage: "Profile not found and creation failed",
-          );
+              isLoading: false, errorMessage: "Profile creation failed");
           return;
         }
       }
 
-      // 1. Get ordered list of ALL steps
       final allSteps = await _repo.getAllSteps();
-
-      // 2. Get user's progress map
-      // Map<String, dynamic> stepsProgress = {};
       final rawProgress = profile['steps_progress'];
       final Map<String, dynamic> stepsProgress = (rawProgress != null)
           ? Map<String, dynamic>.from(rawProgress)
           : {};
 
-      // Check if fresh user (empty progress) AND hasn't dismissed welcome yet
+      // Determine Start Point
       bool isFreshUser = stepsProgress.isEmpty;
-      // Alternatively, check strictly if NO steps are marked 'completed' or 'skipped'
-      if (!isFreshUser) {
-        // Double check deep just in case key exists but values are null?
-        // Actually simplest is: if map is empty, they are fresh.
-      }
-
       if (isFreshUser && !_hasDismissedWelcome) {
         state = state.copyWith(
           isLoading: false,
           currentStepKey: 'pre_onboarding',
-          // No config for this, it's a special state
           currentStepConfig: null,
         );
         return;
       }
 
-      // 3. Determine current step
-      // Find the first step that is NOT 'completed'.
-      // (Optionally: also skip 'skipped' steps so they don't block progress)
+      // Find next incomplete step
       OnboardingStep? nextStep;
-
       for (final step in allSteps) {
         final status = stepsProgress[step.stepKey];
-        // If status is NOT completed and NOT skipped, this is our next step.
-        // Or if we want to FORCE users to revisit skipped steps before finishing?
-        // Requirement: "user can access app because all mandatory fields completed... skipped steps... in home page"
-        // So 'skipped' means we moved PAST it.
-
         if (status != 'completed' && status != 'skipped') {
           nextStep = step;
           break;
         }
       }
 
-      // High-level check
       final status = profile['onboarding_status'] as String? ?? 'in_progress';
 
       if (status == 'complete' || nextStep == null) {
-        // If no incomplete steps found, or explicitly marked complete
         state = state.copyWith(isLoading: false, currentStepKey: 'complete');
       } else {
-        AppLogger.info(
-          'Derived Step: ${nextStep.stepName} (${nextStep.stepKey})',
-        );
         state = state.copyWith(
           isLoading: false,
           currentStepConfig: nextStep,
@@ -147,6 +176,41 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
       state = state.copyWith(isLoading: false, errorMessage: e.toString());
     }
   }
+
+  Future<void> completeStep(String stepKeyToComplete) async {
+    await _updateStepAndAdvance(stepKeyToComplete, 'completed');
+  }
+
+  Future<void> skipStep(String stepKeyToSkip) async {
+    await _updateStepAndAdvance(stepKeyToSkip, 'skipped');
+  }
+
+  Future<void> _updateStepAndAdvance(String stepKey, String status) async {
+    state = state.copyWith(isLoading: true);
+    final user = _ref.read(authRepositoryProvider).currentUser;
+    if (user == null) return;
+
+    try {
+      await _repo.updateStepStatus(user.id, stepKey, status);
+      await init(); // Refresh to find next step
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: 'Failed to save progress');
+    }
+  }
+
+  Future<void> completeOnboarding({String? skippedStepKey}) async {
+    final user = _ref.read(authRepositoryProvider).currentUser;
+    if (user == null) return;
+
+    if (skippedStepKey != null) {
+      await _repo.updateStepStatus(user.id, skippedStepKey, 'skipped');
+    }
+    await _repo.completeOnboarding(user.id);
+    state = state.copyWith(currentStepKey: 'complete');
+  }
+  // ---------------------------------------------------------------------------
+  // MISSING NAVIGATION FUNCTIONS
+  // ---------------------------------------------------------------------------
 
   Future<void> jumpToStep(String stepKey) async {
     state = state.copyWith(isLoading: true);
@@ -162,53 +226,7 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     }
   }
 
-  Future<void> completeStep(String stepKeyToComplete) async {
-    await _updateStepAndAdvance(stepKeyToComplete, 'completed');
-  }
-
-  Future<void> skipStep(String stepKeyToSkip) async {
-    await _updateStepAndAdvance(stepKeyToSkip, 'skipped');
-  }
-
-  // Helper to update status and re-run init to find next step
-  Future<void> _updateStepAndAdvance(String stepKey, String status) async {
-    state = state.copyWith(isLoading: true);
-    final user = _ref.read(authRepositoryProvider).currentUser;
-    if (user == null) return;
-
-    try {
-      // 1. Update the JSON status map
-      await _repo.updateStepStatus(user.id, stepKey, status);
-
-      // 2. Re-evaluate "Where am I?" by running init logic again
-      // This is robust: it reads the new state and finds the next incomplete step.
-      await init();
-    } catch (e) {
-      AppLogger.info('Error advancing step: $e');
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: 'Failed to save progress',
-      );
-    }
-  }
-
-  Future<void> completeOnboarding({String? skippedStepKey}) async {
-    final user = _ref.read(authRepositoryProvider).currentUser;
-    if (user == null) return;
-
-    // If a final step is skipped, mark it in the JSON map
-    if (skippedStepKey != null) {
-      await _repo.updateStepStatus(user.id, skippedStepKey, 'skipped');
-    }
-
-    // Mark high-level status as complete
-    await _repo.completeOnboarding(user.id);
-    state = state.copyWith(currentStepKey: 'complete');
-  }
-
   Future<void> goToPreviousStep() async {
-    // 1. Get current list of steps
-    // Ideally should be cached, but fetching is fine
     try {
       final allSteps = await _repo.getAllSteps();
       final currentIndex = allSteps.indexWhere(
@@ -218,21 +236,17 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
       if (currentIndex > 0) {
         final prevStep = allSteps[currentIndex - 1];
         await jumpToStep(prevStep.stepKey);
-      } else if (state.currentStepKey == 'pre_onboarding') {
-        // Can't go back from pre-onboarding
       } else {
-        // If index is 0, check if we came from pre-onboarding?
-        // Or if we are at the very first step, maybe go to pre-onboarding?
-        // For now, assume if index 0, back does nothing or we control it elsewhere.
+        // Logic for when you are at the start (optional)
+        // e.g., maybe go back to 'pre_onboarding' or do nothing
       }
     } catch (e) {
       AppLogger.error('Failed to go back', e);
     }
   }
-
+  
   void dismissWelcome() {
     _hasDismissedWelcome = true;
-    // Re-run init to proceed to the actual first step
     init();
   }
 }
