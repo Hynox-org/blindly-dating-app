@@ -15,6 +15,24 @@ class PhotoReorderScreen extends ConsumerWidget {
     final mediaState = ref.watch(mediaProvider);
     final theme = Theme.of(context);
 
+    // -------------------------------------------------------------------------
+    // 🔔 NEW: Listen for "Photo Blocked" errors and show a popup
+    // -------------------------------------------------------------------------
+    ref.listen(mediaProvider, (previous, next) {
+      // If there is a new error that is different from the last one...
+      if (next.error != null && next.error != previous?.error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.error!),
+            backgroundColor: Colors.red, // Red for danger/block
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    });
+    // -------------------------------------------------------------------------
+
     return BaseOnboardingStepScreen(
       title: 'Arranging photos',
       showBackButton: true,
@@ -79,11 +97,7 @@ class PhotoReorderScreen extends ConsumerWidget {
                     builder: (context) {
                       // Filter out nulls and keep track of original indices
                       final validItems = <MapEntry<int, File>>[];
-                      for (
-                        int i = 0;
-                        i < mediaState.selectedPhotos.length;
-                        i++
-                      ) {
+                      for (int i = 0; i < mediaState.selectedPhotos.length; i++) {
                         if (mediaState.selectedPhotos[i] != null) {
                           validItems.add(
                             MapEntry(i, mediaState.selectedPhotos[i]!),
@@ -96,14 +110,13 @@ class PhotoReorderScreen extends ConsumerWidget {
                         physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.only(
                           bottom: 100,
-                        ), // Zero horizontal to match Base padding
+                        ), 
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 3, // Matches PhotoUploadScreen
+                              crossAxisCount: 3, 
                               crossAxisSpacing: 12,
                               mainAxisSpacing: 12,
-                              childAspectRatio:
-                                  0.85, // Matches PhotoUploadScreen
+                              childAspectRatio: 0.85, 
                             ),
                         onReorder: (oldIndex, newIndex) {
                           ref
@@ -112,11 +125,8 @@ class PhotoReorderScreen extends ConsumerWidget {
                         },
                         itemBuilder: (context, index) {
                           final entry = validItems[index];
-                          final originalIndex =
-                              entry.key; // Sparse index if needed for delete
+                          final originalIndex = entry.key; 
                           final photo = entry.value;
-
-                          // Unique key for reordering
                           final key = ValueKey(photo.path);
 
                           return _buildGridItem(
@@ -163,7 +173,6 @@ class PhotoReorderScreen extends ConsumerWidget {
     return Container(
       key: key,
       decoration: BoxDecoration(
-        // color: Colors.white, // Removed to prevent white halo during drag
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [
           BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
@@ -224,7 +233,6 @@ class PhotoReorderScreen extends ConsumerWidget {
               ),
 
             // Position Indicator (Top Left)
-            // Show for all cards to indicate order
             Positioned(
               top: 6,
               left: 6,

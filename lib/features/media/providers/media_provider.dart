@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/repositories/media_repository.dart';
+// 1. IMPORT YOUR MODERATION PROVIDER
+import 'photo_moderation_provider.dart'; 
 
 class MediaState {
   final List<File?> selectedPhotos;
@@ -8,12 +10,11 @@ class MediaState {
   final String? error;
 
   const MediaState({
-    required this.selectedPhotos, // Making it required to ensure we always init correctly
+    required this.selectedPhotos,
     this.isLoading = false,
     this.error,
   });
 
-  // Factory to create initial state with 6 nulls
   factory MediaState.initial() {
     return MediaState(selectedPhotos: List<File?>.filled(6, null));
   }
@@ -30,7 +31,6 @@ class MediaState {
     );
   }
 
-  // Helper to get actual files count
   int get validPhotoCount => selectedPhotos.where((e) => e != null).length;
 }
 
@@ -38,27 +38,24 @@ final mediaRepositoryProvider = Provider<MediaRepository>((ref) {
   return MediaRepository();
 });
 
+// 2. UPDATE PROVIDER TO PASS 'REF'
 final mediaProvider = StateNotifierProvider<MediaNotifier, MediaState>((ref) {
   final repository = ref.watch(mediaRepositoryProvider);
-  return MediaNotifier(repository);
+  return MediaNotifier(ref, repository); // Pass ref here
 });
 
 class MediaNotifier extends StateNotifier<MediaState> {
+  final Ref _ref; // Store Ref
   final MediaRepository _repository;
 
-  MediaNotifier(this._repository) : super(MediaState.initial());
+  // 3. UPDATE CONSTRUCTOR
+  MediaNotifier(this._ref, this._repository) : super(MediaState.initial());
 
   Future<void> pickImages(int targetIndex) async {
     try {
       state = state.copyWith(isLoading: true, error: null);
 
-      // Calculate remaining capacity
-      // We allow picking as many as there are empty slots
-      // If targetIndex is currently occupied, we are overwriting it, so it counts as available for the new batch.
-
       final currentValidCount = state.validPhotoCount;
-      // If target is null, we have free slots = 6 - valid.
-      // If target is not null, we effectively have (6 - valid) + 1 (the one being replaced).
       final isTargetOccupied = state.selectedPhotos[targetIndex] != null;
       final maxToPick = 6 - currentValidCount + (isTargetOccupied ? 1 : 0);
 
@@ -75,6 +72,7 @@ class MediaNotifier extends StateNotifier<MediaState> {
       );
 
       final List<File?> currentPhotos = List<File?>.from(state.selectedPhotos);
+      bool blockedAny = false; // Track if any photos were blocked
 
       for (int i = 0; i < images.length; i++) {
         File file = File(images[i].path);
@@ -88,12 +86,23 @@ class MediaNotifier extends StateNotifier<MediaState> {
         // Compress
         final compressed = await _repository.compressImage(file);
 
+        // -----------------------------------------------------------
+        // 🛑 4. MODERATION CHECK (The Guard Dog)
+        // -----------------------------------------------------------
+        final isSafe = await _ref.read(photoModerationProvider).checkImageSafety(
+          compressed, 
+          source: 'profile'
+        );
+
+        if (!isSafe) {
+          blockedAny = true;
+          continue; // SKIP this photo, do not add it to the list
+        }
+        // -----------------------------------------------------------
+
         if (i == 0) {
-          // First image goes to target index
           currentPhotos[targetIndex] = compressed;
         } else {
-          // Subsequent images go to next available null slots
-          // (We shouldn't overwrite other existing photos, only fill gaps)
           final firstNull = currentPhotos.indexWhere(
             (element) => element == null,
           );
@@ -103,7 +112,17 @@ class MediaNotifier extends StateNotifier<MediaState> {
         }
       }
 
-      state = state.copyWith(selectedPhotos: currentPhotos, isLoading: false);
+      // Show error if something was blocked
+      if (blockedAny) {
+         state = state.copyWith(
+           selectedPhotos: currentPhotos, 
+           isLoading: false,
+           error: "Some photos were blocked due to policy violations."
+         );
+      } else {
+         state = state.copyWith(selectedPhotos: currentPhotos, isLoading: false);
+      }
+
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -111,7 +130,6 @@ class MediaNotifier extends StateNotifier<MediaState> {
 
   Future<void> captureImage(int targetIndex) async {
     try {
-      // Check if full (unless we are replacing the target)
       if (state.validPhotoCount >= 6 &&
           state.selectedPhotos[targetIndex] == null) {
         state = state.copyWith(error: 'Maximum 6 photos allowed');
@@ -133,6 +151,23 @@ class MediaNotifier extends StateNotifier<MediaState> {
         // Compress
         final compressed = await _repository.compressImage(file);
 
+        // -----------------------------------------------------------
+        // 🛑 5. MODERATION CHECK (Camera)
+        // -----------------------------------------------------------
+        final isSafe = await _ref.read(photoModerationProvider).checkImageSafety(
+          compressed, 
+          source: 'profile'
+        );
+
+        if (!isSafe) {
+          state = state.copyWith(
+            isLoading: false,
+            error: "Photo blocked: Policy violation detected."
+          );
+          return; // Stop here
+        }
+        // -----------------------------------------------------------
+
         final List<File?> currentPhotos = List.from(state.selectedPhotos);
         currentPhotos[targetIndex] = compressed;
 
@@ -148,7 +183,7 @@ class MediaNotifier extends StateNotifier<MediaState> {
   void removeImage(int index) {
     if (index >= 0 && index < state.selectedPhotos.length) {
       final List<File?> currentPhotos = List.from(state.selectedPhotos);
-      currentPhotos[index] = null; // Just nullify that slot
+      currentPhotos[index] = null;
       state = state.copyWith(selectedPhotos: currentPhotos);
     }
   }
@@ -161,26 +196,14 @@ class MediaNotifier extends StateNotifier<MediaState> {
     }
   }
 
-  // Reordering implies bringing them together.
-  // We extract all non-nulls, reorder them, and then place them back into the filtered list.
-  // This will "compact" the list (remove gaps) which is expected behavior when sorting.
   void reorderImages(int oldIndex, int newIndex) {
-    // 1. Extract valid photos
     final validPhotos = state.selectedPhotos.whereType<File>().toList();
 
-    // Check bounds against valid list
     if (oldIndex < validPhotos.length && newIndex <= validPhotos.length) {
       final File item = validPhotos.removeAt(oldIndex);
-
-      // With ReorderableGridView (and some ListView versions),
-      // the newIndex is the target insertion index in the *modified* list context
-      // OR we just treat it as a direct insert.
-      // Based on user feedback, removing the -1 logic is required.
       if (newIndex > validPhotos.length) newIndex = validPhotos.length;
-
       validPhotos.insert(newIndex, item);
 
-      // 2. Re-construct sparse list (compacted)
       final List<File?> newSparse = List.filled(6, null);
       for (int i = 0; i < validPhotos.length; i++) {
         newSparse[i] = validPhotos[i];
@@ -207,7 +230,6 @@ class MediaNotifier extends StateNotifier<MediaState> {
 
       state = state.copyWith(isLoading: true, error: null);
 
-      // Fetch Profile ID
       print('[MediaProvider] Fetching Profile ID...');
       final profileId = await _repository.getProfileId(userId);
       print('[MediaProvider] Profile ID fetched: $profileId');
@@ -220,20 +242,13 @@ class MediaNotifier extends StateNotifier<MediaState> {
 
       final List<Map<String, dynamic>> mediaData = [];
 
-      print(
-        '[MediaProvider] Starting upload for ${validPhotos.length} photos...',
-      );
+      print('[MediaProvider] Starting upload for ${validPhotos.length} photos...');
       for (int i = 0; i < validPhotos.length; i++) {
         final file = validPhotos[i];
-        print(
-          '[MediaProvider] Uploading photo ${i + 1}/${validPhotos.length}...',
-        );
+        print('[MediaProvider] Uploading photo ${i + 1}/${validPhotos.length}...');
 
-        // Upload
         final url = await _repository.uploadImage(file, userId);
-        print(
-          '[MediaProvider] Photo ${i + 1} uploaded successfully. URL: $url',
-        );
+        print('[MediaProvider] Photo ${i + 1} uploaded successfully. URL: $url');
 
         mediaData.add({
           'profile_id': profileId,
