@@ -13,6 +13,8 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
   final bool showNextButton;
   final bool showSkipButton;
   final bool showBackButton;
+  final bool isNextEnabled;
+  final bool isLoading;
   final Widget? fab;
 
   const BaseOnboardingStepScreen({
@@ -26,6 +28,8 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
     this.showNextButton = true,
     this.showSkipButton = false,
     this.showBackButton = false,
+    this.isNextEnabled = true,
+    this.isLoading = false,
     this.fab,
   });
 
@@ -91,14 +95,23 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
 
               if (showNextButton && onNext != null)
                 ElevatedButton(
-                  onPressed: onNext,
+                  onPressed: (isNextEnabled && !isLoading) ? onNext : null,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Text(nextLabel),
+                  child: isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(nextLabel),
                 ),
             ],
           ),

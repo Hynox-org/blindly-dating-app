@@ -97,6 +97,14 @@ class OnboardingRepository {
         .eq('user_id', userId);
   }
 
+  // Updates arbitrary profile fields
+  Future<void> updateProfileData(
+    String userId,
+    Map<String, dynamic> data,
+  ) async {
+    await _supabase.from('profiles').update(data).eq('user_id', userId);
+  }
+
   Future<Map<String, dynamic>?> getProfileRaw(String userId) async {
     try {
       final response = await _supabase
