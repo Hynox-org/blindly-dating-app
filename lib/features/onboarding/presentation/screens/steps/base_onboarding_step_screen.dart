@@ -16,6 +16,7 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
   final bool isNextEnabled;
   final bool isLoading;
   final Widget? fab;
+  final Widget? headerAction;
 
   const BaseOnboardingStepScreen({
     super.key,
@@ -31,6 +32,7 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
     this.isNextEnabled = true,
     this.isLoading = false,
     this.fab,
+    this.headerAction,
   });
 
   @override
@@ -63,6 +65,7 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
                   Expanded(
                     child: Text(
                       title,
+                      textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.headlineMedium
                           ?.copyWith(
                             fontWeight: FontWeight.bold,
@@ -70,6 +73,7 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
                           ),
                     ),
                   ),
+                  if (headerAction != null) headerAction!,
                 ],
               ),
               const SizedBox(height: 24),
