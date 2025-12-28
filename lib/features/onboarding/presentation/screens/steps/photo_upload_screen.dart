@@ -98,6 +98,29 @@ class PhotoUploadScreen extends ConsumerWidget {
     final mediaState = ref.watch(mediaProvider);
     final theme = Theme.of(context);
 
+    // -------------------------------------------------------------------------
+    // 🔔 NEW: Listen for "Photo Blocked" errors and show a popup
+    // -------------------------------------------------------------------------
+    ref.listen(mediaProvider, (previous, next) {
+      // If there is a new error that is different from the last one...
+      if (next.error != null && next.error != previous?.error) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Photo Blocked'),
+            content: Text(next.error!),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    });
+    // -------------------------------------------------------------------------
+
     // Validation
     final canProceed = mediaState.selectedPhotos.whereType<File>().length >= 2;
 

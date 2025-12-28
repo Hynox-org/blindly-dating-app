@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/repositories/media_repository.dart';
+// 1. IMPORT YOUR MODERATION PROVIDER
+import 'photo_moderation_provider.dart';
 
 class MediaState {
   final List<File?> selectedPhotos;
@@ -40,13 +42,15 @@ final mediaRepositoryProvider = Provider<MediaRepository>((ref) {
 
 final mediaProvider = StateNotifierProvider<MediaNotifier, MediaState>((ref) {
   final repository = ref.watch(mediaRepositoryProvider);
-  return MediaNotifier(repository);
+  return MediaNotifier(ref, repository); // Pass ref here
 });
 
 class MediaNotifier extends StateNotifier<MediaState> {
+  final Ref _ref; // Store Ref
   final MediaRepository _repository;
 
-  MediaNotifier(this._repository) : super(MediaState.initial());
+  // 3. UPDATE CONSTRUCTOR
+  MediaNotifier(this._ref, this._repository) : super(MediaState.initial());
 
   Future<void> pickImages(int targetIndex) async {
     try {
@@ -75,6 +79,7 @@ class MediaNotifier extends StateNotifier<MediaState> {
       );
 
       final List<File?> currentPhotos = List<File?>.from(state.selectedPhotos);
+      bool blockedAny = false; // Track if any photos were blocked
 
       for (int i = 0; i < images.length; i++) {
         File file = File(images[i].path);
@@ -88,12 +93,24 @@ class MediaNotifier extends StateNotifier<MediaState> {
         // Compress
         final compressed = await _repository.compressImage(file);
 
+        // -----------------------------------------------------------
+        // 🛑 4. MODERATION CHECK (The Guard Dog)
+        // -----------------------------------------------------------
+        final isSafe = await _ref
+            .read(photoModerationProvider)
+            .checkImageSafety(compressed, source: 'profile');
+
+        if (!isSafe) {
+          blockedAny = true;
+          continue; // SKIP this photo, do not add it to the list
+        }
+        // -----------------------------------------------------------
+
         if (i == 0) {
           // First image goes to target index
           currentPhotos[targetIndex] = compressed;
         } else {
           // Subsequent images go to next available null slots
-          // (We shouldn't overwrite other existing photos, only fill gaps)
           final firstNull = currentPhotos.indexWhere(
             (element) => element == null,
           );
@@ -103,7 +120,16 @@ class MediaNotifier extends StateNotifier<MediaState> {
         }
       }
 
-      state = state.copyWith(selectedPhotos: currentPhotos, isLoading: false);
+      // Show error if something was blocked
+      if (blockedAny) {
+        state = state.copyWith(
+          selectedPhotos: currentPhotos,
+          isLoading: false,
+          error: "Some photos were blocked due to policy violations.",
+        );
+      } else {
+        state = state.copyWith(selectedPhotos: currentPhotos, isLoading: false);
+      }
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -132,6 +158,22 @@ class MediaNotifier extends StateNotifier<MediaState> {
 
         // Compress
         final compressed = await _repository.compressImage(file);
+
+        // -----------------------------------------------------------
+        // 🛑 5. MODERATION CHECK (Camera)
+        // -----------------------------------------------------------
+        final isSafe = await _ref
+            .read(photoModerationProvider)
+            .checkImageSafety(compressed, source: 'profile');
+
+        if (!isSafe) {
+          state = state.copyWith(
+            isLoading: false,
+            error: "Photo blocked: Policy violation detected.",
+          );
+          return; // Stop here
+        }
+        // -----------------------------------------------------------
 
         final List<File?> currentPhotos = List.from(state.selectedPhotos);
         currentPhotos[targetIndex] = compressed;
