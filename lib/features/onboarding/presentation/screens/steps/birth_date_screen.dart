@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart'; // Ensure intl is available or use manual formatting if fails, but standard flutter usually has it or we add it. I'll check if I can just use manual to be safe.
-// Actually, let's just use manual string interpolation to avoid dependency issues if intl isn't in pubspec.
+
 import '../../providers/onboarding_provider.dart';
 import '../../../../auth/providers/auth_providers.dart';
 import '../../../data/repositories/onboarding_repository.dart';
