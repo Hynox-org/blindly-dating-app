@@ -175,4 +175,55 @@ class OnboardingRepository {
       return false;
     }
   }
+
+  Future<List<Map<String, dynamic>>> getInterestChips() async {
+    try {
+      final response = await _supabase
+          .from('interest_chips')
+          .select()
+          .eq('is_active', true)
+          .order('section');
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      AppLogger.info('Error fetching interest chips: $e');
+      return [];
+    }
+  }
+
+  Future<void> saveUserInterests(String userId, List<String> chipIds) async {
+    // 0. Resolve Profile ID from Auth ID (userId)
+    final profileResponse = await _supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    if (profileResponse == null) {
+      throw Exception('Profile not found for user $userId');
+    }
+
+    final profileId = profileResponse['id'] as String;
+
+    // 1. Delete existing interests for this user (full replacement strategy)
+    await _supabase
+        .from('profile_interest_chips')
+        .delete()
+        .eq('profile_id', profileId);
+
+    // 2. Insert new selections
+    if (chipIds.isNotEmpty) {
+      final data = chipIds
+          .map(
+            (chipId) => {
+              'profile_id': profileId,
+              'chip_id': chipId,
+              'created_at': DateTime.now().toIso8601String(),
+            },
+          )
+          .toList();
+
+      await _supabase.from('profile_interest_chips').insert(data);
+    }
+  }
 }
