@@ -5,6 +5,7 @@ import '../../../data/repositories/onboarding_repository.dart';
 import '../../../domain/models/interest_chip_model.dart';
 import '../../../../auth/providers/auth_providers.dart';
 import 'base_onboarding_step_screen.dart';
+import '../../widgets/selection_chip.dart';
 
 class InterestsSelectScreen extends ConsumerStatefulWidget {
   const InterestsSelectScreen({super.key});
@@ -122,8 +123,7 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
   @override
   Widget build(BuildContext context) {
     final grouped = _groupedChips;
-    final primaryColor = Theme.of(context).primaryColor;
-    // Assuming a dark olive green from description, but using primaryColor for consistency
+
     // If user strict on color: 'const Color(0xFF4B5320)' or similar.
     // Let's stick to theme primary for now unless specified otherwise in theme.
 
@@ -206,59 +206,18 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
                                 ),
                               ),
                               Wrap(
-                                spacing: 8,
-                                runSpacing: 10,
+                                spacing: 12,
+                                runSpacing: 12,
                                 children: entry.value.map((chip) {
                                   final isSelected = _selectedChipIds.contains(
                                     chip.id,
                                   );
-                                  return GestureDetector(
+                                  return SelectionChip(
+                                    label: chip.label,
+                                    isSelected: isSelected,
                                     onTap: () => _toggleChip(chip.id),
-                                    child: AnimatedContainer(
-                                      duration: const Duration(
-                                        milliseconds: 200,
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 10,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: isSelected
-                                              ? primaryColor
-                                              : Colors.grey.shade200,
-                                          width: isSelected ? 2 : 1,
-                                        ),
-                                        boxShadow: [
-                                          if (!isSelected)
-                                            BoxShadow(
-                                              color: Colors.grey.withOpacity(
-                                                0.1,
-                                              ),
-                                              blurRadius: 4,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                        ],
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          // Placeholder for Emoji/Icon if we had mapping
-                                          // Text(chip.emoji ?? 'TODO'),
-                                          Text(
-                                            chip.label,
-                                            style: TextStyle(
-                                              color: Colors.black87,
-                                              fontWeight: isSelected
-                                                  ? FontWeight.w600
-                                                  : FontWeight.normal,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
+                                    // No icon mapping for general interests available yet
+                                    icon: null,
                                   );
                                 }).toList(),
                               ),

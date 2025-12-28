@@ -2,6 +2,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/onboarding_step_model.dart';
 import '../../../../core/utils/app_logger.dart';
+import '../../domain/models/lifestyle_category_model.dart';
+import '../../domain/models/lifestyle_chip_model.dart';
 
 final onboardingRepositoryProvider = Provider<OnboardingRepository>((ref) {
   return OnboardingRepository(Supabase.instance.client);
@@ -224,6 +226,81 @@ class OnboardingRepository {
           .toList();
 
       await _supabase.from('profile_interest_chips').insert(data);
+    }
+  }
+
+  Future<List<LifestyleCategory>> getLifestyleCategoriesWithChips() async {
+    try {
+      // 1. Fetch Categories
+      final categoriesResponse = await _supabase
+          .from('lifestyle_categories')
+          .select()
+          .order('id');
+      final categories = (categoriesResponse as List)
+          .map((e) => LifestyleCategory.fromJson(e))
+          .toList();
+
+      // 2. Fetch Chips
+      final chipsResponse = await _supabase
+          .from('lifestyle_chips')
+          .select()
+          .eq('is_active', true);
+      final chips = (chipsResponse as List)
+          .map((e) => LifestyleChip.fromJson(e))
+          .toList();
+
+      // 3. Associate Chips with Categories
+      final List<LifestyleCategory> result = [];
+      for (var category in categories) {
+        final categoryChips = chips
+            .where((c) => c.categoryId == category.id)
+            .toList();
+        result.add(category.copyWith(chips: categoryChips));
+      }
+
+      return result;
+    } catch (e) {
+      AppLogger.info('Error fetching lifestyle categories: $e');
+      return [];
+    }
+  }
+
+  Future<void> saveLifestylePreferences(
+    String userId,
+    List<String> chipIds,
+  ) async {
+    // 0. Resolve Profile ID
+    final profileResponse = await _supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    if (profileResponse == null) {
+      throw Exception('Profile not found for user $userId');
+    }
+
+    final profileId = profileResponse['id'] as String;
+
+    // 1. Delete existing lifestyle chips for this user
+    await _supabase
+        .from('profile_lifestyle_chips')
+        .delete()
+        .eq('profile_id', profileId);
+
+    // 2. Insert new selections
+    if (chipIds.isNotEmpty) {
+      final data = chipIds
+          .map(
+            (chipId) => {
+              'profile_id': profileId,
+              'chip_id': chipId,
+              'created_at': DateTime.now().toIso8601String(),
+            },
+          )
+          .toList();
+
+      await _supabase.from('profile_lifestyle_chips').insert(data);
     }
   }
 }
