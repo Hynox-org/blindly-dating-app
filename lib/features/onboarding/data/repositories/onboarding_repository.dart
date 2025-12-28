@@ -4,6 +4,9 @@ import '../../domain/models/onboarding_step_model.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../domain/models/lifestyle_category_model.dart';
 import '../../domain/models/lifestyle_chip_model.dart';
+import '../../domain/models/prompt_category_model.dart';
+import '../../domain/models/prompt_template_model.dart';
+import '../../domain/models/profile_prompt_model.dart';
 
 final onboardingRepositoryProvider = Provider<OnboardingRepository>((ref) {
   return OnboardingRepository(Supabase.instance.client);
@@ -301,6 +304,82 @@ class OnboardingRepository {
           .toList();
 
       await _supabase.from('profile_lifestyle_chips').insert(data);
+    }
+  }
+
+  // --- Profile Prompts ---
+
+  Future<List<PromptCategory>> getPromptCategories() async {
+    try {
+      final response = await _supabase
+          .from('prompt_categories')
+          .select()
+          .eq('is_active', true)
+          .order('id');
+
+      return (response as List).map((e) => PromptCategory.fromJson(e)).toList();
+    } catch (e) {
+      AppLogger.info('Error fetching prompt categories: $e');
+      return [];
+    }
+  }
+
+  Future<List<PromptTemplate>> getPromptTemplates() async {
+    try {
+      final response = await _supabase
+          .from('prompt_templates')
+          .select()
+          .eq('is_active', true)
+          // You might want to sort by category or some other field
+          .order('category_id');
+
+      return (response as List).map((e) => PromptTemplate.fromJson(e)).toList();
+    } catch (e) {
+      AppLogger.info('Error fetching prompt templates: $e');
+      return [];
+    }
+  }
+
+  Future<void> saveProfilePrompts(
+    String userId,
+    List<ProfilePrompt> prompts,
+  ) async {
+    // 0. Resolve Profile ID
+    final profileResponse = await _supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    if (profileResponse == null) {
+      throw Exception('Profile not found for user $userId');
+    }
+
+    final profileId = profileResponse['id'] as String;
+
+    // 1. Delete existing prompts for this user (full replacement)
+    await _supabase
+        .from('profile_prompts')
+        .delete()
+        .eq('profile_id', profileId);
+
+    // 2. Insert new prompts
+    if (prompts.isNotEmpty) {
+      final data = prompts.map((p) {
+        // Ensure profile_id is set correctly (just in case the model didn't have it or it differs)
+        // But the model is created in UI, better to force it here or trust it.
+        // Let's trust the UI creates it or we override it here.
+        // Actually, creating a new map is safer.
+        return {
+          'profile_id': profileId,
+          'prompt_template_id': p.promptTemplateId,
+          'user_response': p.userResponse,
+          'prompt_display_order': p.promptDisplayOrder,
+          'created_at': DateTime.now().toIso8601String(),
+        };
+      }).toList();
+
+      await _supabase.from('profile_prompts').insert(data);
     }
   }
 }
