@@ -72,6 +72,11 @@ dependencies:
   image_cropper: ^11.0.0
   reorderable_grid_view: ^2.2.8
 
+  # Audio
+  record: ^6.1.2
+  audioplayers: ^6.0.0
+  path_provider: ^2.1.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

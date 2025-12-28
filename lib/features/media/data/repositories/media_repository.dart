@@ -153,6 +153,32 @@ class MediaRepository {
     }
   }
 
+  /// Uploads a voice intro to Supabase Storage and returns the public URL
+  Future<String> uploadVoice(File file, String userId) async {
+    try {
+      final String extension = p.extension(file.path);
+      // We use a UUID to ensure uniqueness and avoid caching issues if we were to overwrite
+      final String fileName = '${const Uuid().v4()}$extension';
+      final String filePath = '$userId/$fileName';
+
+      await _supabase.storage
+          .from('user_voices')
+          .upload(
+            filePath,
+            file,
+            fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
+          );
+
+      final String publicUrl = _supabase.storage
+          .from('user_voices')
+          .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (e) {
+      throw Exception('Failed to upload voice: $e');
+    }
+  }
+
   /// Saves media metadata to the user_media table
   Future<void> saveMedia(List<Map<String, dynamic>> mediaData) async {
     try {
@@ -160,6 +186,20 @@ class MediaRepository {
       await _supabase.from('user_media').insert(mediaData);
     } catch (e) {
       throw Exception('Failed to save media metadata: $e');
+    }
+  }
+
+  /// Deletes existing voice intro entries for a user from DB.
+  /// Does NOT delete the file from storage (best effort or manual cleanup required later).
+  Future<void> deleteUserVoiceIntro(String profileId) async {
+    try {
+      await _supabase
+          .from('user_media')
+          .delete()
+          .eq('profile_id', profileId)
+          .eq('media_type', 'voice_intro');
+    } catch (e) {
+      throw Exception('Failed to delete old voice intro: $e');
     }
   }
 
