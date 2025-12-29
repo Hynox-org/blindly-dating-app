@@ -128,7 +128,7 @@ class MediaRepository {
     }
   }
 
-  /// Uploads an image to Supabase Storage and returns the public URL
+  /// Uploads an image to Supabase Storage and returns the storage path (userId/filename.jpg)
   Future<String> uploadImage(File file, String userId) async {
     try {
       final String extension = p.extension(file.path);
@@ -143,21 +143,17 @@ class MediaRepository {
             fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
           );
 
-      final String publicUrl = _supabase.storage
-          .from('user_photos')
-          .getPublicUrl(filePath);
-
-      return publicUrl;
+      // Return path instead of public URL
+      return filePath;
     } catch (e) {
       throw Exception('Failed to upload image: $e');
     }
   }
 
-  /// Uploads a voice intro to Supabase Storage and returns the public URL
+  /// Uploads a voice intro and returns the storage path
   Future<String> uploadVoice(File file, String userId) async {
     try {
       final String extension = p.extension(file.path);
-      // We use a UUID to ensure uniqueness and avoid caching issues if we were to overwrite
       final String fileName = '${const Uuid().v4()}$extension';
       final String filePath = '$userId/$fileName';
 
@@ -169,11 +165,7 @@ class MediaRepository {
             fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
           );
 
-      final String publicUrl = _supabase.storage
-          .from('user_voices')
-          .getPublicUrl(filePath);
-
-      return publicUrl;
+      return filePath;
     } catch (e) {
       throw Exception('Failed to upload voice: $e');
     }
@@ -190,7 +182,6 @@ class MediaRepository {
   }
 
   /// Deletes existing voice intro entries for a user from DB.
-  /// Does NOT delete the file from storage (best effort or manual cleanup required later).
   Future<void> deleteUserVoiceIntro(String profileId) async {
     try {
       await _supabase
@@ -210,5 +201,99 @@ class MediaRepository {
     } catch (e) {
       throw Exception('Failed to delete image: $e');
     }
+  }
+
+  /// Fetch user photos metadata and convert paths to Signed URLs
+  Future<List<Map<String, dynamic>>> getUserMedia(String userId) async {
+    try {
+      final profileId = await getProfileId(userId);
+      if (profileId == null) return [];
+
+      final response = await _supabase
+          .from('user_media')
+          .select()
+          .eq('profile_id', profileId)
+          .eq('media_type', 'photo')
+          .order('display_order');
+
+      final List<Map<String, dynamic>> data = List<Map<String, dynamic>>.from(
+        response,
+      );
+
+      // Transform "media_url" (which might be a path or old URL) to a fresh Signed URL
+      for (var item in data) {
+        final rawUrl = item['media_url'] as String;
+        final path = extractPathFromUrl(rawUrl, 'user_photos');
+        // Generate signed URL (valid for 1 hour)
+        final signedUrl = await _supabase.storage
+            .from('user_photos')
+            .createSignedUrl(path, 60 * 60);
+        item['media_url'] = signedUrl;
+      }
+
+      return data;
+    } catch (e) {
+      throw Exception('Failed to fetch user media: $e');
+    }
+  }
+
+  /// Fetch user voice intro metadata and convert path to Signed URL
+  Future<Map<String, dynamic>?> getUserVoiceIntro(String userId) async {
+    try {
+      final profileId = await getProfileId(userId);
+      if (profileId == null) return null;
+
+      final response = await _supabase
+          .from('user_media')
+          .select()
+          .eq('profile_id', profileId)
+          .eq('media_type', 'voice_intro')
+          .maybeSingle();
+
+      if (response != null) {
+        final Map<String, dynamic> data = Map<String, dynamic>.from(response);
+        final rawUrl = data['media_url'] as String;
+        final path = extractPathFromUrl(rawUrl, 'user_voices');
+        final signedUrl = await _supabase.storage
+            .from('user_voices')
+            .createSignedUrl(path, 60 * 60);
+        data['media_url'] = signedUrl;
+        return data;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Helper to extract storage path from a full URL or return the path itself if it's already a path.
+  /// Identifies the segment after [bucketName]/.
+  String extractPathFromUrl(String url, String bucketName) {
+    // If it contains the bucket name in URL path
+    // e.g. .../user_photos/userId/abc.jpg
+    // or .../object/public/user_photos/userId/abc.jpg
+    if (url.contains('/$bucketName/')) {
+      final parts = url.split('/$bucketName/');
+      if (parts.length > 1) {
+        // Take the last part, but also remove query parameters if any (e.g. signed url token)
+        String path = parts.last;
+        if (path.contains('?')) {
+          path = path.split('?').first;
+        }
+        return AsyncUri.decodeComponent(path); // Ensure decoded
+      }
+    }
+    // If it doesn't look like a URL (no http), assume it is the path
+    if (!url.startsWith('http')) {
+      return url;
+    }
+    // Fallback: return as is, though likely won't work for signing
+    return url;
+  }
+}
+
+class AsyncUri {
+  static String decodeComponent(String encodedComponent) {
+    return Uri.decodeComponent(encodedComponent);
   }
 }

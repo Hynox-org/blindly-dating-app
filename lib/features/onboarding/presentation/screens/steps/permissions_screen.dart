@@ -144,6 +144,7 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen>
   Widget build(BuildContext context) {
     return BaseOnboardingStepScreen(
       title: 'App Permissions',
+      showBackButton: true,
       nextLabel: 'Continue',
       onNext: () {
         ref.read(onboardingProvider.notifier).completeStep('permissions');

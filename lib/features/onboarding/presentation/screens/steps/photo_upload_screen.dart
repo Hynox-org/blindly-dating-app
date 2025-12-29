@@ -3,16 +3,48 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../../../../auth/providers/auth_providers.dart';
 import '../../../../media/providers/media_provider.dart';
 import '../../providers/onboarding_provider.dart';
 import 'base_onboarding_step_screen.dart';
 
-class PhotoUploadScreen extends ConsumerWidget {
+class PhotoUploadScreen extends ConsumerStatefulWidget {
   const PhotoUploadScreen({super.key});
+
+  @override
+  ConsumerState<PhotoUploadScreen> createState() => _PhotoUploadScreenState();
+}
+
+class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Load existing photos if we haven't already (or refresh)
+    // We can check if state is empty, or just always load.
+    // Always load ensures sync with DB.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = ref.read(authRepositoryProvider).currentUser;
+      if (user != null) {
+        // Only load if empty? Or always?
+        // If we revisit, we want to see what's in provider.
+        // But if provider is fresh (app restart), we need to load.
+        // If provider has data, do we overwrite?
+        // Let's assume provider state > DB state if in-memory session is active.
+        // But how to tell? validPhotoCount == 0?
+        // If user has 0 photos in DB, validPhotoCount will be 0.
+        // Let's just load. The provider can handle diffing or just overwrite.
+        // But wait, if I uploaded a photo, then went to next step, then back...
+        // The provider still has the photo (which is local File or URL).
+        // If I reload from DB, I get URLs.
+        // Using URLs is safer for consistency.
+        // So I will call loadUserMedia.
+        ref.read(mediaProvider.notifier).loadUserMedia(user.id);
+      }
+    });
+  }
 
   Future<void> _checkPermissionAndPick(
     BuildContext context,
-    WidgetRef ref,
     bool isCamera,
     int index,
   ) async {
@@ -60,7 +92,7 @@ class PhotoUploadScreen extends ConsumerWidget {
     }
   }
 
-  void _showImageSourceSheet(BuildContext context, WidgetRef ref, int index) {
+  void _showImageSourceSheet(BuildContext context, int index) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -76,7 +108,7 @@ class PhotoUploadScreen extends ConsumerWidget {
               title: const Text('Gallery'),
               onTap: () {
                 Navigator.pop(ctx);
-                _checkPermissionAndPick(context, ref, false, index);
+                _checkPermissionAndPick(context, false, index);
               },
             ),
             ListTile(
@@ -84,7 +116,7 @@ class PhotoUploadScreen extends ConsumerWidget {
               title: const Text('Camera'),
               onTap: () {
                 Navigator.pop(ctx);
-                _checkPermissionAndPick(context, ref, true, index);
+                _checkPermissionAndPick(context, true, index);
               },
             ),
           ],
@@ -94,15 +126,11 @@ class PhotoUploadScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final mediaState = ref.watch(mediaProvider);
     final theme = Theme.of(context);
 
-    // -------------------------------------------------------------------------
-    // 🔔 NEW: Listen for "Photo Blocked" errors and show a popup
-    // -------------------------------------------------------------------------
     ref.listen(mediaProvider, (previous, next) {
-      // If there is a new error that is different from the last one...
       if (next.error != null && next.error != previous?.error) {
         showDialog(
           context: context,
@@ -119,23 +147,36 @@ class PhotoUploadScreen extends ConsumerWidget {
         );
       }
     });
-    // -------------------------------------------------------------------------
 
-    // Validation
-    final canProceed = mediaState.selectedPhotos.whereType<File>().length >= 2;
+    final canProceed = mediaState.validPhotoCount >= 2;
 
     return BaseOnboardingStepScreen(
       title: 'Add Photos',
-      // Explicitly hide next button from base, as we want custom button in body or custom footer?
-      // Actually standard Next button is fine if styled similarly, but design has it at bottom.
-      // Base screen puts it at bottom. We just need to ensure style matches.
-      // But the design shows "Add more photos" text above it.
-      // Let's keep using BaseOnboardingStepScreen for consistency but maybe pass custom footer?
-      // BaseOnboardingStepScreen structure is flexible.
+      showBackButton: true,
       nextLabel: 'Continue',
       onNext: () {
         if (canProceed) {
-          ref.read(onboardingProvider.notifier).completeStep('photo_upload');
+          // We need access to user ID to submit
+          final user = ref.read(authRepositoryProvider).currentUser;
+          if (user != null) {
+            // Wait for submitMedia to finish?
+            // submitMedia is async but BaseOnboardingStepScreen onNext is void callback.
+            // But we should maybe await it?
+            // The provider handles logic. We can call it, then complete step.
+            // But submitMedia needs to finish uploading.
+            // Ideally we show loading state here.
+            // But mediaState.isLoading should trigger loading UI.
+            // Let's call submitMedia.
+            // Wait, existing code called `completeStep` directly.
+            // `completeStep` logic usually updates step status.
+            // Does it save data?
+            // `PhotoUploadScreen` didn't save data before?
+            // Ah, the previous implementation did NOT have a save call in `onNext`.
+            // It seemed to rely on `MediaProvider` state matching UI state?
+            // But now `submitMedia` is needed to sync changes to DB.
+            // So I should call `submitMedia` then `completeStep`.
+            _handleNext(user.id);
+          }
         } else {
           showDialog(
             context: context,
@@ -158,7 +199,7 @@ class PhotoUploadScreen extends ConsumerWidget {
           Text(
             'Add at least 2 photos to get your matches! First one is main picture',
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.black87, // Stronger contrast per design
+              color: Colors.black87,
               height: 1.4,
             ),
             textAlign: TextAlign.start,
@@ -170,8 +211,6 @@ class PhotoUploadScreen extends ConsumerWidget {
             textAlign: TextAlign.start,
           ),
           const SizedBox(height: 32),
-          // 2x3 Grid
-          // Fixed height grid or expanded? The design shows 6 large squares.
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -179,27 +218,23 @@ class PhotoUploadScreen extends ConsumerWidget {
               crossAxisCount: 3,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
-              childAspectRatio: 0.85, // Sqaure-ish but card-like
+              childAspectRatio: 0.85,
             ),
             itemCount: 6,
             itemBuilder: (context, index) {
-              final photo = index < mediaState.selectedPhotos.length
+              final photoContent = index < mediaState.selectedPhotos.length
                   ? mediaState.selectedPhotos[index]
                   : null;
 
               return GestureDetector(
                 onTap: () {
-                  if (photo == null) {
-                    // Only open if it's the next available slot OR any slot?
-                    // User Request: "select exact position and add image on that position"
-                    // So we allow any slot.
-                    _showImageSourceSheet(context, ref, index);
+                  if (photoContent == null) {
+                    _showImageSourceSheet(context, index);
                   } else {
-                    // Tap on existing
-                    _showEditOrRemoveSheet(context, ref, index, photo);
+                    _showEditOrRemoveSheet(context, index, photoContent);
                   }
                 },
-                child: _buildPhotoSlot(context, photo, index == 0),
+                child: _buildPhotoSlot(context, photoContent, index == 0),
               );
             },
           ),
@@ -229,19 +264,16 @@ class PhotoUploadScreen extends ConsumerWidget {
               ),
             ),
 
-          // "Add more photos" button
-          // If usage is random-access, this button acts as "Add to first empty slot"?
-          // Or just hide it since grid slots are clickable.
-          // Let's keep it and make it add to first empty slot for convenience.
           if (mediaState.validPhotoCount > 0 && mediaState.validPhotoCount < 6)
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
               child: TextButton(
                 onPressed: () {
-                  // Find first empty slot
-                  int firstEmpty = mediaState.selectedPhotos.indexOf(null);
+                  int firstEmpty = mediaState.selectedPhotos.indexWhere(
+                    (e) => e == null,
+                  );
                   if (firstEmpty != -1) {
-                    _showImageSourceSheet(context, ref, firstEmpty);
+                    _showImageSourceSheet(context, firstEmpty);
                   }
                 },
                 child: const Text('Add more photos'),
@@ -252,18 +284,35 @@ class PhotoUploadScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildPhotoSlot(BuildContext context, File? photo, bool isMain) {
-    if (photo != null) {
-      // Filled State
+  Future<void> _handleNext(String userId) async {
+    await ref.read(mediaProvider.notifier).submitMedia(userId);
+    if (mounted) {
+      // Check if error after submit
+      if (ref.read(mediaProvider).error == null) {
+        ref.read(onboardingProvider.notifier).completeStep('photo_upload');
+      }
+    }
+  }
+
+  Widget _buildPhotoSlot(
+    BuildContext context,
+    MediaContent? content,
+    bool isMain,
+  ) {
+    if (content != null) {
+      ImageProvider imageProvider;
+      if (content.isLocal) {
+        imageProvider = FileImage(content.file!);
+      } else {
+        imageProvider = NetworkImage(content.url!);
+      }
+
       return Stack(
         children: [
           Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              image: DecorationImage(
-                image: FileImage(photo),
-                fit: BoxFit.cover,
-              ),
+              image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
               border: isMain ? Border.all(color: Colors.amber, width: 3) : null,
               boxShadow: const [
                 BoxShadow(
@@ -303,7 +352,6 @@ class PhotoUploadScreen extends ConsumerWidget {
               ),
             ),
 
-          // Remove button
           Positioned(
             right: 4,
             top: 4,
@@ -319,7 +367,6 @@ class PhotoUploadScreen extends ConsumerWidget {
         ],
       );
     } else {
-      // Empty State - Dashed Border
       return CustomPaint(
         painter: _DashedBorderPainter(
           color: Colors.black,
@@ -355,9 +402,8 @@ class PhotoUploadScreen extends ConsumerWidget {
 
   void _showEditOrRemoveSheet(
     BuildContext context,
-    WidgetRef ref,
     int index,
-    File file,
+    MediaContent content,
   ) {
     showModalBottomSheet(
       context: context,
@@ -365,31 +411,21 @@ class PhotoUploadScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(
-              leading: const Icon(Icons.crop),
-              title: const Text('Edit Photo'),
-              onTap: () async {
-                Navigator.pop(ctx);
-                final repo = ref.read(mediaRepositoryProvider);
-                // We need to re-crop this specific file
-                final cropped = await repo.cropImage(file);
-                if (cropped != null && context.mounted) {
-                  // Update the file in the provider.
-                  // Provider needs a update method?
-                  // Currently we only have remove/add.
-                  // Let's remove and insert at same index?
-                  // No, reorderImages handles move.
-                  // We need an "updateImage(index, file)" method in provider.
-                  // For now, remove and add is clunky as it changes order.
-                  // I should add `updateImage` to provider.
-                  // Waiting for that... assume remove+insert for now or separate task.
-                  // Actually, let's just trigger capture/pick again?
-                  // User asked for "Edit".
-                  // Let's implement a quick updateHack:
-                  ref.read(mediaProvider.notifier).updateImage(index, cropped);
-                }
-              },
-            ),
+            if (content.isLocal)
+              ListTile(
+                leading: const Icon(Icons.crop),
+                title: const Text('Edit Photo'),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  final repo = ref.read(mediaRepositoryProvider);
+                  final cropped = await repo.cropImage(content.file!);
+                  if (cropped != null && context.mounted) {
+                    ref
+                        .read(mediaProvider.notifier)
+                        .updateImage(index, cropped);
+                  }
+                },
+              ),
             ListTile(
               leading: const Icon(Icons.delete, color: Colors.red),
               title: const Text(

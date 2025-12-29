@@ -6,7 +6,6 @@ import '../../../domain/models/prompt_category_model.dart';
 import '../../../domain/models/prompt_template_model.dart';
 import '../../../domain/models/profile_prompt_model.dart';
 import '../../../../auth/providers/auth_providers.dart';
-import '../../../../../core/utils/app_logger.dart';
 
 class ProfilePromptsScreen extends ConsumerStatefulWidget {
   const ProfilePromptsScreen({super.key});
@@ -18,7 +17,8 @@ class ProfilePromptsScreen extends ConsumerStatefulWidget {
 
 class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
   // State
-  final List<ProfilePrompt> _selectedPrompts = []; // The actual saved user prompts
+  final List<ProfilePrompt> _selectedPrompts =
+      []; // The actual saved user prompts
   bool _isLoading = false;
   String? _error;
 
@@ -50,16 +50,24 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
     });
 
     try {
+      final userId = ref.read(authRepositoryProvider).currentUser?.id;
+      if (userId == null) throw Exception('User not logged in');
+
       final repo = ref.read(onboardingRepositoryProvider);
+
       final results = await Future.wait([
         repo.getPromptCategories(),
         repo.getPromptTemplates(),
+        repo.getUserProfilePrompts(userId),
       ]);
 
       if (mounted) {
         setState(() {
           _categories = results[0] as List<PromptCategory>;
           _templates = results[1] as List<PromptTemplate>;
+          final userPrompts = results[2] as List<ProfilePrompt>;
+          _selectedPrompts.clear();
+          _selectedPrompts.addAll(userPrompts);
           _isLoading = false;
         });
       }

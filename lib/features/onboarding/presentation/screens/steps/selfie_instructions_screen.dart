@@ -11,6 +11,7 @@ class SelfieInstructionsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return BaseOnboardingStepScreen(
       title: 'Verify it\'s you',
+      showBackButton: true,
       nextLabel: 'I\'m Ready',
       onNext: () {
         Navigator.of(

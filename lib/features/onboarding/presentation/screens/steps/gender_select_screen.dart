@@ -24,6 +24,39 @@ class _GenderSelectScreenState extends ConsumerState<GenderSelectScreen> {
     {'value': 'non_binary', 'label': 'Non-Binary'},
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchExistingData());
+  }
+
+  Future<void> _fetchExistingData() async {
+    final user = ref.read(authRepositoryProvider).currentUser;
+    if (user != null) {
+      final profile = await ref
+          .read(onboardingRepositoryProvider)
+          .getProfileRaw(user.id);
+      if (profile != null && profile['gender'] != null) {
+        String dbGender = profile['gender'];
+        setState(() {
+          switch (dbGender) {
+            case 'M':
+              _selectedGender = 'male';
+              break;
+            case 'F':
+              _selectedGender = 'female';
+              break;
+            case 'NB':
+              _selectedGender = 'non_binary';
+              break;
+            default:
+              _selectedGender = null;
+          }
+        });
+      }
+    }
+  }
+
   Future<void> _handleNext() async {
     if (_selectedGender == null) return;
 

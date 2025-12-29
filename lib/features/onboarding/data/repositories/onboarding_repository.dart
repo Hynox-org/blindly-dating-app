@@ -382,4 +382,63 @@ class OnboardingRepository {
       await _supabase.from('profile_prompts').insert(data);
     }
   }
+
+  // --- Fetch User Selections methods for Bidirectional Navigation ---
+
+  Future<List<String>> getUserInterestChips(String userId) async {
+    try {
+      // 1. Get profile ID
+      final profile = await getProfileRaw(userId);
+      if (profile == null) return [];
+      final profileId = profile['id'];
+
+      // 2. Fetch chips
+      final response = await _supabase
+          .from('profile_interest_chips')
+          .select('chip_id')
+          .eq('profile_id', profileId);
+
+      return (response as List).map((e) => e['chip_id'] as String).toList();
+    } catch (e) {
+      AppLogger.info('Error fetching user interest chips: $e');
+      return [];
+    }
+  }
+
+  Future<List<String>> getUserLifestyleChips(String userId) async {
+    try {
+      final profile = await getProfileRaw(userId);
+      if (profile == null) return [];
+      final profileId = profile['id'];
+
+      final response = await _supabase
+          .from('profile_lifestyle_chips')
+          .select('chip_id')
+          .eq('profile_id', profileId);
+
+      return (response as List).map((e) => e['chip_id'] as String).toList();
+    } catch (e) {
+      AppLogger.info('Error fetching user lifestyle chips: $e');
+      return [];
+    }
+  }
+
+  Future<List<ProfilePrompt>> getUserProfilePrompts(String userId) async {
+    try {
+      final profile = await getProfileRaw(userId);
+      if (profile == null) return [];
+      final profileId = profile['id'];
+
+      final response = await _supabase
+          .from('profile_prompts')
+          .select()
+          .eq('profile_id', profileId)
+          .order('prompt_display_order'); // Order by display order
+
+      return (response as List).map((e) => ProfilePrompt.fromJson(e)).toList();
+    } catch (e) {
+      AppLogger.info('Error fetching user profile prompts: $e');
+      return [];
+    }
+  }
 }

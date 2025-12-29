@@ -22,6 +22,21 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
     _controller.addListener(() {
       setState(() {});
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchExistingData());
+  }
+
+  Future<void> _fetchExistingData() async {
+    final user = ref.read(authRepositoryProvider).currentUser;
+    if (user != null) {
+      final profile = await ref
+          .read(onboardingRepositoryProvider)
+          .getProfileRaw(user.id);
+      if (profile != null && profile['bio'] != null) {
+        setState(() {
+          _controller.text = profile['bio'];
+        });
+      }
+    }
   }
 
   @override

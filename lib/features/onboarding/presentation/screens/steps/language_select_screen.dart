@@ -51,6 +51,27 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
         _searchQuery = _searchController.text.toLowerCase();
       });
     });
+
+    // Fetch existing data
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchExistingData());
+  }
+
+  Future<void> _fetchExistingData() async {
+    final user = ref.read(authRepositoryProvider).currentUser;
+    if (user != null) {
+      final profile = await ref
+          .read(onboardingRepositoryProvider)
+          .getProfileRaw(user.id);
+      if (profile != null && profile['languages_known'] != null) {
+        final List<dynamic> loaded = profile['languages_known'];
+        if (loaded.isNotEmpty) {
+          setState(() {
+            _selectedLanguageCodes.clear();
+            _selectedLanguageCodes.addAll(loaded.cast<String>());
+          });
+        }
+      }
+    }
   }
 
   @override

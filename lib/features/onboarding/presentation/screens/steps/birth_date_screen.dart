@@ -18,6 +18,41 @@ class _BirthDateScreenState extends ConsumerState<BirthDateScreen> {
   bool _isSaving = false;
   final TextEditingController _dateController = TextEditingController();
 
+  @override
+  void initState() {
+    super.initState();
+    _fetchExistingDate();
+  }
+
+  Future<void> _fetchExistingDate() async {
+    final user = ref.read(authRepositoryProvider).currentUser;
+    if (user != null) {
+      final repo = ref.read(onboardingRepositoryProvider);
+      final profile = await repo.getProfileRaw(user.id);
+      if (profile != null && profile['birth_date'] != null) {
+        final dateStr = profile['birth_date'] as String;
+        // Postgres format YYYY-MM-DD
+        final parts = dateStr.split('-');
+        if (parts.length == 3) {
+          final year = int.tryParse(parts[0]);
+          final month = int.tryParse(parts[1]);
+          final day = int.tryParse(parts[2]);
+
+          if (year != null && month != null && day != null) {
+            final date = DateTime(year, month, day);
+            if (mounted) {
+              setState(() {
+                _selectedDate = date;
+                _dateController.text =
+                    "${day.toString().padLeft(2, '0')}-${month.toString().padLeft(2, '0')}-$year";
+              });
+            }
+          }
+        }
+      }
+    }
+  }
+
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,

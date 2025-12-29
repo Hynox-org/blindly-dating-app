@@ -10,6 +10,8 @@ class TermsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return BaseOnboardingStepScreen(
       title: 'Community guidelines',
+      showBackButton: true,
+      onBack: () => Navigator.of(context).maybePop(),
       nextLabel: 'Agree & Continue',
       onNext: () {
         ref.read(onboardingProvider.notifier).completeStep('terms_accept');

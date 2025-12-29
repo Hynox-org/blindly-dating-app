@@ -32,8 +32,28 @@ class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
     try {
       final repo = ref.read(onboardingRepositoryProvider);
       final categories = await repo.getLifestyleCategoriesWithChips();
+
+      // Fetch user selections
+      final user = ref.read(authRepositoryProvider).currentUser;
+      final Map<int, String> loadedSelections = {};
+
+      if (user != null) {
+        final userChipIds = await repo.getUserLifestyleChips(user.id);
+        // Map chip IDs back to selections map (CategoryId -> ChipId)
+        // We need to find which category each chip belongs to
+        for (var chipId in userChipIds) {
+          for (var cat in categories) {
+            if (cat.chips.any((c) => c.id == chipId)) {
+              loadedSelections[cat.id] = chipId;
+              break;
+            }
+          }
+        }
+      }
+
       setState(() {
         _categories = categories;
+        _selections.addAll(loadedSelections);
         _isLoading = false;
       });
     } catch (e) {
@@ -105,6 +125,7 @@ class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
   Widget build(BuildContext context) {
     return BaseOnboardingStepScreen(
       title: 'Life Style', // Matches Image
+      showBackButton: true,
       onNext: _onNext,
       isNextEnabled: !_isLoading && _isFormValid,
       showSkipButton: false,

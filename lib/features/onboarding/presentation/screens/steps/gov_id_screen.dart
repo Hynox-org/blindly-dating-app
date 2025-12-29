@@ -10,6 +10,7 @@ class GovIdScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return BaseOnboardingStepScreen(
       title: 'Government ID',
+      showBackButton: true,
       nextLabel: 'Upload',
       onNext: () {
         ref.read(onboardingProvider.notifier).completeStep('gov_id_optional');

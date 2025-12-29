@@ -8,6 +8,7 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
   final Widget child;
   final VoidCallback? onNext;
   final VoidCallback? onSkip;
+  final VoidCallback? onBack;
   final String nextLabel;
   final String skipLabel;
   final bool showNextButton;
@@ -24,6 +25,7 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
     required this.child,
     this.onNext,
     this.onSkip,
+    this.onBack,
     this.nextLabel = 'Continue',
     this.skipLabel = 'Skip',
     this.showNextButton = true,
@@ -54,9 +56,13 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
                       child: IconButton(
                         icon: const Icon(Icons.arrow_back_ios),
                         onPressed: () {
-                          ref
-                              .read(onboardingProvider.notifier)
-                              .goToPreviousStep();
+                          if (onBack != null) {
+                            onBack!();
+                          } else {
+                            ref
+                                .read(onboardingProvider.notifier)
+                                .goToPreviousStep();
+                          }
                         },
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),

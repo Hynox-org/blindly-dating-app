@@ -28,6 +28,7 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
   bool _isRecording = false;
   bool _isPlaying = false;
   String? _recordedFilePath;
+  String? _existingVoiceUrl; // Remote URL
   int _currentTimerSeconds = 0;
   Timer? _timer;
 
@@ -41,6 +42,27 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
     _audioPlayer.onPlayerComplete.listen((event) {
       if (mounted) setState(() => _isPlaying = false);
     });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _fetchExistingVoice();
+    });
+  }
+
+  Future<void> _fetchExistingVoice() async {
+    final user = ref.read(authRepositoryProvider).currentUser;
+    if (user == null) return;
+
+    final voiceData = await ref
+        .read(mediaRepositoryProvider)
+        .getUserVoiceIntro(user.id);
+    if (voiceData != null) {
+      if (mounted) {
+        setState(() {
+          _existingVoiceUrl = voiceData['media_url'];
+          _currentTimerSeconds = (voiceData['duration_seconds'] as int?) ?? 0;
+        });
+      }
+    }
   }
 
   @override
@@ -68,6 +90,8 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
         setState(() {
           _isRecording = true;
           _errorMessage = null;
+          // Clear existing if we start new recording
+          _existingVoiceUrl = null;
         });
       } else {
         setState(() => _errorMessage = 'Microphone permission denied');
@@ -126,11 +150,16 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
   }
 
   Future<void> _playVoice() async {
-    if (_recordedFilePath == null) return;
     try {
-      await _audioPlayer.play(DeviceFileSource(_recordedFilePath!));
-      setState(() => _isPlaying = true);
+      if (_recordedFilePath != null) {
+        await _audioPlayer.play(DeviceFileSource(_recordedFilePath!));
+        setState(() => _isPlaying = true);
+      } else if (_existingVoiceUrl != null) {
+        await _audioPlayer.play(UrlSource(_existingVoiceUrl!));
+        setState(() => _isPlaying = true);
+      }
     } catch (e) {
+      AppLogger.error('Play voice error', e);
       setState(() => _errorMessage = 'Failed to play audio');
     }
   }
@@ -144,6 +173,7 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
     _audioPlayer.stop();
     setState(() {
       _recordedFilePath = null;
+      _existingVoiceUrl = null;
       _isPlaying = false;
       _currentTimerSeconds = 0;
       _errorMessage = null;
@@ -151,6 +181,12 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
   }
 
   Future<void> _handleNext() async {
+    // If we have an existing URL and no new recording, just proceed
+    if (_existingVoiceUrl != null && _recordedFilePath == null) {
+      ref.read(onboardingProvider.notifier).completeStep('voice_intro');
+      return;
+    }
+
     if (_recordedFilePath == null) {
       setState(() => _errorMessage = 'Please record a voice intro');
       return;
@@ -179,12 +215,13 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
 
       // 1. Upload File
       final file = File(_recordedFilePath!);
-      final mediaUrl = await mediaRepo.uploadVoice(file, user.id);
+      // returns filePath (e.g. userId/uuid.m4a)
+      final mediaPath = await mediaRepo.uploadVoice(file, user.id);
 
       // 2. Save Metadata
       final mediaData = {
         'profile_id': profileId,
-        'media_url': mediaUrl,
+        'media_url': mediaPath, // Save PATH
         'media_type': 'voice_intro',
         'display_order': 0,
         'is_primary': false,
@@ -233,13 +270,14 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
     // Gold/Yellow -> Secondary/Accent Color
     final Color accentGoldColor = Theme.of(context).colorScheme.secondary;
 
+    final hasVoice = _recordedFilePath != null || _existingVoiceUrl != null;
+
     return BaseOnboardingStepScreen(
       title: 'Voice Intro',
       showBackButton: true,
       showNextButton: false, // We will implement our own "Save & Continue"
       showSkipButton: false, // We will put Skip in the header
-      isNextEnabled:
-          !_isRecording && !_isUploading && (_recordedFilePath != null),
+      isNextEnabled: !_isRecording && !_isUploading && hasVoice,
       headerAction: TextButton(
         onPressed: _handleSkip,
         child: Text(
@@ -291,7 +329,7 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                     onTap: () {
                       if (_isRecording) {
                         _stopRecording();
-                      } else if (_recordedFilePath != null) {
+                      } else if (hasVoice) {
                         // Toggle Play/Pause
                         if (_isPlaying) {
                           _pauseVoice();
@@ -333,7 +371,7 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                                 ? Icons.stop
                                 : (_isPlaying
                                       ? Icons.pause
-                                      : (_recordedFilePath != null
+                                      : (hasVoice
                                             ? Icons.play_arrow_rounded
                                             : Icons.mic)),
                             color: Colors.white,
@@ -345,7 +383,7 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                   ),
                   const SizedBox(height: 20),
                   // Timer Display
-                  if (_isRecording || _recordedFilePath != null)
+                  if (_isRecording || hasVoice)
                     Text(
                       _formatDuration(_currentTimerSeconds),
                       style: TextStyle(
@@ -355,7 +393,7 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                       ),
                     ),
                   // Delete / Re-record button
-                  if (_recordedFilePath != null && !_isRecording)
+                  if (hasVoice && !_isRecording)
                     TextButton.icon(
                       onPressed: _deleteVoice,
                       icon: const Icon(
@@ -431,9 +469,14 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                   ),
                   child: _isUploading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          'Save & Continue',
-                          style: TextStyle(
+                      : Text(
+                          // Change text based on whether it's new or existing?
+                          // "Save & Continue" implies saving. If existing, it's just "Continue".
+                          // But we might want to keep it consistent.
+                          _existingVoiceUrl != null && _recordedFilePath == null
+                              ? 'Continue'
+                              : 'Save & Continue',
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),

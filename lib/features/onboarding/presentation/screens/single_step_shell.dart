@@ -51,18 +51,7 @@ class _SingleStepShellState extends ConsumerState<SingleStepShell> {
       }
     });
 
-    final currentConfig = ref.watch(onboardingProvider).currentStepConfig;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(currentConfig?.stepName ?? 'Complete Step'),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: _getScreenForStep(widget.stepKey),
-    );
+    return _getScreenForStep(widget.stepKey);
   }
 
   Widget _getScreenForStep(String stepKey) {

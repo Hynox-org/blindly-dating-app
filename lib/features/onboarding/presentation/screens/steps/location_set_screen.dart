@@ -89,7 +89,30 @@ class _LocationSetScreenState extends ConsumerState<LocationSetScreen> {
     super.initState();
     _filteredCities = _allCitiesCallback;
     _searchController.addListener(_onSearchChanged);
-    _sessionToken = _uuid.v4(); // Generate session token on init
+    _sessionToken = _uuid.v4();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchExistingData());
+  }
+
+  Future<void> _fetchExistingData() async {
+    final user = ref.read(authRepositoryProvider).currentUser;
+    if (user != null) {
+      final profile = await ref
+          .read(onboardingRepositoryProvider)
+          .getProfileRaw(user.id);
+      if (profile != null) {
+        final city = profile['city'];
+        final country = profile['country'];
+        // final state = profile['state']; // optional to show
+        if (city != null && city.isNotEmpty) {
+          final locationStr = "$city, $country";
+          _searchController.text = locationStr;
+          // If we want it to look "selected", we might populate filtered list with it
+          setState(() {
+            _filteredCities = [locationStr];
+          });
+        }
+      }
+    }
   }
 
   @override

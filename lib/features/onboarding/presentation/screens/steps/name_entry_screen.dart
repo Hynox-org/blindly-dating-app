@@ -19,9 +19,25 @@ class _NameEntryScreenState extends ConsumerState<NameEntryScreen> {
   @override
   void initState() {
     super.initState();
+    _fetchExistingName();
     _controller.addListener(() {
       setState(() {});
     });
+  }
+
+  Future<void> _fetchExistingName() async {
+    final user = ref.read(authRepositoryProvider).currentUser;
+    if (user != null) {
+      final repo = ref.read(onboardingRepositoryProvider);
+      final profile = await repo.getProfileRaw(user.id);
+      if (profile != null && profile['display_name'] != null) {
+        if (mounted) {
+          setState(() {
+            _controller.text = profile['display_name'] as String;
+          });
+        }
+      }
+    }
   }
 
   @override

@@ -39,10 +39,20 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
     try {
       final repo = ref.read(onboardingRepositoryProvider);
       final rawChips = await repo.getInterestChips();
+
+      // Fetch user selections if logged in
+      final user = ref.read(authRepositoryProvider).currentUser;
+      final Set<String> loadedSelections = {};
+      if (user != null) {
+        final userChips = await repo.getUserInterestChips(user.id);
+        loadedSelections.addAll(userChips);
+      }
+
       setState(() {
         _allChips = rawChips
             .map((data) => InterestChip.fromJson(data))
             .toList();
+        _selectedChipIds.addAll(loadedSelections);
         _isLoading = false;
       });
     } catch (e) {
@@ -133,6 +143,7 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
       // Looking at previous valid code, BaseOnboardingStepScreen takes title/onNext.
       // We'll pass the title "Select Your Interests" to match design.
       title: 'Select Your Interests',
+      showBackButton: true,
       onNext: _onNext,
       isNextEnabled: !_isLoading && _selectedChipIds.length >= 5,
       // The design has specific subheader text. BaseOnboarding probably renders 'title' at top.

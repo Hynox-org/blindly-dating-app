@@ -1,17 +1,33 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../auth/providers/auth_providers.dart';
 import '../../../../media/providers/media_provider.dart';
 import '../../providers/onboarding_provider.dart';
 import 'base_onboarding_step_screen.dart';
 
-class PhotoReorderScreen extends ConsumerWidget {
+class PhotoReorderScreen extends ConsumerStatefulWidget {
   const PhotoReorderScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PhotoReorderScreen> createState() => _PhotoReorderScreenState();
+}
+
+class _PhotoReorderScreenState extends ConsumerState<PhotoReorderScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = ref.read(authRepositoryProvider).currentUser;
+      if (user != null) {
+        ref.read(mediaProvider.notifier).loadUserMedia(user.id);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final mediaState = ref.watch(mediaProvider);
     final theme = Theme.of(context);
 
@@ -78,7 +94,7 @@ class PhotoReorderScreen extends ConsumerWidget {
                 : Builder(
                     builder: (context) {
                       // Filter out nulls and keep track of original indices
-                      final validItems = <MapEntry<int, File>>[];
+                      final validItems = <MapEntry<int, MediaContent>>[];
                       for (
                         int i = 0;
                         i < mediaState.selectedPhotos.length;
@@ -114,15 +130,17 @@ class PhotoReorderScreen extends ConsumerWidget {
                           final entry = validItems[index];
                           final originalIndex =
                               entry.key; // Sparse index if needed for delete
-                          final photo = entry.value;
+                          final content = entry.value;
 
                           // Unique key for reordering
-                          final key = ValueKey(photo.path);
+                          final key = ValueKey(
+                            content.isLocal ? content.file!.path : content.url!,
+                          );
 
                           return _buildGridItem(
                             context,
                             key,
-                            photo,
+                            content,
                             index,
                             () => ref
                                 .read(mediaProvider.notifier)
@@ -155,11 +173,19 @@ class PhotoReorderScreen extends ConsumerWidget {
   Widget _buildGridItem(
     BuildContext context,
     Key key,
-    File photo,
+    MediaContent content,
     int index,
     VoidCallback onRemove,
   ) {
     final isMain = index == 0;
+
+    ImageProvider imageProvider;
+    if (content.isLocal) {
+      imageProvider = FileImage(content.file!);
+    } else {
+      imageProvider = NetworkImage(content.url!);
+    }
+
     return Container(
       key: key,
       decoration: BoxDecoration(
@@ -175,7 +201,7 @@ class PhotoReorderScreen extends ConsumerWidget {
           fit: StackFit.expand,
           children: [
             // Image (Bottom Layer)
-            Image.file(photo, fit: BoxFit.cover),
+            Image(image: imageProvider, fit: BoxFit.cover),
 
             // Border Overlay
             if (isMain)
