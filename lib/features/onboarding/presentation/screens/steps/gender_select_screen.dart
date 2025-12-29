@@ -15,7 +15,7 @@ class GenderSelectScreen extends ConsumerStatefulWidget {
 
 class _GenderSelectScreenState extends ConsumerState<GenderSelectScreen> {
   String? _selectedGender; // 'male', 'female', 'non_binary'
-  bool _showOnProfile = false;
+  final bool _showOnProfile = false;
   bool _isSaving = false;
 
   final List<Map<String, String>> _genderOptions = [

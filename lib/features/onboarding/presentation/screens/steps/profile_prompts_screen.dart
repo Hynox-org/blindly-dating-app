@@ -18,7 +18,7 @@ class ProfilePromptsScreen extends ConsumerStatefulWidget {
 
 class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
   // State
-  List<ProfilePrompt> _selectedPrompts = []; // The actual saved user prompts
+  final List<ProfilePrompt> _selectedPrompts = []; // The actual saved user prompts
   bool _isLoading = false;
   String? _error;
 
