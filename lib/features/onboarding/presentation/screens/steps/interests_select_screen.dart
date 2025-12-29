@@ -16,7 +16,7 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
     'Self care': [
       {'name': 'Astrology', 'icon': 'assests/images/horoscope.png'},
       {'name': 'Nutrition', 'icon': 'assests/images/bok-choy.png'},
-      {'name': 'Fitness', 'icon': 'assestes/images/women.png'},
+      {'name': 'Fitness', 'icon': 'assests/images/women.png'},
       {'name': 'Yoga', 'icon': 'assests/images/lotus.png'},
       {'name': 'Therapy', 'icon': 'assests/images/therapy.png'},
       {'name': 'Skin care', 'icon': 'assests/images/skincare.png'},
@@ -52,7 +52,7 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
       {'name': 'Theatre', 'icon': 'assests/images/theater.png'},
       {'name': 'Wine tasting', 'icon': 'assests/images/wine-tasting.png'},
       {'name': 'Museum', 'icon': 'assests/images/canvas.png'},
-      {'name': 'LGBTQ', 'icon': 'assests/images/makeup-pounch.png'},
+      {'name': 'LGBTQ', 'icon': 'assests/images/makeup-pouch.png'},
     ],
     'Music': [
       {'name': 'Arabic', 'icon': 'assests/images/music.png'},
