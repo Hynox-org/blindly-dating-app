@@ -31,6 +31,9 @@ dependencies:
   flutter:
     sdk: flutter
   country_code_picker: ^3.0.0
+  camera: ^0.10.5 # or latest
+  flutter_inappwebview: ^6.0.0  # REQUIRED for the WebView
+
 
   # State Management
   flutter_riverpod: ^2.6.1
