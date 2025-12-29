@@ -12,6 +12,7 @@ class SelfieCaptureScreen extends ConsumerWidget {
     return BaseOnboardingStepScreen(
       title: 'Smile!',
       nextLabel: 'Capture',
+      showBackButton: true,
       onNext: () async {
         // 1. Show processing screen (visual only)
         // We use Navigator to push it on top.

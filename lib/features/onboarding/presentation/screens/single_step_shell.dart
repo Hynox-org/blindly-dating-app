@@ -53,15 +53,26 @@ class _SingleStepShellState extends ConsumerState<SingleStepShell> {
 
     final currentConfig = ref.watch(onboardingProvider).currentStepConfig;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(currentConfig?.stepName ?? 'Complete Step'),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.pop(context),
+    return PopScope(
+      canPop: true,
+      onPopInvoked: (didPop) {
+        // Just let it pop naturally - state will handle it
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(currentConfig?.stepName ?? 'Complete Step'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios),
+            onPressed: () {
+              // Simple pop - just go back
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              }
+            },
+          ),
         ),
+        body: _getScreenForStep(widget.stepKey),
       ),
-      body: _getScreenForStep(widget.stepKey),
     );
   }
 

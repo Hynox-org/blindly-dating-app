@@ -10,6 +10,7 @@ class PhotoReorderScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return BaseOnboardingStepScreen(
       title: 'Arranging photos',
+      showBackButton: true,
       onNext: () {
         ref.read(onboardingProvider.notifier).completeStep('photo_reorder');
       },

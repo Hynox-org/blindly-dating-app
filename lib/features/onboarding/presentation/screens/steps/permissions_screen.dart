@@ -10,6 +10,7 @@ class PermissionsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return BaseOnboardingStepScreen(
       title: 'App Permissions',
+      showBackButton: true,
       nextLabel: 'Grant Permissions',
       onNext: () {
         // In real app, request permissions here

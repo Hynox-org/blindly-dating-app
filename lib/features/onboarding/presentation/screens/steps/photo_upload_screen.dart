@@ -10,6 +10,7 @@ class PhotoUploadScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return BaseOnboardingStepScreen(
       title: 'Add your best photos',
+      showBackButton: true,
       child: const Center(child: Text('Photo Picker Grid')),
       onNext: () {
         ref.read(onboardingProvider.notifier).completeStep('photo_upload');

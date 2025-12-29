@@ -10,6 +10,7 @@ class ProfilePromptsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return BaseOnboardingStepScreen(
       title: 'Add some personality',
+      showBackButton: true,
       nextLabel: 'Finish',
       onNext: () {
         ref.read(onboardingProvider.notifier).completeOnboarding();

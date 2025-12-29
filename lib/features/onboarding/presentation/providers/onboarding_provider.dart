@@ -10,13 +10,16 @@ class OnboardingState {
   final OnboardingStep? currentStepConfig;
   final String? errorMessage;
   final String? currentStepKey;
-  // We can cache the full progress map if needed for UI, but for now strict derivation is fine.
+  final List<OnboardingStep> allSteps;
+  final int currentStepIndex;
 
   OnboardingState({
     this.isLoading = true,
     this.currentStepConfig,
     this.errorMessage,
     this.currentStepKey,
+    this.allSteps = const [],
+    this.currentStepIndex = 0,
   });
 
   OnboardingState copyWith({
@@ -24,12 +27,16 @@ class OnboardingState {
     OnboardingStep? currentStepConfig,
     String? errorMessage,
     String? currentStepKey,
+    List<OnboardingStep>? allSteps,
+    int? currentStepIndex,
   }) {
     return OnboardingState(
       isLoading: isLoading ?? this.isLoading,
       currentStepConfig: currentStepConfig ?? this.currentStepConfig,
       errorMessage: errorMessage,
       currentStepKey: currentStepKey ?? this.currentStepKey,
+      allSteps: allSteps ?? this.allSteps,
+      currentStepIndex: currentStepIndex ?? this.currentStepIndex,
     );
   }
 }
@@ -66,9 +73,7 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
       if (profile == null) {
         AppLogger.info('Profile missing in OnboardingShell. Auto-creating...');
         try {
-          // Auto-heal: Create profile if missing
           await _ref.read(authRepositoryProvider).createProfile(user.id);
-          // Retry init after creation
           return init();
         } catch (e) {
           AppLogger.error('Failed to auto-create profile', e);
@@ -80,58 +85,48 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
         }
       }
 
-      // 1. Get ordered list of ALL steps
       final allSteps = await _repo.getAllSteps();
-
-      // 2. Get user's progress map
-      // Map<String, dynamic> stepsProgress = {};
       final rawProgress = profile['steps_progress'];
       final Map<String, dynamic> stepsProgress = (rawProgress != null)
           ? Map<String, dynamic>.from(rawProgress)
           : {};
 
-      // Check if fresh user (empty progress) AND hasn't dismissed welcome yet
       bool isFreshUser = stepsProgress.isEmpty;
-      // Alternatively, check strictly if NO steps are marked 'completed' or 'skipped'
-      if (!isFreshUser) {
-        // Double check deep just in case key exists but values are null?
-        // Actually simplest is: if map is empty, they are fresh.
-      }
 
       if (isFreshUser && !_hasDismissedWelcome) {
         state = state.copyWith(
           isLoading: false,
           currentStepKey: 'pre_onboarding',
-          // No config for this, it's a special state
           currentStepConfig: null,
+          allSteps: allSteps,
+          currentStepIndex: -1,
         );
         return;
       }
 
-      // 3. Determine current step
-      // Find the first step that is NOT 'completed'.
-      // (Optionally: also skip 'skipped' steps so they don't block progress)
       OnboardingStep? nextStep;
+      int nextStepIndex = 0;
 
-      for (final step in allSteps) {
+      for (int i = 0; i < allSteps.length; i++) {
+        final step = allSteps[i];
         final status = stepsProgress[step.stepKey];
-        // If status is NOT completed and NOT skipped, this is our next step.
-        // Or if we want to FORCE users to revisit skipped steps before finishing?
-        // Requirement: "user can access app because all mandatory fields completed... skipped steps... in home page"
-        // So 'skipped' means we moved PAST it.
 
         if (status != 'completed' && status != 'skipped') {
           nextStep = step;
+          nextStepIndex = i;
           break;
         }
       }
 
-      // High-level check
       final status = profile['onboarding_status'] as String? ?? 'in_progress';
 
       if (status == 'complete' || nextStep == null) {
-        // If no incomplete steps found, or explicitly marked complete
-        state = state.copyWith(isLoading: false, currentStepKey: 'complete');
+        state = state.copyWith(
+          isLoading: false,
+          currentStepKey: 'complete',
+          allSteps: allSteps,
+          currentStepIndex: allSteps.length,
+        );
       } else {
         AppLogger.info(
           'Derived Step: ${nextStep.stepName} (${nextStep.stepKey})',
@@ -140,6 +135,8 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
           isLoading: false,
           currentStepConfig: nextStep,
           currentStepKey: nextStep.stepKey,
+          allSteps: allSteps,
+          currentStepIndex: nextStepIndex,
         );
       }
     } catch (e) {
@@ -152,14 +149,54 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     state = state.copyWith(isLoading: true);
     try {
       final step = await _repo.getStepConfig(stepKey);
+      final stepIndex = state.allSteps.indexWhere((s) => s.stepKey == stepKey);
       state = state.copyWith(
         isLoading: false,
         currentStepConfig: step,
         currentStepKey: stepKey,
+        currentStepIndex: stepIndex >= 0 ? stepIndex : state.currentStepIndex,
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, errorMessage: e.toString());
     }
+  }
+
+  // Go to previous step
+  Future<void> previousStep() async {
+    if (state.currentStepIndex <= 0 || state.allSteps.isEmpty) {
+      AppLogger.info('Already at first step or no steps available');
+      return;
+    }
+
+    final previousIndex = state.currentStepIndex - 1;
+    final previousStep = state.allSteps[previousIndex];
+    
+    AppLogger.info('Going back to: ${previousStep.stepName} (${previousStep.stepKey})');
+    
+    state = state.copyWith(
+      currentStepConfig: previousStep,
+      currentStepKey: previousStep.stepKey,
+      currentStepIndex: previousIndex,
+    );
+  }
+
+  // NEW METHOD: Go to next step in sequence
+  Future<void> nextStep() async {
+    if (state.currentStepIndex >= state.allSteps.length - 1) {
+      AppLogger.info('Already at last step');
+      return;
+    }
+
+    final nextIndex = state.currentStepIndex + 1;
+    final nextStep = state.allSteps[nextIndex];
+    
+    AppLogger.info('Going forward to: ${nextStep.stepName} (${nextStep.stepKey})');
+    
+    state = state.copyWith(
+      currentStepConfig: nextStep,
+      currentStepKey: nextStep.stepKey,
+      currentStepIndex: nextIndex,
+    );
   }
 
   Future<void> completeStep(String stepKeyToComplete) async {
@@ -170,7 +207,7 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     await _updateStepAndAdvance(stepKeyToSkip, 'skipped');
   }
 
-  // Helper to update status and re-run init to find next step
+  // UPDATED: Helper to update status and advance
   Future<void> _updateStepAndAdvance(String stepKey, String status) async {
     state = state.copyWith(isLoading: true);
     final user = _ref.read(authRepositoryProvider).currentUser;
@@ -180,9 +217,21 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
       // 1. Update the JSON status map
       await _repo.updateStepStatus(user.id, stepKey, status);
 
-      // 2. Re-evaluate "Where am I?" by running init logic again
-      // This is robust: it reads the new state and finds the next incomplete step.
-      await init();
+      // 2. Move to next step in sequence (not based on DB)
+      if (state.currentStepIndex < state.allSteps.length - 1) {
+        final nextIndex = state.currentStepIndex + 1;
+        final nextStep = state.allSteps[nextIndex];
+        
+        state = state.copyWith(
+          isLoading: false,
+          currentStepConfig: nextStep,
+          currentStepKey: nextStep.stepKey,
+          currentStepIndex: nextIndex,
+        );
+      } else {
+        // Last step completed - mark onboarding complete
+        await completeOnboarding();
+      }
     } catch (e) {
       AppLogger.info('Error advancing step: $e');
       state = state.copyWith(
@@ -196,19 +245,19 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     final user = _ref.read(authRepositoryProvider).currentUser;
     if (user == null) return;
 
-    // If a final step is skipped, mark it in the JSON map
     if (skippedStepKey != null) {
       await _repo.updateStepStatus(user.id, skippedStepKey, 'skipped');
     }
 
-    // Mark high-level status as complete
     await _repo.completeOnboarding(user.id);
-    state = state.copyWith(currentStepKey: 'complete');
+    state = state.copyWith(
+      currentStepKey: 'complete',
+      isLoading: false,
+    );
   }
 
   void dismissWelcome() {
     _hasDismissedWelcome = true;
-    // Re-run init to proceed to the actual first step
     init();
   }
 }
