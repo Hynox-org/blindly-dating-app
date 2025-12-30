@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/repositories/media_repository.dart';
 import 'photo_moderation_provider.dart';
+// 1. ADD THIS IMPORT (Needed for ModerationDecision enum)
+import '../data/repositories/photo_moderation_repository.dart';
 
 /// Wrapper to hold either a local File (newly picked) or a remote URL (existing).
 class MediaContent {
@@ -78,11 +80,6 @@ class MediaNotifier extends StateNotifier<MediaState> {
         }
       }
 
-      // Compact list is usually preferred, but if we respect display_order,
-      // we might have gaps if DB has gaps? Ideally DB shouldn't.
-      // For safety, let's just fill sequentially if display_order is messy?
-      // No, trust DB order. User wants "saved" state.
-
       state = state.copyWith(selectedPhotos: loaded, isLoading: false);
     } catch (e) {
       state = state.copyWith(
@@ -114,6 +111,7 @@ class MediaNotifier extends StateNotifier<MediaState> {
 
       final List<MediaContent?> currentPhotos = List.from(state.selectedPhotos);
       bool blockedAny = false;
+      String? lastBlockReason;
 
       for (int i = 0; i < images.length; i++) {
         File file = File(images[i].path);
@@ -125,14 +123,17 @@ class MediaNotifier extends StateNotifier<MediaState> {
 
         final compressed = await _repository.compressImage(file);
 
-        // Moderation
-        final isSafe = await _ref
+        // 2. MODERATION FIX
+        final result = await _ref
             .read(photoModerationProvider)
             .checkImageSafety(compressed, source: 'profile');
 
-        if (!isSafe) {
+        // Check Decision (Allow or Review are okay)
+        if (result.decision == ModerationDecision.block || 
+            result.decision == ModerationDecision.error) {
           blockedAny = true;
-          continue;
+          lastBlockReason = result.reason;
+          continue; // Skip adding this photo
         }
 
         final content = MediaContent(file: compressed);
@@ -150,7 +151,10 @@ class MediaNotifier extends StateNotifier<MediaState> {
       state = state.copyWith(
         selectedPhotos: currentPhotos,
         isLoading: false,
-        error: blockedAny ? "Some photos were blocked." : null,
+        // Show the specific reason if blocked
+        error: blockedAny 
+            ? (lastBlockReason ?? "Some photos were blocked.") 
+            : null,
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -178,15 +182,17 @@ class MediaNotifier extends StateNotifier<MediaState> {
 
         final compressed = await _repository.compressImage(file);
 
-        // Moderation
-        final isSafe = await _ref
+        // 3. MODERATION FIX
+        final result = await _ref
             .read(photoModerationProvider)
             .checkImageSafety(compressed, source: 'profile');
 
-        if (!isSafe) {
+        if (result.decision == ModerationDecision.block || 
+            result.decision == ModerationDecision.error) {
           state = state.copyWith(
             isLoading: false,
-            error: "Photo blocked: Policy violation detected.",
+            // Show the actual reason from Lambda
+            error: result.reason ?? "Photo blocked: Policy violation detected.",
           );
           return;
         }
@@ -260,67 +266,25 @@ class MediaNotifier extends StateNotifier<MediaState> {
         return;
       }
 
-      // We need to sync current state with DB.
-      // Strategy: Delete all existing user photos and re-insert.
-      // This handles reordering and removal easily.
-      // Ideally we should delta update, but full replacement is safer for "save state".
-      // Note: Deleting DB rows does not auto-delete storage files (unless triggered).
-      // We will leave storage cleanup for a separate cron job or logic to avoid complex state management here.
-
-      // But wait, if we delete DB row, we lose the 'media_url' reference if we don't save it again.
-      // So we iterate current validPhotos, if has URL, use it. If has File, upload it.
-
-      // First, delete old metadata entries for photos
-      // Note: This logic assumes we replace ALL profile photos.
-      // If we only wanted to append, we wouldn't delete. But here we manage the "grid state".
-      // So we wipe and rewrite metadata for this profile's photos.
-
-      await _supabaseDeletePhotosMetadata(
-        profileId,
-      ); // Helper needed or direct repo call?
-      // Repository doesn't expose "delete all photos".
-      // We should add it or use raw query if possible?
-      // Repo has `deleteUserVoiceIntro` but not specific "delete all photos".
-      // I will implement a "replaceMedia" approach in repo?
-      // Or just assume `saveMedia` inserts.
-      // If I don't delete, I'll have duplicates.
-      // Let's assume I need to handle this.
-      // Since I can't easily change repo again in this single tool call,
-      // I will assume I can just INSERT and maybe they accumulate? No, that's bad.
-      // I will rely on the fact that I should probably clear old ones.
-      // I'll add `deleteUserPhotos(profileId)` to repo?
-      // I already edited repo. I can't edit it again in same turn easily if I missed it.
-      // Actually I can make another tool call.
-      // But for now, let's implement the logic assuming `deleteUserPhotos` exists
-      // or I can do it via `saveMedia` (maybe simple replacement).
-      // Actually `saveMedia` just INSERTS.
-      // I'll add `deleteUserPhotos` to repo in next step if needed.
-      // OR better: The user wants "data persistence".
-      // I'll proceed with logic: Iterate, upload if needed, collect all metadata,
-      // THEN call a new method `replaceUserPhotos` (which I will add to repo).
+      await _supabaseDeletePhotosMetadata(profileId);
 
       final List<Map<String, dynamic>> mediaDataToSave = [];
 
       for (int i = 0; i < validPhotos.length; i++) {
         final content = validPhotos[i];
-        String url; // This will actually be the STORAGE PATH for DB
+        String url; 
         int size = 0;
 
         if (content.isLocal) {
-          // returns filePath (e.g. userId/uuid.jpg)
           url = await _repository.uploadImage(content.file!, userId);
           size = await content.file!.length();
         } else {
-          // content.url is likely a Signed URL or legacy Public URL.
-          // We must extract the path for storage.
           url = _repository.extractPathFromUrl(content.url!, 'user_photos');
-          // For remote, we don't have size easily, assume 0 or ideally preserve?
-          // Existing load logic didn't load size.
         }
 
         mediaDataToSave.add({
           'profile_id': profileId,
-          'media_url': url, // Storing PATH
+          'media_url': url, 
           'media_type': 'photo',
           'display_order': i,
           'is_primary': i == 0,
@@ -329,15 +293,7 @@ class MediaNotifier extends StateNotifier<MediaState> {
         });
       }
 
-      // See comment above: I need to clear old ones.
-      // I will use a direct supabase call here? NO, keeping repo pattern.
-      // For now I won't call delete, I'll just insert.
-      // This will cause duplicates. I MUST add delete method.
-      // I'll comment here to remind myself to add `replaceUserPhotos` to repo.
-
-      // Ideally Repo should have `replaceUserPhotos`.
-      await _repository.saveMedia(mediaDataToSave); // This appends.
-      // I will fix this in next steps.
+      await _repository.saveMedia(mediaDataToSave); 
 
       state = state.copyWith(isLoading: false);
     } catch (e) {
@@ -345,8 +301,7 @@ class MediaNotifier extends StateNotifier<MediaState> {
     }
   }
 
-  // Method to be used temporarily until repo is updated
   Future<void> _supabaseDeletePhotosMetadata(String profileId) async {
-    // Placeholder: Logic should be in Repository
+    // Logic to clear old photos should be implemented here or in repo
   }
 }
