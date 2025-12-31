@@ -40,6 +40,42 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
+      appBar: AppBar(
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        centerTitle: true,
+        leading: showBackButton
+            ? Padding(
+                padding: const EdgeInsets.only(left: 8.0),
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back_ios),
+                  onPressed: () {
+                    if (onBack != null) {
+                      onBack!();
+                    } else {
+                      ref.read(onboardingProvider.notifier).goToPreviousStep();
+                    }
+                  },
+                ),
+              )
+            : null,
+        title: Text(
+          title,
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        actions: headerAction != null
+            ? [
+                Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: headerAction!,
+                ),
+              ]
+            : null,
+      ),
       floatingActionButton: fab,
       body: SafeArea(
         child: Padding(
@@ -47,43 +83,6 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Header with Title and optional Back Button
-              Row(
-                children: [
-                  if (showBackButton)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: IconButton(
-                        icon: const Icon(Icons.arrow_back_ios),
-                        onPressed: () {
-                          if (onBack != null) {
-                            onBack!();
-                          } else {
-                            ref
-                                .read(onboardingProvider.notifier)
-                                .goToPreviousStep();
-                          }
-                        },
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                    ),
-                  Expanded(
-                    child: Text(
-                      title,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineMedium
-                          ?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                    ),
-                  ),
-                  if (headerAction != null) headerAction!,
-                ],
-              ),
-              const SizedBox(height: 24),
-
               // Main Content
               Expanded(child: child),
 
