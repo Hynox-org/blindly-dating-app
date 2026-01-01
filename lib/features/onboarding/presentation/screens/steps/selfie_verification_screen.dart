@@ -277,8 +277,9 @@ class _SelfieVerificationScreenState
   Future<void> _onCaptureComplete() async {
     // Prevent multiple calls
     if (_currentStep == SelfieStep.processing ||
-        _currentStep == SelfieStep.verified)
+        _currentStep == SelfieStep.verified) {
       return;
+    }
 
     _isDetecting = false;
 
@@ -304,8 +305,9 @@ class _SelfieVerificationScreenState
         throw Exception("Camera capture failed: $e");
       }
 
-      if (photo == null)
+      if (photo == null) {
         throw Exception("Failed to capture photo (null result)");
+      }
       debugPrint("SelfieVerification: Photo captured at ${photo.path}");
 
       // 3. Stop ML Stream now that we have the photo
@@ -426,11 +428,22 @@ class _SelfieVerificationScreenState
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.only(bottom: 16.0),
-              child: Text(
-                _targetPose?.description ?? "Follow the instructions",
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium,
+              padding: const EdgeInsets.only(bottom: 20.0, top: 10),
+              child: Column(
+                children: [
+                  Text(
+                    _targetPose?.emoji ?? "",
+                    style: const TextStyle(fontSize: 80),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    _targetPose?.description ?? "Copy this symbol",
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
             ),
             Expanded(
@@ -639,7 +652,7 @@ class _SelfieVerificationScreenState
                   _buildBenefitItem(
                     context,
                     icon: Icons.camera_front_rounded,
-                    title: "Copy a simple pose",
+                    title: "Copy a symbol",
                     subtitle: "Takes 1 minute to confirm your identity.",
                     iconColor: colorScheme.secondary,
                   ),

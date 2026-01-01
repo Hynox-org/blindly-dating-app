@@ -276,19 +276,9 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
       title: 'Voice Intro',
       showBackButton: true,
       showNextButton: false, // We will implement our own "Save & Continue"
-      showSkipButton: false, // We will put Skip in the header
+      // showSkipButton: handled dynamically
+      onSkip: _handleSkip, // Provide callback for dynamic skip button in AppBar
       isNextEnabled: !_isRecording && !_isUploading && hasVoice,
-      headerAction: TextButton(
-        onPressed: _handleSkip,
-        child: Text(
-          'Skip',
-          style: TextStyle(
-            color: accentGoldColor,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
       child: LayoutBuilder(
         builder: (context, constraints) {
           return Column(

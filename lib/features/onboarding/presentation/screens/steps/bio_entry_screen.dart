@@ -81,18 +81,9 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
     return BaseOnboardingStepScreen(
       title: 'About You',
       showBackButton: true,
-      showSkipButton: false, // We use header action for skip
-      headerAction: TextButton(
-        onPressed: _handleSkip,
-        child: const Text(
-          'Skip',
-          style: TextStyle(
-            color: Colors.black, // Or app theme color
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
+      // showSkipButton: handled dynamically by base screen based on config
+      onSkip:
+          _handleSkip, // We still provide the callback for the base screen to use
       nextLabel: 'Continue',
       isNextEnabled: _controller.text.trim().length >= 10 && !_isSaving,
       onNext: _handleNext,

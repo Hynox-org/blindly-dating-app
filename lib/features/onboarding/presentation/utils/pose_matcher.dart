@@ -3,17 +3,18 @@ import 'package:flutter/foundation.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 
 /// Defines a target pose with specific angle and proximity constraints.
+/// Defines a target pose with specific angle and proximity constraints.
 class PoseTarget {
   final String name;
-  final String description;
-  final String assetPath; // Placeholder for now, useful for UI
+  final String emoji; // The symbol to display
+  final String description; // Short instruction
   final List<AngleConstraint> angleConstraints;
   final List<ProximityConstraint> proximityConstraints;
 
   PoseTarget({
     required this.name,
+    required this.emoji,
     required this.description,
-    required this.assetPath,
     this.angleConstraints = const [],
     this.proximityConstraints = const [],
   });
@@ -104,7 +105,7 @@ class PoseMatcher {
         debugPrint(
           'Angle Mismatch: ${constraint.middle} is ${angle.toStringAsFixed(1)} (Target: ${constraint.minAngle}-${constraint.maxAngle})',
         );
-        return MatchResult(false, "Adjust arm angle");
+        return MatchResult(false, "Adjust your pose");
       }
     }
 
@@ -114,8 +115,9 @@ class PoseMatcher {
       final leftEar = pose.landmarks[PoseLandmarkType.leftEar];
       final rightEar = pose.landmarks[PoseLandmarkType.rightEar];
 
-      if (leftEar == null || rightEar == null)
+      if (leftEar == null || rightEar == null) {
         return MatchResult(false, "Face not fully visible");
+      }
 
       final double faceWidth = calculateDistance(leftEar, rightEar);
       if (faceWidth == 0) return MatchResult(false, "Face not visible");
@@ -124,8 +126,9 @@ class PoseMatcher {
         final first = pose.landmarks[constraint.first];
         final second = pose.landmarks[constraint.second];
 
-        if (first == null || second == null)
+        if (first == null || second == null) {
           return MatchResult(false, "Hand/Face off-screen");
+        }
 
         if (first.likelihood < 0.5 || second.likelihood < 0.5) {
           return MatchResult(false, "Low visibility of hand/face");
@@ -138,7 +141,7 @@ class PoseMatcher {
           debugPrint(
             'Proximity Mismatch: ${constraint.first} to ${constraint.second} is ${distance.toStringAsFixed(1)} (Max: ${maxDist.toStringAsFixed(1)} [${constraint.maxNormalizedDistance}x Face])',
           );
-          return MatchResult(false, "Move hand closer to target");
+          return MatchResult(false, "Bring hand closer to target");
         }
       }
     }
@@ -150,72 +153,132 @@ class PoseMatcher {
 /// A collection of predefined poses.
 class PoseLibrary {
   static final List<PoseTarget> poses = [
-    // 1. Salute (Right hand to Right Eye area)
+    // 1. The Salute (🫡)
     PoseTarget(
-      name: 'The Salute',
-      description: 'Bring your right hand to your forehead.',
-      assetPath: 'assets/poses/salute_right.png',
+      name: 'Salute',
+      emoji: '🫡',
+      description: 'Salute with your right hand',
       proximityConstraints: [
         ProximityConstraint(
           first: PoseLandmarkType.rightWrist,
           second: PoseLandmarkType.rightEye,
-          maxNormalizedDistance: 3.0, // Minimal constraint
+          maxNormalizedDistance: 3.5,
         ),
       ],
       angleConstraints: [
-        // Elbow bent - almost any bend accepted
         AngleConstraint(
           start: PoseLandmarkType.rightShoulder,
           middle: PoseLandmarkType.rightElbow,
           end: PoseLandmarkType.rightWrist,
-          minAngle: 5,
-          maxAngle: 175,
+          minAngle: 10,
+          maxAngle: 170, // Bent elbow
         ),
       ],
     ),
 
-    // 2. The Thinker (Hand to Chin)
+    // 2. Namaste / Praying (🙏)
     PoseTarget(
-      name: 'The Thinker',
-      description: 'Place your hand on your chin.',
-      assetPath: 'assets/poses/thinker.png',
+      name: 'Namaste',
+      emoji: '🙏',
+      description: 'Put your hands together',
+      proximityConstraints: [
+        // Wrists close to each other
+        ProximityConstraint(
+          first: PoseLandmarkType.leftWrist,
+          second: PoseLandmarkType.rightWrist,
+          maxNormalizedDistance: 2.0, // Close together
+        ),
+        // Hands near mouth/chin level
+        ProximityConstraint(
+          first: PoseLandmarkType.leftWrist,
+          second: PoseLandmarkType.leftMouth, // Using left mouth as anchor
+          maxNormalizedDistance: 4.5, // Fairly loose area near face/neck
+        ),
+      ],
+      // No strict angle constraints, just hands together
+    ),
+
+    // 3. The Halo / Hands on Head (🙆)
+    PoseTarget(
+      name: 'Halo',
+      emoji: '🙆',
+      description: 'Hands on your head',
+      proximityConstraints: [
+        ProximityConstraint(
+          first: PoseLandmarkType.rightWrist,
+          second: PoseLandmarkType.rightEar,
+          maxNormalizedDistance: 3.0,
+        ),
+        ProximityConstraint(
+          first: PoseLandmarkType.leftWrist,
+          second: PoseLandmarkType.leftEar,
+          maxNormalizedDistance: 3.0,
+        ),
+      ],
+      // Elbows usually point out, but let's be lenient
+    ),
+
+    // 4. The Thinker (🤔)
+    PoseTarget(
+      name: 'Thinker',
+      emoji: '🤔',
+      description: 'Hand on chin',
       proximityConstraints: [
         ProximityConstraint(
           first: PoseLandmarkType.rightWrist,
           second: PoseLandmarkType.rightMouth,
-          maxNormalizedDistance: 3.0, // Minimal constraint
-        ),
-      ],
-      angleConstraints: [
-        AngleConstraint(
-          start: PoseLandmarkType.rightShoulder,
-          middle: PoseLandmarkType.rightElbow,
-          end: PoseLandmarkType.rightWrist,
-          minAngle: 5,
-          maxAngle: 175,
+          maxNormalizedDistance: 3.0,
         ),
       ],
     ),
 
-    // 3. Listen Up (Hand to Ear)
+    // 5. The Flex (💪)
     PoseTarget(
-      name: 'Listen Up',
-      description: 'Cup your left hand to your left ear.',
-      assetPath: 'assets/poses/listen_left.png',
+      name: 'Flex',
+      emoji: '💪',
+      description: 'Flex your right bicep',
       proximityConstraints: [
+        // Wrist near Shoulder
         ProximityConstraint(
-          first: PoseLandmarkType.leftWrist,
-          second: PoseLandmarkType.leftEar,
-          maxNormalizedDistance: 3.0, // Minimal constraint
+          first: PoseLandmarkType.rightWrist,
+          second: PoseLandmarkType.rightShoulder,
+          maxNormalizedDistance: 3.0,
         ),
       ],
       angleConstraints: [
+        // Acute angle at elbow
         AngleConstraint(
-          start: PoseLandmarkType.leftShoulder,
-          middle: PoseLandmarkType.leftElbow,
-          end: PoseLandmarkType.leftWrist,
-          minAngle: 5,
-          maxAngle: 175,
+          start: PoseLandmarkType.rightShoulder,
+          middle: PoseLandmarkType.rightElbow,
+          end: PoseLandmarkType.rightWrist,
+          minAngle: 10,
+          maxAngle: 90,
+        ),
+      ],
+    ),
+
+    // 6. The X (🙅)
+    PoseTarget(
+      name: 'The X',
+      emoji: '🙅',
+      description: 'Cross your arms on your chest',
+      proximityConstraints: [
+        // Wrists near opposite shoulders (loosely)
+        ProximityConstraint(
+          first: PoseLandmarkType.leftWrist,
+          second: PoseLandmarkType.rightShoulder,
+          maxNormalizedDistance: 5.0, // Very lenient as forearms cross
+        ),
+        ProximityConstraint(
+          first: PoseLandmarkType.rightWrist,
+          second: PoseLandmarkType.leftShoulder,
+          maxNormalizedDistance: 5.0,
+        ),
+        // Wrists close to each other (crossed)
+        ProximityConstraint(
+          first: PoseLandmarkType.leftWrist,
+          second: PoseLandmarkType.rightWrist,
+          maxNormalizedDistance: 4.0,
         ),
       ],
     ),

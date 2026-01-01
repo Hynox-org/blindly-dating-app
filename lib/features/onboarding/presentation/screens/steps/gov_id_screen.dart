@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,28 +26,9 @@ class _GovernmentIdVerificationScreenState
   GovIdStep _currentStep = GovIdStep.instructions;
   DocumentType _selectedDocType = DocumentType.drivers_license;
   File? _selectedImage;
-  final ImagePicker _picker = ImagePicker();
   final _verificationRepo = VerificationRepository();
 
   // --- Actions ---
-
-  Future<void> _pickImage() async {
-    try {
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 80,
-      );
-      if (image != null) {
-        setState(() {
-          _selectedImage = File(image.path);
-        });
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to pick image: $e')));
-    }
-  }
 
   void _resetImage() {
     setState(() {
@@ -252,133 +232,54 @@ class _GovernmentIdVerificationScreenState
                   const SizedBox(height: 32),
 
                   // Upload Area - Improved UX
-                  GestureDetector(
-                    onTap: _pickImage,
-                    child: Container(
-                      height: 250,
-                      width: double.infinity,
-                      margin: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(24),
-                        border: _selectedImage == null
-                            ? Border.all(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.outlineVariant,
-                                width: 2,
-                              )
-                            : null,
-                        boxShadow: [
-                          if (_selectedImage != null)
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 16,
-                              offset: const Offset(0, 8),
-                            ),
-                        ],
+                  // Upload Area - Disabled for now
+                  Container(
+                    height: 250,
+                    width: double.infinity,
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.outline.withOpacity(0.2),
                       ),
-                      child: Stack(
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // Dashed Border (Only when empty)
-                          if (_selectedImage == null)
-                            Positioned.fill(
-                              child: CustomPaint(
-                                painter: DashedRectPainter(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.outlineVariant,
-                                  strokeWidth: 2,
-                                  gap: 6,
-                                  borderRadius:
-                                      24, // Pass radius to painter if updated
-                                ),
-                              ),
-                            ),
-
-                          Center(
-                            child: _selectedImage != null
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(24),
-                                    child: Image.file(
-                                      _selectedImage!,
-                                      fit: BoxFit.cover,
-                                      width: double.infinity,
-                                      // height: double.infinity, // Keep aspect ratio slightly
-                                    ),
-                                  )
-                                : Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(16),
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .primaryContainer
-                                              .withOpacity(0.3),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(
-                                          Icons.add_a_photo_rounded,
-                                          size: 32,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        "Tap to upload ${_getDocumentLabel(_selectedDocType)}",
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        "JPG, PNG or PDF",
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onSurfaceVariant,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                          Icon(
+                            Icons.cloud_off_rounded,
+                            size: 40,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant.withOpacity(0.5),
                           ),
-
-                          // Retake Button Overlay
-                          if (_selectedImage != null)
-                            Positioned(
-                              bottom: 16,
-                              right: 16,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.7),
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                                child: TextButton.icon(
-                                  onPressed: _pickImage,
-                                  icon: const Icon(
-                                    Icons.refresh_rounded,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                  label: const Text(
-                                    "Retake",
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ),
+                          const SizedBox(height: 16),
+                          Text(
+                            "Upload disabled",
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant.withOpacity(0.5),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
                             ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            "This feature is temporarily unavailable",
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant.withOpacity(0.5),
+                              fontSize: 12,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -460,17 +361,6 @@ class _GovernmentIdVerificationScreenState
         ],
       ),
     );
-  }
-
-  String _getDocumentLabel(DocumentType type) {
-    switch (type) {
-      case DocumentType.drivers_license:
-        return "Driver's License";
-      case DocumentType.aadhar_card:
-        return "Aadhar Card";
-      case DocumentType.pan_card:
-        return "PAN Card";
-    }
   }
 
   Widget _buildTabItem(DocumentType type, String label) {

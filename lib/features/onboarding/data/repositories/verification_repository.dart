@@ -93,9 +93,7 @@ class VerificationRepository {
         'attempt_number': 1,
         'status': 'pending',
         'selfie_video_url': mediaStoragePath, // Using this for the image proof
-        'review_notes': additionalData != null
-            ? additionalData.toString()
-            : null,
+        'review_notes': additionalData?.toString(),
       };
 
       await _supabase.from('verifications').insert(verificationData);

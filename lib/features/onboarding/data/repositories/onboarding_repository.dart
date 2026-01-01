@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/models/onboarding_step_model.dart';
+import '../models/onboarding_step_model.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../domain/models/lifestyle_category_model.dart';
 import '../../domain/models/lifestyle_chip_model.dart';

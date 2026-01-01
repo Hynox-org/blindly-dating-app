@@ -39,6 +39,14 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final onboardingState = ref.watch(onboardingProvider);
+    final currentConfig = onboardingState.currentStepConfig;
+
+    // Determine validity of skipping
+    // If we have config, use isMandatory. If not, fallback to passed param or default true (mandatory).
+    final isMandatory = currentConfig?.isMandatory ?? !showSkipButton;
+    final canSkip = !isMandatory && onSkip != null;
+
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
@@ -67,14 +75,30 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
             color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
-        actions: headerAction != null
-            ? [
-                Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: headerAction!,
+        actions: [
+          if (headerAction != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: headerAction!,
+            ),
+
+          // Dynamic Skip Button
+          if (canSkip && headerAction == null)
+            Padding(
+              padding: const EdgeInsets.only(right: 16.0),
+              child: TextButton(
+                onPressed: onSkip,
+                child: Text(
+                  skipLabel,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.secondary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ]
-            : null,
+              ),
+            ),
+        ],
       ),
       floatingActionButton: fab,
       body: SafeArea(
@@ -89,19 +113,7 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
               const SizedBox(height: 16),
 
               // Bottom Buttons
-              if (showSkipButton && onSkip != null) ...[
-                TextButton(
-                  onPressed: onSkip,
-                  child: Text(
-                    skipLabel,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.secondary,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-              ],
-
+              // Removed Skip button from here as it's moved to AppBar
               if (showNextButton && onNext != null)
                 ElevatedButton(
                   onPressed: (isNextEnabled && !isLoading) ? onNext : null,
