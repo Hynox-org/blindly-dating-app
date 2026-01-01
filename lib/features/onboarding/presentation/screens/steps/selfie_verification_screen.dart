@@ -8,6 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../data/repositories/verification_repository.dart';
 import '../../providers/onboarding_provider.dart';
 import '../../utils/pose_matcher.dart';
 import 'base_onboarding_step_screen.dart';
@@ -270,23 +272,93 @@ class _SelfieVerificationScreenState
     _initializeCamera();
   }
 
+  final _verificationRepo = VerificationRepository();
+
   Future<void> _onCaptureComplete() async {
+    // Prevent multiple calls
+    if (_currentStep == SelfieStep.processing ||
+        _currentStep == SelfieStep.verified)
+      return;
+
     _isDetecting = false;
-    await _cameraController?.stopImageStream();
 
-    // 1. Show Processing State
-    setState(() {
-      _currentStep = SelfieStep.processing;
-    });
-
-    // 2. Simulate Check (2 seconds)
-    await Future.delayed(const Duration(seconds: 2));
-
-    // 3. Show Success State
+    // 1. Show Processing State immediately to give UI feedback
     if (mounted) {
       setState(() {
-        _currentStep = SelfieStep.verified;
+        _currentStep = SelfieStep.processing;
       });
+    }
+
+    try {
+      debugPrint("SelfieVerification: Starting capture sequence...");
+
+      // 2. Take High-Res Picture (do this BEFORE stopping stream to ensure camera is active)
+      XFile? photo;
+      try {
+        if (_cameraController != null &&
+            _cameraController!.value.isInitialized) {
+          photo = await _cameraController?.takePicture();
+        }
+      } catch (e) {
+        debugPrint("SelfieVerification: takePicture failed: $e");
+        throw Exception("Camera capture failed: $e");
+      }
+
+      if (photo == null)
+        throw Exception("Failed to capture photo (null result)");
+      debugPrint("SelfieVerification: Photo captured at ${photo.path}");
+
+      // 3. Stop ML Stream now that we have the photo
+      await _cameraController?.stopImageStream();
+
+      // 4. Get User ID
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId == null) throw Exception("User not logged in");
+
+      // 5. Upload & Verify
+      debugPrint("SelfieVerification: Uploading to Supabase...");
+      final storagePath = await _verificationRepo.uploadSelfie(
+        File(photo.path),
+        userId,
+      );
+      debugPrint("SelfieVerification: Upload success. Path: $storagePath");
+
+      debugPrint("SelfieVerification: Creating verification request...");
+      await _verificationRepo.createVerificationRequest(
+        userId: userId,
+        selfieStoragePath: storagePath,
+        poseName: _targetPose?.name ?? 'Unknown',
+      );
+      debugPrint("SelfieVerification: Request created.");
+
+      // 6. Show Success State
+      if (mounted) {
+        setState(() {
+          _currentStep = SelfieStep.verified;
+        });
+      }
+    } catch (e) {
+      debugPrint("SelfieVerification: Verification FAILED: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Verification failed: $e"),
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'Retry',
+              onPressed: _initializeCamera,
+            ),
+          ),
+        );
+
+        // Return to instructions
+        setState(() {
+          _currentStep = SelfieStep.instructions;
+          _isMatching = false;
+          _matchProgress = 0.0;
+        });
+        _initializeCamera();
+      }
     }
   }
 
