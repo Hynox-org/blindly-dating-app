@@ -78,7 +78,7 @@ class _SingleStepShellState extends ConsumerState<SingleStepShell> {
       case 'selfie_capture':
         return const SelfieVerificationScreen();
       case 'gov_id_optional':
-        return const GovIdScreen();
+        return const GovernmentIdVerificationScreen();
       case 'bio_entry':
         return const BioEntryScreen();
       case 'interests_select':

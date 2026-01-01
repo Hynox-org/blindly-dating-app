@@ -138,7 +138,7 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
         return const SelfieVerificationScreen();
       // case 'selfie_processing': removed as it's handled internally
       case 'gov_id_optional':
-        return const GovIdScreen();
+        return const GovernmentIdVerificationScreen();
       case 'bio_entry':
         return const BioEntryScreen();
       case 'interests_select':

@@ -326,8 +326,9 @@ class _SelfieVerificationScreenState
       debugPrint("SelfieVerification: Creating verification request...");
       await _verificationRepo.createVerificationRequest(
         userId: userId,
-        selfieStoragePath: storagePath,
-        poseName: _targetPose?.name ?? 'Unknown',
+        mediaStoragePath: storagePath,
+        verificationType: 'liveness',
+        additionalData: {'pose_name': _targetPose?.name ?? 'Unknown'},
       );
       debugPrint("SelfieVerification: Request created.");
 

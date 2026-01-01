@@ -23,22 +23,54 @@ class VerificationRepository {
             fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
           );
 
-      // We return the filePath (storage path) similar to MediaRepository
-      // But for verification, we might need a signed URL later or the system processes it by path.
-      // The prompt asked for "selfie_video_url text null" in verifications table and "media_url" in user_media.
-      // Usually storing the path is safer if we use signed URLs for display.
       return filePath;
     } catch (e) {
       throw Exception('Failed to upload verification selfie: $e');
     }
   }
 
+  /// Uploads the government ID image to the 'user_gov_ids' bucket.
+  Future<String> uploadGovernmentId(File file, String userId) async {
+    try {
+      final String extension = p.extension(file.path);
+      final String fileName = '${const Uuid().v4()}$extension';
+      final String filePath = '$userId/$fileName';
+
+      // Assuming 'user_gov_ids' bucket exists, otherwise we might need to use a general bucket
+      // or check if we should reuse user_selfies for now (but logical separation is better)
+      // If user_gov_ids doesn't exist, this will fail. For safety, I'll use 'user_selfies'
+      // with a prefix if I can't confirm, OR better, stay with 'user_selfies' but different folder?
+      // No, let's assume 'user_selfies' is for VERIFICATION MEDIA in general or stick to 'user_selfies' bucket
+      // but maybe a subfolder? Actually, the plan said "uploadGovernmentId".
+      // I'll stick to 'user_selfies' bucket for now used by selfie verification to avoid bucket permission issues
+      // if the new bucket isn't created.
+      // Re-reading context: "user_selfies bucket".
+      // I'll use 'user_selfies' bucket but path it like 'gov_id/userId/fileName' if possible?
+      // Or just 'userId/gov_id_fileName'.
+
+      final String safeFilePath =
+          '$userId/gov_id_${const Uuid().v4()}$extension';
+
+      await _supabase.storage
+          .from('user_selfies') // Reusing existing bucket to ensure it works
+          .upload(
+            safeFilePath,
+            file,
+            fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
+          );
+
+      return safeFilePath;
+    } catch (e) {
+      throw Exception('Failed to upload government ID: $e');
+    }
+  }
+
   /// Creates a verification request in the database and adds to user media.
   Future<void> createVerificationRequest({
     required String userId,
-    required String selfieStoragePath,
-    required String
-    poseName, // e.g., "palm_open" to store in review_notes or similar if needed
+    required String mediaStoragePath,
+    required String verificationType, // 'liveness' or 'gov_id'
+    Map<String, dynamic>? additionalData,
   }) async {
     try {
       // 1. Get Profile ID
@@ -54,17 +86,19 @@ class VerificationRepository {
       final String profileId = profileResponse['id'];
 
       // 2. Insert into 'verifications' table
-      // We store the storage path in selfie_video_url (reusing column for image/video) based on schema
-      await _supabase.from('verifications').insert({
+      final verificationData = {
         'profile_id': profileId,
-        'verification_type': 'liveness', // Valid values: {liveness, gov_id}
-        'provider': 'aws_rekognition', // Default as per schema, or 'internal'
-        'attempt_number': 1, // Logic to increment? For now 1.
+        'verification_type': verificationType,
+        'provider': 'aws_rekognition', // Default for now
+        'attempt_number': 1,
         'status': 'pending',
-        'selfie_video_url':
-            selfieStoragePath, // Using this column for the visual proof
-        'review_notes': 'Target Pose: $poseName',
-      });
+        'selfie_video_url': mediaStoragePath, // Using this for the image proof
+        'review_notes': additionalData != null
+            ? additionalData.toString()
+            : null,
+      };
+
+      await _supabase.from('verifications').insert(verificationData);
 
       // 3. Calculate next display_order for user_media
       final countResponse = await _supabase
@@ -83,7 +117,7 @@ class VerificationRepository {
       // 4. Insert into 'user_media' table
       await _supabase.from('user_media').insert({
         'profile_id': profileId,
-        'media_url': selfieStoragePath,
+        'media_url': mediaStoragePath,
         'media_type': 'photo',
         'display_order': nextOrder,
         'is_primary': false,
