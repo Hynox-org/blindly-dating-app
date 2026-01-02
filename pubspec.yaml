@@ -87,6 +87,7 @@ dev_dependencies:
   json_serializable: ^6.7.1
   flutter_launcher_icons: ^0.14.3
   mocktail: ^1.0.4
+  flutter_card_swiper: ^7.2.0
 
 flutter_launcher_icons:
   android: "launcher_icon"
