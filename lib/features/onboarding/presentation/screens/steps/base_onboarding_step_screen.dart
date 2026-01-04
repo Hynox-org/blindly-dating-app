@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/onboarding_provider.dart';
+import '../../../../auth/providers/auth_providers.dart';
 
 class BaseOnboardingStepScreen extends ConsumerWidget {
   final String title;
@@ -98,6 +99,82 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
                 ),
               ),
             ),
+          PopupMenuButton<String>(
+            icon: Icon(
+              Icons.more_vert,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+            onSelected: (value) async {
+              if (value == 'logout') {
+                await ref.read(authRepositoryProvider).signOut();
+                if (context.mounted) {
+                  Navigator.of(
+                    context,
+                  ).pushNamedAndRemoveUntil('/', (route) => false);
+                }
+              } else if (value == 'delete') {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Delete Account'),
+                    content: const Text(
+                      'Are you sure you want to delete your account? This action cannot be undone.\n\n'
+                      'If account deletion is not supported, you will be signed out instead.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.red,
+                        ),
+                        child: const Text('Delete'),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirm == true) {
+                  await ref.read(authRepositoryProvider).deleteAccount();
+                  if (context.mounted) {
+                    Navigator.of(
+                      context,
+                    ).pushNamedAndRemoveUntil('/', (route) => false);
+                  }
+                }
+              }
+            },
+            itemBuilder: (BuildContext context) {
+              return [
+                const PopupMenuItem<String>(
+                  value: 'logout',
+                  child: Row(
+                    children: [
+                      Icon(Icons.logout, color: Colors.grey),
+                      SizedBox(width: 8),
+                      Text('Sign Out'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem<String>(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete_forever, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text(
+                        'Delete Account',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ],
+                  ),
+                ),
+              ];
+            },
+          ),
         ],
       ),
       floatingActionButton: fab,
