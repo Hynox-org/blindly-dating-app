@@ -13,6 +13,7 @@ import '../../../data/repositories/verification_repository.dart';
 import '../../providers/onboarding_provider.dart';
 import '../../utils/pose_matcher.dart';
 import 'base_onboarding_step_screen.dart';
+import '../../../../../core/utils/custom_popups.dart';
 
 enum SelfieStep { instructions, capture, processing, verified }
 
@@ -61,10 +62,9 @@ class _SelfieVerificationScreenState
     final status = await Permission.camera.request();
     if (status != PermissionStatus.granted) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Camera permission is required for verification.'),
-          ),
+        showErrorPopup(
+          context,
+          'Camera permission is required for verification.',
         );
       }
       return;
@@ -81,9 +81,7 @@ class _SelfieVerificationScreenState
         _frontCamera = cameras.first;
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No camera found on device.')),
-          );
+          showErrorPopup(context, 'No camera found on device.');
         }
         return;
       }
@@ -343,15 +341,10 @@ class _SelfieVerificationScreenState
     } catch (e) {
       debugPrint("SelfieVerification: Verification FAILED: $e");
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Verification failed: $e"),
-            duration: const Duration(seconds: 5),
-            action: SnackBarAction(
-              label: 'Retry',
-              onPressed: _initializeCamera,
-            ),
-          ),
+        showErrorPopup(
+          context,
+          "Verification failed: $e",
+          onRetry: _initializeCamera,
         );
 
         // Return to instructions

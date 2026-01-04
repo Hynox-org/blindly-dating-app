@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../data/repositories/verification_repository.dart';
 import '../../providers/onboarding_provider.dart';
 import 'base_onboarding_step_screen.dart';
+import '../../../../../core/utils/custom_popups.dart';
 
 enum GovIdStep { instructions, processing, verified }
 
@@ -68,12 +69,7 @@ class _GovernmentIdVerificationScreenState
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Verification upload failed: $e"),
-            action: SnackBarAction(label: "Retry", onPressed: () {}),
-          ),
-        );
+        showErrorPopup(context, "Verification upload failed: $e");
         setState(() {
           _currentStep = GovIdStep.instructions;
         });

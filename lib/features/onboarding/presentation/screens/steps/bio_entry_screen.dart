@@ -4,6 +4,7 @@ import '../../providers/onboarding_provider.dart';
 import '../../../../auth/providers/auth_providers.dart';
 import '../../../data/repositories/onboarding_repository.dart';
 import 'base_onboarding_step_screen.dart';
+import '../../../../../core/utils/custom_popups.dart';
 
 class BioEntryScreen extends ConsumerStatefulWidget {
   const BioEntryScreen({super.key});
@@ -63,9 +64,7 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to save bio: $e')));
+        showErrorPopup(context, 'Failed to save bio: $e');
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);

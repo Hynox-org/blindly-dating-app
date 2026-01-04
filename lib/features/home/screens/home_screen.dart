@@ -14,6 +14,7 @@ import '../../discovery/domain/models/discovery_user_model.dart';
 // ✅ 3. Components
 import '../component/ProfileSwipeCard.dart';
 import '../../../../core/utils/gender_utils.dart';
+import '../../../../core/utils/custom_popups.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -532,12 +533,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _handleLike(UserProfile profile) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('You liked ${profile.name}! 💚'),
-        backgroundColor: const Color.fromRGBO(65, 72, 51, 1),
-      ),
-    );
+    showSuccessPopup(context, 'You liked ${profile.name}! 💚');
   }
 
   void _showPremiumDialog() {

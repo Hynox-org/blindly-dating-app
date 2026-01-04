@@ -6,6 +6,7 @@ import '../../../domain/models/interest_chip_model.dart';
 import '../../../../auth/providers/auth_providers.dart';
 import 'base_onboarding_step_screen.dart';
 import '../../widgets/selection_chip.dart';
+import '../../../../../core/utils/custom_popups.dart';
 
 class InterestsSelectScreen extends ConsumerStatefulWidget {
   const InterestsSelectScreen({super.key});
@@ -69,9 +70,7 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
         _selectedChipIds.remove(chipId);
       } else {
         if (_selectedChipIds.length >= 10) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('You can select up to 10 interests')),
-          );
+          showErrorPopup(context, 'You can select up to 10 interests');
           return;
         }
         _selectedChipIds.add(chipId);
@@ -81,9 +80,7 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
 
   Future<void> _onNext() async {
     if (_selectedChipIds.length < 5) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select at least 5 interests')),
-      );
+      showErrorPopup(context, 'Please select at least 5 interests');
       return;
     }
 
@@ -101,9 +98,7 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
       setState(() {
         _isLoading = false;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error saving interests: $e')));
+      showErrorPopup(context, 'Error saving interests: $e');
     }
   }
 
