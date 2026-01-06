@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../../providers/onboarding_provider.dart';
-import 'base_onboarding_step_screen.dart';
+import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
+import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
 
 class PermissionsScreen extends ConsumerStatefulWidget {
   const PermissionsScreen({super.key});

@@ -9,10 +9,10 @@ import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../data/repositories/verification_repository.dart';
-import '../../providers/onboarding_provider.dart';
-import '../../utils/pose_matcher.dart';
-import 'base_onboarding_step_screen.dart';
+import '../../../../onboarding/data/repositories/verification_repository.dart';
+import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
+import '../../../../onboarding/presentation/utils/pose_matcher.dart';
+import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
 import '../../../../../core/utils/custom_popups.dart';
 
 enum SelfieStep { instructions, capture, processing, verified }

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/repositories/media_repository.dart';
 import 'photo_moderation_provider.dart';
@@ -116,11 +117,7 @@ class MediaNotifier extends StateNotifier<MediaState> {
       for (int i = 0; i < images.length; i++) {
         File file = File(images[i].path);
 
-        final cropped = await _repository.cropImage(file);
-        if (cropped != null) {
-          file = cropped;
-        }
-
+        // Auto-crop removed
         final compressed = await _repository.compressImage(file);
 
         // 2. MODERATION FIX
@@ -129,7 +126,7 @@ class MediaNotifier extends StateNotifier<MediaState> {
             .checkImageSafety(compressed, source: 'profile');
 
         // Check Decision (Allow or Review are okay)
-        if (result.decision == ModerationDecision.block || 
+        if (result.decision == ModerationDecision.block ||
             result.decision == ModerationDecision.error) {
           blockedAny = true;
           lastBlockReason = result.reason;
@@ -152,8 +149,8 @@ class MediaNotifier extends StateNotifier<MediaState> {
         selectedPhotos: currentPhotos,
         isLoading: false,
         // Show the specific reason if blocked
-        error: blockedAny 
-            ? (lastBlockReason ?? "Some photos were blocked.") 
+        error: blockedAny
+            ? (lastBlockReason ?? "Some photos were blocked.")
             : null,
       );
     } catch (e) {
@@ -175,11 +172,7 @@ class MediaNotifier extends StateNotifier<MediaState> {
       if (xFile != null) {
         File file = File(xFile.path);
 
-        final cropped = await _repository.cropImage(file);
-        if (cropped != null) {
-          file = cropped;
-        }
-
+        // Auto-crop removed
         final compressed = await _repository.compressImage(file);
 
         // 3. MODERATION FIX
@@ -187,7 +180,7 @@ class MediaNotifier extends StateNotifier<MediaState> {
             .read(photoModerationProvider)
             .checkImageSafety(compressed, source: 'profile');
 
-        if (result.decision == ModerationDecision.block || 
+        if (result.decision == ModerationDecision.block ||
             result.decision == ModerationDecision.error) {
           state = state.copyWith(
             isLoading: false,
@@ -272,7 +265,7 @@ class MediaNotifier extends StateNotifier<MediaState> {
 
       for (int i = 0; i < validPhotos.length; i++) {
         final content = validPhotos[i];
-        String url; 
+        String url;
         int size = 0;
 
         if (content.isLocal) {
@@ -284,7 +277,7 @@ class MediaNotifier extends StateNotifier<MediaState> {
 
         mediaDataToSave.add({
           'profile_id': profileId,
-          'media_url': url, 
+          'media_url': url,
           'media_type': 'photo',
           'display_order': i,
           'is_primary': i == 0,
@@ -293,7 +286,7 @@ class MediaNotifier extends StateNotifier<MediaState> {
         });
       }
 
-      await _repository.saveMedia(mediaDataToSave); 
+      await _repository.saveMedia(mediaDataToSave);
 
       state = state.copyWith(isLoading: false);
     } catch (e) {

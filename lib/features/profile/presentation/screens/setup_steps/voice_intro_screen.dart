@@ -10,8 +10,8 @@ import 'package:record/record.dart';
 
 import '../../../../auth/providers/auth_providers.dart';
 import '../../../../media/providers/media_provider.dart';
-import '../../providers/onboarding_provider.dart';
-import 'base_onboarding_step_screen.dart';
+import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
+import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
 
 class VoiceIntroScreen extends ConsumerStatefulWidget {
   const VoiceIntroScreen({super.key});

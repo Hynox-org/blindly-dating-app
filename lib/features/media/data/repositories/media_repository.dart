@@ -86,15 +86,21 @@ class MediaRepository {
   }
 
   /// Crops an image with custom UI settings
-  Future<File?> cropImage(File file) async {
+  Future<File?> cropImage(
+    File file, {
+    Color? toolbarColor,
+    Color? toolbarWidgetColor,
+    Color? activeControlsWidgetColor,
+  }) async {
     try {
       final CroppedFile? croppedFile = await ImageCropper().cropImage(
         sourcePath: file.path,
         uiSettings: [
           AndroidUiSettings(
             toolbarTitle: 'Crop Photo',
-            toolbarColor: Colors.black,
-            toolbarWidgetColor: Colors.white,
+            toolbarColor: toolbarColor ?? Colors.black,
+            toolbarWidgetColor: toolbarWidgetColor ?? Colors.white,
+            activeControlsWidgetColor: activeControlsWidgetColor,
             initAspectRatio: CropAspectRatioPreset.original,
             lockAspectRatio: false,
             aspectRatioPresets: [

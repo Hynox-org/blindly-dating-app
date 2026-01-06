@@ -19,6 +19,7 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
   final bool isLoading;
   final Widget? fab;
   final Widget? headerAction;
+  final Widget? footer;
 
   const BaseOnboardingStepScreen({
     super.key,
@@ -36,6 +37,7 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
     this.isLoading = false,
     this.fab,
     this.headerAction,
+    this.footer,
   });
 
   @override
@@ -49,172 +51,158 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
     final canSkip = !isMandatory && onSkip != null;
 
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        centerTitle: true,
-        leading: showBackButton
-            ? Padding(
-                padding: const EdgeInsets.only(left: 8.0),
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios),
-                  onPressed: () {
-                    if (onBack != null) {
-                      onBack!();
-                    } else {
-                      ref.read(onboardingProvider.notifier).goToPreviousStep();
-                    }
-                  },
-                ),
-              )
-            : null,
-        title: Text(
-          title,
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-        actions: [
-          if (headerAction != null)
-            Padding(
-              padding: const EdgeInsets.only(right: 8.0),
-              child: headerAction!,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // 1. Custom Header Area (Replaces AppBar space)
+            Container(
+              height: kToolbarHeight,
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              alignment: Alignment.centerRight,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  // Dynamic Skip Button
+                  if (canSkip && headerAction == null)
+                    TextButton(
+                      onPressed: onSkip,
+                      child: Text(
+                        skipLabel,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.secondary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+
+                  // Custom Header Action (if any)
+                  if (headerAction != null) headerAction!,
+                ],
+              ),
             ),
 
-          // Dynamic Skip Button
-          if (canSkip && headerAction == null)
-            Padding(
-              padding: const EdgeInsets.only(right: 16.0),
-              child: TextButton(
-                onPressed: onSkip,
-                child: Text(
-                  skipLabel,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.secondary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+            // 2. Main Content
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Title in Body
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 24.0, top: 8.0),
+                      child: Text(
+                        title,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                      ),
+                    ),
+
+                    // Child Content
+                    Expanded(child: child),
+                  ],
                 ),
               ),
             ),
-          PopupMenuButton<String>(
-            icon: Icon(
-              Icons.more_vert,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-            onSelected: (value) async {
-              if (value == 'logout') {
-                await ref.read(authRepositoryProvider).signOut();
-                if (context.mounted) {
-                  Navigator.of(
-                    context,
-                  ).pushNamedAndRemoveUntil('/', (route) => false);
-                }
-              } else if (value == 'delete') {
-                final confirm = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Delete Account'),
-                    content: const Text(
-                      'Are you sure you want to delete your account? This action cannot be undone.\n\n'
-                      'If account deletion is not supported, you will be signed out instead.',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancel'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.red,
-                        ),
-                        child: const Text('Delete'),
-                      ),
-                    ],
-                  ),
-                );
 
-                if (confirm == true) {
-                  await ref.read(authRepositoryProvider).deleteAccount();
-                  if (context.mounted) {
-                    Navigator.of(
-                      context,
-                    ).pushNamedAndRemoveUntil('/', (route) => false);
-                  }
-                }
-              }
-            },
-            itemBuilder: (BuildContext context) {
-              return [
-                const PopupMenuItem<String>(
-                  value: 'logout',
-                  child: Row(
-                    children: [
-                      Icon(Icons.logout, color: Colors.grey),
-                      SizedBox(width: 8),
-                      Text('Sign Out'),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem<String>(
-                  value: 'delete',
-                  child: Row(
-                    children: [
-                      Icon(Icons.delete_forever, color: Colors.red),
-                      SizedBox(width: 8),
-                      Text(
-                        'Delete Account',
-                        style: TextStyle(color: Colors.red),
-                      ),
-                    ],
-                  ),
-                ),
-              ];
-            },
-          ),
-        ],
-      ),
-      floatingActionButton: fab,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Main Content
-              Expanded(child: child),
+            // 3. Bottom Actions
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Footer Widget (Fixed Content)
+                  if (footer != null) ...[footer!, const SizedBox(height: 16)],
 
-              const SizedBox(height: 16),
-
-              // Bottom Buttons
-              // Removed Skip button from here as it's moved to AppBar
-              if (showNextButton && onNext != null)
-                ElevatedButton(
-                  onPressed: (isNextEnabled && !isLoading) ? onNext : null,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
+                  // Continue Button
+                  if (showNextButton && onNext != null)
+                    SizedBox(
+                      height: 56, // Fixed height for a more substantial look
+                      child: ElevatedButton(
+                        onPressed: (isNextEnabled && !isLoading)
+                            ? onNext
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          elevation: 0,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onPrimary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              30,
+                            ), // Pill shape for modern look
                           ),
-                        )
-                      : Text(nextLabel),
-                ),
-            ],
-          ),
+                        ),
+                        child: isLoading
+                            ? const SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(
+                                nextLabel,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                      ),
+                    ),
+
+                  const SizedBox(height: 16), // Increased spacing
+                  // Back Button (Text) - Below Continue
+                  if (showBackButton)
+                    TextButton(
+                      onPressed: () {
+                        if (onBack != null) {
+                          onBack!();
+                        } else {
+                          ref
+                              .read(onboardingProvider.notifier)
+                              .goToPreviousStep();
+                        }
+                      },
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.grey[700],
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.arrow_back, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            "Back",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  // If no back button, add some spacing if needed or just nothing
+                  if (!showBackButton) const SizedBox(height: 8),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
+      floatingActionButton: fab,
     );
   }
 }

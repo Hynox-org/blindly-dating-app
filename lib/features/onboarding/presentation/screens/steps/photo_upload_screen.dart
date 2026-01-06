@@ -140,10 +140,10 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
                 // "next.error" contains the string from Lambda/Provider
                 // e.g., "Face too far away" or "Group photos not allowed"
                 Text(
-                  "• ${next.error}", 
+                  "• ${next.error}",
                   style: const TextStyle(
-                    fontWeight: FontWeight.bold, 
-                    color: Colors.red
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -167,26 +167,11 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
       title: 'Add Photos',
       showBackButton: true,
       nextLabel: 'Continue',
+      isNextEnabled: canProceed,
       onNext: () {
-        if (canProceed) {
-          final user = ref.read(authRepositoryProvider).currentUser;
-          if (user != null) {
-            _handleNext(user.id);
-          }
-        } else {
-          showDialog(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('More Photos Needed'),
-              content: const Text('Please add at least 2 photos to continue.'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('OK'),
-                ),
-              ],
-            ),
-          );
+        final user = ref.read(authRepositoryProvider).currentUser;
+        if (user != null) {
+          _handleNext(user.id);
         }
       },
       child: Column(
@@ -207,7 +192,7 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
             textAlign: TextAlign.start,
           ),
           const SizedBox(height: 32),
-          
+
           // Photo Grid
           GridView.builder(
             shrinkWrap: true,
@@ -409,7 +394,13 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
                 onTap: () async {
                   Navigator.pop(ctx);
                   final repo = ref.read(mediaRepositoryProvider);
-                  final cropped = await repo.cropImage(content.file!);
+                  final theme = Theme.of(context);
+                  final cropped = await repo.cropImage(
+                    content.file!,
+                    toolbarColor: theme.primaryColor,
+                    toolbarWidgetColor: theme.colorScheme.onPrimary,
+                    activeControlsWidgetColor: theme.primaryColor,
+                  );
                   if (cropped != null && context.mounted) {
                     ref
                         .read(mediaProvider.notifier)

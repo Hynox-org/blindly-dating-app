@@ -42,8 +42,6 @@ final onboardingProvider =
 class OnboardingNotifier extends StateNotifier<OnboardingState> {
   final Ref _ref;
 
-  bool _hasDismissedWelcome = false;
-
   OnboardingNotifier(this._ref) : super(OnboardingState());
 
   OnboardingRepository get _repo => _ref.read(onboardingRepositoryProvider);
@@ -80,8 +78,8 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
         }
       }
 
-      // 1. Get ordered list of ALL steps
-      final allSteps = await _repo.getAllSteps();
+      // 1. Get ordered list of MANDATORY steps
+      final allSteps = await _repo.getMandatorySteps();
 
       // 2. Get user's progress map
       // Map<String, dynamic> stepsProgress = {};
@@ -98,15 +96,15 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
         // Actually simplest is: if map is empty, they are fresh.
       }
 
-      if (isFreshUser && !_hasDismissedWelcome) {
-        state = state.copyWith(
-          isLoading: false,
-          currentStepKey: 'pre_onboarding',
-          // No config for this, it's a special state
-          currentStepConfig: null,
-        );
-        return;
-      }
+      // if (isFreshUser && !_hasDismissedWelcome) {
+      //   state = state.copyWith(
+      //     isLoading: false,
+      //     currentStepKey: 'pre_onboarding',
+      //     // No config for this, it's a special state
+      //     currentStepConfig: null,
+      //   );
+      //   return;
+      // }
 
       // 3. Determine current step
       // Find the first step that is NOT 'completed'.
@@ -228,11 +226,5 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     } catch (e) {
       AppLogger.error('Failed to go back', e);
     }
-  }
-
-  void dismissWelcome() {
-    _hasDismissedWelcome = true;
-    // Re-run init to proceed to the actual first step
-    init();
   }
 }

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/onboarding_provider.dart';
-import '../../../data/repositories/onboarding_repository.dart';
-import '../../../domain/models/prompt_category_model.dart';
-import '../../../domain/models/prompt_template_model.dart';
-import '../../../domain/models/profile_prompt_model.dart';
+import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
+import '../../../../onboarding/data/repositories/onboarding_repository.dart';
+import '../../../../onboarding/domain/models/prompt_category_model.dart';
+import '../../../../onboarding/domain/models/prompt_template_model.dart';
+import '../../../../onboarding/domain/models/profile_prompt_model.dart';
 import '../../../../auth/providers/auth_providers.dart';
 import '../../../../../core/utils/custom_popups.dart';
 

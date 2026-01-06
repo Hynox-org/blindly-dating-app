@@ -6,10 +6,10 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart'; // To access .env
 import 'package:uuid/uuid.dart'; // For session token if needed (not strictly for geocoding, but good practice)
 
-import '../../providers/onboarding_provider.dart';
+import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
 import '../../../../auth/providers/auth_providers.dart';
-import '../../../data/repositories/onboarding_repository.dart';
-import 'base_onboarding_step_screen.dart';
+import '../../../../onboarding/data/repositories/onboarding_repository.dart';
+import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
 import '../../../../../core/utils/custom_popups.dart';
 
 class LocationSetScreen extends ConsumerStatefulWidget {

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/onboarding_provider.dart';
-import '../../../data/repositories/onboarding_repository.dart';
-import '../../../domain/models/interest_chip_model.dart';
+import '../../../../onboarding/domain/models/interest_chip_model.dart';
+import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
 import '../../../../auth/providers/auth_providers.dart';
-import 'base_onboarding_step_screen.dart';
-import '../../widgets/selection_chip.dart';
+import '../../../../onboarding/data/repositories/onboarding_repository.dart';
+import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
+import '../../../../onboarding/presentation/widgets/selection_chip.dart';
 import '../../../../../core/utils/custom_popups.dart';
 
 class InterestsSelectScreen extends ConsumerStatefulWidget {
