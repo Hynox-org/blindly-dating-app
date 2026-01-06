@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
+// CHECK YOUR IMPORTS
 import '../../../../auth/providers/auth_providers.dart';
 import '../../../../media/providers/media_provider.dart';
 import '../../providers/onboarding_provider.dart';
@@ -19,25 +20,10 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
   @override
   void initState() {
     super.initState();
-    // Load existing photos if we haven't already (or refresh)
-    // We can check if state is empty, or just always load.
-    // Always load ensures sync with DB.
+    // Load existing photos from DB/Storage on startup
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final user = ref.read(authRepositoryProvider).currentUser;
       if (user != null) {
-        // Only load if empty? Or always?
-        // If we revisit, we want to see what's in provider.
-        // But if provider is fresh (app restart), we need to load.
-        // If provider has data, do we overwrite?
-        // Let's assume provider state > DB state if in-memory session is active.
-        // But how to tell? validPhotoCount == 0?
-        // If user has 0 photos in DB, validPhotoCount will be 0.
-        // Let's just load. The provider can handle diffing or just overwrite.
-        // But wait, if I uploaded a photo, then went to next step, then back...
-        // The provider still has the photo (which is local File or URL).
-        // If I reload from DB, I get URLs.
-        // Using URLs is safer for consistency.
-        // So I will call loadUserMedia.
         ref.read(mediaProvider.notifier).loadUserMedia(user.id);
       }
     });
@@ -50,6 +36,7 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
   ) async {
     PermissionStatus status;
     if (Platform.isAndroid && !isCamera) {
+      // Android 13+ uses Photos, older uses Storage
       status = await Permission.photos.request();
       if (status.isDenied) status = await Permission.storage.request();
     } else {
@@ -66,30 +53,34 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
       }
     } else if (status.isPermanentlyDenied) {
       if (context.mounted) {
-        showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Permission Required'),
-            content: Text(
-              'Please grant ${isCamera ? "Camera" : "Photos"} permission to upload photos for your profile.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  openAppSettings();
-                },
-                child: const Text('Settings'),
-              ),
-            ],
-          ),
-        );
+        _showPermissionDialog(context, isCamera);
       }
     }
+  }
+
+  void _showPermissionDialog(BuildContext context, bool isCamera) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Permission Required'),
+        content: Text(
+          'Please grant ${isCamera ? "Camera" : "Photos"} permission to upload photos for your profile.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              openAppSettings();
+            },
+            child: const Text('Settings'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showImageSourceSheet(BuildContext context, int index) {
@@ -130,17 +121,39 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
     final mediaState = ref.watch(mediaProvider);
     final theme = Theme.of(context);
 
+    // -----------------------------------------------------------
+    // ✅ DIALOG LOGIC: Displays the specific Reason from Lambda
+    // -----------------------------------------------------------
     ref.listen(mediaProvider, (previous, next) {
+      // If there is an error, and it's a NEW error (not the same as before)
       if (next.error != null && next.error != previous?.error) {
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Photo Blocked'),
-            content: Text(next.error!),
+            title: const Text("Photo Not Accepted"),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("We could not verify your photo because:"),
+                const SizedBox(height: 10),
+                // "next.error" contains the string from Lambda/Provider
+                // e.g., "Face too far away" or "Group photos not allowed"
+                Text(
+                  "• ${next.error}", 
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold, 
+                    color: Colors.red
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text("Please try uploading a different photo."),
+              ],
+            ),
             actions: [
-              TextButton(
+              ElevatedButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('OK'),
+                child: const Text('Try Again'),
               ),
             ],
           ),
@@ -156,25 +169,8 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
       nextLabel: 'Continue',
       onNext: () {
         if (canProceed) {
-          // We need access to user ID to submit
           final user = ref.read(authRepositoryProvider).currentUser;
           if (user != null) {
-            // Wait for submitMedia to finish?
-            // submitMedia is async but BaseOnboardingStepScreen onNext is void callback.
-            // But we should maybe await it?
-            // The provider handles logic. We can call it, then complete step.
-            // But submitMedia needs to finish uploading.
-            // Ideally we show loading state here.
-            // But mediaState.isLoading should trigger loading UI.
-            // Let's call submitMedia.
-            // Wait, existing code called `completeStep` directly.
-            // `completeStep` logic usually updates step status.
-            // Does it save data?
-            // `PhotoUploadScreen` didn't save data before?
-            // Ah, the previous implementation did NOT have a save call in `onNext`.
-            // It seemed to rely on `MediaProvider` state matching UI state?
-            // But now `submitMedia` is needed to sync changes to DB.
-            // So I should call `submitMedia` then `completeStep`.
             _handleNext(user.id);
           }
         } else {
@@ -211,6 +207,8 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
             textAlign: TextAlign.start,
           ),
           const SizedBox(height: 32),
+          
+          // Photo Grid
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -238,23 +236,17 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
               );
             },
           ),
+
+          // Loading Indicator
           if (mediaState.isLoading)
             const Padding(
               padding: EdgeInsets.only(top: 20),
               child: Center(child: CircularProgressIndicator()),
             ),
-          if (mediaState.error != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: Text(
-                mediaState.error!,
-                style: const TextStyle(color: Colors.red),
-                textAlign: TextAlign.center,
-              ),
-            ),
 
           const Spacer(),
 
+          // Helper Text
           if (!canProceed)
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
@@ -287,7 +279,6 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
   Future<void> _handleNext(String userId) async {
     await ref.read(mediaProvider.notifier).submitMedia(userId);
     if (mounted) {
-      // Check if error after submit
       if (ref.read(mediaProvider).error == null) {
         ref.read(onboardingProvider.notifier).completeStep('photo_upload');
       }

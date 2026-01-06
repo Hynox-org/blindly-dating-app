@@ -5,6 +5,7 @@ import '../../providers/onboarding_provider.dart';
 import '../../../../auth/providers/auth_providers.dart';
 import '../../../data/repositories/onboarding_repository.dart';
 import 'base_onboarding_step_screen.dart';
+import '../../../../../core/utils/custom_popups.dart';
 
 class GenderSelectScreen extends ConsumerStatefulWidget {
   const GenderSelectScreen({super.key});
@@ -92,9 +93,7 @@ class _GenderSelectScreenState extends ConsumerState<GenderSelectScreen> {
     } catch (e) {
       debugPrint('Error saving gender: $e');
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to save gender: $e')));
+        showErrorPopup(context, 'Failed to save gender: $e');
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);

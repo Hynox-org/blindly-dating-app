@@ -236,4 +236,27 @@ class AuthRepository {
       }
     }
   }
+
+  /// Deletes the current user's account.
+  /// Tries to call a Supabase RPC function 'delete_user_account'.
+  /// If that fails (e.g. function doesn't exist), it falls back to basic sign out.
+  Future<void> deleteAccount() async {
+    try {
+      final user = currentUser;
+      if (user != null) {
+        try {
+          await _client.rpc('delete_user_account');
+          AppLogger.info('AUTH_REPO: Account deleted via RPC');
+        } catch (rpcError) {
+          AppLogger.warning(
+            'AUTH_REPO: delete_user_account RPC failed or missing. $rpcError',
+          );
+        }
+      }
+    } catch (e, stackTrace) {
+      AppLogger.error('AUTH_REPO: Failed to delete account', e, stackTrace);
+    } finally {
+      await signOut();
+    }
+  }
 }

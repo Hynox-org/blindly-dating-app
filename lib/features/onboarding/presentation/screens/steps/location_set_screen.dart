@@ -10,6 +10,7 @@ import '../../providers/onboarding_provider.dart';
 import '../../../../auth/providers/auth_providers.dart';
 import '../../../data/repositories/onboarding_repository.dart';
 import 'base_onboarding_step_screen.dart';
+import '../../../../../core/utils/custom_popups.dart';
 
 class LocationSetScreen extends ConsumerStatefulWidget {
   const LocationSetScreen({super.key});
@@ -230,9 +231,7 @@ class _LocationSetScreenState extends ConsumerState<LocationSetScreen> {
     } catch (e) {
       debugPrint('Error saving location: $e');
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to save location: $e')));
+        showErrorPopup(context, 'Failed to save location: $e');
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);

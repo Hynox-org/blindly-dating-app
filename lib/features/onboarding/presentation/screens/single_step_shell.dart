@@ -12,9 +12,10 @@ import 'steps/gender_select_screen.dart';
 import 'steps/location_set_screen.dart';
 import 'steps/photo_upload_screen.dart';
 import 'steps/photo_reorder_screen.dart';
-import 'steps/selfie_instructions_screen.dart';
-// import 'steps/selfie_capture_screen.dart'; // Mapped via instructions now
-import 'steps/selfie_processing_screen.dart';
+// import 'steps/selfie_instructions_screen.dart'; // Deleted
+// import 'steps/selfie_capture_screen.dart'; // Deleted
+// import 'steps/selfie_processing_screen.dart'; // Deleted
+import 'steps/selfie_verification_screen.dart';
 import 'steps/gov_id_screen.dart';
 import 'steps/bio_entry_screen.dart';
 import 'steps/interests_select_screen.dart';
@@ -75,12 +76,9 @@ class _SingleStepShellState extends ConsumerState<SingleStepShell> {
       case 'photo_reorder':
         return const PhotoReorderScreen();
       case 'selfie_capture':
-        // Unified Flow: Start with instructions
-        return const SelfieInstructionsScreen();
-      case 'selfie_processing':
-        return const SelfieProcessingScreen();
+        return const SelfieVerificationScreen();
       case 'gov_id_optional':
-        return const GovIdScreen();
+        return const GovernmentIdVerificationScreen();
       case 'bio_entry':
         return const BioEntryScreen();
       case 'interests_select':

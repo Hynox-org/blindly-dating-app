@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/models/onboarding_step_model.dart';
+import '../../data/models/onboarding_step_model.dart';
 import '../../data/repositories/onboarding_repository.dart';
 import '../../../../features/auth/providers/auth_providers.dart';
 import '../../../../core/utils/app_logger.dart';

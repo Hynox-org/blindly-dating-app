@@ -5,6 +5,7 @@ import '../../providers/onboarding_provider.dart';
 import '../../../../auth/providers/auth_providers.dart';
 import '../../../data/repositories/onboarding_repository.dart';
 import 'base_onboarding_step_screen.dart';
+import '../../../../../core/utils/custom_popups.dart';
 
 class BirthDateScreen extends ConsumerStatefulWidget {
   const BirthDateScreen({super.key});
@@ -105,9 +106,7 @@ class _BirthDateScreenState extends ConsumerState<BirthDateScreen> {
       await ref.read(onboardingProvider.notifier).completeStep('birth_date');
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save birth date: $e')),
-        );
+        showErrorPopup(context, 'Failed to save birth date: $e');
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);

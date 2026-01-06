@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/models/onboarding_step_model.dart';
+import '../models/onboarding_step_model.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../domain/models/lifestyle_category_model.dart';
 import '../../domain/models/lifestyle_chip_model.dart';
@@ -17,6 +17,8 @@ class OnboardingRepository {
 
   OnboardingRepository(this._supabase);
 
+  // ... [Existing Step Configuration Methods remain unchanged] ...
+
   Future<OnboardingStep?> getStepConfig(String stepKey) async {
     try {
       final response = await _supabase
@@ -28,7 +30,6 @@ class OnboardingRepository {
       if (response == null) return null;
       return OnboardingStep.fromJson(response);
     } catch (e) {
-      // Fallback or log error
       AppLogger.info('Error fetching step config: $e');
       return null;
     }
@@ -64,24 +65,19 @@ class OnboardingRepository {
     }
   }
 
-  // Updates the status of a specific step in the JSONB map
   Future<void> updateStepStatus(
     String userId,
     String stepKey,
-    String status, // 'completed', 'skipped'
+    String status,
   ) async {
-    // 1. Fetch current map to ensure we merge correctly
-    // (In a high concurrency implementation, use a Postgres function or jsonb_set)
     final profile = await getProfileRaw(userId);
     Map<String, dynamic> currentProgress = {};
     if (profile != null && profile['steps_progress'] != null) {
       currentProgress = Map<String, dynamic>.from(profile['steps_progress']);
     }
 
-    // 2. Update key
     currentProgress[stepKey] = status;
 
-    // 3. Save back
     await _supabase
         .from('profiles')
         .update({
@@ -91,7 +87,6 @@ class OnboardingRepository {
         .eq('user_id', userId);
   }
 
-  // Force update complete
   Future<void> completeOnboarding(String userId) async {
     await _supabase
         .from('profiles')
@@ -102,7 +97,6 @@ class OnboardingRepository {
         .eq('user_id', userId);
   }
 
-  // Updates arbitrary profile fields
   Future<void> updateProfileData(
     String userId,
     Map<String, dynamic> data,
@@ -140,9 +134,6 @@ class OnboardingRepository {
     }
   }
 
-  /// Validates that 'complete' status is backed by actual data.
-  /// If data is missing (corruption/manual delete), it effectively "heals" the profile
-  /// by reverting status to 'in_progress' so the user is routed correctly.
   Future<bool> validateAndFixOnboardingStatus(String userId) async {
     try {
       final profile = await getProfileRaw(userId);
@@ -154,9 +145,7 @@ class OnboardingRepository {
           ? Map<String, dynamic>.from(rawProgress)
           : {};
 
-      // If marked complete, strict validation is required
       if (status == 'complete') {
-        // 1. Sanity Check: Is progress empty? (User's specific case)
         if (stepsProgress.isEmpty) {
           AppLogger.info(
             'Integrity Check Failed: Status is Complete but Progress is Empty. Reverting to in_progress.',
@@ -167,11 +156,8 @@ class OnboardingRepository {
               .update({'onboarding_status': 'in_progress'})
               .eq('user_id', userId);
 
-          return false; // Not complete anymore
+          return false;
         }
-
-        // Potential future check: verifying all mandatory steps are present.
-        // For now, the empty check covers the "null data" case.
       }
 
       return status == 'complete';
@@ -196,45 +182,24 @@ class OnboardingRepository {
     }
   }
 
+  // ✅ UPDATED: Save directly to profiles table (Array Column)
   Future<void> saveUserInterests(String userId, List<String> chipIds) async {
-    // 0. Resolve Profile ID from Auth ID (userId)
-    final profileResponse = await _supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-    if (profileResponse == null) {
-      throw Exception('Profile not found for user $userId');
-    }
-
-    final profileId = profileResponse['id'] as String;
-
-    // 1. Delete existing interests for this user (full replacement strategy)
-    await _supabase
-        .from('profile_interest_chips')
-        .delete()
-        .eq('profile_id', profileId);
-
-    // 2. Insert new selections
-    if (chipIds.isNotEmpty) {
-      final data = chipIds
-          .map(
-            (chipId) => {
-              'profile_id': profileId,
-              'chip_id': chipId,
-              'created_at': DateTime.now().toIso8601String(),
-            },
-          )
-          .toList();
-
-      await _supabase.from('profile_interest_chips').insert(data);
+    try {
+      await _supabase
+          .from('profiles')
+          .update({
+            'selected_interest_ids': chipIds, // Stores list of UUIDs
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('user_id', userId);
+    } catch (e) {
+      AppLogger.info('Error saving interests: $e');
+      throw Exception('Failed to save interests: $e');
     }
   }
 
   Future<List<LifestyleCategory>> getLifestyleCategoriesWithChips() async {
     try {
-      // 1. Fetch Categories
       final categoriesResponse = await _supabase
           .from('lifestyle_categories')
           .select()
@@ -243,7 +208,6 @@ class OnboardingRepository {
           .map((e) => LifestyleCategory.fromJson(e))
           .toList();
 
-      // 2. Fetch Chips
       final chipsResponse = await _supabase
           .from('lifestyle_chips')
           .select()
@@ -252,7 +216,6 @@ class OnboardingRepository {
           .map((e) => LifestyleChip.fromJson(e))
           .toList();
 
-      // 3. Associate Chips with Categories
       final List<LifestyleCategory> result = [];
       for (var category in categories) {
         final categoryChips = chips
@@ -268,42 +231,22 @@ class OnboardingRepository {
     }
   }
 
+  // ✅ UPDATED: Save directly to profiles table (Array Column)
   Future<void> saveLifestylePreferences(
     String userId,
     List<String> chipIds,
   ) async {
-    // 0. Resolve Profile ID
-    final profileResponse = await _supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-    if (profileResponse == null) {
-      throw Exception('Profile not found for user $userId');
-    }
-
-    final profileId = profileResponse['id'] as String;
-
-    // 1. Delete existing lifestyle chips for this user
-    await _supabase
-        .from('profile_lifestyle_chips')
-        .delete()
-        .eq('profile_id', profileId);
-
-    // 2. Insert new selections
-    if (chipIds.isNotEmpty) {
-      final data = chipIds
-          .map(
-            (chipId) => {
-              'profile_id': profileId,
-              'chip_id': chipId,
-              'created_at': DateTime.now().toIso8601String(),
-            },
-          )
-          .toList();
-
-      await _supabase.from('profile_lifestyle_chips').insert(data);
+    try {
+      await _supabase
+          .from('profiles')
+          .update({
+            'selected_lifestyle_ids': chipIds, // Stores list of UUIDs
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('user_id', userId);
+    } catch (e) {
+      AppLogger.info('Error saving lifestyle preferences: $e');
+      throw Exception('Failed to save lifestyle preferences: $e');
     }
   }
 
@@ -330,7 +273,6 @@ class OnboardingRepository {
           .from('prompt_templates')
           .select()
           .eq('is_active', true)
-          // You might want to sort by category or some other field
           .order('category_id');
 
       return (response as List).map((e) => PromptTemplate.fromJson(e)).toList();
@@ -344,7 +286,6 @@ class OnboardingRepository {
     String userId,
     List<ProfilePrompt> prompts,
   ) async {
-    // 0. Resolve Profile ID
     final profileResponse = await _supabase
         .from('profiles')
         .select('id')
@@ -357,19 +298,13 @@ class OnboardingRepository {
 
     final profileId = profileResponse['id'] as String;
 
-    // 1. Delete existing prompts for this user (full replacement)
     await _supabase
         .from('profile_prompts')
         .delete()
         .eq('profile_id', profileId);
 
-    // 2. Insert new prompts
     if (prompts.isNotEmpty) {
       final data = prompts.map((p) {
-        // Ensure profile_id is set correctly (just in case the model didn't have it or it differs)
-        // But the model is created in UI, better to force it here or trust it.
-        // Let's trust the UI creates it or we override it here.
-        // Actually, creating a new map is safer.
         return {
           'profile_id': profileId,
           'prompt_template_id': p.promptTemplateId,
@@ -385,38 +320,40 @@ class OnboardingRepository {
 
   // --- Fetch User Selections methods for Bidirectional Navigation ---
 
+  // ✅ UPDATED: Fetch from profiles table (Array Column)
   Future<List<String>> getUserInterestChips(String userId) async {
     try {
-      // 1. Get profile ID
-      final profile = await getProfileRaw(userId);
-      if (profile == null) return [];
-      final profileId = profile['id'];
-
-      // 2. Fetch chips
       final response = await _supabase
-          .from('profile_interest_chips')
-          .select('chip_id')
-          .eq('profile_id', profileId);
+          .from('profiles')
+          .select('selected_interest_ids')
+          .eq('user_id', userId)
+          .maybeSingle();
 
-      return (response as List).map((e) => e['chip_id'] as String).toList();
+      if (response == null || response['selected_interest_ids'] == null) {
+        return [];
+      }
+
+      return List<String>.from(response['selected_interest_ids']);
     } catch (e) {
       AppLogger.info('Error fetching user interest chips: $e');
       return [];
     }
   }
 
+  // ✅ UPDATED: Fetch from profiles table (Array Column)
   Future<List<String>> getUserLifestyleChips(String userId) async {
     try {
-      final profile = await getProfileRaw(userId);
-      if (profile == null) return [];
-      final profileId = profile['id'];
-
       final response = await _supabase
-          .from('profile_lifestyle_chips')
-          .select('chip_id')
-          .eq('profile_id', profileId);
+          .from('profiles')
+          .select('selected_lifestyle_ids')
+          .eq('user_id', userId)
+          .maybeSingle();
 
-      return (response as List).map((e) => e['chip_id'] as String).toList();
+      if (response == null || response['selected_lifestyle_ids'] == null) {
+        return [];
+      }
+
+      return List<String>.from(response['selected_lifestyle_ids']);
     } catch (e) {
       AppLogger.info('Error fetching user lifestyle chips: $e');
       return [];
@@ -433,7 +370,7 @@ class OnboardingRepository {
           .from('profile_prompts')
           .select()
           .eq('profile_id', profileId)
-          .order('prompt_display_order'); // Order by display order
+          .order('prompt_display_order');
 
       return (response as List).map((e) => ProfilePrompt.fromJson(e)).toList();
     } catch (e) {

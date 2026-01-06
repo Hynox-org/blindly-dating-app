@@ -6,6 +6,7 @@ import '../../../data/repositories/onboarding_repository.dart';
 import '../../../domain/models/lifestyle_category_model.dart';
 import '../../../../auth/providers/auth_providers.dart';
 import '../../widgets/selection_chip.dart';
+import '../../../../../core/utils/custom_popups.dart';
 
 class LifestylePrefsScreen extends ConsumerStatefulWidget {
   const LifestylePrefsScreen({super.key});
@@ -92,11 +93,7 @@ class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
 
   Future<void> _onNext() async {
     if (!_isFormValid) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select an option for each category'),
-        ),
-      );
+      showErrorPopup(context, 'Please select an option for each category');
       return;
     }
 
@@ -115,9 +112,7 @@ class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
       setState(() {
         _isLoading = false;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error saving preferences: $e')));
+      showErrorPopup(context, 'Error saving preferences: $e');
     }
   }
 

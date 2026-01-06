@@ -6,6 +6,7 @@ import '../../../domain/models/prompt_category_model.dart';
 import '../../../domain/models/prompt_template_model.dart';
 import '../../../domain/models/profile_prompt_model.dart';
 import '../../../../auth/providers/auth_providers.dart';
+import '../../../../../core/utils/custom_popups.dart';
 
 class ProfilePromptsScreen extends ConsumerStatefulWidget {
   const ProfilePromptsScreen({super.key});
@@ -104,11 +105,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
       } else {
         // Can only expand if we haven't reached the limit of 3
         if (_selectedPrompts.length >= 3) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('You can only select up to 3 prompts.'),
-            ),
-          );
+          showErrorPopup(context, 'You can only select up to 3 prompts.');
           return;
         }
         _expandedTemplateId = template.id;
@@ -158,9 +155,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
 
   Future<void> _handleNext() async {
     if (_selectedPrompts.length < 3) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select 3 prompts to continue.')),
-      );
+      showErrorPopup(context, 'Please select 3 prompts to continue.');
       return;
     }
 
@@ -184,9 +179,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error saving prompts: $e')));
+        showErrorPopup(context, 'Error saving prompts: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

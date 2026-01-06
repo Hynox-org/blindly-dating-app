@@ -5,6 +5,7 @@ import '../../providers/onboarding_provider.dart';
 import '../../../../auth/providers/auth_providers.dart';
 import '../../../data/repositories/onboarding_repository.dart';
 import 'base_onboarding_step_screen.dart';
+import '../../../../../core/utils/custom_popups.dart';
 
 class LanguageSelectScreen extends ConsumerStatefulWidget {
   const LanguageSelectScreen({super.key});
@@ -100,9 +101,7 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
           .completeStep('language_select');
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to save languages: $e')));
+        showErrorPopup(context, 'Failed to save languages: $e');
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
