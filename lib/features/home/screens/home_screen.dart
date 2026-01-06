@@ -16,6 +16,8 @@ import '../component/ProfileSwipeCard.dart';
 import '../../../../core/utils/gender_utils.dart';
 import '../../../../core/utils/custom_popups.dart';
 
+// ✅ 4. Screens
+import '../../profile/profile.dart';
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -25,130 +27,130 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
-  final CardSwiperController _controller = CardSwiperController();
-  int _swipeCount = 10;
-  final int _maxSwipes = 10;
-  final bool _isPremium = false;
-  int _selectedIndex = 2; // Peoples tab selected by default
+// class _HomeScreenState extends ConsumerState<HomeScreen> {
+//   final CardSwiperController _controller = CardSwiperController();
+//   int _swipeCount = 10;
+//   final int _maxSwipes = 10;
+//   final bool _isPremium = false;
+//   int _selectedIndex = 2; // Peoples tab selected by default
   
-  // Track swipe direction for showing buttons
-  double _swipeProgress = 0.0;
+//   // Track swipe direction for showing buttons
+//   double _swipeProgress = 0.0;
   
-  // Sample profiles with complete data
-  final List<UserProfile> _profiles = [
-    UserProfile(
-      id: '1',
-      name: 'Vignesh',
-      age: 27,
-      distance: 2.0,
-      bio: 'UX/X designer',
-      imageUrls: [
-        'https://picsum.photos/400/600',
-        'https://picsum.photos/401/600',
-        'https://picsum.photos/402/600',
-      ],
-      height: '170 cm',
-      activityLevel: 'Active',
-      education: 'Post graduate',
-      gender: 'Men',
-      religion: 'Hindu',
-      zodiac: 'Taurus',
-      drinking: 'Yes',
-      smoking: 'Yes',
-      summary: 'Need Netflix recommendations? I\'m looking for someone who\'s down for deep conversations, spontaneous weekend plans, and cozy nights in.',
-      lookingFor: 'Mutual respect, peace and the feeling that you can be your true self',
-      lookingForTags: [
-        'Fun, casual dates',
-        'Ambition',
-        'Confidence',
-        'Emotional intelligence',
-        'Long term relationship',
-        'Loyalty',
-        'Humility',
-        'Humor'
-      ],
-      quickestWay: '"Showing up with pure intentions - not just pretty words"',
-      hobbies: ['Dance', 'Cricket', 'Whiskey', 'Bar', 'KFC', 'Football', 'Beaches', 'Arabic', 'Fish'],
-      causes: ['Reproductive rights', 'LGBTQ', 'Feminism', 'Neurodiversity', 'End religious hate', 'Human rights', 'Environmentalism'],
-      simplePleasure: '"Chai and chips, walks, drives (Not anybody! I know, but definitely something I enjoy)"',
-      languages: ['Tamil', 'English', 'Malayalam'],
-      location: 'Coimbatore',
-      spotifyArtists: ['Mir kalima', 'Harris jayaraj', 'AR Rahman', 'Benny dayal', 'XXX tentacion', 'Vedan', 'Arijit singh', 'Snoop dog', 'Benny'],
-    ),
-    UserProfile(
-      id: '2',
-      name: 'Emma',
-      age: 23,
-      distance: 1.5,
-      bio: 'Coffee enthusiast',
-      imageUrls: [
-        'https://picsum.photos/403/600',
-        'https://picsum.photos/404/600',
-        'https://picsum.photos/405/600',
-      ],
-      height: '165 cm',
-      activityLevel: 'Moderate',
-      education: 'Graduate',
-      gender: 'Women',
-      religion: 'Christian',
-      zodiac: 'Gemini',
-      drinking: 'Socially',
-      smoking: 'No',
-      summary: 'Bookworm by day, Netflix binger by night. Love trying new cafes and having deep conversations.',
-      lookingFor: 'Someone who appreciates good coffee and great books',
-      lookingForTags: ['Coffee dates', 'Book clubs', 'Movie nights', 'Deep talks'],
-      quickestWay: '"Recommend me a good book or a hidden cafe"',
-      hobbies: ['Reading', 'Coffee tasting', 'Writing', 'Photography'],
-      causes: ['Education', 'Mental health', 'Animal rights'],
-      simplePleasure: '"A good book with a cup of coffee on a rainy day"',
-      languages: ['English', 'Hindi'],
-      location: 'Mumbai',
-      spotifyArtists: ['Ed Sheeran', 'Taylor Swift', 'Arijit Singh'],
-    ),
-    UserProfile(
-      id: '3',
-      name: 'Olivia',
-      age: 26,
-      distance: 3.5,
-      bio: 'Fitness enthusiast',
-      imageUrls: [
-        'https://picsum.photos/406/600',
-        'https://picsum.photos/407/600',
-        'https://picsum.photos/408/600',
-      ],
-      height: '168 cm',
-      activityLevel: 'Very active',
-      education: 'Post graduate',
-      gender: 'Women',
-      religion: 'Hindu',
-      zodiac: 'Leo',
-      drinking: 'No',
-      smoking: 'No',
-      summary: 'Fitness trainer and yoga instructor. Living a healthy lifestyle and inspiring others to do the same.',
-      lookingFor: 'Active partner who loves fitness and healthy living',
-      lookingForTags: ['Gym buddy', 'Yoga partner', 'Healthy lifestyle', 'Morning person'],
-      quickestWay: '"Join me for a morning run or yoga session"',
-      hobbies: ['Gym', 'Yoga', 'Running', 'Hiking', 'Cooking healthy meals'],
-      causes: ['Health awareness', 'Environmental protection', 'Women empowerment'],
-      simplePleasure: '"A successful workout followed by a healthy smoothie"',
-      languages: ['English', 'Tamil', 'Hindi'],
-      location: 'Bangalore',
-      spotifyArtists: ['Imagine Dragons', 'The Chainsmokers', 'Alan Walker'],
-    ),
-  ];
+//   // Sample profiles with complete data
+//   final List<UserProfile> _profiles = [
+//     UserProfile(
+//       id: '1',
+//       name: 'Vignesh',
+//       age: 27,
+//       distance: 2.0,
+//       bio: 'UX/X designer',
+//       imageUrls: [
+//         'https://picsum.photos/400/600',
+//         'https://picsum.photos/401/600',
+//         'https://picsum.photos/402/600',
+//       ],
+//       height: '170 cm',
+//       activityLevel: 'Active',
+//       education: 'Post graduate',
+//       gender: 'Men',
+//       religion: 'Hindu',
+//       zodiac: 'Taurus',
+//       drinking: 'Yes',
+//       smoking: 'Yes',
+//       summary: 'Need Netflix recommendations? I\'m looking for someone who\'s down for deep conversations, spontaneous weekend plans, and cozy nights in.',
+//       lookingFor: 'Mutual respect, peace and the feeling that you can be your true self',
+//       lookingForTags: [
+//         'Fun, casual dates',
+//         'Ambition',
+//         'Confidence',
+//         'Emotional intelligence',
+//         'Long term relationship',
+//         'Loyalty',
+//         'Humility',
+//         'Humor'
+//       ],
+//       quickestWay: '"Showing up with pure intentions - not just pretty words"',
+//       hobbies: ['Dance', 'Cricket', 'Whiskey', 'Bar', 'KFC', 'Football', 'Beaches', 'Arabic', 'Fish'],
+//       causes: ['Reproductive rights', 'LGBTQ', 'Feminism', 'Neurodiversity', 'End religious hate', 'Human rights', 'Environmentalism'],
+//       simplePleasure: '"Chai and chips, walks, drives (Not anybody! I know, but definitely something I enjoy)"',
+//       languages: ['Tamil', 'English', 'Malayalam'],
+//       location: 'Coimbatore',
+//       spotifyArtists: ['Mir kalima', 'Harris jayaraj', 'AR Rahman', 'Benny dayal', 'XXX tentacion', 'Vedan', 'Arijit singh', 'Snoop dog', 'Benny'],
+//     ),
+//     UserProfile(
+//       id: '2',
+//       name: 'Emma',
+//       age: 23,
+//       distance: 1.5,
+//       bio: 'Coffee enthusiast',
+//       imageUrls: [
+//         'https://picsum.photos/403/600',
+//         'https://picsum.photos/404/600',
+//         'https://picsum.photos/405/600',
+//       ],
+//       height: '165 cm',
+//       activityLevel: 'Moderate',
+//       education: 'Graduate',
+//       gender: 'Women',
+//       religion: 'Christian',
+//       zodiac: 'Gemini',
+//       drinking: 'Socially',
+//       smoking: 'No',
+//       summary: 'Bookworm by day, Netflix binger by night. Love trying new cafes and having deep conversations.',
+//       lookingFor: 'Someone who appreciates good coffee and great books',
+//       lookingForTags: ['Coffee dates', 'Book clubs', 'Movie nights', 'Deep talks'],
+//       quickestWay: '"Recommend me a good book or a hidden cafe"',
+//       hobbies: ['Reading', 'Coffee tasting', 'Writing', 'Photography'],
+//       causes: ['Education', 'Mental health', 'Animal rights'],
+//       simplePleasure: '"A good book with a cup of coffee on a rainy day"',
+//       languages: ['English', 'Hindi'],
+//       location: 'Mumbai',
+//       spotifyArtists: ['Ed Sheeran', 'Taylor Swift', 'Arijit Singh'],
+//     ),
+//     UserProfile(
+//       id: '3',
+//       name: 'Olivia',
+//       age: 26,
+//       distance: 3.5,
+//       bio: 'Fitness enthusiast',
+//       imageUrls: [
+//         'https://picsum.photos/406/600',
+//         'https://picsum.photos/407/600',
+//         'https://picsum.photos/408/600',
+//       ],
+//       height: '168 cm',
+//       activityLevel: 'Very active',
+//       education: 'Post graduate',
+//       gender: 'Women',
+//       religion: 'Hindu',
+//       zodiac: 'Leo',
+//       drinking: 'No',
+//       smoking: 'No',
+//       summary: 'Fitness trainer and yoga instructor. Living a healthy lifestyle and inspiring others to do the same.',
+//       lookingFor: 'Active partner who loves fitness and healthy living',
+//       lookingForTags: ['Gym buddy', 'Yoga partner', 'Healthy lifestyle', 'Morning person'],
+//       quickestWay: '"Join me for a morning run or yoga session"',
+//       hobbies: ['Gym', 'Yoga', 'Running', 'Hiking', 'Cooking healthy meals'],
+//       causes: ['Health awareness', 'Environmental protection', 'Women empowerment'],
+//       simplePleasure: '"A successful workout followed by a healthy smoothie"',
+//       languages: ['English', 'Tamil', 'Hindi'],
+//       location: 'Bangalore',
+//       spotifyArtists: ['Imagine Dragons', 'The Chainsmokers', 'Alan Walker'],
+//     ),
+//   ];
 
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+//   @override
+//   void dispose() {
+//     _controller.dispose();
+//     super.dispose();
+//   }
 
 
-  @override
-  ConsumerState<HomeScreen> createState() => _HomeScreenState();
-}
+//   @override
+//   ConsumerState<HomeScreen> createState() => _HomeScreenState();
+// }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final CardSwiperController _controller = CardSwiperController();
@@ -554,11 +556,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final Color unselectedColor = Colors.black;
 
     return GestureDetector(
-      onTap: () {
+       onTap: () {
+      // Add navigation for Profile
+      if (index == 0) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ProfileScreen(), // Replace with your actual ProfileScreen
+          ),
+        );
+      } else {
         setState(() {
           _selectedIndex = index;
         });
-      },
+      }
+    },
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
