@@ -4,9 +4,12 @@ import json
 import base64
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
+from PIL import Image
+from io import BytesIO
 
-# AWS Client
-rekognition = boto3.client("rekognition", region_name="ap-south-1")
+# ------------------ AWS CLIENT ------------------
+
+rekognition = boto3.client("rekognition")
 
 # ------------------ MODERATION RULES ------------------
 
@@ -28,8 +31,49 @@ REVIEW_LABELS = {
 # ------------------ FACE CONSTRAINTS ------------------
 
 MIN_FACE_CONFIDENCE = 90
-MIN_FACE_AREA_RATIO = 0.15   # 15% of image
+MIN_FACE_AREA_RATIO = 0.15
 MAX_FACES_ALLOWED = 1
+
+# ------------------ BODY PARSER ------------------
+
+def parse_body(event):
+    if "body" not in event:
+        return event
+
+    body = event["body"]
+
+    if event.get("isBase64Encoded"):
+        body = base64.b64decode(body).decode("utf-8")
+
+    if isinstance(body, str):
+        return json.loads(body)
+
+    return body
+
+# ------------------ EXIF VALIDATION (KEY FEATURE) ------------------
+
+def validate_exif(image_bytes):
+    """
+    Blocks edited / exported / AI / downloaded images
+    """
+    try:
+        img = Image.open(BytesIO(image_bytes))
+        exif = img._getexif()
+
+        if not exif:
+            return "BLOCK", "Edited or exported image detected (no EXIF)"
+
+        # Camera Make & Model tags
+        CAMERA_MAKE = 271
+        CAMERA_MODEL = 272
+
+        if CAMERA_MAKE not in exif or CAMERA_MODEL not in exif:
+            return "BLOCK", "Camera metadata missing (possible filtered image)"
+
+        return "ALLOW", None
+
+    except Exception:
+        return "BLOCK", "Invalid or manipulated image metadata"
 
 # ------------------ MODERATION DECISION ------------------
 
@@ -59,11 +103,9 @@ def validate_face(image_bytes, source):
 
     faces = response.get("FaceDetails", [])
 
-    # ❌ No face
     if len(faces) == 0:
         return "BLOCK", "No human face detected"
 
-    # ❌ Multiple faces
     if len(faces) > MAX_FACES_ALLOWED:
         if source == "profile":
             return "REVIEW", "Multiple faces detected"
@@ -71,20 +113,13 @@ def validate_face(image_bytes, source):
 
     face = faces[0]
 
-    # ❌ Low confidence
     if face["Confidence"] < MIN_FACE_CONFIDENCE:
         return "BLOCK", "Face confidence too low"
 
-    # ❌ Face too small (background-heavy image)
     box = face["BoundingBox"]
     face_area = box["Width"] * box["Height"]
-
     if face_area < MIN_FACE_AREA_RATIO:
         return "BLOCK", "Face too small in image"
-
-    # ❌ Fake / cartoon face detection (heuristic)
-    if not face.get("EyesOpen") or not face.get("MouthOpen"):
-        return "BLOCK", "Non-real or unclear face detected"
 
     return "ALLOW", None
 
@@ -92,7 +127,7 @@ def validate_face(image_bytes, source):
 
 def handler(event, context):
     try:
-        body = json.loads(event.get("body", "{}"))
+        body = parse_body(event)
         images = body.get("images")
         source = body.get("source", "profile")  # profile | verification | chat
 
@@ -107,6 +142,7 @@ def handler(event, context):
 
         for index, image_base64 in enumerate(images):
             try:
+                image_base64 = image_base64.split(",")[-1]
                 image_bytes = base64.b64decode(image_base64)
             except Exception:
                 results.append({
@@ -116,9 +152,28 @@ def handler(event, context):
                 })
                 continue
 
-            # 1️⃣ Face validation first
-            face_decision, face_reason = validate_face(image_bytes, source)
+            # ❌ Image size limit (5 MB)
+            if len(image_bytes) > 5 * 1024 * 1024:
+                results.append({
+                    "imageIndex": index,
+                    "decision": "BLOCK",
+                    "reason": "Image too large"
+                })
+                continue
 
+            # 1️⃣ EXIF VALIDATION (THIS BLOCKS YOUR IMAGE)
+            exif_decision, exif_reason = validate_exif(image_bytes)
+            if exif_decision != "ALLOW":
+                results.append({
+                    "imageIndex": index,
+                    "decision": exif_decision,
+                    "reason": exif_reason,
+                    "labels": []
+                })
+                continue
+
+            # 2️⃣ FACE VALIDATION
+            face_decision, face_reason = validate_face(image_bytes, source)
             if face_decision != "ALLOW":
                 results.append({
                     "imageIndex": index,
@@ -128,18 +183,18 @@ def handler(event, context):
                 })
                 continue
 
-            # 2️⃣ Moderation check
+            # 3️⃣ MODERATION CHECK
             moderation_response = rekognition.detect_moderation_labels(
                 Image={"Bytes": image_bytes},
                 MinConfidence=70
             )
 
             labels = moderation_response.get("ModerationLabels", [])
-            moderation_decision = get_moderation_decision(labels, source)
+            decision = get_moderation_decision(labels, source)
 
             results.append({
                 "imageIndex": index,
-                "decision": moderation_decision,
+                "decision": decision,
                 "labels": labels
             })
 
