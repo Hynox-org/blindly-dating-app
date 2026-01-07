@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/models/onboarding_step_model.dart';
+import '../../data/models/onboarding_step_model.dart';
 import '../../data/repositories/onboarding_repository.dart';
 import '../../../../features/auth/providers/auth_providers.dart';
 import '../../../../core/utils/app_logger.dart';
@@ -42,8 +42,6 @@ final onboardingProvider =
 class OnboardingNotifier extends StateNotifier<OnboardingState> {
   final Ref _ref;
 
-  bool _hasDismissedWelcome = false;
-
   OnboardingNotifier(this._ref) : super(OnboardingState());
 
   OnboardingRepository get _repo => _ref.read(onboardingRepositoryProvider);
@@ -80,8 +78,8 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
         }
       }
 
-      // 1. Get ordered list of ALL steps
-      final allSteps = await _repo.getAllSteps();
+      // 1. Get ordered list of MANDATORY steps
+      final allSteps = await _repo.getMandatorySteps();
 
       // 2. Get user's progress map
       // Map<String, dynamic> stepsProgress = {};
@@ -98,15 +96,15 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
         // Actually simplest is: if map is empty, they are fresh.
       }
 
-      if (isFreshUser && !_hasDismissedWelcome) {
-        state = state.copyWith(
-          isLoading: false,
-          currentStepKey: 'pre_onboarding',
-          // No config for this, it's a special state
-          currentStepConfig: null,
-        );
-        return;
-      }
+      // if (isFreshUser && !_hasDismissedWelcome) {
+      //   state = state.copyWith(
+      //     isLoading: false,
+      //     currentStepKey: 'pre_onboarding',
+      //     // No config for this, it's a special state
+      //     currentStepConfig: null,
+      //   );
+      //   return;
+      // }
 
       // 3. Determine current step
       // Find the first step that is NOT 'completed'.
@@ -206,9 +204,27 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     state = state.copyWith(currentStepKey: 'complete');
   }
 
-  void dismissWelcome() {
-    _hasDismissedWelcome = true;
-    // Re-run init to proceed to the actual first step
-    init();
+  Future<void> goToPreviousStep() async {
+    // 1. Get current list of steps
+    // Ideally should be cached, but fetching is fine
+    try {
+      final allSteps = await _repo.getAllSteps();
+      final currentIndex = allSteps.indexWhere(
+        (s) => s.stepKey == state.currentStepKey,
+      );
+
+      if (currentIndex > 0) {
+        final prevStep = allSteps[currentIndex - 1];
+        await jumpToStep(prevStep.stepKey);
+      } else if (state.currentStepKey == 'pre_onboarding') {
+        // Can't go back from pre-onboarding
+      } else {
+        // If index is 0, check if we came from pre-onboarding?
+        // Or if we are at the very first step, maybe go to pre-onboarding?
+        // For now, assume if index 0, back does nothing or we control it elsewhere.
+      }
+    } catch (e) {
+      AppLogger.error('Failed to go back', e);
+    }
   }
 }
