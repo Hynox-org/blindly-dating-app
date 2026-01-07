@@ -170,18 +170,22 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
             Text(
               'We need your Name to create your profile',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: Colors.black54,
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withOpacity(0.54),
               ),
             ),
             const SizedBox(height: 24),
 
             // Name Label
-            const Text(
+            Text(
               'Name',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withOpacity(0.87),
               ),
             ),
             const SizedBox(height: 8),
@@ -192,7 +196,11 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
               textCapitalization: TextCapitalization.words,
               decoration: InputDecoration(
                 hintText: 'Enter Your Name',
-                hintStyle: TextStyle(color: Colors.grey.shade400),
+                hintStyle: TextStyle(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.4),
+                ),
                 filled: true,
                 fillColor: theme
                     .colorScheme
@@ -207,7 +215,11 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade200),
+                  borderSide: BorderSide(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withOpacity(0.12),
+                  ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -222,18 +234,22 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
             Text(
               'We need your DOB to create your profile',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: Colors.black54,
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withOpacity(0.54),
               ),
             ),
             const SizedBox(height: 24),
 
             // DOB Label
-            const Text(
+            Text(
               'Date of birth',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withOpacity(0.87),
               ),
             ),
             const SizedBox(height: 8),
@@ -279,11 +295,13 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
             ),
 
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Your birthday is used to calculate your age and will be shown on your profile. Your full name will not be public',
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.black54,
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withOpacity(0.54),
                 height: 1.5,
               ),
             ),
@@ -324,7 +342,9 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
       decoration: InputDecoration(
         counterText: "", // Hide character counter
         hintText: hint,
-        hintStyle: TextStyle(color: Colors.grey.shade400),
+        hintStyle: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+        ),
         filled: true,
         fillColor: theme.colorScheme.surface,
         contentPadding: const EdgeInsets.symmetric(
@@ -337,7 +357,9 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade200),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.12),
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

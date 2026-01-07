@@ -127,11 +127,16 @@ class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(horizontal: 4.0),
             child: Text(
               'Tell us more about your habits. Pick what fits you best.', // Matches Image
-              style: TextStyle(color: Colors.black54, fontSize: 14),
+              style: TextStyle(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withOpacity(0.54),
+                fontSize: 14,
+              ),
             ),
           ),
           const SizedBox(height: 20),

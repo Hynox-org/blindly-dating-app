@@ -532,7 +532,9 @@ class _SelfieVerificationScreenState
             ),
             LinearProgressIndicator(
               value: _matchProgress,
-              backgroundColor: Colors.grey[300],
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest,
               valueColor: AlwaysStoppedAnimation<Color>(
                 Theme.of(context).colorScheme.primary,
               ),
@@ -590,7 +592,7 @@ class _SelfieVerificationScreenState
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
+                                  color: colorScheme.onSurface.withOpacity(0.1),
                                   blurRadius: 8,
                                   offset: const Offset(0, 4),
                                 ),

@@ -163,27 +163,25 @@ class _GovernmentIdVerificationScreenState
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: const Color(
-                        0xFF4A503D,
-                      ), // Dark Olive Green from image
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary, // Dark Olive Green from image
                       shape: BoxShape.circle,
                     ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.shield_outlined,
-                        size: 40,
-                        color: Color(0xFFE2C568),
-                      ), // Gold color
-                    ),
+                    child: Icon(
+                      Icons.shield_outlined,
+                      size: 40,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ), // Gold color
                   ),
                   const SizedBox(height: 24),
-                  const Text(
+                  Text(
                     "A quick check to keep you safe",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -318,10 +316,15 @@ class _GovernmentIdVerificationScreenState
                   ),
                   const SizedBox(height: 32),
 
-                  const Text(
+                  Text(
                     "Your ID is encrypted and will be deleted after verification. We never share it with other users. Learn more",
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12, color: Colors.black54),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.54),
+                    ),
                   ),
                   const SizedBox(height: 24),
                 ],

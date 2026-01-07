@@ -142,12 +142,14 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
                           ),
                         ),
                         child: isLoading
-                            ? const SizedBox(
+                            ? SizedBox(
                                 height: 24,
                                 width: 24,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: Colors.white,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimary,
                                 ),
                               )
                             : Text(
@@ -174,7 +176,9 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
                         }
                       },
                       style: TextButton.styleFrom(
-                        foregroundColor: Colors.grey[700],
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.7),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                       child: const Row(

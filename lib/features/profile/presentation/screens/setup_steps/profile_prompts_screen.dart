@@ -219,7 +219,9 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
               child: Text(
                 'Select up to 3 prompt to showing up your personality.',
                 textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -244,12 +246,18 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
                         if (val) _onCategorySelected(index);
                       },
                       // Styles
-                      selectedColor: theme.colorScheme.primary.withOpacity(
-                        0.8,
+                      selectedColor: theme.colorScheme.primary.withValues(
+                        alpha: 0.8,
                       ), // Use primary as active
-                      backgroundColor: Colors.grey[200],
+                      backgroundColor: theme.colorScheme.onSurface.withValues(
+                        alpha: 0.12,
+                      ),
                       labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : Colors.black87,
+                        color: isSelected
+                            ? theme.colorScheme.onPrimary
+                            : theme.colorScheme.onSurface.withValues(
+                                alpha: 0.87,
+                              ),
                         fontWeight: isSelected
                             ? FontWeight.bold
                             : FontWeight.normal,
@@ -284,15 +292,15 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
                         // If you have a specific custom color in theme, use it. Otherwise rely on theme primary.
                         // Attempting to match the specific "Olive Green" from the mockup via a hardcoded fallback
                         // if theme is not set up that way, but keeping it robust.
-                        backgroundColor: const Color(0xFF757C64),
+                        backgroundColor: theme.colorScheme.primary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
                         ),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Continue',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: theme.colorScheme.onPrimary,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -305,7 +313,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
                         ? 'All prompts selected'
                         : 'Please select ${3 - _selectedPrompts.length} more prompt${(3 - _selectedPrompts.length) == 1 ? '' : 's'} to continue (${_selectedPrompts.length}/3 selected)',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.grey,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
                   ),
                 ],
@@ -360,12 +368,12 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           // Basic shadow
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -382,7 +390,11 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
                 ),
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
           ],
         ),
       ),
@@ -393,11 +405,11 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -417,7 +429,11 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
                   ),
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -425,9 +441,12 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
             controller: _answerController,
             maxLines: 4,
             maxLength: 300,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               hintText: 'Type your answer...',
-              hintStyle: TextStyle(color: Colors.grey, fontSize: 13),
+              hintStyle: TextStyle(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                fontSize: 13,
+              ),
               border: InputBorder.none,
               contentPadding: EdgeInsets.zero,
             ),
@@ -438,9 +457,8 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
             child: ElevatedButton(
               onPressed: () => _onAddPrompt(template),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(
-                  0xFF555B46,
-                ), // Dark olive form image
+                backgroundColor:
+                    theme.colorScheme.primary, // Dark olive form image
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -449,9 +467,9 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
                   vertical: 10,
                 ),
               ),
-              child: const Text(
+              child: Text(
                 'Add Prompt',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: theme.colorScheme.onPrimary),
               ),
             ),
           ),
@@ -465,7 +483,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFE8D58E), // Gold/Beige color from image
+        color: theme.colorScheme.secondary, // Gold/Beige color from image
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -477,17 +495,22 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
               children: [
                 Text(
                   template.promptText,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
-                    color: Colors.black87,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.87),
                   ),
                 ),
                 if (prompt != null) ...[
                   const SizedBox(height: 4),
                   Text(
                     prompt.userResponse,
-                    style: const TextStyle(fontSize: 14, color: Colors.black87),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: theme.colorScheme.onSurface.withValues(
+                        alpha: 0.87,
+                      ),
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -499,11 +522,15 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
             onTap: () => _onRemovePrompt(template.id),
             child: Container(
               padding: const EdgeInsets.all(4),
-              decoration: const BoxDecoration(
-                color: Colors.black87,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.87),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.close, size: 14, color: Colors.white),
+              child: Icon(
+                Icons.close,
+                size: 14,
+                color: theme.colorScheme.surface,
+              ),
             ),
           ),
         ],

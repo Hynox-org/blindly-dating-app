@@ -151,7 +151,10 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 4.0),
             child: Text(
               'Please select at least 5 interest. This helps us find your peoples', // Typo "peoples" in user prompt/image? keeping faithful to image text if possible or correcting grammar? Image says "find your peoples", I will match image text.
-              style: TextStyle(color: Colors.grey[600], fontSize: 14),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                fontSize: 14,
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -163,15 +166,24 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
                 _searchQuery = value.toLowerCase().trim();
               });
             },
-            style: const TextStyle(
-              color: Colors.black87,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.87),
             ), // Ensure visible text
             decoration: InputDecoration(
               hintText: 'Search for interest',
-              hintStyle: const TextStyle(color: Colors.black54),
-              prefixIcon: const Icon(Icons.search, color: Colors.black54),
+              hintStyle: TextStyle(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withOpacity(0.54),
+              ),
+              prefixIcon: Icon(
+                Icons.search,
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withOpacity(0.54),
+              ),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: Theme.of(context).colorScheme.surface,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,

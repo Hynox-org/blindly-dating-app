@@ -90,9 +90,13 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             "Don't be shy! This is your chance to share your personality with a short bio.",
-            style: TextStyle(fontSize: 14, color: Colors.black87, height: 1.5),
+            style: TextStyle(
+              fontSize: 14,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.87),
+              height: 1.5,
+            ),
           ),
           const SizedBox(height: 32),
           TextField(
@@ -101,9 +105,11 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
             maxLength: 300,
             decoration: InputDecoration(
               hintText: 'Text Here.....',
-              hintStyle: TextStyle(color: Colors.grey.shade400),
+              hintStyle: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+              ),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: Theme.of(context).colorScheme.surface,
               contentPadding: const EdgeInsets.all(16),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(20),
@@ -111,7 +117,11 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(20),
-                borderSide: BorderSide(color: Colors.grey.shade200),
+                borderSide: BorderSide(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.12),
+                ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(20),
@@ -131,7 +141,10 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
             alignment: Alignment.centerRight,
             child: Text(
               '${_controller.text.length}/300',
-              style: const TextStyle(color: Colors.grey, fontSize: 12),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                fontSize: 12,
+              ),
             ),
           ),
         ],

@@ -154,12 +154,14 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
             child: ListView(
               children: [
                 if (!isSearching) ...[
-                  const Text(
+                  Text(
                     'Suggested',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.87),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -168,12 +170,14 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
                     _allLanguages.firstWhere((l) => l['code'] == 'en'),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
+                  Text(
                     'All languages',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.87),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -227,18 +231,20 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(25),
           border: isSelected
               ? Border.all(
-                  color: const Color(0xFFCDB38B),
+                  color: Theme.of(context).colorScheme.secondary,
                   width: 2,
                 ) // Approximate Gold/Beige color from image
               : Border.all(color: Colors.transparent),
           boxShadow: [
             if (!isSelected)
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withOpacity(0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
@@ -252,23 +258,30 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
                 children: [
                   Text(
                     lang['native']!, // Native name prominent
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.87),
                     ),
                   ),
                   Text(
                     lang['name']!, // English name subtitle
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.6),
+                    ),
                   ),
                 ],
               ),
             ),
             if (isSelected)
-              const Icon(
+              Icon(
                 FontAwesomeIcons.solidCircleCheck,
-                color: Color(0xFFCDB38B), // Match border
+                color: Theme.of(context).colorScheme.secondary, // Match border
                 size: 20,
               )
             else

@@ -129,12 +129,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         : null;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.menu, color: Colors.black, size: 28),
+          icon: Icon(
+            Icons.menu,
+            color: Theme.of(context).colorScheme.onSurface,
+            size: 28,
+          ),
           onPressed: () => _showMenuDialog(),
         ),
         title: Image.asset(
@@ -142,7 +146,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           height: 24,
           fit: BoxFit.contain,
           errorBuilder: (context, error, stackTrace) {
-            return const Text("Blindly", style: TextStyle(color: Colors.black));
+            return Text(
+              "Blindly",
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+            );
           },
         ),
         centerTitle: true,
@@ -151,24 +158,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             margin: const EdgeInsets.only(right: 16),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.grey[200],
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
+                Icon(
                   Icons.local_fire_department,
                   size: 16,
-                  color: Colors.orange,
+                  color: Theme.of(context).colorScheme.secondary,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   '$_swipeCount/$_maxSwipes',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
-                    color: Colors.black,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -187,9 +196,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: !_isLocationReady || discoveryState == null
                   ? _buildInitializingState()
                   : discoveryState.when(
-                      loading: () => const Center(
+                      loading: () => Center(
                         child: CircularProgressIndicator(
-                          color: Color(0xFFD4AF37),
+                          color: Theme.of(context).colorScheme.secondary,
                         ),
                       ),
                       error: (err, stack) => Center(
@@ -247,7 +256,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       height: 80,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: Colors.grey[400],
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withValues(alpha: 0.4),
                                       ),
                                       child: const Icon(
                                         Icons.close,
@@ -277,7 +289,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       height: 80,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: Colors.grey[400],
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withValues(alpha: 0.4),
                                       ),
                                       child: const Icon(
                                         Icons.favorite,
@@ -306,10 +321,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 WidgetsBinding.instance.addPostFrameCallback((
                                   _,
                                 ) {
-                                  if (mounted)
+                                  if (mounted) {
                                     setState(
                                       () => _swipeProgress = horiz.toDouble(),
                                     );
+                                  }
                                 });
 
                                 return ProfileSwipeCard(
@@ -347,10 +363,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -402,15 +420,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   // ✅ New Loading Widget for Location Init
   Widget _buildInitializingState() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(color: Color(0xFFD4AF37)),
+          CircularProgressIndicator(
+            color: Theme.of(context).colorScheme.secondary,
+          ),
           SizedBox(height: 16),
           Text(
             "Updating your location...",
-            style: TextStyle(color: Colors.grey, fontFamily: 'Poppins'),
+            style: TextStyle(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.5),
+              fontFamily: 'Poppins',
+            ),
           ),
         ],
       ),
@@ -423,8 +448,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required int index,
     required bool isSelected,
   }) {
-    final Color selectedColor = const Color(0xFFD4AF37);
-    final Color unselectedColor = Colors.black;
+    final Color selectedColor = Theme.of(context).colorScheme.secondary;
+    final Color unselectedColor = Theme.of(context).colorScheme.onSurface;
 
     return GestureDetector(
       onTap: () {
@@ -464,10 +489,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text(
+              leading: Icon(
+                Icons.logout,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              title: Text(
                 'Logout',
-                style: TextStyle(fontFamily: 'Poppins', color: Colors.red),
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  color: Theme.of(context).colorScheme.error,
+                ),
               ),
               onTap: () async {
                 Navigator.pop(context);
@@ -577,11 +608,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.people_outline, size: 100, color: Colors.grey[400]),
+          Icon(
+            Icons.people_outline,
+            size: 100,
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.4),
+          ),
           const SizedBox(height: 20),
           Text(
             'No profiles available',
-            style: TextStyle(fontSize: 20, color: Colors.grey[600]),
+            style: TextStyle(
+              fontSize: 20,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
           ),
         ],
       ),

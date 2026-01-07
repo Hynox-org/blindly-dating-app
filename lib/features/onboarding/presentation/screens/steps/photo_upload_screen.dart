@@ -86,7 +86,7 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
   void _showImageSourceSheet(BuildContext context, int index) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -141,9 +141,9 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
                 // e.g., "Face too far away" or "Group photos not allowed"
                 Text(
                   "• ${next.error}",
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Colors.red,
+                    color: Theme.of(context).colorScheme.error,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -180,7 +180,9 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
           Text(
             'Add at least 2 photos to get your matches! First one is main picture',
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.black87,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.87),
               height: 1.4,
             ),
             textAlign: TextAlign.start,
@@ -188,7 +190,11 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
           const SizedBox(height: 8),
           Text(
             'Tap on an added photo to edit or remove it.',
-            style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
             textAlign: TextAlign.start,
           ),
           const SizedBox(height: 32),
@@ -237,7 +243,11 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
               padding: const EdgeInsets.only(bottom: 16),
               child: Text(
                 'Please add one more photo',
-                style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
               ),
             ),
 
@@ -289,10 +299,17 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
-              border: isMain ? Border.all(color: Colors.amber, width: 3) : null,
-              boxShadow: const [
+              border: isMain
+                  ? Border.all(
+                      color: Theme.of(context).colorScheme.secondary,
+                      width: 3,
+                    )
+                  : null,
+              boxShadow: [
                 BoxShadow(
-                  color: Colors.black12,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.12),
                   blurRadius: 4,
                   offset: Offset(0, 2),
                 ),
@@ -307,18 +324,22 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.amber,
+                  color: Theme.of(context).colorScheme.secondary,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.star, color: Colors.white, size: 12),
+                    Icon(
+                      Icons.star,
+                      color: Theme.of(context).colorScheme.onSecondary,
+                      size: 12,
+                    ),
                     SizedBox(width: 2),
                     Text(
                       'MAIN',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onSecondary,
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),
@@ -333,11 +354,15 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
             top: 4,
             child: Container(
               padding: const EdgeInsets.all(2),
-              decoration: const BoxDecoration(
-                color: Colors.white,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.close, size: 16, color: Colors.black),
+              child: Icon(
+                Icons.close,
+                size: 16,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
           ),
         ],
@@ -345,7 +370,7 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
     } else {
       return CustomPaint(
         painter: _DashedBorderPainter(
-          color: Colors.black,
+          color: Theme.of(context).colorScheme.onSurface,
           strokeWidth: 1.0,
           gap: 5.0,
         ),
@@ -357,18 +382,26 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.grey[200],
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.12),
                   shape: BoxShape.rectangle,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.photo_library_rounded,
-                  color: Colors.black54,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.54),
                   size: 24,
                 ),
               ),
               const SizedBox(height: 4),
-              const Icon(Icons.add_circle, color: Colors.black, size: 20),
+              Icon(
+                Icons.add_circle,
+                color: Theme.of(context).colorScheme.onSurface,
+                size: 20,
+              ),
             ],
           ),
         ),
@@ -409,10 +442,13 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
                 },
               ),
             ListTile(
-              leading: const Icon(Icons.delete, color: Colors.red),
-              title: const Text(
+              leading: Icon(
+                Icons.delete,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              title: Text(
                 'Remove Photo',
-                style: TextStyle(color: Colors.red),
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
               onTap: () {
                 Navigator.pop(ctx);

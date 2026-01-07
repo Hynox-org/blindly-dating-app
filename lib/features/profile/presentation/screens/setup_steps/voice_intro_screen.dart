@@ -289,7 +289,7 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                 'Record a short intro',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.w900,
-                  color: Colors.black,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 28,
                 ),
                 textAlign: TextAlign.center,
@@ -300,7 +300,9 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                 child: Text(
                   'Let your personality shine through. Record a 30 seconds short intro.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withOpacity(0.6),
                     height: 1.4,
                     fontSize: 15,
                   ),
@@ -364,7 +366,7 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                                       : (hasVoice
                                             ? Icons.play_arrow_rounded
                                             : Icons.mic)),
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.onPrimary,
                             size: 50,
                           ),
                         ),
@@ -386,14 +388,20 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                   if (hasVoice && !_isRecording)
                     TextButton.icon(
                       onPressed: _deleteVoice,
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.refresh,
                         size: 18,
-                        color: Colors.grey,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.5),
                       ),
-                      label: const Text(
+                      label: Text(
                         'Record Again',
-                        style: TextStyle(color: Colors.grey),
+                        style: TextStyle(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.5),
+                        ),
                       ),
                     ),
                 ],
@@ -407,7 +415,9 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                 margin: const EdgeInsets.only(bottom: 10.0),
                 padding: const EdgeInsets.all(16.0),
                 decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.05), // Subtle highlight
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.05), // Subtle highlight
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
@@ -416,7 +426,9 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                       'Voice prompts help you stand out and make deeper connections. Share who you really are',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.black87,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.87),
                         fontSize: 14,
                         fontWeight: FontWeight.w400,
                       ),
@@ -451,14 +463,16 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                       : (_handleNext),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryDarkColor,
-                    foregroundColor: Colors.white,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     elevation: 0,
                   ),
                   child: _isUploading
-                      ? const CircularProgressIndicator(color: Colors.white)
+                      ? CircularProgressIndicator(
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        )
                       : Text(
                           // Change text based on whether it's new or existing?
                           // "Save & Continue" implies saving. If existing, it's just "Continue".
@@ -493,10 +507,10 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              color: Colors.black,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ),

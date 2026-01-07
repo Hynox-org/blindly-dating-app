@@ -62,10 +62,12 @@ class _PendingStepsCardState extends ConsumerState<PendingStepsCard> {
 
     return Card(
       margin: const EdgeInsets.all(16),
-      color: Colors.orange.shade50,
+      color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.05),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.orange.shade200),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.3),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -76,13 +78,13 @@ class _PendingStepsCardState extends ConsumerState<PendingStepsCard> {
               children: [
                 Icon(
                   Icons.warning_amber_rounded,
-                  color: Colors.orange.shade800,
+                  color: Theme.of(context).colorScheme.secondary,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'Complete your profile',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.orange.shade900,
+                    color: Theme.of(context).colorScheme.secondary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

@@ -269,17 +269,23 @@ class _LocationSetScreenState extends ConsumerState<LocationSetScreen> {
             Expanded(
               child: ListView.separated(
                 itemCount: _filteredCities.length,
-                separatorBuilder: (context, index) =>
-                    Divider(height: 1, color: Colors.grey.shade200),
+                separatorBuilder: (context, index) => Divider(
+                  height: 1,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.12),
+                ),
                 itemBuilder: (context, index) {
                   final city = _filteredCities[index];
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
                     title: Text(
                       city,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
-                        color: Colors.black87,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.87),
                       ),
                     ),
                     onTap: () => _handleCitySelection(city),
