@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/security/security_config.dart';
+import 'core/config/environment_config.dart';
 
 // Import your existing screens
 import 'features/splash/screens/splash_screen.dart';
@@ -18,8 +19,8 @@ import 'features/auth/providers/auth_state_listener.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load connection strings and credentials
-  await dotenv.load(fileName: ".env");
+  // Load connection strings and credentials based on environment
+  await EnvironmentConfig.load();
 
   // Initialize Firebase (requires google-services.json on Android)
   await Firebase.initializeApp();
