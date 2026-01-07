@@ -16,6 +16,9 @@ import '../component/ProfileSwipeCard.dart';
 import '../../../../core/utils/gender_utils.dart';
 import '../../../../core/utils/custom_popups.dart';
 
+// ✅ 4. Screens
+import '../../profile/profile.dart';
+
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -33,7 +36,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _selectedIndex = 2;
   double _swipeProgress = 0.0;
 
-  // ✅ NEW: Controls the initialization flow
+  // ✅ Controls the initialization flow
   bool _isLocationReady = false;
 
   @override
@@ -227,7 +230,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         return Stack(
                           children: [
                             // -------------------------
-                            // 1. Left/Right Indicators
+                            // 1. Left/Right Circle Indicators (ORIGINAL)
                             // -------------------------
                             Positioned.fill(
                               child: Padding(
@@ -306,17 +309,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 WidgetsBinding.instance.addPostFrameCallback((
                                   _,
                                 ) {
-                                  if (mounted)
+                                  if (mounted) {
                                     setState(
                                       () => _swipeProgress = horiz.toDouble(),
                                     );
+                                  }
                                 });
 
+                                // ✅ Using ProfileSwipeCard - the card handles its own overlay
                                 return ProfileSwipeCard(
                                   key: ValueKey(profiles[index].id),
                                   profile: profiles[index],
                                   horizontalThreshold: horiz.toDouble(),
                                   verticalThreshold: vert.toDouble(),
+                                  isHomeScreen: true,
                                   onLike: () {
                                     if (_swipeCount > 0) {
                                       _handleLike(profiles[index]);
@@ -333,7 +339,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       );
                                     }
                                   },
-                                  onReport: () {},
+                                  onReport: () {
+                                    debugPrint('Report: ${profiles[index].name}');
+                                  },
                                 );
                               },
                             ),
@@ -400,7 +408,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  // ✅ New Loading Widget for Location Init
+  // ✅ Loading Widget for Location Init
   Widget _buildInitializingState() {
     return const Center(
       child: Column(
@@ -428,9 +436,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return GestureDetector(
       onTap: () {
-        setState(() {
-          _selectedIndex = index;
-        });
+        // Add navigation for Profile
+        if (index == 0) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const ProfileScreen(),
+            ),
+          );
+        } else {
+          setState(() {
+            _selectedIndex = index;
+          });
+        }
       },
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -489,6 +507,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     setState(() {
       _swipeProgress = 0.0;
     });
+
     if (_swipeCount <= 0) {
       _showLimitReachedDialog();
       return false;
