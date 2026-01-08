@@ -7,6 +7,13 @@ import 'steps/terms_screen.dart';
 import 'steps/name_birth_entry_screen.dart';
 import 'steps/gender_select_screen.dart';
 import 'steps/photo_upload_screen.dart';
+import '../../../profile/presentation/screens/setup_steps/bio_entry_screen.dart';
+import '../../../profile/presentation/screens/setup_steps/interests_select_screen.dart';
+import '../../../profile/presentation/screens/setup_steps/lifestyle_prefs_screen.dart';
+import '../../../profile/presentation/screens/setup_steps/voice_intro_screen.dart';
+import '../../../profile/presentation/screens/setup_steps/profile_prompts_screen.dart';
+import '../../../profile/presentation/screens/setup_steps/selfie_verification_screen.dart';
+import '../../../profile/presentation/screens/setup_steps/gov_id_screen.dart';
 
 class OnboardingShell extends ConsumerStatefulWidget {
   const OnboardingShell({super.key});
@@ -107,8 +114,20 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
         return const GenderSelectScreen();
       case 'photo_upload':
         return const PhotoUploadScreen();
-      // case 'pre_onboarding':
-      //   return const PreOnboardingWelcomeScreen();
+      case 'selfie_capture':
+        return const SelfieVerificationScreen();
+      case 'gov_id_optional':
+        return const GovernmentIdVerificationScreen();
+      case 'bio_entry':
+        return const BioEntryScreen();
+      case 'interests_select':
+        return const InterestsSelectScreen();
+      case 'lifestyle_prefs':
+        return const LifestylePrefsScreen();
+      case 'voice_intro':
+        return const VoiceIntroScreen();
+      case 'profile_prompts':
+        return const ProfilePromptsScreen();
       default:
         return Center(child: Text("Screen for $stepKey not implemented"));
     }

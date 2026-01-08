@@ -33,11 +33,16 @@ class PhotoModerationRepository {
       AppLogger.info("🔄 Compressing and sending image...");
 
       // 3. COMPRESS & CONVERT (Fixes 6MB Limit / 500 Error)
-      final String? base64Image = await ImageUtils.compressAndConvert(imageFile);
+      final String? base64Image = await ImageUtils.compressAndConvert(
+        imageFile,
+      );
 
       if (base64Image == null) {
         AppLogger.error('❌ Moderation Error: Image compression failed');
-        return ModerationResult(ModerationDecision.error, reason: "Could not process image.");
+        return ModerationResult(
+          ModerationDecision.error,
+          reason: "Could not process image.",
+        );
       }
 
       // 4. Prepare the JSON Body
@@ -54,21 +59,27 @@ class PhotoModerationRepository {
       );
 
       if (response.statusCode != 200) {
-        AppLogger.error('❌ Moderation API Error: ${response.statusCode}');
-        return ModerationResult(ModerationDecision.error, reason: "Server Error: ${response.statusCode}");
+        AppLogger.error('❌ Moderation API Error: ${response.body}');
+        return ModerationResult(
+          ModerationDecision.error,
+          reason: "Server Error: ${response.statusCode}",
+        );
       }
 
       // 6. Parse the Result
       final List<dynamic> jsonResponse = jsonDecode(response.body);
       if (jsonResponse.isEmpty) {
-        return ModerationResult(ModerationDecision.error, reason: "Empty response from server.");
+        return ModerationResult(
+          ModerationDecision.error,
+          reason: "Empty response from server.",
+        );
       }
 
       final result = jsonResponse[0];
       final String decisionStr = result['decision'] ?? 'BLOCK';
-      
+
       // CAPTURE THE REASON (This comes from your Lambda)
-      final String? reasonStr = result['reason']; 
+      final String? reasonStr = result['reason'];
 
       if (decisionStr == 'BLOCK') {
         AppLogger.info('❌ BLOCKED: $reasonStr');
@@ -94,10 +105,12 @@ class PhotoModerationRepository {
 
       // 8. Return the full result object
       return ModerationResult(decisionEnum, reason: reasonStr);
-
     } catch (e) {
       AppLogger.error('Moderation Exception', e);
-      return ModerationResult(ModerationDecision.error, reason: "Connection failed. Please check internet.");
+      return ModerationResult(
+        ModerationDecision.error,
+        reason: "Connection failed. Please check internet.",
+      );
     }
   }
 }

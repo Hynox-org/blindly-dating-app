@@ -78,8 +78,8 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
         }
       }
 
-      // 1. Get ordered list of MANDATORY steps
-      final allSteps = await _repo.getMandatorySteps();
+      // 1. Get ordered list of ALL steps (including optional ones)
+      final allSteps = await _repo.getAllSteps();
 
       // 2. Get user's progress map
       // Map<String, dynamic> stepsProgress = {};
