@@ -265,58 +265,55 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
   @override
   Widget build(BuildContext context) {
     // Custom Colors based on the image, mapped to Theme
-    // Dark Olive/Green -> Primary Color
-    final Color primaryDarkColor = Theme.of(context).primaryColor;
-    // Gold/Yellow -> Secondary/Accent Color
-    final Color accentGoldColor = Theme.of(context).colorScheme.secondary;
+    final colorScheme = Theme.of(context).colorScheme;
+    final primaryDarkColor = colorScheme.primary;
+    // Gold/Yellow for accent/progress
+    final accentGoldColor = colorScheme.secondary;
 
     final hasVoice = _recordedFilePath != null || _existingVoiceUrl != null;
 
+    // "Save & Continue" enabled if (not recording) AND (hasVoice or uploading isn't issue yet)
+    // Actually, button triggers upload, so disable if uploading.
+    final isSaveEnabled = !_isRecording && !_isUploading && hasVoice;
+
     return BaseOnboardingStepScreen(
       title: 'Voice Intro',
-      showBackButton: true,
-      showNextButton: false, // We will implement our own "Save & Continue"
-      // showSkipButton: handled dynamically
-      onSkip: _handleSkip, // Provide callback for dynamic skip button in AppBar
-      isNextEnabled: !_isRecording && !_isUploading && hasVoice,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return Column(
-            children: [
-              // 1. Top Text Section
-              const SizedBox(height: 10),
-              Text(
-                'Record a short intro',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontSize: 28,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Text(
-                  'Let your personality shine through. Record a 30 seconds short intro.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withOpacity(0.6),
-                    height: 1.4,
-                    fontSize: 15,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-
-              // 2. Spacer to push Recording UI to center
-              const Spacer(),
-
-              // 3. Recording / Playback UI (Centered)
-              Column(
-                mainAxisSize: MainAxisSize.min,
+      showBackButton: false, // Custom footer
+      showNextButton: false, // Custom footer
+      showSkipButton: false, // Custom footer
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
                 children: [
+                  const SizedBox(height: 20),
+                  Text(
+                    'Record a short intro',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                      fontSize: 24,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Text(
+                      'Let your personality shine through. Record a 30 seconds short intro.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurface.withOpacity(0.6),
+                        height: 1.4,
+                        fontSize: 14,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+
+                  // Recording UI
                   GestureDetector(
                     onTap: () {
                       if (_isRecording) {
@@ -335,10 +332,10 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        // Progress Indicator Ring
+                        // Progress Ring
                         SizedBox(
-                          width: 160,
-                          height: 160,
+                          width: 140,
+                          height: 140,
                           child: CircularProgressIndicator(
                             value: _currentTimerSeconds > 0
                                 ? _currentTimerSeconds / 30
@@ -347,16 +344,23 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                             valueColor: AlwaysStoppedAnimation<Color>(
                               accentGoldColor,
                             ),
-                            strokeWidth: 8,
+                            strokeWidth: 6,
                           ),
                         ),
                         // Main Circle
                         Container(
-                          width: 140,
-                          height: 140,
+                          width: 120,
+                          height: 120,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: primaryDarkColor,
+                            boxShadow: [
+                              BoxShadow(
+                                color: primaryDarkColor.withOpacity(0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
                           child: Icon(
                             _isRecording
@@ -365,134 +369,199 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                                       ? Icons.pause
                                       : (hasVoice
                                             ? Icons.play_arrow_rounded
-                                            : Icons.mic)),
-                            color: Theme.of(context).colorScheme.onPrimary,
-                            size: 50,
+                                            : Icons.mic_none_outlined)),
+                            color: colorScheme.onPrimary,
+                            size: 48,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  // Timer Display
-                  if (_isRecording || hasVoice)
+                  const SizedBox(height: 24),
+
+                  // Messages / Status
+                  if (_errorMessage != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12.0),
+                      child: Text(
+                        _errorMessage!,
+                        style: TextStyle(color: colorScheme.error),
+                      ),
+                    ),
+
+                  // Timer or "Record Again"
+                  if (_isRecording || hasVoice) ...[
                     Text(
                       _formatDuration(_currentTimerSeconds),
                       style: TextStyle(
                         color: primaryDarkColor,
                         fontWeight: FontWeight.bold,
-                        fontSize: 24, // Slightly larger for visibility
+                        fontSize: 24,
                       ),
                     ),
-                  // Delete / Re-record button
-                  if (hasVoice && !_isRecording)
+                    if (hasVoice && !_isRecording) ...[
+                      const SizedBox(height: 8),
+                      TextButton.icon(
+                        onPressed: _deleteVoice,
+                        icon: Icon(
+                          Icons.refresh,
+                          size: 16,
+                          color: colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                        label: Text(
+                          'Record Again',
+                          style: TextStyle(
+                            color: colorScheme.onSurface.withOpacity(0.6),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ] else ...[
+                    const SizedBox(
+                      height: 24,
+                    ), // Spacer if no timer to keep layout stable-ish
+                  ],
+
+                  const SizedBox(height: 40),
+
+                  // Info Section
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Column(
+                      children: [
+                        Text(
+                          'Voice prompts help you stand out and make deeper connections. Share who you really are',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: colorScheme.onSurface.withOpacity(0.6),
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        // Benefits
+                        _buildBenefitItem(
+                          primaryDarkColor,
+                          '3x more matches in voice record',
+                        ),
+                        const SizedBox(height: 16),
+                        _buildBenefitItem(
+                          primaryDarkColor,
+                          'Start conversation naturally',
+                        ),
+                        const SizedBox(height: 16),
+                        _buildBenefitItem(
+                          primaryDarkColor,
+                          'Show your personality',
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+          ),
+
+          // Footer Section
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: isSaveEnabled ? _handleNext : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryDarkColor,
+                      foregroundColor: colorScheme.onPrimary,
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: _isUploading
+                        ? SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: colorScheme.onPrimary,
+                            ),
+                          )
+                        : const Text(
+                            "Save & Continue",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
                     TextButton.icon(
-                      onPressed: _deleteVoice,
+                      onPressed: _onBack,
                       icon: Icon(
-                        Icons.refresh,
-                        size: 18,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withOpacity(0.5),
+                        Icons.arrow_back,
+                        size: 20,
+                        color: colorScheme.onSurface,
                       ),
                       label: Text(
-                        'Record Again',
+                        "Back",
                         style: TextStyle(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withOpacity(0.5),
+                          color: colorScheme.onSurface,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 8,
                         ),
                       ),
                     ),
-                ],
-              ),
-
-              // 4. Spacer to balance bottom
-              const Spacer(),
-
-              // 5. Bottom Info & Button Section (Grouped with Highlight)
-              Container(
-                margin: const EdgeInsets.only(bottom: 10.0),
-                padding: const EdgeInsets.all(16.0),
-                decoration: BoxDecoration(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withOpacity(0.05), // Subtle highlight
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      'Voice prompts help you stand out and make deeper connections. Share who you really are',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withOpacity(0.87),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
+                    Directionality(
+                      textDirection: TextDirection.rtl,
+                      child: TextButton.icon(
+                        onPressed: _handleSkip,
+                        icon: Icon(
+                          Icons.skip_next_rounded,
+                          size: 24,
+                          color: colorScheme.onSurface,
+                        ),
+                        label: Text(
+                          "Skip",
+                          style: TextStyle(
+                            color: colorScheme.onSurface,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 8,
+                          ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Benefits List
-                    _buildBenefitItem(
-                      primaryDarkColor,
-                      '3x more matches in voice record',
-                    ),
-                    const SizedBox(height: 12),
-                    _buildBenefitItem(
-                      primaryDarkColor,
-                      'Start conversation naturally',
-                    ),
-                    const SizedBox(height: 12),
-                    _buildBenefitItem(
-                      primaryDarkColor,
-                      'Show your personality',
                     ),
                   ],
                 ),
-              ),
-
-              // 6. Save Button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: (_isUploading || _isRecording)
-                      ? null
-                      : (_handleNext),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryDarkColor,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: _isUploading
-                      ? CircularProgressIndicator(
-                          color: Theme.of(context).colorScheme.onPrimary,
-                        )
-                      : Text(
-                          // Change text based on whether it's new or existing?
-                          // "Save & Continue" implies saving. If existing, it's just "Continue".
-                          // But we might want to keep it consistent.
-                          _existingVoiceUrl != null && _recordedFilePath == null
-                              ? 'Continue'
-                              : 'Save & Continue',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                ),
-              ),
-              const SizedBox(height: 10), // Little extra bottom padding
-            ],
-          );
-        },
+              ],
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  void _onBack() {
+    ref.read(onboardingProvider.notifier).goToPreviousStep();
   }
 
   Widget _buildBenefitItem(Color color, String text) {
@@ -502,14 +571,19 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
           width: 24,
           height: 24,
           decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+          // Checkmark icon can be added inside usage if design implies (image shows solid circles),
+          // let's stick to solid circle as requested or seen in prev context,
+          // but usually these have checkmarks. Image provided seems to be solid dark circles?
+          // Ah, image actually has dark circles. No checkmarks visible in low res description but typical pattern is bullet.
+          // I will leave it as solid circle to match "green circle" observation.
         ),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
             text,
             style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
+              fontSize: 15, // Slightly reduced
+              fontWeight: FontWeight.bold, // Text looks bold on image
               color: Theme.of(context).colorScheme.onSurface,
             ),
           ),

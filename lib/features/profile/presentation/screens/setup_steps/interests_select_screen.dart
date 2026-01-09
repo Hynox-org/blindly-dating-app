@@ -79,7 +79,8 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
   }
 
   Future<void> _onNext() async {
-    if (_selectedChipIds.length < 5) {
+    // Validation: If any selected, must be at least 5. If 0, allowed to proceed (skip).
+    if (_selectedChipIds.isNotEmpty && _selectedChipIds.length < 5) {
       showErrorPopup(context, 'Please select at least 5 interests');
       return;
     }
@@ -92,14 +93,29 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
         await ref
             .read(onboardingRepositoryProvider)
             .saveUserInterests(user.id, _selectedChipIds.toList());
-        ref.read(onboardingProvider.notifier).completeStep('interests_select');
+
+        if (mounted) {
+          ref
+              .read(onboardingProvider.notifier)
+              .completeStep('interests_select');
+        }
       }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      showErrorPopup(context, 'Error saving interests: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        showErrorPopup(context, 'Error saving interests: $e');
+      }
     }
+  }
+
+  void _onSkip() {
+    ref.read(onboardingProvider.notifier).skipStep('interests_select');
+  }
+
+  void _onBack() {
+    ref.read(onboardingProvider.notifier).goToPreviousStep();
   }
 
   Map<String, List<InterestChip>> get _groupedChips {
@@ -119,134 +135,219 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
     return grouped;
   }
 
-  // Helper to get a consistent generic icon/emoji based on section or label if needed
-  // For now, using a placeholder icon logic or just text + styling as verified in design.
-  // The design shows specific emojis. Without a mapping DB, we can't be 100% accurate,
-  // but we can try basic section mapping or just use a generic dot/icon if strict replication isn't possible content-wise.
-  // However, I'll stick to the requested layout structure.
-
   @override
   Widget build(BuildContext context) {
     final grouped = _groupedChips;
+    final colorScheme = Theme.of(context).colorScheme;
 
-    // If user strict on color: 'const Color(0xFF4B5320)' or similar.
-    // Let's stick to theme primary for now unless specified otherwise in theme.
+    // Check if "Continue" should be enabled based on validation
+    // User Requirement: "disable the continue btn when no interests are selected."
+    // Logic: Enabled ONLY if selected > 0.
+    final hasSelection = _selectedChipIds.isNotEmpty;
+    final isNextEnabled = !_isLoading && hasSelection;
 
     return BaseOnboardingStepScreen(
-      // We will override the default Title/Subtitle mechanism of BaseOnboardingStepScreen
-      // by passing empty strings or handling it inside 'child' if the Base allows custom headers.
-      // Looking at previous valid code, BaseOnboardingStepScreen takes title/onNext.
-      // We'll pass the title "Select Your Interests" to match design.
       title: 'Select Your Interests',
-      showBackButton: true,
-      onNext: _onNext,
-      isNextEnabled: !_isLoading && _selectedChipIds.length >= 5,
-      // The design has specific subheader text. BaseOnboarding probably renders 'title' at top.
-      // We will add the specific subheader in the body.
+      showBackButton: false,
+      showNextButton: false,
       showSkipButton: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
-            child: Text(
-              'Please select at least 5 interest. This helps us find your peoples', // Typo "peoples" in user prompt/image? keeping faithful to image text if possible or correcting grammar? Image says "find your peoples", I will match image text.
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                fontSize: 14,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          // Search Bar
-          TextField(
-            controller: _searchController,
-            onChanged: (value) {
-              setState(() {
-                _searchQuery = value.toLowerCase().trim();
-              });
-            },
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.87),
-            ), // Ensure visible text
-            decoration: InputDecoration(
-              hintText: 'Search for interest',
-              hintStyle: TextStyle(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withOpacity(0.54),
-              ),
-              prefixIcon: Icon(
-                Icons.search,
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withOpacity(0.54),
-              ),
-              filled: true,
-              fillColor: Theme.of(context).colorScheme.surface,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.symmetric(vertical: 0),
-            ),
-          ),
-          const SizedBox(height: 20),
-
           Expanded(
-            child: _isLoading && _allChips.isEmpty
-                ? const Center(child: CircularProgressIndicator())
-                : _error != null
-                ? Center(child: Text(_error!))
-                : SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (grouped.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.all(20.0),
-                            child: Center(child: Text("No interests found")),
-                          ),
-                        ...grouped.entries.map((entry) {
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12.0,
-                                ),
-                                child: Text(
-                                  entry.key, // Section Name
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              Wrap(
-                                spacing: 12,
-                                runSpacing: 12,
-                                children: entry.value.map((chip) {
-                                  final isSelected = _selectedChipIds.contains(
-                                    chip.id,
-                                  );
-                                  return SelectionChip(
-                                    label: chip.label,
-                                    isSelected: isSelected,
-                                    onTap: () => _toggleChip(chip.id),
-                                    // No icon mapping for general interests available yet
-                                    icon: null,
-                                  );
-                                }).toList(),
-                              ),
-                              const SizedBox(height: 16),
-                            ],
-                          );
-                        }),
-                        const SizedBox(height: 80), // Fab padding
-                      ],
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: Text(
+                      'Please select at least 5 interest. This helps us find your peoples',
+                      style: TextStyle(
+                        color: colorScheme.onSurface.withOpacity(0.6),
+                        fontSize: 14,
+                      ),
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  // Search Bar
+                  TextField(
+                    controller: _searchController,
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value.toLowerCase().trim();
+                      });
+                    },
+                    style: TextStyle(color: colorScheme.onSurface),
+                    decoration: InputDecoration(
+                      hintText: 'Search for interest',
+                      hintStyle: TextStyle(
+                        color: colorScheme.onSurface.withOpacity(0.54),
+                      ),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: colorScheme.onSurface.withOpacity(0.54),
+                      ),
+                      filled: true,
+                      fillColor: colorScheme.surface,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  _isLoading && _allChips.isEmpty
+                      ? const Center(child: CircularProgressIndicator())
+                      : _error != null
+                      ? Center(child: Text(_error!))
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (grouped.isEmpty)
+                              const Padding(
+                                padding: EdgeInsets.all(20.0),
+                                child: Center(
+                                  child: Text("No interests found"),
+                                ),
+                              ),
+                            ...grouped.entries.map((entry) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12.0,
+                                    ),
+                                    child: Text(
+                                      entry.key, // Section Name
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  ),
+                                  Wrap(
+                                    spacing: 12,
+                                    runSpacing: 12,
+                                    children: entry.value.map((chip) {
+                                      final isSelected = _selectedChipIds
+                                          .contains(chip.id);
+                                      return SelectionChip(
+                                        label: chip.label,
+                                        isSelected: isSelected,
+                                        onTap: () => _toggleChip(chip.id),
+                                        icon: null,
+                                      );
+                                    }).toList(),
+                                  ),
+                                  const SizedBox(height: 16),
+                                ],
+                              );
+                            }),
+                            const SizedBox(height: 20),
+                          ],
+                        ),
+                ],
+              ),
+            ),
+          ),
+
+          // Custom Footer Buttons
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: isNextEnabled ? _onNext : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: _isLoading
+                        ? SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: colorScheme.onPrimary,
+                            ),
+                          )
+                        : const Text(
+                            "Continue",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton.icon(
+                      onPressed: _onBack,
+                      icon: Icon(
+                        Icons.arrow_back,
+                        size: 20,
+                        color: colorScheme.onSurface,
+                      ),
+                      label: Text(
+                        "Back",
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 8,
+                        ),
+                      ),
+                    ),
+                    Directionality(
+                      textDirection: TextDirection.rtl,
+                      child: TextButton.icon(
+                        onPressed: _onSkip,
+                        icon: Icon(
+                          Icons.skip_next_rounded,
+                          size: 24,
+                          color: colorScheme.onSurface,
+                        ),
+                        label: Text(
+                          "Skip",
+                          style: TextStyle(
+                            color: colorScheme.onSurface,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 8,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),

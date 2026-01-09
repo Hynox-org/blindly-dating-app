@@ -16,7 +16,9 @@ class SelectionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = Theme.of(context).primaryColor;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final cardColor = theme.cardTheme.color ?? colorScheme.surface;
 
     return GestureDetector(
       onTap: onTap,
@@ -24,30 +26,47 @@ class SelectionChip extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          color: isSelected ? colorScheme.primary : cardColor,
+          borderRadius: BorderRadius.circular(
+            20,
+          ), // More rounded for "dating app" feel?
           border: Border.all(
-            color: isSelected ? primaryColor : Colors.transparent,
-            width: isSelected ? 2 : 1,
+            color: isSelected ? colorScheme.primary : Colors.transparent,
+            width: 1,
           ),
           boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
+            if (isSelected)
+              BoxShadow(
+                color: colorScheme.primary.withOpacity(0.2), // Softer opacity
+                blurRadius: 6, // Slightly less spread
+                offset: const Offset(0, 2), // Reduced offset
+              ),
+            // Removed unselected shadow for a cleaner, flat look
           ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (icon != null) ...[icon!, const SizedBox(width: 8)],
+            if (icon != null) ...[
+              IconTheme(
+                data: IconThemeData(
+                  color: isSelected
+                      ? colorScheme.onPrimary
+                      : colorScheme.onSurface,
+                  size: 18,
+                ),
+                child: icon!,
+              ),
+              const SizedBox(width: 8),
+            ],
             Text(
               label,
               style: TextStyle(
-                color: Colors.black87,
+                color: isSelected
+                    ? colorScheme.onPrimary
+                    : colorScheme.onSurface,
                 fontSize: 14,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
               ),
             ),
           ],

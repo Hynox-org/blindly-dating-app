@@ -226,18 +226,27 @@ class MediaRepository {
         response,
       );
 
+      final List<Map<String, dynamic>> validData = [];
+
       // Transform "media_url" (which might be a path or old URL) to a fresh Signed URL
       for (var item in data) {
-        final rawUrl = item['media_url'] as String;
-        final path = extractPathFromUrl(rawUrl, 'user_photos');
-        // Generate signed URL (valid for 1 hour)
-        final signedUrl = await _supabase.storage
-            .from('user_photos')
-            .createSignedUrl(path, 60 * 60);
-        item['media_url'] = signedUrl;
+        try {
+          final rawUrl = item['media_url'] as String;
+          final path = extractPathFromUrl(rawUrl, 'user_photos');
+          // Generate signed URL (valid for 1 hour)
+          final signedUrl = await _supabase.storage
+              .from('user_photos')
+              .createSignedUrl(path, 60 * 60);
+
+          item['media_url'] = signedUrl;
+          validData.add(item);
+        } catch (e) {
+          debugPrint('Failed to sign URL for item ${item['id']}: $e');
+          // Skip this item if signing fails (e.g. object not found)
+        }
       }
 
-      return data;
+      return validData;
     } catch (e) {
       throw Exception('Failed to fetch user media: $e');
     }

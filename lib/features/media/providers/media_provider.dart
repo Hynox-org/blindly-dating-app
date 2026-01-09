@@ -90,7 +90,61 @@ class MediaNotifier extends StateNotifier<MediaState> {
     }
   }
 
+  Future<void> processAndAddFiles(List<File> files, int targetIndex) async {
+    try {
+      state = state.copyWith(isLoading: true, error: null);
+
+      final List<MediaContent?> currentPhotos = List.from(state.selectedPhotos);
+      bool blockedAny = false;
+      String? lastBlockReason;
+
+      for (int i = 0; i < files.length; i++) {
+        File file = files[i];
+
+        // Compress
+        final compressed = await _repository.compressImage(file);
+
+        // Moderate
+        final result = await _ref
+            .read(photoModerationProvider)
+            .checkImageSafety(compressed, source: 'profile');
+
+        if (result.decision == ModerationDecision.block ||
+            result.decision == ModerationDecision.error) {
+          blockedAny = true;
+          lastBlockReason = result.reason;
+          continue;
+        }
+
+        final content = MediaContent(file: compressed);
+
+        if (i == 0) {
+          // If the target slot was specific (e.g. user tapped slot 2),
+          // put the first photo there.
+          currentPhotos[targetIndex] = content;
+        } else {
+          // Put subsequent photos in the first available empty slot
+          final firstNull = currentPhotos.indexWhere((e) => e == null);
+          if (firstNull != -1) {
+            currentPhotos[firstNull] = content;
+          }
+        }
+      }
+
+      state = state.copyWith(
+        selectedPhotos: currentPhotos,
+        isLoading: false,
+        error: blockedAny
+            ? (lastBlockReason ?? "Some photos were blocked.")
+            : null,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
   Future<void> pickImages(int targetIndex) async {
+    // Legacy method, kept for reference or other calls
     try {
       state = state.copyWith(isLoading: true, error: null);
 
@@ -110,55 +164,18 @@ class MediaNotifier extends StateNotifier<MediaState> {
         maxImages: maxToPick,
       );
 
-      final List<MediaContent?> currentPhotos = List.from(state.selectedPhotos);
-      bool blockedAny = false;
-      String? lastBlockReason;
+      // Convert XFile to File
+      final files = images.map((x) => File(x.path)).toList();
 
-      for (int i = 0; i < images.length; i++) {
-        File file = File(images[i].path);
-
-        // Auto-crop removed
-        final compressed = await _repository.compressImage(file);
-
-        // 2. MODERATION FIX
-        final result = await _ref
-            .read(photoModerationProvider)
-            .checkImageSafety(compressed, source: 'profile');
-
-        // Check Decision (Allow or Review are okay)
-        if (result.decision == ModerationDecision.block ||
-            result.decision == ModerationDecision.error) {
-          blockedAny = true;
-          lastBlockReason = result.reason;
-          continue; // Skip adding this photo
-        }
-
-        final content = MediaContent(file: compressed);
-
-        if (i == 0) {
-          currentPhotos[targetIndex] = content;
-        } else {
-          final firstNull = currentPhotos.indexWhere((e) => e == null);
-          if (firstNull != -1) {
-            currentPhotos[firstNull] = content;
-          }
-        }
-      }
-
-      state = state.copyWith(
-        selectedPhotos: currentPhotos,
-        isLoading: false,
-        // Show the specific reason if blocked
-        error: blockedAny
-            ? (lastBlockReason ?? "Some photos were blocked.")
-            : null,
-      );
+      // Delegate to new method
+      await processAndAddFiles(files, targetIndex);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
   Future<void> captureImage(int targetIndex) async {
+    // Legacy method
     try {
       if (state.validPhotoCount >= 6 &&
           state.selectedPhotos[targetIndex] == null) {
@@ -170,32 +187,8 @@ class MediaNotifier extends StateNotifier<MediaState> {
       final xFile = await _repository.pickImageFromCamera();
 
       if (xFile != null) {
-        File file = File(xFile.path);
-
-        // Auto-crop removed
-        final compressed = await _repository.compressImage(file);
-
-        // 3. MODERATION FIX
-        final result = await _ref
-            .read(photoModerationProvider)
-            .checkImageSafety(compressed, source: 'profile');
-
-        if (result.decision == ModerationDecision.block ||
-            result.decision == ModerationDecision.error) {
-          state = state.copyWith(
-            isLoading: false,
-            // Show the actual reason from Lambda
-            error: result.reason ?? "Photo blocked: Policy violation detected.",
-          );
-          return;
-        }
-
-        final List<MediaContent?> currentPhotos = List.from(
-          state.selectedPhotos,
-        );
-        currentPhotos[targetIndex] = MediaContent(file: compressed);
-
-        state = state.copyWith(selectedPhotos: currentPhotos, isLoading: false);
+        final file = File(xFile.path);
+        await processAndAddFiles([file], targetIndex);
       } else {
         state = state.copyWith(isLoading: false);
       }

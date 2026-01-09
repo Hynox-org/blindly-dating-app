@@ -108,6 +108,19 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
     }
   }
 
+  Future<void> _handleSkip() async {
+    setState(() => _isSaving = true);
+    try {
+      await ref.read(onboardingProvider.notifier).skipStep('language_select');
+    } catch (e) {
+      if (mounted) {
+        showErrorPopup(context, 'Failed to skip: $e');
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Filter languages based on search query
@@ -130,6 +143,7 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
       isNextEnabled: _selectedLanguageCodes.isNotEmpty && !_isSaving,
       isLoading: _isSaving,
       onNext: _handleNext,
+      onSkip: _handleSkip,
       child: Column(
         children: [
           // Search Bar
@@ -159,9 +173,7 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withOpacity(0.87),
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -235,7 +247,7 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
           borderRadius: BorderRadius.circular(25),
           border: isSelected
               ? Border.all(
-                  color: Theme.of(context).colorScheme.secondary,
+                  color: Theme.of(context).colorScheme.primary,
                   width: 2,
                 ) // Approximate Gold/Beige color from image
               : Border.all(color: Colors.transparent),
@@ -281,7 +293,7 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
             if (isSelected)
               Icon(
                 FontAwesomeIcons.solidCircleCheck,
-                color: Theme.of(context).colorScheme.secondary, // Match border
+                color: Theme.of(context).colorScheme.primary, // Match border
                 size: 20,
               )
             else

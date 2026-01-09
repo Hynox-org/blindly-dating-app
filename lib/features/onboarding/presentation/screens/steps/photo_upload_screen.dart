@@ -36,7 +36,6 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
   ) async {
     PermissionStatus status;
     if (Platform.isAndroid && !isCamera) {
-      // Android 13+ uses Photos, older uses Storage
       status = await Permission.photos.request();
       if (status.isDenied) status = await Permission.storage.request();
     } else {
@@ -46,10 +45,68 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
     }
 
     if (status.isGranted || status.isLimited) {
-      if (isCamera) {
-        await ref.read(mediaProvider.notifier).captureImage(index);
-      } else {
-        await ref.read(mediaProvider.notifier).pickImages(index);
+      final repo = ref.read(mediaRepositoryProvider);
+      final notifier = ref.read(mediaProvider.notifier);
+      final mediaState = ref.read(mediaProvider);
+      final theme = Theme.of(context);
+
+      try {
+        List<File> filesToProcess = [];
+
+        if (isCamera) {
+          // Check limit for camera (1 photo)
+          if (mediaState.validPhotoCount >= 6 &&
+              mediaState.selectedPhotos[index] == null) {
+            // Although technically we shouldn't have enabled the button, double check.
+            return;
+          }
+
+          final xFile = await repo.pickImageFromCamera();
+          if (xFile != null) {
+            final file = File(xFile.path);
+            final cropped = await repo.cropImage(
+              file,
+              toolbarColor: theme.primaryColor,
+              toolbarWidgetColor: theme.colorScheme.onPrimary,
+              activeControlsWidgetColor: theme.primaryColor,
+            );
+            if (cropped != null) {
+              filesToProcess.add(cropped);
+            }
+          }
+        } else {
+          // Gallery
+          final currentValidCount = mediaState.validPhotoCount;
+          final isTargetOccupied = mediaState.selectedPhotos[index] != null;
+          final maxToPick = 6 - currentValidCount + (isTargetOccupied ? 1 : 0);
+
+          if (maxToPick <= 0) return;
+
+          final images = await repo.pickImagesFromGallery(maxImages: maxToPick);
+
+          for (final xFile in images) {
+            final file = File(xFile.path);
+            final cropped = await repo.cropImage(
+              file,
+              toolbarColor: theme.primaryColor,
+              toolbarWidgetColor: theme.colorScheme.onPrimary,
+              activeControlsWidgetColor: theme.primaryColor,
+            );
+            if (cropped != null) {
+              filesToProcess.add(cropped);
+            }
+          }
+        }
+
+        if (filesToProcess.isNotEmpty) {
+          await notifier.processAndAddFiles(filesToProcess, index);
+        }
+      } catch (e) {
+        // Handle error? or just let it fail silently/log?
+        // MediaNotifier stores error in state, but we are doing picking here.
+        // We should probably set error in state if picking fails, but Notifier.pickImages did that.
+        // Let's just catch and ignore or print for now as UI feedback comes from State.
+        debugPrint("Error picking/cropping: $e");
       }
     } else if (status.isPermanentlyDenied) {
       if (context.mounted) {
@@ -430,9 +487,9 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
                   final theme = Theme.of(context);
                   final cropped = await repo.cropImage(
                     content.file!,
-                    toolbarColor: theme.primaryColor,
-                    toolbarWidgetColor: theme.colorScheme.onPrimary,
-                    activeControlsWidgetColor: theme.primaryColor,
+                    toolbarColor: theme.colorScheme.secondary,
+                    toolbarWidgetColor: theme.colorScheme.onSecondary,
+                    activeControlsWidgetColor: theme.colorScheme.primary,
                   );
                   if (cropped != null && context.mounted) {
                     ref

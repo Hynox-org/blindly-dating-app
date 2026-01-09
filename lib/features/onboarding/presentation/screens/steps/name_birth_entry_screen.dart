@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/onboarding_provider.dart';
 import '../../../../auth/providers/auth_providers.dart';
@@ -327,16 +328,17 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
       focusNode: focusNode,
       keyboardType: TextInputType.number,
       textAlign: TextAlign.center,
-      maxLength: maxLength,
+      inputFormatters: [
+        FilteringTextInputFormatter.digitsOnly,
+        LengthLimitingTextInputFormatter(maxLength),
+      ],
       onChanged: (value) {
-        // Auto-focus next
+        // Auto-focus next ONLY when filled
         if (value.length == maxLength && nextFocus != null) {
           nextFocus.requestFocus();
         }
-        // Auto-focus prev if empty (optional, for backspace)
-        if (value.isEmpty && prevFocus != null) {
-          prevFocus.requestFocus();
-        }
+        // Removed auto-backtrack on empty to prevent annoying jumps during editing
+
         // State update handled by listener init
       },
       decoration: InputDecoration(

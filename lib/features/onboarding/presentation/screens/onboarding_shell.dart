@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/onboarding_provider.dart';
 
+import '../../../auth/providers/auth_providers.dart';
+
 // Import all step screens
 import 'steps/terms_screen.dart';
 import 'steps/name_birth_entry_screen.dart';
@@ -14,6 +16,7 @@ import '../../../profile/presentation/screens/setup_steps/voice_intro_screen.dar
 import '../../../profile/presentation/screens/setup_steps/profile_prompts_screen.dart';
 import '../../../profile/presentation/screens/setup_steps/selfie_verification_screen.dart';
 import '../../../profile/presentation/screens/setup_steps/gov_id_screen.dart';
+import '../../../profile/presentation/screens/setup_steps/language_select_screen.dart';
 
 class OnboardingShell extends ConsumerStatefulWidget {
   const OnboardingShell({super.key});
@@ -36,6 +39,13 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
     ref.listen(onboardingProvider, (previous, next) {
       if (next.currentStepKey == 'complete') {
         Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+      }
+
+      if (next.errorMessage != null &&
+          next.errorMessage!.contains("Profile not found")) {
+        // Clear auth state as profile issue is critical
+        ref.read(authRepositoryProvider).signOut();
+        Navigator.pushNamedAndRemoveUntil(context, '/auth', (route) => false);
       }
     });
   }
@@ -128,6 +138,8 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
         return const VoiceIntroScreen();
       case 'profile_prompts':
         return const ProfilePromptsScreen();
+      case 'language_select':
+        return const LanguageSelectScreen();
       default:
         return Center(child: Text("Screen for $stepKey not implemented"));
     }

@@ -67,22 +67,27 @@ class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
 
   void _selectChip(int categoryId, String chipId) {
     setState(() {
-      // Single select per category: replace existing selection
-      _selections[categoryId] = chipId;
+      // Toggle logic: if already selected, unselect. Else replace.
+      if (_selections[categoryId] == chipId) {
+        _selections.remove(categoryId);
+      } else {
+        _selections[categoryId] = chipId;
+      }
     });
   }
 
   String _formatCategoryKey(String key) {
     if (key.isEmpty) return key;
-    // Replace underscores with spaces
     final text = key.replaceAll('_', ' ');
-    // Capitalize first letter only (Sentence case)
     return text[0].toUpperCase() + text.substring(1).toLowerCase();
   }
 
   bool get _isFormValid {
     if (_categories.isEmpty) return false;
-    // Must have a selection for every category
+    // If nothing selected at all -> valid (can skip/empty save)
+    if (_selections.isEmpty) return true;
+
+    // If at least one selected -> MUST select for ALL categories
     for (var cat in _categories) {
       if (!_selections.containsKey(cat.id)) {
         return false;
@@ -92,8 +97,18 @@ class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
   }
 
   Future<void> _onNext() async {
+    // Logic:
+    // If selections empty -> proceed (save empty/skip).
+    // If selections not empty -> must correspond to all categories (checked by _isFormValid).
+
     if (!_isFormValid) {
-      showErrorPopup(context, 'Please select an option for each category');
+      // Should check specifically if we have partial selection
+      if (_selections.isNotEmpty && _selections.length < _categories.length) {
+        showErrorPopup(
+          context,
+          'Please select an option for each category, or clear all to skip.',
+        );
+      }
       return;
     }
 
@@ -106,92 +121,212 @@ class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
         await ref
             .read(onboardingRepositoryProvider)
             .saveLifestylePreferences(user.id, allSelectedChipIds);
-        ref.read(onboardingProvider.notifier).completeStep('lifestyle_prefs');
+
+        if (mounted) {
+          ref.read(onboardingProvider.notifier).completeStep('lifestyle_prefs');
+        }
       }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      showErrorPopup(context, 'Error saving preferences: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        showErrorPopup(context, 'Error saving preferences: $e');
+      }
     }
+  }
+
+  void _onSkip() {
+    ref.read(onboardingProvider.notifier).skipStep('lifestyle_prefs');
+  }
+
+  void _onBack() {
+    ref.read(onboardingProvider.notifier).goToPreviousStep();
   }
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    // Valid state for button: not loading AND form logic satisfied
+    final isNextEnabled = !_isLoading && _isFormValid;
+
     return BaseOnboardingStepScreen(
-      title: 'Life Style', // Matches Image
-      showBackButton: true,
-      onNext: _onNext,
-      isNextEnabled: !_isLoading && _isFormValid,
+      title: 'Life Style',
+      showBackButton: false,
+      showNextButton: false,
       showSkipButton: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 4.0),
-            child: Text(
-              'Tell us more about your habits. Pick what fits you best.', // Matches Image
-              style: TextStyle(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withOpacity(0.54),
-                fontSize: 14,
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: Text(
+                      'Tell us more about your habits. Pick what fits you best.',
+                      style: TextStyle(
+                        color: colorScheme.onSurface.withOpacity(0.54),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  if (_isLoading && _categories.isEmpty)
+                    const Center(child: CircularProgressIndicator())
+                  else if (_error != null)
+                    Center(child: Text(_error!))
+                  else if (_categories.isEmpty)
+                    Center(
+                      child: Text(
+                        "No lifestyle options available",
+                        style: TextStyle(color: colorScheme.onSurface),
+                      ),
+                    )
+                  else
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ..._categories.map((category) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12.0,
+                                ),
+                                child: Text(
+                                  _formatCategoryKey(category.key),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: colorScheme.onSurface,
+                                  ),
+                                ),
+                              ),
+                              Wrap(
+                                spacing: 12,
+                                runSpacing: 12,
+                                children: category.chips.map((chip) {
+                                  final isSelected =
+                                      _selections[category.id] == chip.id;
+                                  return SelectionChip(
+                                    label: chip.label,
+                                    isSelected: isSelected,
+                                    onTap: () =>
+                                        _selectChip(category.id, chip.id),
+                                    icon: null,
+                                  );
+                                }).toList(),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                          );
+                        }),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
+                ],
               ),
             ),
           ),
-          const SizedBox(height: 20),
-          if (_isLoading && _categories.isEmpty)
-            const Center(child: CircularProgressIndicator())
-          else if (_error != null)
-            Center(child: Text(_error!))
-          else if (_categories.isEmpty)
-            const Center(child: Text("No lifestyle options available"))
-          else
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ..._categories.map((category) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 12.0),
-                            child: Text(
-                              _formatCategoryKey(
-                                category.key,
-                              ), // Formatted Name
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
+
+          // Custom Footer
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: isNextEnabled ? _onNext : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: _isLoading
+                        ? SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: colorScheme.onPrimary,
+                            ),
+                          )
+                        : const Text(
+                            "Continue",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                          Wrap(
-                            spacing: 12,
-                            runSpacing: 12,
-                            children: category.chips.map((chip) {
-                              final isSelected =
-                                  _selections[category.id] == chip.id;
-                              return SelectionChip(
-                                label: chip.label,
-                                isSelected: isSelected,
-                                onTap: () => _selectChip(category.id, chip.id),
-                                icon: null,
-                              );
-                            }).toList(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton.icon(
+                      onPressed: _onBack,
+                      icon: Icon(
+                        Icons.arrow_back,
+                        size: 20,
+                        color: colorScheme.onSurface,
+                      ),
+                      label: Text(
+                        "Back",
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 8,
+                        ),
+                      ),
+                    ),
+                    Directionality(
+                      textDirection: TextDirection.rtl,
+                      child: TextButton.icon(
+                        onPressed: _onSkip,
+                        icon: Icon(
+                          Icons.skip_next_rounded,
+                          size: 24,
+                          color: colorScheme.onSurface,
+                        ),
+                        label: Text(
+                          "Skip",
+                          style: TextStyle(
+                            color: colorScheme.onSurface,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
                           ),
-                          const SizedBox(height: 16),
-                        ],
-                      );
-                    }),
-                    const SizedBox(height: 80), // Bottom padding
+                        ),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 8,
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-              ),
+              ],
             ),
+          ),
         ],
       ),
     );

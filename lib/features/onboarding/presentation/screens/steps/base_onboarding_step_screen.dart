@@ -62,20 +62,6 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  // Dynamic Skip Button
-                  if (canSkip && headerAction == null)
-                    TextButton(
-                      onPressed: onSkip,
-                      child: Text(
-                        skipLabel,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.secondary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-
                   // Custom Header Action (if any)
                   if (headerAction != null) headerAction!,
                 ],
@@ -162,44 +148,80 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
                       ),
                     ),
 
-                  const SizedBox(height: 16), // Increased spacing
-                  // Back Button (Text) - Below Continue
-                  if (showBackButton)
-                    TextButton(
-                      onPressed: () {
-                        if (onBack != null) {
-                          onBack!();
-                        } else {
-                          ref
-                              .read(onboardingProvider.notifier)
-                              .goToPreviousStep();
-                        }
-                      },
-                      style: TextButton.styleFrom(
-                        foregroundColor: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withOpacity(0.7),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
+                  const SizedBox(height: 16),
+
+                  // Navigation Row (Back & Skip)
+                  if (showBackButton || canSkip)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Row(
+                        mainAxisAlignment: (showBackButton && canSkip)
+                            ? MainAxisAlignment.spaceBetween
+                            : MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.arrow_back, size: 20),
-                          SizedBox(width: 8),
-                          Text(
-                            "Back",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                          if (showBackButton)
+                            TextButton.icon(
+                              onPressed: () {
+                                if (onBack != null) {
+                                  onBack!();
+                                } else {
+                                  ref
+                                      .read(onboardingProvider.notifier)
+                                      .goToPreviousStep();
+                                }
+                              },
+                              style: TextButton.styleFrom(
+                                foregroundColor: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withOpacity(0.7),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                  horizontal: 16,
+                                ),
+                              ),
+                              icon: const Icon(Icons.arrow_back, size: 20),
+                              label: const Text(
+                                "Back",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
-                          ),
+
+                          if (canSkip)
+                            Directionality(
+                              textDirection: TextDirection.rtl,
+                              child: TextButton.icon(
+                                onPressed: onSkip,
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withOpacity(0.7),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                    horizontal: 16,
+                                  ),
+                                ),
+                                icon: const Icon(
+                                  Icons.skip_next_rounded,
+                                  size: 24,
+                                ),
+                                label: Text(
+                                  skipLabel,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),
 
-                  // If no back button, add some spacing if needed or just nothing
-                  if (!showBackButton) const SizedBox(height: 8),
+                  // If neither, add spacing
+                  if (!showBackButton && !canSkip) const SizedBox(height: 8),
                 ],
               ),
             ),

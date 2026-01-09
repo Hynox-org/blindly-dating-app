@@ -48,7 +48,9 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
 
   Future<void> _handleNext() async {
     final bio = _controller.text.trim();
-    // Use onboarding repository to save bio
+    if (bio.isEmpty)
+      return; // Should be handled by button state, but safety check
+
     setState(() => _isSaving = true);
 
     try {
@@ -75,77 +77,174 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
     ref.read(onboardingProvider.notifier).skipStep('bio_entry');
   }
 
+  void _handleBack() {
+    ref.read(onboardingProvider.notifier).goToPreviousStep();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isNextEnabled = _controller.text.trim().length >= 10 && !_isSaving;
+
     return BaseOnboardingStepScreen(
       title: 'About You',
-      showBackButton: true,
-      // showSkipButton: handled dynamically by base screen based on config
-      onSkip:
-          _handleSkip, // We still provide the callback for the base screen to use
-      nextLabel: 'Continue',
-      isNextEnabled: _controller.text.trim().length >= 10 && !_isSaving,
-      onNext: _handleNext,
-      isLoading: _isSaving,
+      showBackButton: false,
+      showNextButton: false,
+      showSkipButton: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Don't be shy! This is your chance to share your personality with a short bio.",
-            style: TextStyle(
-              fontSize: 14,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.87),
-              height: 1.5,
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Don't be shy! This is your chance to share your personality with a short bio.",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: colorScheme.onSurface,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  TextField(
+                    controller: _controller,
+                    maxLines: 8,
+                    maxLength: 300,
+                    style: TextStyle(color: colorScheme.onSurface),
+                    decoration: InputDecoration(
+                      hintText: 'Text Here.....',
+                      hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+                      filled: true,
+                      fillColor: colorScheme.surfaceContainerHighest
+                          .withOpacity(0.5),
+                      contentPadding: const EdgeInsets.all(16),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(
+                          color: colorScheme.outlineVariant,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(color: colorScheme.primary),
+                      ),
+                      counterText: "",
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      '${_controller.text.length}/300',
+                      style: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 32),
-          TextField(
-            controller: _controller,
-            maxLines: 8,
-            maxLength: 300,
-            decoration: InputDecoration(
-              hintText: 'Text Here.....',
-              hintStyle: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+
+          // Bottom Actions
+          Padding(
+            padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: isNextEnabled ? _handleNext : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  disabledBackgroundColor: colorScheme.primary.withOpacity(0.5),
+                  disabledForegroundColor: colorScheme.onPrimary.withOpacity(
+                    0.7,
+                  ),
+                  elevation: 0,
+                ),
+                child: _isSaving
+                    ? SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: colorScheme.onPrimary,
+                        ),
+                      )
+                    : const Text(
+                        "Continue",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
-              filled: true,
-              fillColor: Theme.of(context).colorScheme.surface,
-              contentPadding: const EdgeInsets.all(16),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(20),
-                borderSide: BorderSide.none,
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(20),
-                borderSide: BorderSide(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withOpacity(0.12),
+            ),
+          ),
+
+          // Navigation Row: Back and Skip
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton.icon(
+                onPressed: _handleBack,
+                icon: Icon(
+                  Icons.arrow_back,
+                  size: 20,
+                  color: colorScheme.onSurface,
+                ),
+                label: Text(
+                  "Back",
+                  style: TextStyle(
+                    color: colorScheme.onSurface,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 8,
+                  ),
                 ),
               ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(20),
-                borderSide: BorderSide(color: Theme.of(context).primaryColor),
+              Directionality(
+                textDirection: TextDirection.rtl,
+                child: TextButton.icon(
+                  onPressed: _handleSkip,
+                  icon: Icon(
+                    Icons.skip_next_rounded,
+                    size: 24,
+                    color: colorScheme.onSurface,
+                  ),
+                  label: Text(
+                    "Skip",
+                    style: TextStyle(
+                      color: colorScheme.onSurface,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 8,
+                    ),
+                  ),
+                ),
               ),
-              counterText:
-                  "", // We will build custom counter if needed, or rely on default.
-              // Image has counter outside. TextField 'maxLength' puts it below.
-              // To match image perfectly (counter aligned right below box), default is OK but might be too close or inside if not careful.
-              // Let's use buildCounter to customize or just default.
-              // Default puts it in helper text area.
-            ),
-          ),
-          // Custom counter or default?
-          // If I hide counterText, I can show it manually.
-          Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              '${_controller.text.length}/300',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                fontSize: 12,
-              ),
-            ),
+            ],
           ),
         ],
       ),

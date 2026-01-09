@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
+import 'package:blindly_dating_app/features/onboarding/presentation/providers/onboarding_provider.dart';
 import '../../../../onboarding/data/repositories/onboarding_repository.dart';
 import '../../../../onboarding/domain/models/prompt_category_model.dart';
 import '../../../../onboarding/domain/models/prompt_template_model.dart';
 import '../../../../onboarding/domain/models/profile_prompt_model.dart';
 import '../../../../auth/providers/auth_providers.dart';
 import '../../../../../core/utils/custom_popups.dart';
+import 'package:blindly_dating_app/features/onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
 
 class ProfilePromptsScreen extends ConsumerStatefulWidget {
   const ProfilePromptsScreen({super.key});
@@ -84,26 +85,24 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
 
   // --- Logic ---
 
+  // --- Logic ---
+
   void _onCategorySelected(int index) {
     setState(() {
       _selectedCategoryIndex = index;
-      _expandedTemplateId =
-          null; // Collapse any open input when changing category
+      _expandedTemplateId = null; // Collapse any open input
       _answerController.clear();
     });
   }
 
   void _onTemplateTap(PromptTemplate template) {
-    // If already added, do nothing (or maybe allow edit? Design implies 'X' to remove)
-    if (_isTemplateSelected(template.id)) return;
+    if (_isTemplateSelected(template.id)) return; // Already selected
 
-    // If already expanded, collapse it? Or keep open?
-    // Usually tapping another one collapses the current one.
     setState(() {
       if (_expandedTemplateId == template.id) {
         _expandedTemplateId = null;
       } else {
-        // Can only expand if we haven't reached the limit of 3
+        // Can only expand if < 3 selected
         if (_selectedPrompts.length >= 3) {
           showErrorPopup(context, 'You can only select up to 3 prompts.');
           return;
@@ -133,10 +132,33 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
     });
   }
 
-  void _onRemovePrompt(String templateId) {
-    setState(() {
-      _selectedPrompts.removeWhere((p) => p.promptTemplateId == templateId);
-    });
+  Future<void> _onRemovePrompt(String templateId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Are you sure?'),
+        content: const Text('Want to remove this prompt?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() {
+        _selectedPrompts.removeWhere((p) => p.promptTemplateId == templateId);
+      });
+    }
   }
 
   bool _isTemplateSelected(String templateId) {
@@ -186,141 +208,182 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
     }
   }
 
+  void _handleSkip() {
+    // If skipping is allowed, we might need a separate flow or valid state
+    // Typically prompts are important, but user requested 'Skip' button in footer.
+    ref.read(onboardingProvider.notifier).completeOnboarding();
+  }
+
   // --- Rendering ---
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final primaryColor = colorScheme.primary;
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: theme.iconTheme.color),
-          onPressed: () =>
-              ref.read(onboardingProvider.notifier).goToPreviousStep(),
-        ),
-        title: Text(
-          'Choose Your Prompt',
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+    return BaseOnboardingStepScreen(
+      title: 'Choose Your Prompt',
+      showBackButton: false, // Custom footer used
+      showNextButton: false, // Custom footer used
+      showSkipButton: false, // Custom footer used
+      child: Column(
+        children: [
+          // Subtitle
+          Text(
+            'Select up to 3 prompt to showing up your personality.',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurface.withOpacity(0.6),
+              fontSize: 14,
+            ),
           ),
-        ),
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Text(
-                'Select up to 3 prompt to showing up your personality.',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
+          const SizedBox(height: 20),
 
-            // Categories
-            if (_categories.isNotEmpty)
-              Container(
-                height: 40,
-                margin: const EdgeInsets.only(bottom: 8),
-                child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _categories.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
-                  itemBuilder: (context, index) {
-                    final category = _categories[index];
-                    final isSelected = index == _selectedCategoryIndex;
-                    return ChoiceChip(
-                      label: Text(category.displayName),
-                      selected: isSelected,
-                      onSelected: (val) {
-                        if (val) _onCategorySelected(index);
-                      },
-                      // Styles
-                      selectedColor: theme.colorScheme.primary.withValues(
-                        alpha: 0.8,
-                      ), // Use primary as active
-                      backgroundColor: theme.colorScheme.onSurface.withValues(
-                        alpha: 0.12,
-                      ),
-                      labelStyle: TextStyle(
-                        color: isSelected
-                            ? theme.colorScheme.onPrimary
-                            : theme.colorScheme.onSurface.withValues(
-                                alpha: 0.87,
-                              ),
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        side: BorderSide.none,
-                      ),
-                    );
-                  },
-                ),
-              ),
-
-            const Divider(height: 1),
-
-            // List of Templates
-            Expanded(child: _buildTemplateList(theme)),
-
-            // Footer
+          // Categories
+          if (_categories.isNotEmpty)
             Container(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: _selectedPrompts.length == 3
-                          ? _handleNext
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        // If you have a specific custom color in theme, use it. Otherwise rely on theme primary.
-                        // Attempting to match the specific "Olive Green" from the mockup via a hardcoded fallback
-                        // if theme is not set up that way, but keeping it robust.
-                        backgroundColor: theme.colorScheme.primary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
+              height: 40,
+              margin: const EdgeInsets.only(bottom: 12),
+              child: ListView.separated(
+                padding: EdgeInsets.zero,
+                scrollDirection: Axis.horizontal,
+                itemCount: _categories.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final category = _categories[index];
+                  final isSelected = index == _selectedCategoryIndex;
+                  return GestureDetector(
+                    onTap: () => _onCategorySelected(index),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected ? primaryColor : colorScheme.surface,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isSelected
+                              ? Colors.transparent
+                              : colorScheme.outline.withOpacity(0.2),
                         ),
                       ),
+                      alignment: Alignment.center,
                       child: Text(
-                        'Continue',
+                        category.displayName,
                         style: TextStyle(
-                          color: theme.colorScheme.onPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                          color: isSelected
+                              ? colorScheme.onPrimary
+                              : colorScheme.onSurface,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    _selectedPrompts.length == 3
-                        ? 'All prompts selected'
-                        : 'Please select ${3 - _selectedPrompts.length} more prompt${(3 - _selectedPrompts.length) == 1 ? '' : 's'} to continue (${_selectedPrompts.length}/3 selected)',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                    ),
-                  ),
-                ],
+                  );
+                },
               ),
             ),
-          ],
-        ),
+
+          const Divider(height: 1),
+
+          // List of Templates
+          Expanded(child: _buildTemplateList(theme)),
+
+          // Footer
+          Container(
+            padding: const EdgeInsets.only(top: 16, bottom: 24),
+            child: Column(
+              children: [
+                // Confirm / Continue Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: _selectedPrompts.length == 3
+                        ? _handleNext
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor,
+                      foregroundColor: colorScheme.onPrimary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: _isLoading
+                        ? CircularProgressIndicator(
+                            color: colorScheme.onPrimary,
+                          )
+                        : Text(
+                            'Continue',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                if (_selectedPrompts.length < 3)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: Text(
+                      'Please select ${3 - _selectedPrompts.length} prompt to continue',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurface.withOpacity(0.5),
+                      ),
+                    ),
+                  ),
+
+                // Back / Skip Row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () => ref
+                          .read(onboardingProvider.notifier)
+                          .goToPreviousStep(),
+                      icon: Icon(
+                        Icons.arrow_back,
+                        size: 20,
+                        color: colorScheme.onSurface,
+                      ),
+                      label: Text(
+                        "Back",
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Directionality(
+                      textDirection: TextDirection.rtl,
+                      child: TextButton.icon(
+                        onPressed: _handleSkip,
+                        icon: Icon(
+                          Icons.skip_next_rounded,
+                          size: 24,
+                          color: colorScheme.onSurface,
+                        ),
+                        label: Text(
+                          "Skip",
+                          style: TextStyle(
+                            color: colorScheme.onSurface,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -342,7 +405,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       itemCount: templates.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
@@ -366,18 +429,12 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
     return GestureDetector(
       onTap: () => _onTemplateTap(template),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
-          // Basic shadow
-          boxShadow: [
-            BoxShadow(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          // Subtle shadow/border
+          border: Border.all(color: theme.colorScheme.outline.withOpacity(0.1)),
         ),
         child: Row(
           children: [
@@ -390,10 +447,11 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
                 ),
               ),
             ),
+            const SizedBox(width: 8),
             Icon(
               Icons.arrow_forward_ios,
-              size: 16,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              size: 14,
+              color: theme.colorScheme.onSurface.withOpacity(0.4),
             ),
           ],
         ),
@@ -407,34 +465,39 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
+        // Active border or shadow
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
-            blurRadius: 8,
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  template.promptText,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+          GestureDetector(
+            onTap: () => _onTemplateTap(template),
+            behavior: HitTestBehavior.opaque,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    template.promptText,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-              ),
-            ],
+                Icon(
+                  Icons.keyboard_arrow_up, // Change to Up arrow when expanded
+                  size: 20,
+                  color: theme.colorScheme.onSurface.withOpacity(0.5),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 12),
           TextField(
@@ -444,32 +507,43 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
             decoration: InputDecoration(
               hintText: 'Type your answer...',
               hintStyle: TextStyle(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                fontSize: 13,
+                color: theme.colorScheme.onSurface.withOpacity(0.4),
+                fontSize: 14,
               ),
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.zero,
+              filled: true,
+              fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(
+                0.3,
+              ), // Very light grey
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.all(12),
             ),
             style: const TextStyle(fontSize: 14),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Center(
-            child: ElevatedButton(
-              onPressed: () => _onAddPrompt(template),
-              style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    theme.colorScheme.primary, // Dark olive form image
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+            child: SizedBox(
+              height: 36,
+              child: ElevatedButton(
+                onPressed: () => _onAddPrompt(template),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary, // Dark olive
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  elevation: 0,
                 ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 10,
+                child: Text(
+                  'Add Prompt',
+                  style: TextStyle(
+                    color: theme.colorScheme.onPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
                 ),
-              ),
-              child: Text(
-                'Add Prompt',
-                style: TextStyle(color: theme.colorScheme.onPrimary),
               ),
             ),
           ),
@@ -480,56 +554,67 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
 
   Widget _buildSelectedCard(PromptTemplate template, ThemeData theme) {
     final prompt = _getSelectedPrompt(template.id);
+    // Gold color
+    final goldColor = theme.colorScheme.secondary;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.secondary, // Gold/Beige color from image
+        color: goldColor,
         borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: goldColor.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(right: 24.0),
+                child: Text(
                   template.promptText,
                   style: TextStyle(
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w800,
                     fontSize: 14,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.87),
+                    color: theme.colorScheme.onSecondary,
                   ),
                 ),
-                if (prompt != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    prompt.userResponse,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: theme.colorScheme.onSurface.withValues(
-                        alpha: 0.87,
-                      ),
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ],
-            ),
-          ),
-          GestureDetector(
-            onTap: () => _onRemovePrompt(template.id),
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.87),
-                shape: BoxShape.circle,
               ),
-              child: Icon(
-                Icons.close,
-                size: 14,
-                color: theme.colorScheme.surface,
+              if (prompt != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  prompt.userResponse,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: theme.colorScheme.onSecondary.withOpacity(0.9),
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          Positioned(
+            right: 0,
+            top: 0,
+            child: GestureDetector(
+              onTap: () => _onRemovePrompt(template.id),
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.8), // Dark circle
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.close,
+                  size: 12, // Small X
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
