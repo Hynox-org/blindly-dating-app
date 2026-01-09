@@ -17,8 +17,7 @@ nltk.download("vader_lexicon", download_dir="/tmp", quiet=True)
 sia = SentimentIntensityAnalyzer()
 
 # Supabase if needed create a .env file
-supabase = create_client("https://icvncmawahwbpiohrcxv.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imljdm5jbWF3YWh3YnBpb2hyY3h2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NTg2MDk5MSwiZXhwIjoyMDgxNDM2OTkxfQ.3LthJsUcwWyg5krt6z3ZHJ99EZGs9Hd39KmI9Pbw4Gw"
-)
+supabase = create_client("","")
 
 # Utility helpers
 def clamp(x: float, lo: float, hi: float) -> float:
