@@ -27,7 +27,7 @@ except LookupError:
 sia = SentimentIntensityAnalyzer()
 
 # Supabase client get the keys form supabase/settings/apikeys
-supabase = create_client("Project_url","anon public key")
+supabase = create_client("Project_url","anon_public_key")
 
 # Utility helpers
 def clamp(x: float, lo: float, hi: float) -> float:
