@@ -57,6 +57,9 @@ dependencies:
 
   # ✅ ADDED: UI Component for Swipe Deck (Moved from dev_dependencies to here)
   flutter_card_swiper: ^7.2.0
+  flutter_cache_manager: ^3.3.1
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
 
   # Audio
   record: ^6.1.2
@@ -77,6 +80,7 @@ dev_dependencies:
   json_serializable: ^6.7.1
   flutter_launcher_icons: ^0.14.3
   mocktail: ^1.0.4
+  hive_generator: ^2.0.1
 
 flutter_launcher_icons:
   android: "launcher_icon"

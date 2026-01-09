@@ -16,6 +16,11 @@ import '../component/ProfileSwipeCard.dart';
 import '../../../../core/utils/gender_utils.dart';
 import '../../../../core/utils/custom_popups.dart';
 
+// ✅ 4. New Integrations
+import '../../../../core/services/bootstrap_service.dart';
+import '../../discovery/presentation/widgets/no_more_profiles_widget.dart';
+import '../../discovery/povider/swipe_provider.dart';
+
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -44,31 +49,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   /// ✅ SEQUENTIAL INITIALIZATION
-  /// 1. Updates Passport Location first
-  /// 2. Then enables the Discovery Feed
+  /// Uses BootstrapService to handle everything (Cache, Location, Network)
   Future<void> _initLocationAndFeed() async {
     // Wait for the frame to build so we can safely use 'ref'
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
-        debugPrint('📍 HOMESCREEN: Updating Location...');
+        debugPrint('🚀 HOMESCREEN: initializing Bootstrap...');
 
-        // 1. AWAIT the location update (This writes to DB)
-        await ref.read(locationServiceProvider).updateUserLocation();
-        debugPrint('✅ HOMESCREEN: Location Updated.');
+        // 1. Initialize App Services (Hive, Cache, Background Refresh)
+        await ref.read(bootstrapServiceProvider).initApp();
+        debugPrint('✅ HOMESCREEN: Bootstrap Complete.');
 
-        // 2. Refresh the feed provider to ensure it uses the NEW location data
-        // This clears any old cached "empty" results
-        ref.invalidate(discoveryFeedProvider);
-
-        // 3. Update UI state to show the feed
+        // 2. Update UI state to show the feed
         if (mounted) {
           setState(() {
             _isLocationReady = true;
           });
         }
       } catch (e) {
-        debugPrint('❌ HOMESCREEN: Location Error: $e');
-        // Even if location fails, we try to load the feed (maybe using old location)
+        debugPrint('❌ HOMESCREEN: Bootstrap Error: $e');
+        // Even if it fails, we try to load the feed (maybe using old location/cache)
         if (mounted) {
           setState(() {
             _isLocationReady = true;
@@ -561,10 +561,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _handlePass(UserProfile profile) {
     debugPrint('Passed: ${profile.name}');
+    ref
+        .read(swipeProvider.notifier)
+        .swipe(targetProfileId: profile.id, action: 'pass');
   }
 
   void _handleLike(UserProfile profile) {
     showSuccessPopup(context, 'You liked ${profile.name}! 💚');
+    ref
+        .read(swipeProvider.notifier)
+        .swipe(targetProfileId: profile.id, action: 'like');
   }
 
   void _showPremiumDialog() {
@@ -604,29 +610,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.people_outline,
-            size: 100,
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.4),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'No profiles available',
-            style: TextStyle(
-              fontSize: 20,
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.6),
-            ),
-          ),
-        ],
-      ),
-    );
+    return const NoMoreProfilesWidget();
   }
 }
