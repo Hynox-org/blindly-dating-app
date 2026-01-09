@@ -211,22 +211,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       ),
                       data: (discoveryData) {
-                        // 🔍 DEBUG LOGS
-                        debugPrint(
-                          '================ DISCOVERY DEBUG ================',
-                        );
-                        debugPrint('RAW COUNT: ${discoveryData.length}');
-                        debugPrint(
-                          'PROFILE IDS: ${discoveryData.map((e) => e.profileId).toList()}',
-                        );
-                        debugPrint(
-                          'GENDERS FROM API: ${discoveryData.map((e) => e.gender).toList()}',
-                        );
-
-                        debugPrint(
-                          '=================================================',
-                        );
-
                         final profiles = _mapToUserProfiles(discoveryData);
 
                         if (profiles.isEmpty) {
@@ -313,20 +297,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               cardsCount: profiles.length,
                               numberOfCardsDisplayed: 1,
                               padding: const EdgeInsets.all(24.0),
+                              allowedSwipeDirection:
+                                  const AllowedSwipeDirection.only(
+                                    left: true,
+                                    right: true,
+                                  ),
                               onSwipe: (prev, curr, dir) =>
                                   _onSwipe(prev, curr, dir, profiles),
                               onUndo: _onUndo,
                               cardBuilder: (context, index, horiz, vert) {
                                 // Track swipe progress for indicators
-                                WidgetsBinding.instance.addPostFrameCallback((
-                                  _,
-                                ) {
-                                  if (mounted) {
-                                    setState(
-                                      () => _swipeProgress = horiz.toDouble(),
-                                    );
-                                  }
-                                });
+                                // Only update if significantly changed to avoid infinite rebuild loops
+                                if ((_swipeProgress - horiz).abs() > 10.0 ||
+                                    (horiz == 0 && _swipeProgress != 0)) {
+                                  WidgetsBinding.instance.addPostFrameCallback((
+                                    _,
+                                  ) {
+                                    if (mounted &&
+                                            (_swipeProgress - horiz).abs() >
+                                                10.0 ||
+                                        (horiz == 0 && _swipeProgress != 0)) {
+                                      setState(
+                                        () => _swipeProgress = horiz.toDouble(),
+                                      );
+                                    }
+                                  });
+                                }
 
                                 return ProfileSwipeCard(
                                   key: ValueKey(profiles[index].id),

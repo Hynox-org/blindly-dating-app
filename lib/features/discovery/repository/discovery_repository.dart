@@ -39,10 +39,14 @@ class DiscoveryRepository {
       debugPrint('OFFSET: $offset');
 
       // ✅ Call SQL function
+      // If Dev Mode is ON, we ignore location by setting a huge radius (e.g. 20,000 km)
+      // Otherwise, we use the passed radius.
+      final int effectiveRadius = kDevMode ? 20000000 : radius;
+
       final List<dynamic> response = await _supabase.rpc(
         'get_discovery_feed_final',
         params: {
-          'p_radius_meters': radius,
+          'p_radius_meters': effectiveRadius,
           'p_limit': limit,
           'p_offset': offset,
         },
