@@ -8,7 +8,6 @@ import '../providers/auth_providers.dart';
 import '../../onboarding/providers/onboarding_providers.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../onboarding/presentation/screens/onboarding_shell.dart';
-import '../../discovery/repository/discovery_repository.dart';
 
 enum AuthMethod { selection, phone, phoneOTP, email, emailOTP, apple }
 
@@ -845,64 +844,60 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                 ),
               ),
 
-              if (!DiscoveryRepository.kDevMode) ...[
-                SizedBox(height: 12),
+              SizedBox(height: 12),
 
-                // Mobile number button
-                ElevatedButton(
-                  onPressed: () {
-                    HapticFeedback.mediumImpact();
-                    _changeMethod(AuthMethod.phone);
-                  },
-                  style:
-                      ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor: Theme.of(
-                          context,
-                        ).colorScheme.onPrimary,
-                        padding: EdgeInsets.symmetric(vertical: 15),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                      ).copyWith(
-                        backgroundColor: WidgetStateProperty.all(
-                          Theme.of(context).colorScheme.primary,
-                        ),
-                        foregroundColor: WidgetStateProperty.all(
-                          Theme.of(context).colorScheme.onPrimary,
-                        ),
-                        overlayColor: WidgetStateProperty.resolveWith<Color?>((
-                          Set<WidgetState> states,
-                        ) {
-                          if (states.contains(WidgetState.pressed)) {
-                            return Colors.white.withOpacity(0.1);
-                          }
-                          return null;
-                        }),
+              // Mobile number button
+              ElevatedButton(
+                onPressed: () {
+                  HapticFeedback.mediumImpact();
+                  _changeMethod(AuthMethod.phone);
+                },
+                style:
+                    ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                      padding: EdgeInsets.symmetric(vertical: 15),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
                       ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      FaIcon(
-                        FontAwesomeIcons.phone,
-                        size: 20,
+                    ).copyWith(
+                      backgroundColor: WidgetStateProperty.all(
+                        Theme.of(context).colorScheme.primary,
+                      ),
+                      foregroundColor: WidgetStateProperty.all(
+                        Theme.of(context).colorScheme.onPrimary,
+                      ),
+                      overlayColor: WidgetStateProperty.resolveWith<Color?>((
+                        Set<WidgetState> states,
+                      ) {
+                        if (states.contains(WidgetState.pressed)) {
+                          return Colors.white.withOpacity(0.1);
+                        }
+                        return null;
+                      }),
+                    ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    FaIcon(
+                      FontAwesomeIcons.phone,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ),
+                    SizedBox(width: 12),
+                    Text(
+                      'Continue with Mobile number',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
                         color: Theme.of(context).colorScheme.onPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
                       ),
-                      SizedBox(width: 12),
-                      Text(
-                        'Continue with Mobile number',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          color: Theme.of(context).colorScheme.onPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
 
               SizedBox(height: 20),
               Padding(

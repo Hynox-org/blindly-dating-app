@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+// ✅ Providers & Repositories
 import '../../providers/onboarding_provider.dart';
 import '../../../data/repositories/onboarding_repository.dart';
+import '../../../../auth/providers/auth_providers.dart';
+import '../../../../../core/services/bootstrap_service.dart'; // ✅ NEW: Import Bootstrap
+
+// ✅ Models
 import '../../../domain/models/prompt_category_model.dart';
 import '../../../domain/models/prompt_template_model.dart';
 import '../../../domain/models/profile_prompt_model.dart';
-import '../../../../auth/providers/auth_providers.dart';
+
+// ✅ Utils
 import '../../../../../core/utils/custom_popups.dart';
 
 class ProfilePromptsScreen extends ConsumerStatefulWidget {
@@ -18,8 +25,7 @@ class ProfilePromptsScreen extends ConsumerStatefulWidget {
 
 class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
   // State
-  final List<ProfilePrompt> _selectedPrompts =
-      []; // The actual saved user prompts
+  final List<ProfilePrompt> _selectedPrompts = []; // The actual saved user prompts
   bool _isLoading = false;
   String? _error;
 
@@ -87,23 +93,18 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
   void _onCategorySelected(int index) {
     setState(() {
       _selectedCategoryIndex = index;
-      _expandedTemplateId =
-          null; // Collapse any open input when changing category
+      _expandedTemplateId = null; // Collapse any open input when changing category
       _answerController.clear();
     });
   }
 
   void _onTemplateTap(PromptTemplate template) {
-    // If already added, do nothing (or maybe allow edit? Design implies 'X' to remove)
     if (_isTemplateSelected(template.id)) return;
 
-    // If already expanded, collapse it? Or keep open?
-    // Usually tapping another one collapses the current one.
     setState(() {
       if (_expandedTemplateId == template.id) {
         _expandedTemplateId = null;
       } else {
-        // Can only expand if we haven't reached the limit of 3
         if (_selectedPrompts.length >= 3) {
           showErrorPopup(context, 'You can only select up to 3 prompts.');
           return;
@@ -153,6 +154,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
     }
   }
 
+  // ✅ UPDATED FINALIZATION LOGIC
   Future<void> _handleNext() async {
     if (_selectedPrompts.length < 3) {
       showErrorPopup(context, 'Please select 3 prompts to continue.');
@@ -165,17 +167,27 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
       if (user == null) throw Exception('User not logged in');
       final userId = user.id;
 
-      // Re-assign display orders
+      // 1. Prepare Data
       final promptsToSave = _selectedPrompts.asMap().entries.map((entry) {
         return entry.value.copyWith(promptDisplayOrder: entry.key + 1);
       }).toList();
 
+      // 2. Save Prompts to DB
       await ref
           .read(onboardingRepositoryProvider)
           .saveProfilePrompts(userId, promptsToSave);
 
+      // 3. Mark Onboarding as Complete in DB/State
+      await ref.read(onboardingProvider.notifier).completeOnboarding();
+
+      // 4. 🚀 BOOTSTRAP: Load Cache & Check Verification
+      // This fetches the feed so Home Screen is ready instantly
+      debugPrint("🚀 Onboarding Complete. Bootstrapping App...");
+      await ref.read(bootstrapServiceProvider).initApp();
+
+      // 5. Navigate to Home
       if (mounted) {
-        ref.read(onboardingProvider.notifier).completeOnboarding();
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
       }
     } catch (e) {
       if (mounted) {
@@ -217,7 +229,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Text(
-                'Select up to 3 prompt to showing up your personality.',
+                'Select up to 3 prompts to show off your personality.',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey),
               ),
@@ -244,9 +256,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
                         if (val) _onCategorySelected(index);
                       },
                       // Styles
-                      selectedColor: theme.colorScheme.primary.withOpacity(
-                        0.8,
-                      ), // Use primary as active
+                      selectedColor: theme.colorScheme.primary.withOpacity(0.8),
                       backgroundColor: Colors.grey[200],
                       labelStyle: TextStyle(
                         color: isSelected ? Colors.white : Colors.black87,
@@ -277,26 +287,25 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton(
-                      onPressed: _selectedPrompts.length == 3
+                      onPressed: _selectedPrompts.length == 3 && !_isLoading
                           ? _handleNext
                           : null,
                       style: ElevatedButton.styleFrom(
-                        // If you have a specific custom color in theme, use it. Otherwise rely on theme primary.
-                        // Attempting to match the specific "Olive Green" from the mockup via a hardcoded fallback
-                        // if theme is not set up that way, but keeping it robust.
                         backgroundColor: const Color(0xFF757C64),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
                         ),
                       ),
-                      child: const Text(
-                        'Continue',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                      child: _isLoading 
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                          'Continue',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -318,7 +327,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
   }
 
   Widget _buildTemplateList(ThemeData theme) {
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
+    if (_isLoading && _templates.isEmpty) return const Center(child: CircularProgressIndicator());
     if (_error != null) return Center(child: Text(_error!));
     if (_categories.isEmpty) return const SizedBox();
 
@@ -362,7 +371,6 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          // Basic shadow
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
@@ -438,9 +446,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
             child: ElevatedButton(
               onPressed: () => _onAddPrompt(template),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(
-                  0xFF555B46,
-                ), // Dark olive form image
+                backgroundColor: const Color(0xFF555B46),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -465,7 +471,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFE8D58E), // Gold/Beige color from image
+        color: const Color(0xFFE8D58E),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(

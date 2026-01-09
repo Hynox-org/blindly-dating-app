@@ -2,9 +2,12 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math' as math;
+
+// ✅ Providers & Services
 import '../../auth/providers/auth_providers.dart';
 import '../../onboarding/presentation/screens/onboarding_shell.dart';
 import '../../onboarding/data/repositories/onboarding_repository.dart';
+import '../../../../core/services/bootstrap_service.dart'; // ✅ Make sure this path is correct
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -26,10 +29,18 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late Animation<double> _textOpacity;
   late Animation<double> _textScale;
 
+  // ✅ Track the initialization process
+  Future<void>? _bootstrapFuture;
+
   @override
   void initState() {
     super.initState();
-    // Total Duration: 4.5 seconds (Reduced from 7.5)
+
+    // 🚀 1. Start the Bootstrap Logic (Data Pre-loading) immediately
+    // We don't await here because we want the animation to start simultaneously.
+    _bootstrapFuture = ref.read(bootstrapServiceProvider).initApp();
+
+    // Total Duration: 4.5 seconds
     _mainController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 4500),
@@ -37,6 +48,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     _mainController.addStatusListener((status) async {
       if (status == AnimationStatus.completed) {
+        
+        // ⏳ 2. Wait for Data: Ensure Bootstrap is finished before moving on
+        // If animation was faster than network/db, we wait here.
+        // If network/db was faster, this finishes instantly.
+        if (_bootstrapFuture != null) {
+          await _bootstrapFuture;
+        }
+
         // Check for existing session
         final user = ref.read(authRepositoryProvider).currentUser;
 
@@ -53,11 +72,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   }
 
   Future<void> _checkOnboardingAndNavigate(String userId) async {
-    // We'll use a direct Supabase call for speed or reuse repo if possible.
-    // Since we are in ConsumerStateful, we can use ref.
-    // However, we need to import OnboardingRepository.
-    // Let's assume we can fetch it.
-    // Use the repository to validate and potentially fix the status
     try {
       final isComplete = await ref
           .read(onboardingRepositoryProvider)
@@ -66,6 +80,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       if (!mounted) return;
 
       if (isComplete) {
+        // ✅ Navigate to Home
+        // Since Bootstrap already loaded the data, Home will appear INSTANTLY.
+        // If Verification is pending, HomeScreen will handle showing the "Blocker".
         Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
       } else {
         // Navigate to Onboarding Shell
@@ -103,16 +120,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     );
 
     // Background Color Transition
-    _backgroundColor =
-        ColorTween(
-          begin: Theme.of(context).colorScheme.onPrimary, // Secondary Gold
-          end: Theme.of(context).colorScheme.surface, // White
-        ).animate(
-          CurvedAnimation(
-            parent: _mainController,
-            curve: const Interval(0.33, 0.55, curve: Curves.easeIn),
-          ),
-        );
+    _backgroundColor = ColorTween(
+      begin: Theme.of(context).colorScheme.onPrimary, // Secondary Gold
+      end: Theme.of(context).colorScheme.surface, // White
+    ).animate(
+      CurvedAnimation(
+        parent: _mainController,
+        curve: const Interval(0.33, 0.55, curve: Curves.easeIn),
+      ),
+    );
 
     // 2.5s - 4.5s: Text Reveal (Scene 3)
     // Blur: 20 -> 0

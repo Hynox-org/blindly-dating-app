@@ -1,14 +1,41 @@
+import 'package:hive/hive.dart';
+
+// ⚠️ THIS LINE IS CRITICAL: It links the generated file
+part 'discovery_user_model.g.dart'; 
+
+@HiveType(typeId: 0) // Unique ID for this class
 class DiscoveryUser {
+  @HiveField(0)
   final String profileId;
+
+  @HiveField(1)
   final String displayName;
+
+  @HiveField(2)
   final int age;
+
+  @HiveField(3)
   final String bio;
+
+  @HiveField(4)
   final String gender;
+
+  @HiveField(5)
   final String city;
+
+  @HiveField(6)
   final double distanceMeters;
+
+  @HiveField(7)
   final int matchScore;
+
+  @HiveField(8)
   final int sharedInterestsCount;
+
+  @HiveField(9)
   final int sharedLifestyleCount;
+
+  @HiveField(10)
   final String? mediaUrl;
 
   DiscoveryUser({
@@ -27,33 +54,16 @@ class DiscoveryUser {
 
   factory DiscoveryUser.fromJson(Map<String, dynamic> json) {
     return DiscoveryUser(
-      // ✅ UUID safe
       profileId: json['profile_id']?.toString() ?? '',
-
       displayName: json['display_name'] as String? ?? 'User',
-
       age: json['age'] as int? ?? 0,
-
-      // ✅ FIX 1: Handles null bio (Prevents crash for Harini)
       bio: json['bio'] as String? ?? '',
-
-      // ✅ FIX 2: Handles null gender (Prevents crash if API doesn't send it)
       gender: json['gender'] as String? ?? 'Unknown',
-
       city: json['city'] as String? ?? '',
-
-      // ✅ NULL + TYPE SAFE
       distanceMeters: (json['distance_meters'] as num?)?.toDouble() ?? 0.0,
-
-      sharedInterestsCount:
-          json['interest_match_count'] as int? ?? 0,
-
-      sharedLifestyleCount:
-          json['lifestyle_match_count'] as int? ?? 0,
-
+      sharedInterestsCount: json['interest_match_count'] as int? ?? 0,
+      sharedLifestyleCount: json['lifestyle_match_count'] as int? ?? 0,
       matchScore: json['match_score'] as int? ?? 0,
-
-      // ✅ FIX 3: Handles null image
       mediaUrl: json['image_url'] as String?,
     );
   }

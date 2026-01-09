@@ -121,9 +121,9 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
         return const PermissionsScreen();
       case 'language_select':
         return const LanguageSelectScreen();
-      case 'name_entry':
+      case 'name_birth_entry':
         return const NameEntryScreen();
-      case 'birth_date':
+      case 'name_birth_entry':
         return const BirthDateScreen();
       case 'gender_select':
         return const GenderSelectScreen();

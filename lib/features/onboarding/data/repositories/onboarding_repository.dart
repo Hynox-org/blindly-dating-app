@@ -8,12 +8,18 @@ import '../../domain/models/prompt_category_model.dart';
 import '../../domain/models/prompt_template_model.dart';
 import '../../domain/models/profile_prompt_model.dart';
 
+// ✅ NEW: Import Cache Service
+import '../../../discovery/repository/discovery_cache_service.dart';
+
 final onboardingRepositoryProvider = Provider<OnboardingRepository>((ref) {
   return OnboardingRepository(Supabase.instance.client);
 });
 
 class OnboardingRepository {
   final SupabaseClient _supabase;
+  
+  // ✅ NEW: Cache Service Instance
+  final _cacheService = DiscoveryCacheService();
 
   OnboardingRepository(this._supabase);
 
@@ -70,6 +76,10 @@ class OnboardingRepository {
     String stepKey,
     String status,
   ) async {
+    // We use getProfileRaw here. Since we updated getProfileRaw to handle offline,
+    // this logic needs to be robust. However, writing to DB (update) will still fail offline.
+    // That is expected behavior (you can't save progress offline).
+    // The critical part is *reading* the profile to know where to start.
     final profile = await getProfileRaw(userId);
     Map<String, dynamic> currentProgress = {};
     if (profile != null && profile['steps_progress'] != null) {
@@ -104,15 +114,37 @@ class OnboardingRepository {
     await _supabase.from('profiles').update(data).eq('user_id', userId);
   }
 
+  // ✅ CRITICAL UPDATE: Handle Offline Caching
   Future<Map<String, dynamic>?> getProfileRaw(String userId) async {
     try {
+      // 1. Try Network First
       final response = await _supabase
           .from('profiles')
           .select()
           .eq('user_id', userId)
           .maybeSingle();
+      
+      // 2. If success, Save to Cache
+      if (response != null) {
+        await _cacheService.saveMyProfile(response);
+      }
       return response;
     } catch (e) {
+      // 3. If Network Error, Read from Cache
+      final errString = e.toString();
+      if (errString.contains('SocketException') || 
+          errString.contains('ClientException') || 
+          errString.contains('Network request failed')) {
+        
+        AppLogger.info('⚠️ Offline: Fetching profile from local cache...');
+        final cachedProfile = _cacheService.getMyProfile();
+        
+        if (cachedProfile != null) {
+          AppLogger.info('✅ Cache Hit: Found local profile.');
+          return cachedProfile;
+        }
+      }
+      
       AppLogger.info('Error fetching user profile: $e');
       return null;
     }
@@ -120,14 +152,10 @@ class OnboardingRepository {
 
   Future<bool> checkOnboardingStatus(String userId) async {
     try {
-      final response = await _supabase
-          .from('profiles')
-          .select('onboarding_status')
-          .eq('user_id', userId)
-          .maybeSingle();
-
-      if (response == null) return false;
-      return response['onboarding_status'] == 'complete';
+      // We reuse getProfileRaw now so it benefits from the cache!
+      final profile = await getProfileRaw(userId);
+      if (profile == null) return false;
+      return profile['onboarding_status'] == 'complete';
     } catch (e) {
       AppLogger.info('Error checking onboarding status: $e');
       return false;
@@ -147,15 +175,20 @@ class OnboardingRepository {
 
       if (status == 'complete') {
         if (stepsProgress.isEmpty) {
+          // This fix assumes we are online. If offline, we probably shouldn't revert status.
+          // But since this is a validation step, it's safer to trust the cache if offline.
           AppLogger.info(
-            'Integrity Check Failed: Status is Complete but Progress is Empty. Reverting to in_progress.',
+            'Integrity Check Failed: Status is Complete but Progress is Empty.',
           );
-
-          await _supabase
-              .from('profiles')
-              .update({'onboarding_status': 'in_progress'})
-              .eq('user_id', userId);
-
+          // Only attempt to fix on server if we think we are online (simple heuristic or try/catch)
+          try {
+             await _supabase
+                .from('profiles')
+                .update({'onboarding_status': 'in_progress'})
+                .eq('user_id', userId);
+          } catch (_) {
+            // Ignore write errors if offline
+          }
           return false;
         }
       }
@@ -182,13 +215,12 @@ class OnboardingRepository {
     }
   }
 
-  // ✅ UPDATED: Save directly to profiles table (Array Column)
   Future<void> saveUserInterests(String userId, List<String> chipIds) async {
     try {
       await _supabase
           .from('profiles')
           .update({
-            'selected_interest_ids': chipIds, // Stores list of UUIDs
+            'selected_interest_ids': chipIds,
             'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('user_id', userId);
@@ -231,7 +263,6 @@ class OnboardingRepository {
     }
   }
 
-  // ✅ UPDATED: Save directly to profiles table (Array Column)
   Future<void> saveLifestylePreferences(
     String userId,
     List<String> chipIds,
@@ -240,7 +271,7 @@ class OnboardingRepository {
       await _supabase
           .from('profiles')
           .update({
-            'selected_lifestyle_ids': chipIds, // Stores list of UUIDs
+            'selected_lifestyle_ids': chipIds,
             'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('user_id', userId);
@@ -318,9 +349,8 @@ class OnboardingRepository {
     }
   }
 
-  // --- Fetch User Selections methods for Bidirectional Navigation ---
+  // --- Fetch User Selections ---
 
-  // ✅ UPDATED: Fetch from profiles table (Array Column)
   Future<List<String>> getUserInterestChips(String userId) async {
     try {
       final response = await _supabase
@@ -340,7 +370,6 @@ class OnboardingRepository {
     }
   }
 
-  // ✅ UPDATED: Fetch from profiles table (Array Column)
   Future<List<String>> getUserLifestyleChips(String userId) async {
     try {
       final response = await _supabase
