@@ -48,8 +48,9 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
 
   Future<void> _handleNext() async {
     final bio = _controller.text.trim();
-    if (bio.isEmpty)
+    if (bio.isEmpty) {
       return; // Should be handled by button state, but safety check
+    }
 
     setState(() => _isSaving = true);
 

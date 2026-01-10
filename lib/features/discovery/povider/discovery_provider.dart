@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // ✅ Keep your existing repository import
 import '../../../features/discovery/repository/discovery_repository.dart';
 import '../domain/models/discovery_user_model.dart';
-import '../../auth/providers/auth_providers.dart';
 
 // ✅ 1. The Notifier (Manages the Data State)
 class DiscoveryFeedNotifier

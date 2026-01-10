@@ -6,7 +6,6 @@ import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 // ✅ 1. Providers
 import '../../auth/providers/auth_providers.dart';
 import '../../../features/discovery/povider/discovery_provider.dart';
-import '../../auth/providers/location_provider.dart';
 
 // ✅ 2. Models
 import '../../discovery/domain/models/discovery_user_model.dart';

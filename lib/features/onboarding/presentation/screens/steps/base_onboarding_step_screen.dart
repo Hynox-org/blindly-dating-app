@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/onboarding_provider.dart';
-import '../../../../auth/providers/auth_providers.dart';
 
 class BaseOnboardingStepScreen extends ConsumerWidget {
   final String title;
