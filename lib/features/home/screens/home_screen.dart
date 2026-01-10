@@ -328,23 +328,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   profile: profiles[index],
                                   horizontalThreshold: horiz.toDouble(),
                                   verticalThreshold: vert.toDouble(),
+
                                   onLike: () {
-                                    if (_swipeCount > 0) {
-                                      _handleLike(profiles[index]);
-                                      _controller.swipe(
-                                        CardSwiperDirection.right,
-                                      );
-                                    }
+                                    _controller.swipe(
+                                      CardSwiperDirection.right,
+                                    );
                                   },
-                                  onBlock: () {
-                                    if (_swipeCount > 0) {
-                                      _handlePass(profiles[index]);
-                                      _controller.swipe(
-                                        CardSwiperDirection.left,
-                                      );
-                                    }
+
+                                  onPass: () {
+                                    _controller.swipe(CardSwiperDirection.left);
                                   },
-                                  onReport: () {},
+
+                                  onSuperLike: () {
+                                    _controller.swipe(CardSwiperDirection.top);
+                                  },
                                 );
                               },
                             ),

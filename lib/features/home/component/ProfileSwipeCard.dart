@@ -64,30 +64,30 @@ class UserProfile {
 }
 
 // -----------------------------------------------------------------------------
-// 2. SWIPE WRAPPER
+// 2. SWIPE WRAPPER (Used by CardSwiper)
 // -----------------------------------------------------------------------------
 class ProfileSwipeCard extends StatelessWidget {
   final UserProfile profile;
   final double horizontalThreshold;
   final double verticalThreshold;
-  final VoidCallback? onBlock;
-  final VoidCallback? onReport;
+
   final VoidCallback? onLike;
+  final VoidCallback? onPass;
+  final VoidCallback? onSuperLike;
 
   const ProfileSwipeCard({
     super.key,
     required this.profile,
     required this.horizontalThreshold,
     required this.verticalThreshold,
-    this.onBlock,
-    this.onReport,
     this.onLike,
+    this.onPass,
+    this.onSuperLike,
   });
 
   @override
   Widget build(BuildContext context) {
     return Transform(
-      // Keep the bottom pivot for rotation style
       alignment: Alignment.bottomCenter,
       transform: Matrix4.identity()
         ..setEntry(3, 2, 0.001)
@@ -95,41 +95,39 @@ class ProfileSwipeCard extends StatelessWidget {
       child: ProfileCard(
         profile: profile,
         isSwipeMode: true,
-        onBlock: onBlock,
-        onReport: onReport,
         onLike: onLike,
-        tags: const ['Home', 'Discovery'],
+        onPass: onPass,
+        onSuperLike: onSuperLike,
       ),
     );
   }
 }
 
 // -----------------------------------------------------------------------------
-// 3. FULL SCREEN IMAGE PROFILE CARD
+// 3. FULL PROFILE CARD (UI ONLY)
 // -----------------------------------------------------------------------------
 class ProfileCard extends StatelessWidget {
   final UserProfile profile;
   final bool isSwipeMode;
-  final List<String> tags;
-  final VoidCallback? onBlock;
-  final VoidCallback? onReport;
+
   final VoidCallback? onLike;
+  final VoidCallback? onPass;
+  final VoidCallback? onSuperLike;
 
   const ProfileCard({
     super.key,
     required this.profile,
     this.isSwipeMode = false,
-    this.tags = const [],
-    this.onBlock,
-    this.onReport,
     this.onLike,
+    this.onPass,
+    this.onSuperLike,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.black, // Dark background
+        color: Colors.black,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -143,7 +141,7 @@ class ProfileCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         child: Stack(
           children: [
-            // 1. FULL SCREEN IMAGE
+            // IMAGE
             Positioned.fill(
               child: profile.imageUrls.isNotEmpty
                   ? Image.network(
@@ -162,7 +160,7 @@ class ProfileCard extends StatelessWidget {
                     ),
             ),
 
-            // 2. GRADIENT OVERLAY (Bottom)
+            // GRADIENT
             Positioned(
               left: 0,
               right: 0,
@@ -173,75 +171,40 @@ class ProfileCard extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Colors.black.withOpacity(0.9)],
-                    stops: const [0.0, 0.8],
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.9),
+                    ],
                   ),
                 ),
               ),
             ),
 
-            // 3. TEXT CONTENT (Bottom)
+            // TEXT
             Positioned(
               left: 20,
               right: 20,
-              bottom: 20, // Bottom padding
+              bottom: 20,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
                 children: [
-                  // NAME & AGE
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          '${profile.name}, ${profile.age}',
-                          style: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            shadows: [
-                              Shadow(color: Colors.black45, blurRadius: 10),
-                            ],
-                          ),
-                        ),
-                      ),
-                      // Optional "Verified" or indicator
-                    ],
+                  Text(
+                    '${profile.name}, ${profile.age}',
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
-
                   const SizedBox(height: 8),
-
-                  // WORK/EDUCATION & DISTANCE
-                  _buildIconText(Icons.work_outline, profile.education),
-                  const SizedBox(height: 4),
                   _buildIconText(
                     Icons.location_on_outlined,
                     '${profile.distance} km away',
                   ),
-                  const SizedBox(height: 16),
-
-                  // DOWN CHEVRON / HINT
-                  Center(
-                    child: Icon(
-                      Icons.keyboard_arrow_down,
-                      color: Colors.white.withOpacity(0.6),
-                      size: 30,
-                    ),
-                  ),
                 ],
               ),
             ),
-
-            // 4. ACTION BUTTONS OVERLAY (Optional - only if intended to be ON the card)
-            // Bumble usually keeps actions separate or floating.
-            // Since we restricted the card swipe, the existing separate buttons in UI might be handled by parent.
-            // But if we want buttons ON the card like previous design:
-            /*
-            if (isSwipeMode) 
-                 Positioned(bottom: 20, right: 20, ...)
-            */
-            // Keeping it clean as per "only the main profile image" request.
           ],
         ),
       ),
@@ -253,16 +216,14 @@ class ProfileCard extends StatelessWidget {
 
     return Row(
       children: [
-        Icon(icon, color: Colors.white.withOpacity(0.9), size: 16),
-        const SizedBox(width: 8),
+        Icon(icon, color: Colors.white, size: 16),
+        const SizedBox(width: 6),
         Text(
           text,
-          style: TextStyle(
+          style: const TextStyle(
             fontFamily: 'Poppins',
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-            color: Colors.white.withOpacity(0.9),
-            shadows: const [Shadow(color: Colors.black45, blurRadius: 4)],
+            fontSize: 14,
+            color: Colors.white,
           ),
         ),
       ],
