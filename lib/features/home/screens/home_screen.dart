@@ -18,6 +18,7 @@ import '../../../../core/utils/custom_popups.dart';
 
 // ✅ 4. Screens
 import '../../profile/profile.dart';
+import '../../match/liked_you_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -42,7 +43,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Start the initialization sequence immediately
     _initLocationAndFeed();
   }
 
@@ -50,20 +50,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// 1. Updates Passport Location first
   /// 2. Then enables the Discovery Feed
   Future<void> _initLocationAndFeed() async {
-    // Wait for the frame to build so we can safely use 'ref'
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
         debugPrint('📍 HOMESCREEN: Updating Location...');
-
-        // 1. AWAIT the location update (This writes to DB)
         await ref.read(locationServiceProvider).updateUserLocation();
         debugPrint('✅ HOMESCREEN: Location Updated.');
-
-        // 2. Refresh the feed provider to ensure it uses the NEW location data
-        // This clears any old cached "empty" results
         ref.invalidate(discoveryFeedProvider);
 
-        // 3. Update UI state to show the feed
         if (mounted) {
           setState(() {
             _isLocationReady = true;
@@ -71,7 +64,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         }
       } catch (e) {
         debugPrint('❌ HOMESCREEN: Location Error: $e');
-        // Even if location fails, we try to load the feed (maybe using old location)
         if (mounted) {
           setState(() {
             _isLocationReady = true;
@@ -124,9 +116,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ CRITICAL CHANGE:
-    // Only watch the feed provider if location is ready.
-    // If not ready, we pass null or handle it in the body.
     final AsyncValue<List<DiscoveryUser>>? discoveryState = _isLocationReady
         ? ref.watch(discoveryFeedProvider)
         : null;
@@ -184,9 +173,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Column(
           children: [
             Expanded(
-              // ✅ LOGIC BRANCHING:
-              // 1. If location not ready -> Show Loading
-              // 2. If ready -> Show Feed
               child: !_isLocationReady || discoveryState == null
                   ? _buildInitializingState()
                   : discoveryState.when(
@@ -205,7 +191,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       ),
                       data: (discoveryData) {
-                        // 🔍 DEBUG LOGS
                         debugPrint(
                           '================ DISCOVERY DEBUG ================',
                         );
@@ -216,7 +201,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         debugPrint(
                           'GENDERS FROM API: ${discoveryData.map((e) => e.gender).toList()}',
                         );
-
                         debugPrint(
                           '=================================================',
                         );
@@ -229,9 +213,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                         return Stack(
                           children: [
-                            // -------------------------
-                            // 1. Left/Right Circle Indicators (ORIGINAL)
-                            // -------------------------
                             Positioned.fill(
                               child: Padding(
                                 padding: const EdgeInsets.all(24.0),
@@ -293,9 +274,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               ),
                             ),
 
-                            // -------------------------
-                            // 2. Card Swiper
-                            // -------------------------
                             CardSwiper(
                               controller: _controller,
                               cardsCount: profiles.length,
@@ -305,7 +283,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   _onSwipe(prev, curr, dir, profiles),
                               onUndo: _onUndo,
                               cardBuilder: (context, index, horiz, vert) {
-                                // Track swipe progress for indicators
                                 WidgetsBinding.instance.addPostFrameCallback((
                                   _,
                                 ) {
@@ -316,7 +293,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   }
                                 });
 
-                                // ✅ Using ProfileSwipeCard - the card handles its own overlay
                                 return ProfileSwipeCard(
                                   key: ValueKey(profiles[index].id),
                                   profile: profiles[index],
@@ -390,7 +366,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 _buildNavItem(
                   icon: Icons.favorite_outline,
-                  label: 'Matches',
+                  label: 'Liked You', // ✅ Changed from 'Matches'
                   index: 3,
                   isSelected: _selectedIndex == 3,
                 ),
@@ -408,7 +384,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  // ✅ Loading Widget for Location Init
   Widget _buildInitializingState() {
     return const Center(
       child: Column(
@@ -436,12 +411,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return GestureDetector(
       onTap: () {
-        // Add navigation for Profile
         if (index == 0) {
-          Navigator.push(
+          Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
               builder: (context) => const ProfileScreen(),
+            ),
+            (route) => false,
+          );
+        } else if (index == 2) {
+          // Already on Home - do nothing
+          setState(() {
+            _selectedIndex = index;
+          });
+        } else if (index == 3) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const LikedYouScreen(),
             ),
           );
         } else {
@@ -551,8 +538,104 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     debugPrint('Passed: ${profile.name}');
   }
 
+  // ✅ Updated to show match dialog
   void _handleLike(UserProfile profile) {
-    showSuccessPopup(context, 'You liked ${profile.name}! 💚');
+    // TODO: Replace with actual match check from your backend API
+    bool isMatch = false; // Set to true when both users like each other
+    
+    if (isMatch) {
+      _showMatchDialog(profile);
+    } else {
+      showSuccessPopup(context, 'You liked ${profile.name}! 💚');
+    }
+  }
+
+  // ✅ Match Dialog
+  void _showMatchDialog(UserProfile profile) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(
+                'assests/static/match_illustration.png',
+                height: 200,
+                errorBuilder: (context, error, stackTrace) {
+                  return const SizedBox(height: 200);
+                },
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                "It's a Match!",
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Poppins',
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'You and ${profile.name} liked each other.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Poppins',
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    // TODO: Navigate to chat with matched user
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4A5A4A),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Send a message',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  'Keep swiping',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Poppins',
+                    color: Colors.grey,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _showPremiumDialog() {
