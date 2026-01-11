@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import './../onboarding/presentation/screens/steps/photo_upload_screen.dart';
-import './../onboarding/presentation/screens/steps/profile_prompts_screen.dart';
-import './../onboarding/presentation/screens/steps/birth_date_screen.dart';
+import './../profile/presentation/screens/setup_steps/profile_prompts_screen.dart';
+import './../onboarding/presentation/screens/steps/name_birth_entry_screen.dart';
 import './../onboarding/presentation/screens/steps/gender_select_screen.dart';
-import './../onboarding/presentation/screens/steps/language_select_screen.dart';
-import './../onboarding/presentation/screens/steps/location_set_screen.dart';
-import './../onboarding/presentation/screens/steps/interests_select_screen.dart';
-import './../onboarding/presentation/screens/steps/lifestyle_prefs_screen.dart';
+import './../profile/presentation/screens/setup_steps/language_select_screen.dart';
+import './../profile/presentation/screens/setup_steps/location_set_screen.dart';
+import './../profile/presentation/screens/setup_steps/interests_select_screen.dart';
+import './../profile/presentation/screens/setup_steps/lifestyle_prefs_screen.dart';
 // ============================================================
 // PROFILE EDIT SCREEN (Complete Redesign)
 // ============================================================
@@ -792,7 +792,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
               await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const BirthDateScreen(),
+                  builder: (context) => const NameBirthEntryScreen(),
                 ),
               );
               setState(() {});

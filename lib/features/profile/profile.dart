@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'profile_edit_screen.dart';
 import '../home/component/ProfileSwipeCard.dart';
+import '../home/screens/home_screen.dart';
+import '../../../core/widgets/app_layout.dart';
+
 // ============================================================
 // PROFILE SCREEN (View Mode)
 // ============================================================
@@ -117,14 +120,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+    return AppLayout(
+      showFooter: true,
+      selectedIndex: 0, // ✅ Profile tab selected
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            // ✅ Navigate back to HomeScreen
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const HomeScreen(),
+              ),
+              (route) => false,
+            );
+          },
         ),
         title: const Text(
           'My profile view',
@@ -144,31 +157,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              ProfileSwipeCard(
-                profile: _getCurrentProfile(),
-                horizontalThreshold: 0,
-                verticalThreshold: 0,
-                isProfileScreen: true,
-                onEdit: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ProfileEditScreen(),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 20),
-            ],
+      child: Container(
+        color: const Color(0xFFF5F5F5),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                ProfileSwipeCard(
+                  profile: _getCurrentProfile(),
+                  horizontalThreshold: 0,
+                  verticalThreshold: 0,
+                  isProfileScreen: true,
+                  onEdit: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ProfileEditScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 }
-

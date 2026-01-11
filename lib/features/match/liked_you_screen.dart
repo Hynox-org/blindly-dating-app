@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
-import '../profile/profile.dart';
 import './../home/screens/home_screen.dart';
+import '../../../core/widgets/app_layout.dart';
 
 class LikedYouScreen extends StatefulWidget {
   const LikedYouScreen({super.key});
@@ -11,8 +11,6 @@ class LikedYouScreen extends StatefulWidget {
 }
 
 class _LikedYouScreenState extends State<LikedYouScreen> {
-  int _selectedIndex = 3;
-
   // ✅ Static data with names and images
   final List<Map<String, dynamic>> _likedYouUsers = [
     {
@@ -63,8 +61,9 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+    return AppLayout(
+      showFooter: true,
+      selectedIndex: 3, // ✅ Liked You tab selected
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -81,7 +80,7 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
           },
         ),
         title: const Text(
-          'Beeline',
+          'Liked You',
           style: TextStyle(
             color: Colors.black,
             fontFamily: 'Poppins',
@@ -91,103 +90,105 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
         ),
         centerTitle: true,
       ),
-      body: Column(
-        children: [
-          // Header Section
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            color: Colors.white,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "See Who's Interested",
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Poppins',
-                    color: Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                RichText(
-                  text: TextSpan(
+      child: Container(
+        color: const Color(0xFFF5F5F5),
+        child: Column(
+          children: [
+            // Header Section
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              color: Colors.white,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "See Who's Interested",
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
                       fontFamily: 'Poppins',
-                      color: Colors.grey[600],
-                      height: 1.4,
+                      color: Colors.black,
                     ),
-                    children: [
-                      const TextSpan(text: 'Visited recently without the wait. You have '),
-                      TextSpan(
-                        text: '$_likeCount likes',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  RichText(
+                    text: TextSpan(
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'Poppins',
+                        color: Colors.grey[600],
+                        height: 1.4,
                       ),
-                      const TextSpan(text: ' waiting you.'),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Grid of Locked Profiles
-          Expanded(
-            child: _likedYouUsers.isEmpty
-                ? _buildEmptyState()
-                : GridView.builder(
-                    padding: const EdgeInsets.all(16),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 0.75,
+                      children: [
+                        const TextSpan(text: 'Visited recently without the wait. You have '),
+                        TextSpan(
+                          text: '$_likeCount likes',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                        const TextSpan(text: ' waiting you.'),
+                      ],
                     ),
-                    itemCount: _likedYouUsers.length,
-                    itemBuilder: (context, index) {
-                      return _buildLockedProfileCard(_likedYouUsers[index]);
-                    },
                   ),
-          ),
+                ],
+              ),
+            ),
 
-          // Unlock Button
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            color: Colors.white,
-            child: SafeArea(
-              child: ElevatedButton(
-                onPressed: () {
-                  _showPremiumDialog();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4A5A4A),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            // Grid of Locked Profiles
+            Expanded(
+              child: _likedYouUsers.isEmpty
+                  ? _buildEmptyState()
+                  : GridView.builder(
+                      padding: const EdgeInsets.all(16),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 0.75,
+                      ),
+                      itemCount: _likedYouUsers.length,
+                      itemBuilder: (context, index) {
+                        return _buildLockedProfileCard(_likedYouUsers[index]);
+                      },
+                    ),
+            ),
+
+            // Unlock Button
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              color: Colors.white,
+              child: SafeArea(
+                child: ElevatedButton(
+                  onPressed: () {
+                    _showPremiumDialog();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4A5A4A),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
                   ),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  'Unlock all likes',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Poppins',
+                  child: const Text(
+                    'Unlock all likes',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Poppins',
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
@@ -195,7 +196,6 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
   Widget _buildLockedProfileCard(Map<String, dynamic> user) {
     return GestureDetector(
       onTap: () {
-        // Show premium dialog when clicking on locked profile
         _showPremiumDialog();
       },
       child: Container(
@@ -254,7 +254,6 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Name
                     Text(
                       '${user['name']}, ${user['age']}',
                       style: const TextStyle(
@@ -413,7 +412,6 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              // TODO: Navigate to premium purchase screen
               _showPremiumPurchaseOptions();
             },
             style: ElevatedButton.styleFrom(
@@ -554,7 +552,6 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              // TODO: Process payment
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text('Processing $duration subscription...'),
@@ -601,92 +598,6 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
                 fontFamily: 'Poppins',
                 fontSize: 13,
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomNav() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(Icons.person_outline, 'Profile', 0, _selectedIndex == 0),
-              _buildNavItem(Icons.explore_outlined, 'Discover', 1, _selectedIndex == 1),
-              _buildNavItem(Icons.people_outline, 'Peoples', 2, _selectedIndex == 2),
-              _buildNavItem(Icons.favorite_outline, 'Liked You', 3, _selectedIndex == 3),
-              _buildNavItem(Icons.chat_bubble_outline, 'Chat', 4, _selectedIndex == 4),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem(IconData icon, String label, int index, bool isSelected) {
-    final Color selectedColor = const Color(0xFFD4AF37);
-    final Color unselectedColor = Colors.black;
-
-    return GestureDetector(
-      onTap: () {
-        if (index == 0) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const ProfileScreen(),
-            ),
-            (route) => false,
-          );
-        } else if (index == 2) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const HomeScreen(),
-            ),
-            (route) => false,
-          );
-        } else if (index == 3) {
-          if (!isSelected) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const LikedYouScreen(),
-              ),
-            );
-          }
-        } else {
-          setState(() {
-            _selectedIndex = index;
-          });
-        }
-      },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: isSelected ? selectedColor : unselectedColor, size: 28),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontFamily: 'Poppins',
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-              color: isSelected ? selectedColor : unselectedColor,
             ),
           ),
         ],

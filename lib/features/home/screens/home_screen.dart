@@ -20,6 +20,9 @@ import '../../../../core/services/bootstrap_service.dart';
 import '../../discovery/presentation/widgets/no_more_profiles_widget.dart';
 import '../../discovery/povider/swipe_provider.dart';
 
+// ✅ 5. Layout
+import '../../../../core/widgets/app_layout.dart';
+
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -34,7 +37,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _swipeCount = 10;
   final int _maxSwipes = 10;
   final bool _isPremium = false;
-  int _selectedIndex = 2;
   double _swipeProgress = 0.0;
 
   // ✅ Controls the initialization flow
@@ -122,8 +124,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ? ref.watch(discoveryFeedProvider)
         : null;
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+    return AppLayout(
+      showFooter: true,
+      selectedIndex: 2, // ✅ Home/Peoples tab selected
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
@@ -179,8 +182,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
       ),
-
-      body: SafeArea(
+      child: SafeArea(
         child: Column(
           children: [
             Expanded(
@@ -292,7 +294,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               onUndo: _onUndo,
                               cardBuilder: (context, index, horiz, vert) {
                                 // Track swipe progress for indicators
-                                // Only update if significantly changed to avoid infinite rebuild loops
                                 if ((_swipeProgress - horiz).abs() > 10.0 ||
                                     (horiz == 0 && _swipeProgress != 0)) {
                                   WidgetsBinding.instance.addPostFrameCallback((
@@ -345,60 +346,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          boxShadow: [
-            BoxShadow(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.1),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildNavItem(
-                  icon: Icons.person_outline,
-                  label: 'Profile',
-                  index: 0,
-                  isSelected: _selectedIndex == 0,
-                ),
-                _buildNavItem(
-                  icon: Icons.explore_outlined,
-                  label: 'Discover',
-                  index: 1,
-                  isSelected: _selectedIndex == 1,
-                ),
-                _buildNavItem(
-                  icon: Icons.people_outline,
-                  label: 'Peoples',
-                  index: 2,
-                  isSelected: _selectedIndex == 2,
-                ),
-                _buildNavItem(
-                  icon: Icons.favorite_outline,
-                  label: 'Liked You', // ✅ Changed from 'Matches'
-                  index: 3,
-                  isSelected: _selectedIndex == 3,
-                ),
-                _buildNavItem(
-                  icon: Icons.chat_bubble_outline,
-                  label: 'Chat',
-                  index: 4,
-                  isSelected: _selectedIndex == 4,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -410,7 +357,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           CircularProgressIndicator(
             color: Theme.of(context).colorScheme.secondary,
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
             "Updating your location...",
             style: TextStyle(
@@ -418,66 +365,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 context,
               ).colorScheme.onSurface.withValues(alpha: 0.5),
               fontFamily: 'Poppins',
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavItem({
-    required IconData icon,
-    required String label,
-    required int index,
-    required bool isSelected,
-  }) {
-    final Color selectedColor = Theme.of(context).colorScheme.secondary;
-    final Color unselectedColor = Theme.of(context).colorScheme.onSurface;
-
-    return GestureDetector(
-      onTap: () {
-        if (index == 0) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const ProfileScreen(),
-            ),
-            (route) => false,
-          );
-        } else if (index == 2) {
-          // Already on Home - do nothing
-          setState(() {
-            _selectedIndex = index;
-          });
-        } else if (index == 3) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const LikedYouScreen(),
-            ),
-          );
-        } else {
-          setState(() {
-            _selectedIndex = index;
-          });
-        }
-      },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            color: isSelected ? selectedColor : unselectedColor,
-            size: 28,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontFamily: 'Poppins',
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-              color: isSelected ? selectedColor : unselectedColor,
             ),
           ),
         ],
@@ -572,7 +459,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         .swipe(targetProfileId: profile.id, action: 'pass');
   }
 
-  // ✅ Updated to show match dialog
   void _handleLike(UserProfile profile) {
     showSuccessPopup(context, 'You liked ${profile.name}! 💚');
     ref
