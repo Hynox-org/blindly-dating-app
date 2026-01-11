@@ -2,12 +2,11 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../../data/repositories/verification_repository.dart';
-import '../../providers/onboarding_provider.dart';
-import 'base_onboarding_step_screen.dart';
+import '../../../../onboarding/data/repositories/verification_repository.dart';
+import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
+import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
 import '../../../../../core/utils/custom_popups.dart';
 
 enum GovIdStep { instructions, processing, verified }
@@ -30,12 +29,6 @@ class _GovernmentIdVerificationScreenState
   final _verificationRepo = VerificationRepository();
 
   // --- Actions ---
-
-  void _resetImage() {
-    setState(() {
-      _selectedImage = null;
-    });
-  }
 
   Future<void> _uploadAndVerify() async {
     if (_selectedImage == null) return;
@@ -87,11 +80,7 @@ class _GovernmentIdVerificationScreenState
 
   void _onBack() {
     if (_currentStep == GovIdStep.instructions) {
-      if (_selectedImage != null) {
-        _resetImage();
-      } else {
-        ref.read(onboardingProvider.notifier).goToPreviousStep();
-      }
+      ref.read(onboardingProvider.notifier).goToPreviousStep();
     } else {
       // In processing or verified, usually disable back or go to start
       // For now, go back to instructions
@@ -114,26 +103,11 @@ class _GovernmentIdVerificationScreenState
         subtitle:
             "Your ID verification is in progress. This usually take a few hours. We’ll notify you once complete.",
         buttonText: "Got it",
-        onPressed:
-            _onVerifiedComplete, // Allow user to proceed while pending? Usually yes for "manual review" flows.
-        // Wait, the prompt image says "Got it" for processing too?
-        // Image 2: "We're reviewing..." -> Button "Got it".
-        // This implies the user can continue and it's an async process.
+        onPressed: _onVerifiedComplete,
       );
     }
 
     if (_currentStep == GovIdStep.verified) {
-      // Immediate success (e.g. if auto-verified, but for gov id usually it's pending)
-      // If the API returns 'pending', we show the processing screen.
-      // If we want to simulate "Verified Successfully" immediately (unlikely for manual review),
-      // we use this.
-      // Based on prompt image 3 "Verified Successfully!", this might be for a completed state.
-      // But typically Gov ID is async.
-      // However, if the user sees 'We're reviewing' and clicks 'Got it', they proceed.
-      // Assuming 'verified' state is only if we get immediate feedback.
-      // For now verification request sets status 'pending'.
-      // So logic:
-      // Upload -> Show "We're reviewing" -> User clicks "Got it" -> Complete Step.
       return _buildStatusView(
         context,
         icon: Icons.check_circle_rounded,
@@ -144,14 +118,14 @@ class _GovernmentIdVerificationScreenState
       );
     }
 
+    final colorScheme = Theme.of(context).colorScheme;
+
     return BaseOnboardingStepScreen(
       title: 'Verify Your Profile',
-      showBackButton: true,
+      showBackButton: false, // Custom handling
       onBack: _onBack,
       showNextButton: false,
-      showSkipButton: true,
-      nextLabel: 'Skip',
-      onSkip: _onSkip, // Using onSkip for the top right "Skip" button action
+      showSkipButton: false, // Custom handling
       child: Column(
         children: [
           Expanded(
@@ -164,27 +138,25 @@ class _GovernmentIdVerificationScreenState
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: const Color(
-                        0xFF4A503D,
-                      ), // Dark Olive Green from image
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary, // Dark Olive Green from image
                       shape: BoxShape.circle,
                     ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.shield_outlined,
-                        size: 40,
-                        color: Color(0xFFE2C568),
-                      ), // Gold color
-                    ),
+                    child: Icon(
+                      Icons.shield_outlined,
+                      size: 40,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ), // Gold color
                   ),
                   const SizedBox(height: 24),
-                  const Text(
+                  Text(
                     "A quick check to keep you safe",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -199,19 +171,14 @@ class _GovernmentIdVerificationScreenState
                   ),
                   const SizedBox(height: 32),
 
-                  // Document Type Selector - Improved UX
+                  // Document Type Selector
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 16),
                     decoration: BoxDecoration(
                       color: Theme.of(
                         context,
                       ).colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.outline.withOpacity(0.1),
-                      ),
+                      borderRadius: BorderRadius.circular(30), // More rounded
                     ),
                     padding: const EdgeInsets.all(4),
                     child: Row(
@@ -220,28 +187,27 @@ class _GovernmentIdVerificationScreenState
                           DocumentType.drivers_license,
                           "Driver's License",
                         ),
-                        _buildTabItem(DocumentType.aadhar_card, "Aadhar"),
-                        _buildTabItem(DocumentType.pan_card, "PAN"),
+                        _buildTabItem(DocumentType.aadhar_card, "Aadhar Card"),
+                        _buildTabItem(DocumentType.pan_card, "PAN card"),
                       ],
                     ),
                   ),
                   const SizedBox(height: 32),
 
-                  // Upload Area - Improved UX
-                  // Upload Area - Disabled for now
+                  // Upload Area
+
+                  // Upload Area - Disabled
                   Container(
-                    height: 250,
+                    height: 220,
                     width: double.infinity,
                     margin: const EdgeInsets.symmetric(horizontal: 16),
                     decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                      color: colorScheme.surfaceContainerHighest.withOpacity(
+                        0.5,
+                      ),
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.outline.withOpacity(0.2),
+                        color: colorScheme.outline.withOpacity(0.2),
                       ),
                     ),
                     child: Center(
@@ -251,28 +217,28 @@ class _GovernmentIdVerificationScreenState
                           Icon(
                             Icons.cloud_off_rounded,
                             size: 40,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant.withOpacity(0.5),
+                            color: colorScheme.onSurfaceVariant.withOpacity(
+                              0.5,
+                            ),
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            "Upload disabled",
+                            "Upload currently disabled",
                             style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant.withOpacity(0.5),
+                              color: colorScheme.onSurfaceVariant.withOpacity(
+                                0.5,
+                              ),
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            "This feature is temporarily unavailable",
+                            "This feature will be available soon",
                             style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant.withOpacity(0.5),
+                              color: colorScheme.onSurfaceVariant.withOpacity(
+                                0.5,
+                              ),
                               fontSize: 12,
                             ),
                           ),
@@ -280,6 +246,7 @@ class _GovernmentIdVerificationScreenState
                       ),
                     ),
                   ),
+
                   const SizedBox(height: 32),
 
                   // Guidelines
@@ -288,50 +255,47 @@ class _GovernmentIdVerificationScreenState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          "Make sure that:",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
+                        _buildGuidelineItem(
+                          context,
+                          Icons
+                              .circle, // Placeholder, updated in _buildGuidelineItem
+                          "Place on a flat and dark surface",
                         ),
                         const SizedBox(height: 16),
                         _buildGuidelineItem(
                           context,
-                          Icons.check_circle_outline_rounded,
-                          "Your ID is clearly visible",
+                          Icons.circle,
+                          "Avoid glare from lights",
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 16),
                         _buildGuidelineItem(
                           context,
-                          Icons.wb_sunny_outlined,
-                          "There is no glare from lights",
-                        ),
-                        const SizedBox(height: 12),
-                        _buildGuidelineItem(
-                          context,
-                          Icons.crop_free_rounded,
-                          "All 4 corners are inside the frame",
+                          Icons.circle,
+                          "Ensure all 4 corners are visible",
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 32),
 
-                  const Text(
-                    "Your ID is encrypted and will be deleted after verification. We never share it with other users. Learn more",
+                  Text(
+                    "Your ID is encrypted and will be deleted after verification.\nWe never share it with other users. Learn more",
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12, color: Colors.black54),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Theme.of(context).colorScheme.onSurface,
+                      height: 1.4,
+                    ),
                   ),
                   const SizedBox(height: 24),
                 ],
               ),
             ),
           ),
+
           // Bottom Button
           Padding(
-            padding: const EdgeInsets.only(top: 16.0),
+            padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -343,16 +307,72 @@ class _GovernmentIdVerificationScreenState
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  disabledBackgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.surfaceContainerHighest,
+                  disabledBackgroundColor: Theme.of(context).colorScheme.primary
+                      .withOpacity(0.5), // Keep it green but dim
+                  disabledForegroundColor: colorScheme.onPrimary.withOpacity(
+                    0.7,
+                  ),
                 ),
                 child: const Text(
                   "Upload & continue",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
+          ),
+
+          // Navigation Row: Back and Skip
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton.icon(
+                onPressed: _onBack,
+                icon: Icon(
+                  Icons.arrow_back,
+                  size: 20,
+                  color: colorScheme.onSurface,
+                ),
+                label: Text(
+                  "Back",
+                  style: TextStyle(
+                    color: colorScheme.onSurface,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 8,
+                  ),
+                ),
+              ),
+              Directionality(
+                textDirection: TextDirection.rtl,
+                child: TextButton.icon(
+                  onPressed: _onSkip,
+                  icon: Icon(
+                    Icons.skip_next_rounded,
+                    size: 24,
+                    color: colorScheme.onSurface,
+                  ),
+                  label: Text(
+                    "Skip",
+                    style: TextStyle(
+                      color: colorScheme.onSurface,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 8,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -375,16 +395,7 @@ class _GovernmentIdVerificationScreenState
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             color: isSelected ? colorScheme.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: colorScheme.primary.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : null,
+            borderRadius: BorderRadius.circular(30),
           ),
           child: Text(
             label,
@@ -392,7 +403,7 @@ class _GovernmentIdVerificationScreenState
             style: TextStyle(
               color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              fontSize: 13,
+              fontSize: 12,
             ),
           ),
         ),
@@ -401,17 +412,19 @@ class _GovernmentIdVerificationScreenState
   }
 
   Widget _buildGuidelineItem(BuildContext context, IconData icon, String text) {
+    // Override icon with simple circle for this specific design
     final colorScheme = Theme.of(context).colorScheme;
     return Row(
       children: [
-        Icon(icon, color: colorScheme.primary, size: 24),
+        Icon(Icons.circle, color: colorScheme.primary, size: 16),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
             text,
             style: TextStyle(
-              fontSize: 15,
-              color: colorScheme.onSurface.withOpacity(0.8),
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurface,
             ),
           ),
         ),
@@ -430,75 +443,89 @@ class _GovernmentIdVerificationScreenState
     final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: _onBack,
-        ),
-        title: const Text(
-          'Verification Status',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Spacer(),
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Icon(icon, size: 50, color: colorScheme.primary),
-              ),
-            ),
-            const SizedBox(height: 32),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: onPressed,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: colorScheme.onPrimary,
-                  padding: const EdgeInsets.symmetric(vertical: 20),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Back button only at the very bottom or top?
+              // Mockup shows "Back" at bottom for verified, but maybe top for processing?
+              // Standardize:
+              // Processing: No back.
+              // Verified: "Back" at bottom.
+              const Spacer(),
+              Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  color: colorScheme.primary,
+                  shape: BoxShape.circle,
                 ),
-                child: Text(
-                  buttonText,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                child: Center(
+                  // Inner shield icon logic or just the icon
+                  child: Icon(icon, size: 50, color: colorScheme.onPrimary),
+                ), // Updated to match likely "Green Circle with Check" or "Green Loading"
+              ),
+              const SizedBox(height: 32),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-          ],
+              const SizedBox(height: 16),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const Spacer(),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: onPressed,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: Text(
+                    buttonText,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              // Back Button
+              Padding(
+                padding: const EdgeInsets.only(top: 16.0),
+                child: TextButton.icon(
+                  onPressed: _onBack,
+                  icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
+                  label: Text(
+                    "Back",
+                    style: TextStyle(
+                      color: colorScheme.onSurface,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
     );

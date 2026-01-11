@@ -746,7 +746,9 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                         borderRadius: BorderRadius.circular(15),
                       ),
                     ).copyWith(
-                      backgroundColor: WidgetStateProperty.all(Colors.white),
+                      backgroundColor: WidgetStateProperty.all(
+                        Theme.of(context).colorScheme.surface,
+                      ),
                       overlayColor: WidgetStateProperty.resolveWith<Color?>((
                         Set<WidgetState> states,
                       ) {
@@ -763,7 +765,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.black,
+                            Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       )
@@ -773,14 +775,14 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                           FaIcon(
                             FontAwesomeIcons.google,
                             size: 20,
-                            color: Colors.black,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                           SizedBox(width: 12),
                           Text(
                             'Continue with Google',
                             style: TextStyle(
                               fontFamily: 'Poppins',
-                              color: Colors.black,
+                              color: Theme.of(context).colorScheme.onSurface,
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
                             ),
@@ -876,7 +878,9 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                           Set<WidgetState> states,
                         ) {
                           if (states.contains(WidgetState.pressed)) {
-                            return Colors.white.withOpacity(0.1);
+                            return Theme.of(
+                              context,
+                            ).colorScheme.onPrimary.withOpacity(0.1);
                           }
                           return null;
                         }),
@@ -1038,13 +1042,15 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   ],
                   style: TextStyle(
                     fontFamily: 'Poppins',
-                    color: Colors.black,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ), // Dark grey text
                   decoration: InputDecoration(
                     hintText: 'e.g. 9876543210',
                     hintStyle: TextStyle(
                       fontFamily: 'Poppins',
-                      color: Colors.grey,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.5),
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -1132,8 +1138,8 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             onPressed: _isLoading ? null : _handlePhoneContinue,
             style:
                 ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF4A5D4F),
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   padding: EdgeInsets.symmetric(vertical: 15),
                   minimumSize: Size(double.infinity, 50),
                   elevation: 0,
@@ -1161,7 +1167,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     height: 20,
                     width: 20,
                     child: CircularProgressIndicator(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onPrimary,
                       strokeWidth: 2,
                     ),
                   )
@@ -1237,17 +1243,21 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     fontFamily: 'Poppins',
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                   decoration: InputDecoration(
                     counterText: '',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -1304,7 +1314,9 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                       fontSize: 14,
                       color: _canResend
                           ? Theme.of(context).colorScheme.primary
-                          : Colors.grey[600],
+                          : Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withOpacity(0.6),
                       fontWeight: _canResend
                           ? FontWeight.w500
                           : FontWeight.w400,
@@ -1312,7 +1324,11 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   ),
                 ),
               ),
-              Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              ),
             ],
           ),
           Spacer(),
@@ -1333,7 +1349,11 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               padding: const EdgeInsets.only(bottom: 16.0),
               child: Text(
                 _inlineSuccess!,
-                style: const TextStyle(color: Colors.green, fontSize: 13),
+                style: TextStyle(
+                  color: Colors
+                      .green, // Keep green for success or use a custom theme extension
+                  fontSize: 13,
+                ),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -1341,8 +1361,8 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             onPressed: _isLoading ? null : _handlePhoneOTPVerify,
             style:
                 ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF4A5D4F),
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   padding: EdgeInsets.symmetric(vertical: 15),
                   minimumSize: Size(double.infinity, 50),
                   elevation: 0,
@@ -1401,7 +1421,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 14,
-              color: Color.fromRGBO(0, 0, 0, 1), // Pure black
+              color: Theme.of(context).colorScheme.onSurface, // Pure black
             ),
           ),
           SizedBox(height: 20),
@@ -1410,7 +1430,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 14,
-              color: Colors.grey,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
             ),
           ),
           SizedBox(height: 8),
@@ -1423,17 +1443,27 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                 RegExp(r'\s'),
               ), // No spaces allowed
             ],
-            style: TextStyle(fontFamily: 'Poppins', color: Colors.black),
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
             decoration: InputDecoration(
               hintText: 'Abcd@gmail.com',
-              hintStyle: TextStyle(fontFamily: 'Poppins', color: Colors.grey),
+              hintStyle: TextStyle(
+                fontFamily: 'Poppins',
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+                borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+                borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -1442,7 +1472,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                 ),
               ),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: Theme.of(context).colorScheme.surface,
             ),
           ),
           SizedBox(height: 16),
@@ -1456,7 +1486,9 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                 style: TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 11,
-                  color: Colors.grey[600],
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.6),
                   height: 1.4,
                 ),
                 children: [
@@ -1500,8 +1532,8 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             onPressed: _isLoading ? null : _handleEmailContinue,
             style:
                 ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF4A5D4F),
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   padding: EdgeInsets.symmetric(vertical: 15),
                   minimumSize: Size(double.infinity, 50),
                   elevation: 0,
@@ -1529,7 +1561,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     height: 20,
                     width: 20,
                     child: CircularProgressIndicator(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onPrimary,
                       strokeWidth: 2,
                     ),
                   )
@@ -1539,7 +1571,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                       fontFamily: 'Poppins',
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: Color.fromRGBO(230, 201, 122, 1),
+                      color: Theme.of(context).colorScheme.onPrimary,
                     ),
                   ),
           ),
@@ -1604,17 +1636,21 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     fontFamily: 'Poppins',
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                   decoration: InputDecoration(
                     counterText: '',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -1624,7 +1660,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                       ),
                     ),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: Theme.of(context).colorScheme.surface,
                   ),
                   onChanged: (value) {
                     setState(() {
@@ -1671,7 +1707,9 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                       fontSize: 14,
                       color: _canResend
                           ? Theme.of(context).colorScheme.primary
-                          : Colors.grey[600],
+                          : Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withOpacity(0.6),
                       fontWeight: _canResend
                           ? FontWeight.w500
                           : FontWeight.w400,
@@ -1679,7 +1717,11 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   ),
                 ),
               ),
-              Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              ),
             ],
           ),
           Spacer(),
@@ -1700,7 +1742,10 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               padding: const EdgeInsets.only(bottom: 16.0),
               child: Text(
                 _inlineSuccess!,
-                style: const TextStyle(color: Colors.green, fontSize: 13),
+                style: const TextStyle(
+                  color: Colors.green, // Keep green or use theme extension
+                  fontSize: 13,
+                ),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -1708,8 +1753,8 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             onPressed: _isLoading ? null : _handleEmailOTPVerify,
             style:
                 ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF4A5D4F),
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   padding: EdgeInsets.symmetric(vertical: 15),
                   minimumSize: Size(double.infinity, 50),
                   elevation: 0,
@@ -1737,7 +1782,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     height: 20,
                     width: 20,
                     child: CircularProgressIndicator(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onPrimary,
                       strokeWidth: 2,
                     ),
                   )
@@ -1791,11 +1836,15 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               hintStyle: TextStyle(fontFamily: 'Poppins'),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+                borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+                borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -1804,7 +1853,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                 ),
               ),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: Theme.of(context).colorScheme.surface,
             ),
           ),
           SizedBox(height: 16),
@@ -1827,18 +1876,24 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               hintStyle: TextStyle(fontFamily: 'Poppins'),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+                borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+                borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(0xFF4A5D4F)),
+                borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               ),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: Theme.of(context).colorScheme.surface,
               suffixIcon: IconButton(
                 icon: Icon(
                   _obscurePassword ? Icons.visibility_off : Icons.visibility,
@@ -1873,7 +1928,9 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                 style: TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 11,
-                  color: Colors.grey[600],
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.6),
                   height: 1.4,
                 ),
                 children: [
@@ -1917,8 +1974,8 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             onPressed: _isLoading ? null : _handleAppleContinue,
             style:
                 ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF4A5D4F),
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   padding: EdgeInsets.symmetric(vertical: 15),
                   minimumSize: Size(double.infinity, 50),
                   elevation: 0,
@@ -1946,7 +2003,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     height: 20,
                     width: 20,
                     child: CircularProgressIndicator(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onPrimary,
                       strokeWidth: 2,
                     ),
                   )

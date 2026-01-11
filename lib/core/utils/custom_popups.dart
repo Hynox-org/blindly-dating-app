@@ -22,7 +22,9 @@ void showCustomPopup({
       title: Text(
         title,
         style: TextStyle(
-          color: isError ? Colors.red : Colors.black87,
+          color: isError
+              ? Theme.of(context).colorScheme.error
+              : Theme.of(context).colorScheme.onSurface,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -38,7 +40,9 @@ void showCustomPopup({
           child: Text(
             buttonText ?? 'OK',
             style: TextStyle(
-              color: isError ? Colors.red : Theme.of(context).primaryColor,
+              color: isError
+                  ? Theme.of(context).colorScheme.error
+                  : Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.bold,
             ),
           ),

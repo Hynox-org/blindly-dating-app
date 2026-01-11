@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../../providers/onboarding_provider.dart';
-import 'base_onboarding_step_screen.dart';
+import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
+import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
 
 class PermissionsScreen extends ConsumerStatefulWidget {
   const PermissionsScreen({super.key});
@@ -158,11 +158,13 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen>
                   Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.05),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -192,17 +194,17 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen>
                                   Container(
                                     width: 48,
                                     height: 48,
-                                    decoration: const BoxDecoration(
-                                      color: Color(
-                                        0xFF4A503D,
-                                      ), // Dark Olive Green
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary, // Dark Olive Green
                                       shape: BoxShape.circle,
                                     ),
                                     child: Icon(
                                       _getIconForPermission(perm),
-                                      color: const Color(
-                                        0xFFE5D283,
-                                      ), // Goldish color
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onPrimary, // Goldish color
                                       size: 24,
                                     ),
                                   ),
@@ -237,10 +239,12 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen>
                                     scale: 0.8,
                                     child: Switch(
                                       value: isGranted,
-                                      activeThumbColor: const Color(0xFF4A503D),
-                                      activeTrackColor: const Color(
-                                        0xFF4A503D,
-                                      ).withOpacity(0.4),
+                                      activeThumbColor: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                      activeTrackColor: Theme.of(
+                                        context,
+                                      ).colorScheme.primary.withOpacity(0.4),
                                       onChanged: (value) {
                                         if (value && !isGranted) {
                                           _requestPermission(perm);
@@ -257,7 +261,9 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen>
                               Divider(
                                 height: 1,
                                 thickness: 1,
-                                color: Colors.grey.withOpacity(0.1),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withOpacity(0.1),
                                 indent: 80,
                               ),
                           ],

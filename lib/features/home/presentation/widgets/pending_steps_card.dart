@@ -2,7 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../onboarding/data/repositories/onboarding_repository.dart';
 import '../../../auth/providers/auth_providers.dart';
-import '../../../onboarding/presentation/screens/single_step_shell.dart';
+// Import step screens directly
+import '../../../profile/presentation/screens/setup_steps/interests_select_screen.dart';
+import '../../../profile/presentation/screens/setup_steps/lifestyle_prefs_screen.dart';
+import '../../../profile/presentation/screens/setup_steps/bio_entry_screen.dart';
+import '../../../profile/presentation/screens/setup_steps/gov_id_screen.dart';
+import '../../../profile/presentation/screens/setup_steps/voice_intro_screen.dart';
+import '../../../profile/presentation/screens/setup_steps/profile_prompts_screen.dart';
+import '../../../profile/presentation/screens/setup_steps/selfie_verification_screen.dart';
+// Add others as needed
 
 class PendingStepsCard extends ConsumerStatefulWidget {
   const PendingStepsCard({super.key});
@@ -54,10 +62,12 @@ class _PendingStepsCardState extends ConsumerState<PendingStepsCard> {
 
     return Card(
       margin: const EdgeInsets.all(16),
-      color: Colors.orange.shade50,
+      color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.05),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.orange.shade200),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.3),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -68,13 +78,13 @@ class _PendingStepsCardState extends ConsumerState<PendingStepsCard> {
               children: [
                 Icon(
                   Icons.warning_amber_rounded,
-                  color: Colors.orange.shade800,
+                  color: Theme.of(context).colorScheme.secondary,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'Complete your profile',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.orange.shade900,
+                    color: Theme.of(context).colorScheme.secondary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -96,7 +106,7 @@ class _PendingStepsCardState extends ConsumerState<PendingStepsCard> {
                     Navigator.of(context)
                         .push(
                           MaterialPageRoute(
-                            builder: (_) => SingleStepShell(stepKey: stepKey),
+                            builder: (_) => _getScreenForStep(stepKey),
                           ),
                         )
                         .then((_) => _fetchSkippedSteps()); // Refresh on return
@@ -120,5 +130,31 @@ class _PendingStepsCardState extends ConsumerState<PendingStepsCard> {
               : '',
         )
         .join(' ');
+  }
+
+  Widget _getScreenForStep(String stepKey) {
+    // Map of keys to screens
+    switch (stepKey) {
+      case 'bio_entry':
+        return const BioEntryScreen();
+      case 'interests_select':
+        return const InterestsSelectScreen();
+      case 'lifestyle_prefs':
+        return const LifestylePrefsScreen();
+      case 'gov_id_optional':
+        return const GovernmentIdVerificationScreen();
+      case 'voice_intro':
+        return const VoiceIntroScreen();
+      case 'profile_prompts':
+        return const ProfilePromptsScreen();
+      case 'selfie_capture':
+        return const SelfieVerificationScreen();
+      // Add other optional steps mappings here
+      default:
+        return Scaffold(
+          appBar: AppBar(title: Text(_formatStepName(stepKey))),
+          body: const Center(child: Text("This step is not yet available.")),
+        );
+    }
   }
 }

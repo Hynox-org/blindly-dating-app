@@ -3,20 +3,92 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/onboarding_provider.dart';
 import 'base_onboarding_step_screen.dart';
 
-class TermsScreen extends ConsumerWidget {
+class TermsScreen extends ConsumerStatefulWidget {
   const TermsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TermsScreen> createState() => _TermsScreenState();
+}
+
+class _TermsScreenState extends ConsumerState<TermsScreen> {
+  final ScrollController _scrollController = ScrollController();
+  bool _isScrolledToBottom = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.offset;
+
+    // Threshold to consider "bottom" (e.g., 20 pixels from bottom)
+    if (currentScroll >= (maxScroll - 20)) {
+      if (!_isScrolledToBottom) {
+        setState(() {
+          _isScrolledToBottom = true;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return BaseOnboardingStepScreen(
       title: 'Community guidelines',
-      showBackButton: true,
-      onBack: () => Navigator.of(context).maybePop(),
       nextLabel: 'Agree & Continue',
+      // Enable only if scrolled to bottom
+      isNextEnabled: _isScrolledToBottom,
       onNext: () {
         ref.read(onboardingProvider.notifier).completeStep('terms_accept');
       },
+      // Fixed footer content
+      // add padding to the footer
+      footer: Padding(
+        padding: const EdgeInsets.only(top: 16),
+        child: RichText(
+          textAlign: TextAlign.center,
+          text: TextSpan(
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 11,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+            children: [
+              const TextSpan(text: 'By Continue, you agree to our '),
+              TextSpan(
+                text: 'terms',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              const TextSpan(text: '. See how we use your data in our '),
+              TextSpan(
+                text: 'privacy policy',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              const TextSpan(text: '.'),
+            ],
+          ),
+        ),
+      ),
       child: SingleChildScrollView(
+        controller: _scrollController,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -72,35 +144,7 @@ class TermsScreen extends ConsumerWidget {
               'You must be 18 years of age or older to use Blindly. This also means we don\'t allow photos of unaccompanied or unclothed minors, including photos of your younger self--no matter how adorable you were back then.',
             ),
             const SizedBox(height: 24),
-            RichText(
-              textAlign: TextAlign.center,
-              text: TextSpan(
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 11,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-                children: [
-                  const TextSpan(text: 'By Continue, you agree to our '),
-                  TextSpan(
-                    text: 'terms',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  const TextSpan(text: '. See how we use your data in our '),
-                  TextSpan(
-                    text: 'privacy policy',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  const TextSpan(text: '.'),
-                ],
-              ),
-            ),
+            // Footer text moved to fixed param
             const SizedBox(height: 20),
           ],
         ),
@@ -125,7 +169,7 @@ class TermsScreen extends ConsumerWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),

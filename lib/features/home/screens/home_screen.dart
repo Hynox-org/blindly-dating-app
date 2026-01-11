@@ -6,7 +6,6 @@ import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 // ✅ 1. Providers
 import '../../auth/providers/auth_providers.dart';
 import '../../../features/discovery/povider/discovery_provider.dart';
-import '../../auth/providers/location_provider.dart';
 
 // ✅ 2. Models
 import '../../discovery/domain/models/discovery_user_model.dart';
@@ -16,9 +15,10 @@ import '../component/ProfileSwipeCard.dart';
 import '../../../../core/utils/gender_utils.dart';
 import '../../../../core/utils/custom_popups.dart';
 
-// ✅ 4. Screens
-import '../../profile/profile.dart';
-import '../../match/liked_you_screen.dart';
+// ✅ 4. New Integrations
+import '../../../../core/services/bootstrap_service.dart';
+import '../../discovery/presentation/widgets/no_more_profiles_widget.dart';
+import '../../discovery/povider/swipe_provider.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -47,23 +47,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   /// ✅ SEQUENTIAL INITIALIZATION
-  /// 1. Updates Passport Location first
-  /// 2. Then enables the Discovery Feed
+  /// Uses BootstrapService to handle everything (Cache, Location, Network)
   Future<void> _initLocationAndFeed() async {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
-        debugPrint('📍 HOMESCREEN: Updating Location...');
-        await ref.read(locationServiceProvider).updateUserLocation();
-        debugPrint('✅ HOMESCREEN: Location Updated.');
-        ref.invalidate(discoveryFeedProvider);
+        debugPrint('🚀 HOMESCREEN: initializing Bootstrap...');
 
+        // 1. Initialize App Services (Hive, Cache, Background Refresh)
+        await ref.read(bootstrapServiceProvider).initApp();
+        debugPrint('✅ HOMESCREEN: Bootstrap Complete.');
+
+        // 2. Update UI state to show the feed
         if (mounted) {
           setState(() {
             _isLocationReady = true;
           });
         }
       } catch (e) {
-        debugPrint('❌ HOMESCREEN: Location Error: $e');
+        debugPrint('❌ HOMESCREEN: Bootstrap Error: $e');
+        // Even if it fails, we try to load the feed (maybe using old location/cache)
         if (mounted) {
           setState(() {
             _isLocationReady = true;
@@ -121,12 +123,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         : null;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.menu, color: Colors.black, size: 28),
+          icon: Icon(
+            Icons.menu,
+            color: Theme.of(context).colorScheme.onSurface,
+            size: 28,
+          ),
           onPressed: () => _showMenuDialog(),
         ),
         title: Image.asset(
@@ -134,7 +140,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           height: 24,
           fit: BoxFit.contain,
           errorBuilder: (context, error, stackTrace) {
-            return const Text("Blindly", style: TextStyle(color: Colors.black));
+            return Text(
+              "Blindly",
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+            );
           },
         ),
         centerTitle: true,
@@ -143,24 +152,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             margin: const EdgeInsets.only(right: 16),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.grey[200],
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
+                Icon(
                   Icons.local_fire_department,
                   size: 16,
-                  color: Colors.orange,
+                  color: Theme.of(context).colorScheme.secondary,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   '$_swipeCount/$_maxSwipes',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
-                    color: Colors.black,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -176,9 +187,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: !_isLocationReady || discoveryState == null
                   ? _buildInitializingState()
                   : discoveryState.when(
-                      loading: () => const Center(
+                      loading: () => Center(
                         child: CircularProgressIndicator(
-                          color: Color(0xFFD4AF37),
+                          color: Theme.of(context).colorScheme.secondary,
                         ),
                       ),
                       error: (err, stack) => Center(
@@ -191,20 +202,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       ),
                       data: (discoveryData) {
-                        debugPrint(
-                          '================ DISCOVERY DEBUG ================',
-                        );
-                        debugPrint('RAW COUNT: ${discoveryData.length}');
-                        debugPrint(
-                          'PROFILE IDS: ${discoveryData.map((e) => e.profileId).toList()}',
-                        );
-                        debugPrint(
-                          'GENDERS FROM API: ${discoveryData.map((e) => e.gender).toList()}',
-                        );
-                        debugPrint(
-                          '=================================================',
-                        );
-
                         final profiles = _mapToUserProfiles(discoveryData);
 
                         if (profiles.isEmpty) {
@@ -231,7 +228,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       height: 80,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: Colors.grey[400],
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withValues(alpha: 0.4),
                                       ),
                                       child: const Icon(
                                         Icons.close,
@@ -261,7 +261,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       height: 80,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: Colors.grey[400],
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withValues(alpha: 0.4),
                                       ),
                                       child: const Icon(
                                         Icons.favorite,
@@ -279,19 +282,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               cardsCount: profiles.length,
                               numberOfCardsDisplayed: 1,
                               padding: const EdgeInsets.all(24.0),
+                              allowedSwipeDirection:
+                                  const AllowedSwipeDirection.only(
+                                    left: true,
+                                    right: true,
+                                  ),
                               onSwipe: (prev, curr, dir) =>
                                   _onSwipe(prev, curr, dir, profiles),
                               onUndo: _onUndo,
                               cardBuilder: (context, index, horiz, vert) {
-                                WidgetsBinding.instance.addPostFrameCallback((
-                                  _,
-                                ) {
-                                  if (mounted) {
-                                    setState(
-                                      () => _swipeProgress = horiz.toDouble(),
-                                    );
-                                  }
-                                });
+                                // Track swipe progress for indicators
+                                // Only update if significantly changed to avoid infinite rebuild loops
+                                if ((_swipeProgress - horiz).abs() > 10.0 ||
+                                    (horiz == 0 && _swipeProgress != 0)) {
+                                  WidgetsBinding.instance.addPostFrameCallback((
+                                    _,
+                                  ) {
+                                    if (mounted &&
+                                            (_swipeProgress - horiz).abs() >
+                                                10.0 ||
+                                        (horiz == 0 && _swipeProgress != 0)) {
+                                      setState(
+                                        () => _swipeProgress = horiz.toDouble(),
+                                      );
+                                    }
+                                  });
+                                }
 
                                 return ProfileSwipeCard(
                                   key: ValueKey(profiles[index].id),
@@ -331,10 +347,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -385,15 +403,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildInitializingState() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(color: Color(0xFFD4AF37)),
+          CircularProgressIndicator(
+            color: Theme.of(context).colorScheme.secondary,
+          ),
           SizedBox(height: 16),
           Text(
             "Updating your location...",
-            style: TextStyle(color: Colors.grey, fontFamily: 'Poppins'),
+            style: TextStyle(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.5),
+              fontFamily: 'Poppins',
+            ),
           ),
         ],
       ),
@@ -406,8 +431,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required int index,
     required bool isSelected,
   }) {
-    final Color selectedColor = const Color(0xFFD4AF37);
-    final Color unselectedColor = Colors.black;
+    final Color selectedColor = Theme.of(context).colorScheme.secondary;
+    final Color unselectedColor = Theme.of(context).colorScheme.onSurface;
 
     return GestureDetector(
       onTap: () {
@@ -469,10 +494,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text(
+              leading: Icon(
+                Icons.logout,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              title: Text(
                 'Logout',
-                style: TextStyle(fontFamily: 'Poppins', color: Colors.red),
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  color: Theme.of(context).colorScheme.error,
+                ),
               ),
               onTap: () async {
                 Navigator.pop(context);
@@ -536,106 +567,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _handlePass(UserProfile profile) {
     debugPrint('Passed: ${profile.name}');
+    ref
+        .read(swipeProvider.notifier)
+        .swipe(targetProfileId: profile.id, action: 'pass');
   }
 
   // ✅ Updated to show match dialog
   void _handleLike(UserProfile profile) {
-    // TODO: Replace with actual match check from your backend API
-    bool isMatch = false; // Set to true when both users like each other
-    
-    if (isMatch) {
-      _showMatchDialog(profile);
-    } else {
-      showSuccessPopup(context, 'You liked ${profile.name}! 💚');
-    }
-  }
-
-  // ✅ Match Dialog
-  void _showMatchDialog(UserProfile profile) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Image.asset(
-                'assests/static/match_illustration.png',
-                height: 200,
-                errorBuilder: (context, error, stackTrace) {
-                  return const SizedBox(height: 200);
-                },
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                "It's a Match!",
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Poppins',
-                  color: Colors.black,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'You and ${profile.name} liked each other.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Poppins',
-                  color: Colors.grey[600],
-                ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    // TODO: Navigate to chat with matched user
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4A5A4A),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'Send a message',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: 'Poppins',
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  'Keep swiping',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Poppins',
-                    color: Colors.grey,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    showSuccessPopup(context, 'You liked ${profile.name}! 💚');
+    ref
+        .read(swipeProvider.notifier)
+        .swipe(targetProfileId: profile.id, action: 'like');
   }
 
   void _showPremiumDialog() {
@@ -675,18 +617,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.people_outline, size: 100, color: Colors.grey[400]),
-          const SizedBox(height: 20),
-          Text(
-            'No profiles available',
-            style: TextStyle(fontSize: 20, color: Colors.grey[600]),
-          ),
-        ],
-      ),
-    );
+    return const NoMoreProfilesWidget();
   }
 }

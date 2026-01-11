@@ -6,10 +6,10 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart'; // To access .env
 import 'package:uuid/uuid.dart'; // For session token if needed (not strictly for geocoding, but good practice)
 
-import '../../providers/onboarding_provider.dart';
+import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
 import '../../../../auth/providers/auth_providers.dart';
-import '../../../data/repositories/onboarding_repository.dart';
-import 'base_onboarding_step_screen.dart';
+import '../../../../onboarding/data/repositories/onboarding_repository.dart';
+import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
 import '../../../../../core/utils/custom_popups.dart';
 
 class LocationSetScreen extends ConsumerStatefulWidget {
@@ -269,17 +269,23 @@ class _LocationSetScreenState extends ConsumerState<LocationSetScreen> {
             Expanded(
               child: ListView.separated(
                 itemCount: _filteredCities.length,
-                separatorBuilder: (context, index) =>
-                    Divider(height: 1, color: Colors.grey.shade200),
+                separatorBuilder: (context, index) => Divider(
+                  height: 1,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.12),
+                ),
                 itemBuilder: (context, index) {
                   final city = _filteredCities[index];
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
                     title: Text(
                       city,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
-                        color: Colors.black87,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.87),
                       ),
                     ),
                     onTap: () => _handleCitySelection(city),

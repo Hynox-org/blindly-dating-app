@@ -65,6 +65,21 @@ class OnboardingRepository {
     }
   }
 
+  Future<List<OnboardingStep>> getMandatorySteps() async {
+    try {
+      final response = await _supabase
+          .from('onboarding_steps')
+          .select()
+          .eq('is_mandatory', true)
+          .order('step_position', ascending: true);
+
+      return (response as List).map((e) => OnboardingStep.fromJson(e)).toList();
+    } catch (e) {
+      AppLogger.info('Error fetching mandatory steps: $e');
+      return [];
+    }
+  }
+
   Future<void> updateStepStatus(
     String userId,
     String stepKey,

@@ -1,5 +1,5 @@
 import 'dart:math' as math;
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 
 /// Defines a target pose with specific angle and proximity constraints.
@@ -7,6 +7,7 @@ import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 class PoseTarget {
   final String name;
   final String emoji; // The symbol to display
+  final IconData icon; // The icon to display
   final String description; // Short instruction
   final List<AngleConstraint> angleConstraints;
   final List<ProximityConstraint> proximityConstraints;
@@ -14,6 +15,7 @@ class PoseTarget {
   PoseTarget({
     required this.name,
     required this.emoji,
+    required this.icon,
     required this.description,
     this.angleConstraints = const [],
     this.proximityConstraints = const [],
@@ -157,6 +159,7 @@ class PoseLibrary {
     PoseTarget(
       name: 'Salute',
       emoji: '🫡',
+      icon: Icons.boy_rounded,
       description: 'Salute with your right hand',
       proximityConstraints: [
         ProximityConstraint(
@@ -180,6 +183,7 @@ class PoseLibrary {
     PoseTarget(
       name: 'Namaste',
       emoji: '🙏',
+      icon: Icons.sign_language_rounded,
       description: 'Put your hands together',
       proximityConstraints: [
         // Wrists close to each other
@@ -202,6 +206,7 @@ class PoseLibrary {
     PoseTarget(
       name: 'Halo',
       emoji: '🙆',
+      icon: Icons.emoji_people_rounded,
       description: 'Hands on your head',
       proximityConstraints: [
         ProximityConstraint(
@@ -222,6 +227,7 @@ class PoseLibrary {
     PoseTarget(
       name: 'Thinker',
       emoji: '🤔',
+      icon: Icons.psychology_rounded,
       description: 'Hand on chin',
       proximityConstraints: [
         ProximityConstraint(
@@ -236,6 +242,7 @@ class PoseLibrary {
     PoseTarget(
       name: 'Flex',
       emoji: '💪',
+      icon: Icons.fitness_center_rounded,
       description: 'Flex your right bicep',
       proximityConstraints: [
         // Wrist near Shoulder
@@ -261,6 +268,7 @@ class PoseLibrary {
     PoseTarget(
       name: 'The X',
       emoji: '🙅',
+      icon: Icons.close_rounded,
       description: 'Cross your arms on your chest',
       proximityConstraints: [
         // Wrists near opposite shoulders (loosely)

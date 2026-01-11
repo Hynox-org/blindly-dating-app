@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -9,10 +8,10 @@ import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../data/repositories/verification_repository.dart';
-import '../../providers/onboarding_provider.dart';
-import '../../utils/pose_matcher.dart';
-import 'base_onboarding_step_screen.dart';
+import '../../../../onboarding/data/repositories/verification_repository.dart';
+import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
+import '../../../../onboarding/presentation/utils/pose_matcher.dart';
+import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
 import '../../../../../core/utils/custom_popups.dart';
 
 enum SelfieStep { instructions, capture, processing, verified }
@@ -405,139 +404,221 @@ class _SelfieVerificationScreenState
         subtitle: "Profile verification successfully completed",
         buttonText: "Got it",
         onPressed: _onVerifiedComplete,
+        showSecondaryBackButton: true, // Show back button at bottom
       );
     }
 
     // Capture View
     if (_currentStep == SelfieStep.capture) {
-      return BaseOnboardingStepScreen(
-        title: _targetPose?.name ?? 'Match the Pose',
-        nextLabel: 'Capture',
-        showBackButton: true,
-        onBack: _onBack,
-        showNextButton: false, // Hidden, triggered automatically
-        showSkipButton: true,
-        onSkip: _onSkip,
-        child: Column(
+      return Scaffold(
+        backgroundColor: Colors.black,
+        body: Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: 20.0, top: 10),
+            // 1. Full Screen Camera Live Feed
+            if (_cameraController != null &&
+                _cameraController!.value.isInitialized)
+              SizedBox.expand(
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  child: SizedBox(
+                    // Swap width/height because camera sensor is landscape
+                    width: _cameraController!.value.previewSize!.height,
+                    height: _cameraController!.value.previewSize!.width,
+                    child: CameraPreview(_cameraController!),
+                  ),
+                ),
+              )
+            else
+              const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              ),
+
+            // 2. Dark Overlay Gradients for text visibility
+            Positioned.fill(
               child: Column(
                 children: [
-                  Text(
-                    _targetPose?.emoji ?? "",
-                    style: const TextStyle(fontSize: 80),
+                  Container(
+                    height: 160,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.black.withOpacity(0.7),
+                          Colors.transparent,
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    _targetPose?.description ?? "Copy this symbol",
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
+                  const Spacer(),
+                  Container(
+                    height: 160,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.7),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-            Expanded(
-              child: Stack(
-                alignment: Alignment.center,
+
+            // 3. Top Navigation Bar
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: Colors.black45,
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          onPressed: _onBack,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: _onSkip,
+                        style: TextButton.styleFrom(
+                          backgroundColor: Colors.black45,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                        ),
+                        child: const Text(
+                          "Skip",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // 4. Pose Instructions (Centered Top)
+            Positioned(
+              top: 120,
+              left: 20,
+              right: 20,
+              child: Column(
                 children: [
-                  // Camera Preview
-                  if (_cameraController != null &&
-                      _cameraController!.value.isInitialized)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: AspectRatio(
-                        aspectRatio: _cameraController!.value.aspectRatio,
-                        child: CameraPreview(_cameraController!),
-                      ),
-                    )
-                  else
-                    const Center(child: CircularProgressIndicator()),
-
-                  // Progress Indicator Overlay
-                  if (_matchProgress > 0)
-                    Positioned(
-                      top: 20,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
+                  // Icon removed as specificially requested
+                  // const SizedBox(height: 16),
+                  Text(
+                    _targetPose?.description ?? "Copy this pose",
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      shadows: [
+                        Shadow(
+                          blurRadius: 8,
+                          color: Colors.black,
+                          offset: Offset(0, 2),
                         ),
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.check_circle,
-                              color: Colors.green,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              "Hold Still... ${(_matchProgress * 100).toInt()}%",
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                  // Success Overlay
-                  if (_matchProgress >= 1.0)
-                    Container(
-                      color: Colors.green.withOpacity(0.3),
-                      child: const Center(
-                        child: Icon(
-                          Icons.check_circle_outline,
-                          size: 80,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-
-                  // FEEDBACK MESSAGE OVERLAY
-                  Positioned(
-                    bottom: 40,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black54,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(
-                        _feedbackMessage,
-                        style: TextStyle(
-                          color: _isMatching
-                              ? Colors.greenAccent
-                              : Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-            LinearProgressIndicator(
-              value: _matchProgress,
-              backgroundColor: Colors.grey[300],
-              valueColor: AlwaysStoppedAnimation<Color>(
-                Theme.of(context).colorScheme.primary,
+
+            // 5. Feedback & Progress
+            if (_matchProgress > 0)
+              Center(
+                child: Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white24, width: 2),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        value: _matchProgress,
+                        color: Colors.greenAccent,
+                        backgroundColor: Colors.white24,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "${(_matchProgress * 100).toInt()}%",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              minHeight: 8,
+
+            // User Feedback Text
+            Positioned(
+              bottom: 50,
+              left: 20,
+              right: 20,
+              child: Text(
+                _feedbackMessage,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: _isMatching ? Colors.greenAccent : Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  shadows: const [
+                    Shadow(
+                      blurRadius: 4,
+                      color: Colors.black,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+              ),
             ),
+
+            // Success Flash Overlay
+            if (_matchProgress >= 1.0)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.green.withOpacity(0.6),
+                  child: const Center(
+                    child: Icon(
+                      Icons.check_circle_rounded,
+                      color: Colors.white,
+                      size: 100,
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       );
@@ -549,7 +630,7 @@ class _SelfieVerificationScreenState
 
     return BaseOnboardingStepScreen(
       title: 'Selfie Verification',
-      showBackButton: true,
+      showBackButton: false, // Custom implementation below
       onBack: _onBack,
       showNextButton: false,
       showSkipButton: false,
@@ -560,51 +641,11 @@ class _SelfieVerificationScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 16),
-                  Container(
-                    height: 220,
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest.withOpacity(
-                        0.5,
-                      ),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: colorScheme.outlineVariant.withOpacity(0.5),
-                      ),
-                    ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Icon(
-                          Icons.face_retouching_natural_rounded,
-                          size: 100,
-                          color: colorScheme.primary.withOpacity(0.8),
-                        ),
-                        Positioned(
-                          right: 40,
-                          top: 40,
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: colorScheme.surface,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              Icons.verified_rounded,
-                              size: 28,
-                              color: colorScheme.primary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                  // Illustration
+                  Image.asset(
+                    'assests/static/selfie_verification_screen.png',
+                    height: 250,
+                    fit: BoxFit.contain,
                   ),
                   const SizedBox(height: 32),
                   Text(
@@ -618,7 +659,7 @@ class _SelfieVerificationScreenState
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    "This quick step helps keep our community safe and authentic.",
+                    "This quick helps takes keep our community safe and authentic",
                     textAlign: TextAlign.center,
                     style: textTheme.bodyLarge?.copyWith(
                       color: colorScheme.onSurfaceVariant,
@@ -627,55 +668,33 @@ class _SelfieVerificationScreenState
                   const SizedBox(height: 40),
                   _buildBenefitItem(
                     context,
-                    icon: Icons.verified_rounded,
                     title: "Get a verified badge",
                     subtitle:
-                        "Build trust with other users and show you're real.",
-                    iconColor: colorScheme.primary,
+                        "Build trust with other users and shown you're real.",
+                    color: colorScheme.primary, // Used Theme
                   ),
                   const SizedBox(height: 24),
                   _buildBenefitItem(
                     context,
-                    icon: Icons.shield_rounded,
                     title: "Keep the community safe",
                     subtitle: "Help us weed out fake profiles and bots.",
-                    iconColor: colorScheme.tertiary,
+                    color: colorScheme.primary, // Used Theme
                   ),
                   const SizedBox(height: 24),
                   _buildBenefitItem(
                     context,
-                    icon: Icons.camera_front_rounded,
-                    title: "Copy a symbol",
-                    subtitle: "Takes 1 minute to confirm your identity.",
-                    iconColor: colorScheme.secondary,
+                    title: "Copy a simple pose",
+                    subtitle:
+                        "You'll take quick selfie to confirm your identity",
+                    color: colorScheme.primary, // Used Theme
                   ),
                   const SizedBox(height: 32),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest.withOpacity(
-                        0.3,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.info_outline_rounded,
-                          size: 16,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            "Privacy Note: Your selfie is never shared on your profile. It is strictly used for verification purposes only.",
-                            style: textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ],
+                  Text(
+                    "Note: Your selfie is only for verification and won't to be on your profile",
+                    textAlign: TextAlign.center,
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontSize: 12,
                     ),
                   ),
                 ],
@@ -686,10 +705,10 @@ class _SelfieVerificationScreenState
           ElevatedButton(
             onPressed: _startCapture,
             style: ElevatedButton.styleFrom(
-              backgroundColor: colorScheme.primary,
-              foregroundColor: colorScheme.onPrimary,
+              backgroundColor: colorScheme.primary, // Used Theme
+              foregroundColor: colorScheme.onPrimary, // Used Theme
               padding: const EdgeInsets.symmetric(vertical: 18),
-              elevation: 2,
+              elevation: 0,
               minimumSize: const Size(double.infinity, 56),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -700,14 +719,59 @@ class _SelfieVerificationScreenState
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
-          const SizedBox(height: 12),
-          TextButton(
-            onPressed: _onSkip,
-            style: TextButton.styleFrom(
-              foregroundColor: colorScheme.secondary,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-            ),
-            child: const Text("Maybe later", style: TextStyle(fontSize: 16)),
+          const SizedBox(height: 16),
+          // Navigation Row: Back and Skip
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton.icon(
+                onPressed: _onBack,
+                icon: Icon(
+                  Icons.arrow_back,
+                  size: 20,
+                  color: colorScheme.onSurface,
+                ),
+                label: Text(
+                  "Back",
+                  style: TextStyle(
+                    color: colorScheme.onSurface,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 8,
+                  ),
+                ),
+              ),
+              Directionality(
+                textDirection: TextDirection.rtl,
+                child: TextButton.icon(
+                  onPressed: _onSkip,
+                  icon: Icon(
+                    Icons.skip_next_rounded,
+                    size: 24,
+                    color: colorScheme.onSurface,
+                  ),
+                  label: Text(
+                    "Skip",
+                    style: TextStyle(
+                      color: colorScheme.onSurface,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 8,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -723,87 +787,122 @@ class _SelfieVerificationScreenState
     required String subtitle,
     String? buttonText,
     VoidCallback? onPressed,
+    bool showSecondaryBackButton = false,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: _onBack,
-        ),
-        title: const Text(
-          'Verification Status',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
+      body: SafeArea(
         child: Column(
           children: [
-            const Spacer(),
-            // Centered Icon Bubble
+            // Custom Header similar to BaseOnboardingStepScreen
             Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: colorScheme.primary,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Icon(icon, size: 50, color: colorScheme.onPrimary),
-              ),
+              height: kToolbarHeight,
+              alignment: Alignment.center,
+              // Empty space as requested
             ),
-            const SizedBox(height: 32),
-            // Title
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                height: 1.2,
-                color: colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Subtitle
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                height: 1.5,
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const Spacer(),
-            // Button (Optional)
-            if (buttonText != null)
-              ElevatedButton(
-                onPressed: onPressed,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: colorScheme.onPrimary,
-                  minimumSize: const Size(double.infinity, 56),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 0,
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  children: [
+                    const Spacer(),
+                    // Centered Icon Bubble
+                    Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Icon(
+                          icon,
+                          size: 50,
+                          color: colorScheme.onPrimary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    // Title
+                    Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        height: 1.2,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Subtitle
+                    Text(
+                      subtitle,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        height: 1.5,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const Spacer(),
+                    // Button (Optional)
+                    if (buttonText != null)
+                      ElevatedButton(
+                        onPressed: onPressed,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: colorScheme.primary,
+                          foregroundColor: colorScheme.onPrimary,
+                          minimumSize: const Size(double.infinity, 56),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          buttonText,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+
+                    // Secondary Back Button (Bottom)
+                    if (showSecondaryBackButton) ...[
+                      const SizedBox(height: 16),
+                      TextButton.icon(
+                        onPressed: _onBack,
+                        icon: Icon(
+                          Icons.arrow_back,
+                          size: 20,
+                          color: colorScheme.onSurface,
+                        ),
+                        label: Text(
+                          "Back",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 48),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ] else ...[
+                      // Add spacing if no back button to keep layout balanced or just standard padding
+                      const SizedBox(height: 12),
+                    ],
+
+                    const SizedBox(height: 12), // Bottom padding
+                  ],
                 ),
-                child: Text(
-                  buttonText,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
               ),
-            const SizedBox(height: 24),
+            ),
           ],
         ),
       ),
@@ -812,10 +911,9 @@ class _SelfieVerificationScreenState
 
   Widget _buildBenefitItem(
     BuildContext context, {
-    required IconData icon,
     required String title,
     required String subtitle,
-    Color? iconColor,
+    required Color color,
   }) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
@@ -824,12 +922,9 @@ class _SelfieVerificationScreenState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: (iconColor ?? colorScheme.primary).withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, size: 24, color: iconColor ?? colorScheme.primary),
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 16),
         Expanded(
@@ -841,13 +936,12 @@ class _SelfieVerificationScreenState
                 style: textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: colorScheme.onSurface,
+                  fontSize: 16,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
-                title == "Copy a simple pose"
-                    ? (_targetPose?.name ?? title)
-                    : subtitle,
+                subtitle,
                 style: textTheme.bodyMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                   height: 1.4,

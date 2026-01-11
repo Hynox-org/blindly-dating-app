@@ -2,27 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/onboarding_provider.dart';
 
+import '../../../auth/providers/auth_providers.dart';
+
 // Import all step screens
 import 'steps/terms_screen.dart';
-import 'steps/permissions_screen.dart';
-import 'steps/language_select_screen.dart';
-import 'steps/name_entry_screen.dart';
-import 'steps/birth_date_screen.dart';
+import 'steps/name_birth_entry_screen.dart';
 import 'steps/gender_select_screen.dart';
-import 'steps/location_set_screen.dart';
 import 'steps/photo_upload_screen.dart';
-import 'steps/photo_reorder_screen.dart';
-// import 'steps/selfie_instructions_screen.dart'; // Deleted
-// import 'steps/selfie_capture_screen.dart'; // Deleted
-// import 'steps/selfie_processing_screen.dart'; // Deleted
-import 'steps/selfie_verification_screen.dart';
-import 'steps/gov_id_screen.dart';
-import 'steps/bio_entry_screen.dart';
-import 'steps/interests_select_screen.dart';
-import 'steps/lifestyle_prefs_screen.dart';
-import 'steps/voice_intro_screen.dart';
-import 'steps/profile_prompts_screen.dart';
-import 'pre_onboarding_welcome_screen.dart';
+import '../../../profile/presentation/screens/setup_steps/bio_entry_screen.dart';
+import '../../../profile/presentation/screens/setup_steps/interests_select_screen.dart';
+import '../../../profile/presentation/screens/setup_steps/lifestyle_prefs_screen.dart';
+import '../../../profile/presentation/screens/setup_steps/voice_intro_screen.dart';
+import '../../../profile/presentation/screens/setup_steps/profile_prompts_screen.dart';
+import '../../../profile/presentation/screens/setup_steps/selfie_verification_screen.dart';
+import '../../../profile/presentation/screens/setup_steps/gov_id_screen.dart';
+import '../../../profile/presentation/screens/setup_steps/language_select_screen.dart';
 
 class OnboardingShell extends ConsumerStatefulWidget {
   const OnboardingShell({super.key});
@@ -45,6 +39,13 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
     ref.listen(onboardingProvider, (previous, next) {
       if (next.currentStepKey == 'complete') {
         Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+      }
+
+      if (next.errorMessage != null &&
+          next.errorMessage!.contains("Profile not found")) {
+        // Clear auth state as profile issue is critical
+        ref.read(authRepositoryProvider).signOut();
+        Navigator.pushNamedAndRemoveUntil(context, '/auth', (route) => false);
       }
     });
   }
@@ -77,9 +78,9 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
       );
     }
 
-    if (state.currentStepKey == 'pre_onboarding') {
-      return const Scaffold(body: PreOnboardingWelcomeScreen());
-    }
+    // if (state.currentStepKey == 'pre_onboarding') {
+    //   return const Scaffold(body: PreOnboardingWelcomeScreen());
+    // }
 
     if (stepConfig == null) {
       return const Scaffold(
@@ -117,26 +118,14 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
     switch (stepKey) {
       case 'terms_accept':
         return const TermsScreen();
-      case 'permissions':
-        return const PermissionsScreen();
-      case 'language_select':
-        return const LanguageSelectScreen();
-      case 'name_entry':
-        return const NameEntryScreen();
-      case 'birth_date':
-        return const BirthDateScreen();
+      case 'name_birth_entry':
+        return const NameBirthEntryScreen();
       case 'gender_select':
         return const GenderSelectScreen();
-      case 'location_set':
-        return const LocationSetScreen();
       case 'photo_upload':
         return const PhotoUploadScreen();
-      case 'photo_reorder':
-        return const PhotoReorderScreen();
-      // import 'steps/selfie_verification_screen.dart'; // Add this import at the top
       case 'selfie_capture':
         return const SelfieVerificationScreen();
-      // case 'selfie_processing': removed as it's handled internally
       case 'gov_id_optional':
         return const GovernmentIdVerificationScreen();
       case 'bio_entry':
@@ -149,8 +138,8 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
         return const VoiceIntroScreen();
       case 'profile_prompts':
         return const ProfilePromptsScreen();
-      case 'pre_onboarding':
-        return const PreOnboardingWelcomeScreen();
+      case 'language_select':
+        return const LanguageSelectScreen();
       default:
         return Center(child: Text("Screen for $stepKey not implemented"));
     }

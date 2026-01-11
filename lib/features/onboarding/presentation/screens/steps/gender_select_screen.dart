@@ -112,9 +112,12 @@ class _GenderSelectScreenState extends ConsumerState<GenderSelectScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'This help us show you relevant profiles and find your matches',
-            style: TextStyle(fontSize: 14, color: Colors.black54),
+            style: TextStyle(
+              fontSize: 14,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
+            ),
           ),
           const SizedBox(height: 32),
 
@@ -134,8 +137,8 @@ class _GenderSelectScreenState extends ConsumerState<GenderSelectScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? const Color(0xFF4A4E3D) // Dark olive/brown from image
-                        : Colors.white,
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(16),
                     border: isSelected
                         ? Border.all(color: Colors.transparent)
@@ -145,7 +148,9 @@ class _GenderSelectScreenState extends ConsumerState<GenderSelectScreen> {
                     boxShadow: [
                       if (!isSelected)
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.05),
                           blurRadius: 10,
                           offset: const Offset(0, 2),
                         ),
@@ -160,15 +165,16 @@ class _GenderSelectScreenState extends ConsumerState<GenderSelectScreen> {
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           color: isSelected
-                              ? const Color(0xFFCDB38B)
-                              : Colors
-                                    .black87, // Gold text when selected, Black when not
+                              ? Theme.of(context).colorScheme.onPrimary
+                              : Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withOpacity(0.87),
                         ),
                       ),
                       if (isSelected)
-                        const Icon(
+                        Icon(
                           FontAwesomeIcons.circleCheck,
-                          color: Color(0xFFCDB38B), // Gold check
+                          color: Theme.of(context).colorScheme.onPrimary,
                           size: 24,
                         )
                       else
@@ -177,7 +183,9 @@ class _GenderSelectScreenState extends ConsumerState<GenderSelectScreen> {
                           height: 24,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.grey.shade300,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withOpacity(0.12),
                           ),
                         ),
                     ],

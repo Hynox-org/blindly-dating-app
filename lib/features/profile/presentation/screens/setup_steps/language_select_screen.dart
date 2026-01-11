@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../providers/onboarding_provider.dart';
+import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
 import '../../../../auth/providers/auth_providers.dart';
-import '../../../data/repositories/onboarding_repository.dart';
-import 'base_onboarding_step_screen.dart';
+import '../../../../onboarding/data/repositories/onboarding_repository.dart';
+import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
 import '../../../../../core/utils/custom_popups.dart';
 
 class LanguageSelectScreen extends ConsumerStatefulWidget {
@@ -108,6 +108,19 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
     }
   }
 
+  Future<void> _handleSkip() async {
+    setState(() => _isSaving = true);
+    try {
+      await ref.read(onboardingProvider.notifier).skipStep('language_select');
+    } catch (e) {
+      if (mounted) {
+        showErrorPopup(context, 'Failed to skip: $e');
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Filter languages based on search query
@@ -130,6 +143,7 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
       isNextEnabled: _selectedLanguageCodes.isNotEmpty && !_isSaving,
       isLoading: _isSaving,
       onNext: _handleNext,
+      onSkip: _handleSkip,
       child: Column(
         children: [
           // Search Bar
@@ -154,12 +168,12 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
             child: ListView(
               children: [
                 if (!isSearching) ...[
-                  const Text(
+                  Text(
                     'Suggested',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -168,12 +182,14 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
                     _allLanguages.firstWhere((l) => l['code'] == 'en'),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
+                  Text(
                     'All languages',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.87),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -227,18 +243,20 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(25),
           border: isSelected
               ? Border.all(
-                  color: const Color(0xFFCDB38B),
+                  color: Theme.of(context).colorScheme.primary,
                   width: 2,
                 ) // Approximate Gold/Beige color from image
               : Border.all(color: Colors.transparent),
           boxShadow: [
             if (!isSelected)
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withOpacity(0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
@@ -252,23 +270,30 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
                 children: [
                   Text(
                     lang['native']!, // Native name prominent
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.87),
                     ),
                   ),
                   Text(
                     lang['name']!, // English name subtitle
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.6),
+                    ),
                   ),
                 ],
               ),
             ),
             if (isSelected)
-              const Icon(
+              Icon(
                 FontAwesomeIcons.solidCircleCheck,
-                color: Color(0xFFCDB38B), // Match border
+                color: Theme.of(context).colorScheme.primary, // Match border
                 size: 20,
               )
             else

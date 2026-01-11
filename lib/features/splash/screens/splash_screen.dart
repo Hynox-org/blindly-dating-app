@@ -232,17 +232,20 @@ class _BokehBackgroundState extends State<_BokehBackground>
             // Moving Blobs
             _buildBlob(
               Alignment(math.sin(_controller.value * 2 * math.pi) * 0.5, -0.2),
-              const Color(0xFF4A5D4F).withOpacity(0.2),
+              // Use primary color (Dark Green) with opacity
+              Theme.of(context).colorScheme.primary.withOpacity(0.2),
               150,
             ),
             _buildBlob(
               Alignment(-0.3, math.cos(_controller.value * 2 * math.pi) * 0.5),
-              const Color(0xFFFFFFFF).withOpacity(0.3),
+              // Use secondary color (Gold) or just white with opacity for contrast
+              Theme.of(context).colorScheme.secondary.withOpacity(0.3),
               200,
             ),
             _buildBlob(
               const Alignment(0.4, 0.4),
-              const Color(0xFF4A5D4F).withOpacity(0.1),
+              // Use primary color (Dark Green) with opacity
+              Theme.of(context).colorScheme.primary.withOpacity(0.1),
               180,
             ),
           ],
