@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 
 // ✅ 1. Providers
-import '../../auth/providers/auth_providers.dart';
+
 import '../../../features/discovery/povider/discovery_provider.dart';
 
 // ✅ 2. Models
@@ -19,6 +19,8 @@ import '../../../../core/utils/custom_popups.dart';
 import '../../../../core/services/bootstrap_service.dart';
 import '../../discovery/presentation/widgets/no_more_profiles_widget.dart';
 import '../../discovery/povider/swipe_provider.dart';
+import '../../../../core/utils/navigation_utils.dart';
+import 'connection_type_screen.dart';
 
 // ✅ 5. Layout
 import '../../../../core/widgets/app_layout.dart';
@@ -128,58 +130,46 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       showFooter: true,
       selectedIndex: 2, // ✅ Home/Peoples tab selected
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.surface,
+        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: Icon(
-            Icons.menu,
+            Icons.more_vert,
             color: Theme.of(context).colorScheme.onSurface,
             size: 28,
           ),
-          onPressed: () => _showMenuDialog(),
+          onPressed: () => _showModeMenu(),
         ),
-        title: Image.asset(
-          'assests/images/blindly-text-logo.png',
-          height: 24,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) {
-            return Text(
-              "Blindly",
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-            );
-          },
+        title: Text(
+          "Blindly",
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontFamily: 'Poppins',
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+          ),
         ),
         centerTitle: true,
         actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(20),
+          IconButton(
+            icon: Icon(
+              Icons.reply,
+              color: Theme.of(context).colorScheme.onSurface,
+              size: 28,
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.local_fire_department,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.secondary,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '$_swipeCount/$_maxSwipes',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-              ],
-            ),
+            onPressed: () => _onUndo(null, 0, CardSwiperDirection.left),
           ),
+          IconButton(
+            icon: Icon(
+              Icons.tune,
+              color: Theme.of(context).colorScheme.onSurface,
+              size: 28,
+            ),
+            onPressed: () {
+              debugPrint("Filter button pressed");
+            },
+          ),
+          const SizedBox(width: 8),
         ],
       ),
       child: SafeArea(
@@ -333,7 +323,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     }
                                   },
                                   onReport: () {
-                                    debugPrint('Report: ${profiles[index].name}');
+                                    debugPrint(
+                                      'Report: ${profiles[index].name}',
+                                    );
                                   },
                                 );
                               },
@@ -372,35 +364,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  void _showMenuDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Menu', style: TextStyle(fontFamily: 'Poppins')),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: Icon(
-                Icons.logout,
-                color: Theme.of(context).colorScheme.error,
-              ),
-              title: Text(
-                'Logout',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  color: Theme.of(context).colorScheme.error,
-                ),
-              ),
-              onTap: () async {
-                Navigator.pop(context);
-                await ref.read(authRepositoryProvider).signOut();
-              },
-            ),
-          ],
-        ),
-      ),
-    );
+  void _showModeMenu() {
+    NavigationUtils.navigateToWithSlide(context, const ConnectionTypeScreen());
   }
 
   bool _onSwipe(
@@ -503,6 +468,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildEmptyState() {
-    return const NoMoreProfilesWidget();
+    return NoMoreProfilesWidget(
+      onAdjustFilters: () {
+        debugPrint("Adjust Filters clicked from No Feed Screen");
+        // Trigger the same filter logic as the app bar button
+        // For now, just show a message since the filter logic implementation isn't visible in the snippets
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Filter capability coming soon!")),
+        );
+      },
+      onNotifyMe: () {
+        debugPrint("Notify Me clicked");
+        showSuccessPopup(context, "We'll notify you when new people join! 🔔");
+      },
+    );
   }
 }

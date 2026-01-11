@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:ui';
 import './../home/screens/home_screen.dart';
 import '../../../core/widgets/app_layout.dart';
+import '../home/screens/connection_type_screen.dart';
+import '../../../core/utils/navigation_utils.dart';
 
 class LikedYouScreen extends StatefulWidget {
   const LikedYouScreen({super.key});
@@ -18,42 +20,42 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
       'name': 'LAURA',
       'age': '24',
       'image': 'https://picsum.photos/300/400?random=1',
-      'isLocked': true
+      'isLocked': true,
     },
     {
       'id': '2',
       'name': 'SARAH',
       'age': '26',
       'image': 'https://picsum.photos/300/400?random=2',
-      'isLocked': true
+      'isLocked': true,
     },
     {
       'id': '3',
       'name': 'EMILY',
       'age': '23',
       'image': 'https://picsum.photos/300/400?random=3',
-      'isLocked': true
+      'isLocked': true,
     },
     {
       'id': '4',
       'name': 'JESSICA',
       'age': '25',
       'image': 'https://picsum.photos/300/400?random=4',
-      'isLocked': true
+      'isLocked': true,
     },
     {
       'id': '5',
       'name': 'AMANDA',
       'age': '27',
       'image': 'https://picsum.photos/300/400?random=5',
-      'isLocked': true
+      'isLocked': true,
     },
     {
       'id': '6',
       'name': 'RACHEL',
       'age': '24',
       'image': 'https://picsum.photos/300/400?random=6',
-      'isLocked': true
+      'isLocked': true,
     },
   ];
 
@@ -68,14 +70,11 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.more_vert, color: Colors.black),
           onPressed: () {
-            Navigator.pushAndRemoveUntil(
+            NavigationUtils.navigateToWithSlide(
               context,
-              MaterialPageRoute(
-                builder: (context) => const HomeScreen(),
-              ),
-              (route) => false,
+              const ConnectionTypeScreen(),
             );
           },
         ),
@@ -121,7 +120,9 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
                         height: 1.4,
                       ),
                       children: [
-                        const TextSpan(text: 'Visited recently without the wait. You have '),
+                        const TextSpan(
+                          text: 'Visited recently without the wait. You have ',
+                        ),
                         TextSpan(
                           text: '$_likeCount likes',
                           style: const TextStyle(
@@ -143,12 +144,13 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
                   ? _buildEmptyState()
                   : GridView.builder(
                       padding: const EdgeInsets.all(16),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 0.75,
-                      ),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: 0.75,
+                          ),
                       itemCount: _likedYouUsers.length,
                       itemBuilder: (context, index) {
                         return _buildLockedProfileCard(_likedYouUsers[index]);
@@ -215,7 +217,11 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
                     color: Colors.grey[700],
-                    child: const Icon(Icons.person, size: 80, color: Colors.white54),
+                    child: const Icon(
+                      Icons.person,
+                      size: 80,
+                      color: Colors.white54,
+                    ),
                   );
                 },
               ),
@@ -238,11 +244,7 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
                     color: Colors.black.withValues(alpha: 0.6),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.lock,
-                    color: Colors.white,
-                    size: 32,
-                  ),
+                  child: const Icon(Icons.lock, color: Colors.white, size: 32),
                 ),
               ),
 
@@ -285,11 +287,7 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.favorite_border,
-            size: 100,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.favorite_border, size: 100, color: Colors.grey[400]),
           const SizedBox(height: 20),
           Text(
             'No likes yet',
@@ -318,9 +316,7 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
             Container(
@@ -441,15 +437,10 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text(
           'Choose Your Plan',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -474,7 +465,12 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
     );
   }
 
-  Widget _buildPricingCard(String duration, String price, String originalPrice, bool isPopular) {
+  Widget _buildPricingCard(
+    String duration,
+    String price,
+    String originalPrice,
+    bool isPopular,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -483,7 +479,9 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
           width: isPopular ? 2 : 1,
         ),
         borderRadius: BorderRadius.circular(12),
-        color: isPopular ? const Color(0xFFD4AF37).withValues(alpha: 0.05) : Colors.white,
+        color: isPopular
+            ? const Color(0xFFD4AF37).withValues(alpha: 0.05)
+            : Colors.white,
       ),
       child: Row(
         children: [
@@ -504,7 +502,10 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
                     if (isPopular) ...[
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFD4AF37),
                           borderRadius: BorderRadius.circular(4),
@@ -585,19 +586,12 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          const Icon(
-            Icons.check_circle,
-            color: Color(0xFFD4AF37),
-            size: 20,
-          ),
+          const Icon(Icons.check_circle, color: Color(0xFFD4AF37), size: 20),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 13,
-              ),
+              style: const TextStyle(fontFamily: 'Poppins', fontSize: 13),
             ),
           ),
         ],
