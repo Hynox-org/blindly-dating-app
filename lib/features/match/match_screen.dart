@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../discovery/domain/models/discovery_user_model.dart';
 import '../../../core/widgets/app_layout.dart';
 import '../home/component/ProfileSwipeCard.dart'; // For UserProfile model
+
 class MatchScreen extends StatefulWidget {
   final UserProfile currentUserProfile;
   final UserProfile matchedUserProfile;

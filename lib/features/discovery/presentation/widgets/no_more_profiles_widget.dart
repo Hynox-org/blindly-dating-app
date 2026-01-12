@@ -1,120 +1,134 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../povider/discovery_provider.dart';
 
-class NoMoreProfilesWidget extends ConsumerStatefulWidget {
-  const NoMoreProfilesWidget({super.key});
+class NoMoreProfilesWidget extends StatelessWidget {
+  final VoidCallback? onAdjustFilters;
+  final VoidCallback? onNotifyMe;
 
-  @override
-  ConsumerState<NoMoreProfilesWidget> createState() =>
-      _NoMoreProfilesWidgetState();
-}
-
-class _NoMoreProfilesWidgetState extends ConsumerState<NoMoreProfilesWidget> {
-  bool _isLoading = false;
-
-  Future<void> _refresh() async {
-    setState(() => _isLoading = true);
-    await ref.read(discoveryFeedProvider.notifier).refreshFeed();
-    if (mounted) setState(() => _isLoading = false);
-  }
+  const NoMoreProfilesWidget({
+    super.key,
+    this.onAdjustFilters,
+    this.onNotifyMe,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
-      color: Colors.white,
+      color: Theme.of(context).scaffoldBackgroundColor,
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 40),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // 1. Friendly Illustration
-          Container(
-            padding: const EdgeInsets.all(25),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.check_circle_outline,
-              size: 80,
-              color: Color(0xFFD4AF37),
-            ),
-          ),
-          const SizedBox(height: 30),
-
-          // 2. Professional Headline
-          const Text(
-            "You're all caught up!",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-              fontFamily: 'Poppins',
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // 3. Explanation
-          Text(
-            "There are no new profiles in your area matching your criteria right now.",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 15,
-              color: Colors.grey[600],
-              height: 1.5,
-              fontFamily: 'Poppins',
-            ),
-          ),
-          const SizedBox(height: 40),
-
-          // 4. Action Button (Refresh)
-          SizedBox(
-            width: double.infinity,
-            height: 55,
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _refresh,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                elevation: 0,
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : const Text(
-                      "Refresh Feed",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+      child: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Illustration
+                    // Using a placeholder image or icon as per plan since we don't have the exact asset ready in code imports yet
+                    // Ideally: Image.asset('assests/static/no_feed_screen.png'), but I'll use a semantic icon for now
+                    // user provided path: f:\Projects\Blindly\blindly-dating-app\assests\static\no_feed_screen.png
+                    // which seems to be the design reference, NOT the asset to use.
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 300),
+                      child: Image.asset(
+                        'assests/static/no_feed_screen.png', // Trying to use the uploaded image if it exists in assets, otherwise fallback
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(
+                            Icons
+                                .mobile_friendly_rounded, // Placeholder for the phone interaction illustration
+                            size: 150,
+                            color: colorScheme.onSurface.withOpacity(0.2),
+                          );
+                        },
                       ),
                     ),
-            ),
-          ),
+                    const SizedBox(height: 32),
 
-          const SizedBox(height: 16),
+                    // Title
+                    Text(
+                      "Lets Discover!",
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Poppins',
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
 
-          // 5. Secondary Action (Settings)
-          TextButton(
-            onPressed: () {
-              // Navigate to Discovery Settings (to increase radius)
-            },
-            child: const Text(
-              "Adjust Discovery Settings",
-              style: TextStyle(color: Colors.grey),
+                    // Description
+                    Text(
+                      "You’re viewed all the profiles matching your current preference. Expand your search or check back soon for new peoples.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: colorScheme.onSurface.withOpacity(0.7),
+                        height: 1.5,
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+
+                    // "Adjust Your Filters" Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: onAdjustFilters,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: colorScheme
+                              .primary, // Dark Olive/Green from design
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          "Adjust Your Filters",
+                          style: TextStyle(
+                            color: colorScheme.onPrimary, // Goldish text
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                            fontFamily: 'Poppins',
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // "Notify Me About New People" Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: onNotifyMe,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: colorScheme.surface, // Light grey
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          "Notify Me About New People",
+                          style: TextStyle(
+                            color: colorScheme.onSurface,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                            fontFamily: 'Poppins',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

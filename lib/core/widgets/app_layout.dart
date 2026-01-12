@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../features/profile/profile.dart';
 import '../../features/home/screens/home_screen.dart';
 import '../../features/match/liked_you_screen.dart';
+import '../../features/discovery/presentation/screens/discover_screen.dart';
+import '../../features/chat/presentation/screens/chat_screen.dart';
 
 class AppLayout extends StatelessWidget {
   final Widget child;
@@ -10,12 +12,12 @@ class AppLayout extends StatelessWidget {
   final int selectedIndex;
 
   const AppLayout({
-    Key? key,
+    super.key,
     required this.child,
     this.showFooter = true,
     this.appBar,
     this.selectedIndex = 2,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -36,8 +38,12 @@ class AppLayout extends StatelessWidget {
         (route) => false,
       );
     } else if (index == 1) {
-      // TODO: Navigate to Discover screen when created
-      // For now, do nothing or show coming soon
+      // Navigate to Discover screen
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const DiscoverScreen()),
+        (route) => false,
+      );
     } else if (index == 2) {
       // Navigate to Home Screen (Peoples/Swipe)
       Navigator.pushAndRemoveUntil(
@@ -53,60 +59,60 @@ class AppLayout extends StatelessWidget {
         (route) => false,
       );
     } else if (index == 4) {
-      // TODO: Navigate to Chat screen when created
-      // For now, do nothing or show coming soon
+      // Navigate to Chat screen
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const ChatScreen()),
+        (route) => false,
+      );
     }
   }
 
   Widget _buildFooter(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
+      decoration: BoxDecoration(color: Colors.white),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildNavItem(
                 context: context,
-                icon: Icons.person_outline,
+                selectedIcon: Icons.person,
+                unselectedIcon: Icons.person_outline,
                 label: 'Profile',
                 index: 0,
                 isSelected: selectedIndex == 0,
               ),
               _buildNavItem(
                 context: context,
-                icon: Icons.explore_outlined,
+                selectedIcon: Icons.explore,
+                unselectedIcon: Icons.explore_outlined,
                 label: 'Discover',
                 index: 1,
                 isSelected: selectedIndex == 1,
               ),
               _buildNavItem(
                 context: context,
-                icon: Icons.people_outline,
+                selectedIcon: Icons.people,
+                unselectedIcon: Icons.people_outline,
                 label: 'Peoples',
                 index: 2,
                 isSelected: selectedIndex == 2,
               ),
               _buildNavItem(
                 context: context,
-                icon: Icons.favorite_outline,
+                selectedIcon: Icons.favorite,
+                unselectedIcon: Icons.favorite_border,
                 label: 'Liked You',
                 index: 3,
                 isSelected: selectedIndex == 3,
               ),
               _buildNavItem(
                 context: context,
-                icon: Icons.chat_bubble_outline,
+                selectedIcon: Icons.chat_bubble,
+                unselectedIcon: Icons.chat_bubble_outline,
                 label: 'Chat',
                 index: 4,
                 isSelected: selectedIndex == 4,
@@ -120,13 +126,14 @@ class AppLayout extends StatelessWidget {
 
   Widget _buildNavItem({
     required BuildContext context,
-    required IconData icon,
+    required IconData selectedIcon,
+    required IconData unselectedIcon,
     required String label,
     required int index,
     required bool isSelected,
   }) {
-    final Color selectedColor = Theme.of(context).colorScheme.secondary;
-    final Color unselectedColor = Theme.of(context).colorScheme.onSurface;
+    final Color selectedColor = Theme.of(context).colorScheme.primary;
+    final Color unselectedColor = Colors.grey;
 
     return GestureDetector(
       onTap: () => _handleNavigation(context, index),
@@ -134,19 +141,20 @@ class AppLayout extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            icon,
+            isSelected ? selectedIcon : unselectedIcon,
             color: isSelected ? selectedColor : unselectedColor,
             size: 28,
           ),
           const SizedBox(height: 4),
-          Text(
-            label,
+          AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 200),
             style: TextStyle(
               fontSize: 12,
               fontFamily: 'Poppins',
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
               color: isSelected ? selectedColor : unselectedColor,
             ),
+            child: Text(label),
           ),
         ],
       ),

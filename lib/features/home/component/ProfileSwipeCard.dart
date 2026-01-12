@@ -173,14 +173,38 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                               spacing: 10,
                               runSpacing: 10,
                               children: [
-                                _buildInfoChip('📏 ${widget.profile.height}', Colors.blue),
-                                _buildInfoChip('⚡ ${widget.profile.activityLevel}', Colors.purple),
-                                _buildInfoChip('🎓 ${widget.profile.education}', Colors.orange),
-                                _buildInfoChip('👤 ${widget.profile.gender}', Colors.blue),
-                                _buildInfoChip('🕉️ ${widget.profile.religion}', Colors.orange),
-                                _buildInfoChip('♉ ${widget.profile.zodiac}', Colors.brown),
-                                _buildInfoChip('🍺 ${widget.profile.drinking}', Colors.green),
-                                _buildInfoChip('🚭 ${widget.profile.smoking}', Colors.red),
+                                _buildInfoChip(
+                                  '📏 ${widget.profile.height}',
+                                  Colors.blue,
+                                ),
+                                _buildInfoChip(
+                                  '⚡ ${widget.profile.activityLevel}',
+                                  Colors.purple,
+                                ),
+                                _buildInfoChip(
+                                  '🎓 ${widget.profile.education}',
+                                  Colors.orange,
+                                ),
+                                _buildInfoChip(
+                                  '👤 ${widget.profile.gender}',
+                                  Colors.blue,
+                                ),
+                                _buildInfoChip(
+                                  '🕉️ ${widget.profile.religion}',
+                                  Colors.orange,
+                                ),
+                                _buildInfoChip(
+                                  '♉ ${widget.profile.zodiac}',
+                                  Colors.brown,
+                                ),
+                                _buildInfoChip(
+                                  '🍺 ${widget.profile.drinking}',
+                                  Colors.green,
+                                ),
+                                _buildInfoChip(
+                                  '🚭 ${widget.profile.smoking}',
+                                  Colors.red,
+                                ),
                               ],
                             ),
                           ],
@@ -217,13 +241,20 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                             Wrap(
                               spacing: 8,
                               runSpacing: 8,
-                              children: widget.profile.lookingForTags.map((tag) {
+                              children: widget.profile.lookingForTags.map((
+                                tag,
+                              ) {
                                 return Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 8,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.grey[100],
                                     borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: Colors.grey[300]!),
+                                    border: Border.all(
+                                      color: Colors.grey[300]!,
+                                    ),
                                   ),
                                   child: Text(
                                     tag,
@@ -309,11 +340,16 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                               runSpacing: 8,
                               children: widget.profile.causes.map((cause) {
                                 return Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 8,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.white,
                                     borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: Colors.grey[300]!),
+                                    border: Border.all(
+                                      color: Colors.grey[300]!,
+                                    ),
                                   ),
                                   child: Text(
                                     cause,
@@ -360,11 +396,16 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                               runSpacing: 8,
                               children: widget.profile.languages.map((lang) {
                                 return Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 10,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.blue[50],
                                     borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: Colors.blue[200]!),
+                                    border: Border.all(
+                                      color: Colors.blue[200]!,
+                                    ),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -458,13 +499,20 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                             Wrap(
                               spacing: 8,
                               runSpacing: 8,
-                              children: widget.profile.spotifyArtists.map((artist) {
+                              children: widget.profile.spotifyArtists.map((
+                                artist,
+                              ) {
                                 return Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 8,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.white,
                                     borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: Colors.grey[300]!),
+                                    border: Border.all(
+                                      color: Colors.grey[300]!,
+                                    ),
                                   ),
                                   child: Text(
                                     artist,
@@ -554,10 +602,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
           ),
           const SizedBox(height: 12),
           // Divider line
-          Container(
-            height: 1,
-            color: Colors.grey[300],
-          ),
+          Container(height: 1, color: Colors.grey[300]),
           const SizedBox(height: 12),
           // Kudos badge
           _buildKudosBadge(),
@@ -754,18 +799,22 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
             _buildActionButton(
               icon: Icons.close,
               color: const Color.fromRGBO(65, 72, 51, 1),
-              onTap: widget.onBlock ?? () {
-                _showBlockDialog();
-              },
+              onTap:
+                  widget.onBlock ??
+                  () {
+                    _showBlockDialog();
+                  },
             ),
 
             // Report button (Flag)
             _buildActionButton(
               icon: Icons.flag,
               color: const Color.fromRGBO(65, 72, 51, 1),
-              onTap: widget.onReport ?? () {
-                _showReportDialog();
-              },
+              onTap:
+                  widget.onReport ??
+                  () {
+                    _showReportDialog();
+                  },
             ),
 
             // Like button (Heart)
@@ -848,11 +897,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
             ),
           ],
         ),
-        child: Icon(
-          icon,
-          color: const Color(0xFFD4AF37),
-          size: 32,
-        ),
+        child: Icon(icon, color: const Color(0xFFD4AF37), size: 32),
       ),
     );
   }

@@ -18,6 +18,7 @@ migrate_working_dir/
 *.iws
 .idea/
 
+settings.json
 .env
 .env.development
 .env.production
@@ -46,3 +47,9 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Supabase
+supabase/.branches
+supabase/.temp
+supabase_bin/
+supabase.zip

@@ -2,29 +2,33 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repository/swipe_repository.dart';
 
 // ❌ DO NOT redefine swipeRepositoryProvider here
-// It already exists in swipe_repository.dart
+// It is already defined in swipe_repository.dart
 
-// -------------------------------
+// ======================================================
 // Swipe State Provider
-// -------------------------------
-final swipeProvider = StateNotifierProvider<SwipeNotifier, AsyncValue<void>>((
-  ref,
-) {
-  return SwipeNotifier(ref.read(swipeRepositoryProvider));
-});
+// ======================================================
+final swipeProvider =
+    StateNotifierProvider<SwipeNotifier, AsyncValue<void>>(
+  (ref) {
+    return SwipeNotifier(ref.read(swipeRepositoryProvider));
+  },
+);
 
-// -------------------------------
+// ======================================================
 // Swipe Notifier
-// -------------------------------
+// ======================================================
 class SwipeNotifier extends StateNotifier<AsyncValue<void>> {
   final SwipeRepository _repository;
 
   SwipeNotifier(this._repository) : super(const AsyncData(null));
 
-  /// Records a swipe action
-  ///
+  // --------------------------------------------------
+  // RECORD SWIPE
+  // --------------------------------------------------
   /// action must be:
-  /// like | pass | super_like | rewind
+  /// - like
+  /// - pass
+  /// - super_like
   Future<void> swipe({
     required String targetProfileId,
     required String action,
@@ -33,15 +37,32 @@ class SwipeNotifier extends StateNotifier<AsyncValue<void>> {
       state = const AsyncLoading();
 
       await _repository.recordSwipe(
-        targetProfileId: targetProfileId, // ✅ FIXED
-        actionType: action, // ✅ FIXED
+        targetProfileId: targetProfileId,
+        actionType: action,
       );
 
-      // Success
+      // ✅ Success
       state = const AsyncData(null);
     } catch (e, st) {
       state = AsyncError(e, st);
-      rethrow; // 🔥 IMPORTANT: UI must receive error
+      rethrow; // 🔥 UI must receive the error
+    }
+  }
+
+  // --------------------------------------------------
+  // UNDO LAST SWIPE (PREMIUM ONLY)
+  // --------------------------------------------------
+  Future<void> undo() async {
+    try {
+      state = const AsyncLoading();
+
+      await _repository.undoLastSwipe();
+
+      // ✅ Success
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow; // 🔥 UI handles PREMIUM_REQUIRED, etc.
     }
   }
 }
