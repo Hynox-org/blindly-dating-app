@@ -85,20 +85,20 @@ dev_dependencies:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assests/images/blindly-app-icon-color.jpg"
+  image_path: "assets/images/blindly-app-icon-color.jpg"
   min_sdk_android: 21
   web:
     generate: true
-    image_path: "assests/images/blindly-app-icon-color.jpg"
+    image_path: "assets/images/blindly-app-icon-color.jpg"
     background_color: "#hex_code"
     theme_color: "#hex_code"
   windows:
     generate: true
-    image_path: "assests/images/blindly-app-icon-color.jpg"
+    image_path: "assets/images/blindly-app-icon-color.jpg"
     icon_size: 48
   macos:
     generate: true
-    image_path: "assests/images/blindly-app-icon-color.jpg"
+    image_path: "assets/images/blindly-app-icon-color.jpg"
 
 dependency_overrides:
   fluttertoast: ^8.2.9
@@ -109,15 +109,15 @@ flutter:
   assets:
     - .env.development
     - .env.production
-    - assests/images/
-    - assests/icons/
-    - assests/static/
+    - assets/images/
+    - assets/icons/
+    - assets/static/
 
   fonts:
     - family: Inter
       fonts:
-        - asset: assests/fonts/Inter/static/Inter_28pt-Regular.ttf
+        - asset: assets/fonts/Inter/static/Inter_28pt-Regular.ttf
 
     - family: Poppins
       fonts:
-        - asset: assests/fonts/Poppins/Poppins-Regular.ttf
+        - asset: assets/fonts/Poppins/Poppins-Regular.ttf

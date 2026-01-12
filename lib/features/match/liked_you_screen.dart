@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
-import './../home/screens/home_screen.dart';
 import '../../../core/widgets/app_layout.dart';
 import '../home/screens/connection_type_screen.dart';
 import '../../../core/utils/navigation_utils.dart';

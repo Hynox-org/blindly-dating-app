@@ -12,12 +12,12 @@ class AppLayout extends StatelessWidget {
   final int selectedIndex;
 
   const AppLayout({
-    Key? key,
+    super.key,
     required this.child,
     this.showFooter = true,
     this.appBar,
     this.selectedIndex = 2,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

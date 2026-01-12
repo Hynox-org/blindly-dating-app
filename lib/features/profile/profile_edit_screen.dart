@@ -20,26 +20,26 @@ class ProfileEditScreen extends StatefulWidget {
 
 class _ProfileEditScreenState extends State<ProfileEditScreen> {
   // Profile data
-  int _age = 27;
-  String _work = 'Designer';
-  String _education = 'PG graduate';
-  String _gender = 'Male';
-  String _location = 'Coimbatore';
-  String _hometown = 'Coimbatore';
+  final int _age = 27;
+  final String _work = 'Designer';
+  final String _education = 'PG graduate';
+  final String _gender = 'Male';
+  final String _location = 'Coimbatore';
+  final String _hometown = 'Coimbatore';
 
   // More about you
-  String _height = '5.8';
-  String _exercise = 'Daily';
-  String _drinking = 'Yes';
-  String _smoking = 'Yes';
-  String _kids = 'No';
-  String _haveKids = 'No';
-  String _zodiac = 'Taurus';
-  String _politics = 'Not interested';
-  String _religion = 'Hindu';
+  final String _height = '5.8';
+  final String _exercise = 'Daily';
+  final String _drinking = 'Yes';
+  final String _smoking = 'Yes';
+  final String _kids = 'No';
+  final String _haveKids = 'No';
+  final String _zodiac = 'Taurus';
+  final String _politics = 'Not interested';
+  final String _religion = 'Hindu';
 
   // Interests
-  List<String> _selectedInterests = [
+  final List<String> _selectedInterests = [
     'Dance',
     'Cricket',
     'Whiskey',
@@ -67,7 +67,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   ];
 
   // Qualities
-  List<String> _selectedQualities = [
+  final List<String> _selectedQualities = [
     'Empathy',
     'Emotional intelligence',
     'Gratitude',
@@ -84,7 +84,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   ];
 
   // Languages
-  List<String> _selectedLanguages = ['Tamil', 'English'];
+  final List<String> _selectedLanguages = ['Tamil', 'English'];
   final List<String> _allLanguages = [
     'Tamil',
     'English',
@@ -1177,7 +1177,7 @@ Widget _buildLanguagesSection() {
                       ],
                     ),
                   );
-                }).toList(),
+                }),
                 const Spacer(),
                 const Icon(
                   Icons.arrow_forward_ios,
