@@ -1,55 +1,87 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-// ✅ Keep your existing repository import
 import '../../../features/discovery/repository/discovery_repository.dart';
 import '../domain/models/discovery_user_model.dart';
 
-// ✅ 1. The Notifier (Manages the Data State)
+// ======================================================
+// Discovery Feed Notifier
+// ======================================================
 class DiscoveryFeedNotifier
     extends StateNotifier<AsyncValue<List<DiscoveryUser>>> {
   final DiscoveryRepository _repository;
 
+  int _offset = 0;
+  static const int _limit = 20;
+
   DiscoveryFeedNotifier(this._repository) : super(const AsyncLoading());
 
-  /// 📦 LOAD FROM CACHE (Called by BootstrapService)
-  /// Instantly shows data from the phone's storage
+  // --------------------------------------------------
+  // 📦 LOAD FROM CACHE (Bootstrap)
+  // --------------------------------------------------
   void loadFromCache(List<DiscoveryUser> cachedUsers) {
     if (cachedUsers.isNotEmpty) {
       state = AsyncData(cachedUsers);
     }
   }
 
-  /// 🌐 REFRESH FROM NETWORK (Called by BootstrapService or Pull-to-Refresh)
-  Future<List<DiscoveryUser>> refreshFeed() async {
+  // --------------------------------------------------
+  // 🌐 INITIAL LOAD / REFRESH
+  // --------------------------------------------------
+  Future<void> refreshFeed() async {
     try {
-      // Only show loading spinner if we have NO data at all
-      if (state.value == null || state.value!.isEmpty) {
-        state = const AsyncLoading();
-      }
+      _offset = 0;
+      state = const AsyncLoading();
 
-      // ✅ CALLING YOUR EXISTING REPOSITORY METHOD
       final freshUsers = await _repository.getDiscoveryFeed(
-        radius: 50000, // 50km
+        radius: 5000,
+        limit: _limit,
+        offset: _offset,
       );
 
-      // Update the UI
       state = AsyncData(freshUsers);
-      return freshUsers;
     } catch (e, st) {
-      // If network fails but we have cache, keep showing cache!
-      if (state.value == null) {
-        state = AsyncError(e, st);
+      state = AsyncError(e, st);
+    }
+  }
+
+  // --------------------------------------------------
+  // 🔁 LOAD NEXT BATCH (AFTER ALL CARDS SWIPED)
+  // --------------------------------------------------
+  /// Returns:
+  /// true  → new profiles loaded
+  /// false → no more profiles available
+  Future<bool> loadNextBatch() async {
+    try {
+      _offset += _limit;
+
+      final newUsers = await _repository.getDiscoveryFeed(
+        radius: 5000,
+        limit: _limit,
+        offset: _offset,
+      );
+
+      if (newUsers.isEmpty) {
+        // 🚫 No more profiles in DB
+        state = const AsyncData([]);
+        return false;
       }
-      rethrow;
+
+      // Replace feed with NEW users
+      state = AsyncData(newUsers);
+      return true;
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      return false;
     }
   }
 }
 
-// ✅ 2. The Provider Definition
+// ======================================================
+// Provider
+// ======================================================
 final discoveryFeedProvider =
     StateNotifierProvider<
-      DiscoveryFeedNotifier,
-      AsyncValue<List<DiscoveryUser>>
-    >((ref) {
-      final repository = ref.watch(discoveryRepositoryProvider);
-      return DiscoveryFeedNotifier(repository);
-    });
+        DiscoveryFeedNotifier,
+        AsyncValue<List<DiscoveryUser>>>((ref) {
+  final repository = ref.watch(discoveryRepositoryProvider);
+  return DiscoveryFeedNotifier(repository);
+});

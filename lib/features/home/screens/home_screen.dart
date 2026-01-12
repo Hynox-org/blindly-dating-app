@@ -6,14 +6,17 @@ import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 // ✅ 1. Providers
 import '../../auth/providers/auth_providers.dart';
 import '../../../features/discovery/povider/discovery_provider.dart';
+import '../../../features/matches/provider/match_provider.dart';
 
 // ✅ 2. Models
 import '../../discovery/domain/models/discovery_user_model.dart';
+import '../../../features/matches/domain/models/match_model.dart';
 
 // ✅ 3. Components
 import '../component/ProfileSwipeCard.dart';
 import '../../../../core/utils/gender_utils.dart';
 import '../../../../core/utils/custom_popups.dart';
+import '../../../features/matches/presentation/widgets/match_popup.dart';
 
 // ✅ 4. New Integrations
 import '../../../../core/services/bootstrap_service.dart';
@@ -28,6 +31,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  late ProviderSubscription<AsyncValue<List<MatchModel>>> _matchSub;
   final CardSwiperController _controller = CardSwiperController();
 
   // State Variables
@@ -40,45 +44,66 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // ✅ NEW: Controls the initialization flow
   bool _isLocationReady = false;
 
+
   @override
-  void initState() {
-    super.initState();
-    // Start the initialization sequence immediately
-    _initLocationAndFeed();
-  }
+void initState() {
+  super.initState();
+
+  _initLocationAndFeed();
+
+  // 🔥 Start Supabase realtime
+  ref.read(matchRealtimeProvider);
+
+  // 🔥 SAFE match listener (correct Riverpod usage)
+  _matchSub = ref.listenManual<AsyncValue<List<MatchModel>>>(
+    myMatchesProvider,
+    (previous, next) {
+      final prev = previous?.value ?? [];
+      final curr = next.value ?? [];
+
+      // Detect NEW match by ID
+      final prevIds = prev.map((m) => m.matchId).toSet();
+      final newMatches =
+          curr.where((m) => !prevIds.contains(m.matchId)).toList();
+
+      if (newMatches.isNotEmpty) {
+        final latestMatch = newMatches.first;
+
+        if (!mounted) return;
+
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => MatchPopup(
+            match: latestMatch,
+            onChat: () => Navigator.pop(context),
+            onClose: () => Navigator.pop(context),
+          ),
+        );
+      }
+    },
+  );
+}
+
 
   /// ✅ SEQUENTIAL INITIALIZATION
   /// Uses BootstrapService to handle everything (Cache, Location, Network)
   Future<void> _initLocationAndFeed() async {
     // Wait for the frame to build so we can safely use 'ref'
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      try {
-        debugPrint('🚀 HOMESCREEN: initializing Bootstrap...');
+     try {
+    await ref.read(bootstrapServiceProvider).initApp();
+  } catch (e) {
+    debugPrint('Bootstrap error: $e');
+  }
 
-        // 1. Initialize App Services (Hive, Cache, Background Refresh)
-        await ref.read(bootstrapServiceProvider).initApp();
-        debugPrint('✅ HOMESCREEN: Bootstrap Complete.');
-
-        // 2. Update UI state to show the feed
-        if (mounted) {
-          setState(() {
-            _isLocationReady = true;
-          });
-        }
-      } catch (e) {
-        debugPrint('❌ HOMESCREEN: Bootstrap Error: $e');
-        // Even if it fails, we try to load the feed (maybe using old location/cache)
-        if (mounted) {
-          setState(() {
-            _isLocationReady = true;
-          });
-        }
-      }
-    });
+  if (mounted) {
+    setState(() => _isLocationReady = true);
+  }
   }
 
   @override
   void dispose() {
+     _matchSub.close();
     _controller.dispose();
     super.dispose();
   }
@@ -120,6 +145,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+
+    
     // ✅ CRITICAL CHANGE:
     // Only watch the feed provider if location is ready.
     // If not ready, we pass null or handle it in the body.
@@ -300,6 +327,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   const AllowedSwipeDirection.only(
                                     left: true,
                                     right: true,
+                                    up: true,
                                   ),
                               onSwipe: (prev, curr, dir) =>
                                   _onSwipe(prev, curr, dir, profiles),
@@ -512,22 +540,61 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     setState(() {
       _swipeProgress = 0.0;
     });
-    if (_swipeCount <= 0) {
+
+    // 1️⃣ Determine action
+    String action = 'pass';
+    if (direction == CardSwiperDirection.right) action = 'like';
+    if (direction == CardSwiperDirection.top) action = 'super_like';
+
+    // 2️⃣ Optimistic UI limit check (only for likes)
+    if (action != 'pass' && _swipeCount <= 0) {
       _showLimitReachedDialog();
-      return false;
+      return false; // block swipe visually
     }
 
-    _triggerHapticFeedback(direction);
-    setState(() {
-      _swipeCount--;
-    });
-
     final profile = profiles[previousIndex];
-    if (direction == CardSwiperDirection.left) _handlePass(profile);
-    if (direction == CardSwiperDirection.right) _handleLike(profile);
+    _triggerHapticFeedback(direction);
 
-    if (currentIndex == null) _showNoMoreCardsDialog();
-    return true;
+    // 3️⃣ Call DB (source of truth)
+    ref
+        .read(swipeProvider.notifier)
+        .swipe(targetProfileId: profile.id, action: action)
+        .then((_) {
+          // ✅ SUCCESS → now update UI state
+          if (action == 'like' || action == 'super_like') {
+            setState(() {
+              _swipeCount--;
+            });
+
+            if (action == 'like') {
+              showSuccessPopup(context, 'You liked ${profile.name}! 💚');
+            }
+
+            if (action == 'super_like') {
+              showSuccessPopup(context, 'Super liked ${profile.name}! 🌟');
+            }
+          }
+        })
+        .catchError((e) {
+          // ❌ DB failed → rollback swipe
+          debugPrint('Swipe failed: $e');
+          _controller.undo();
+          _showLimitReachedDialog();
+        });
+
+    if (currentIndex == null) {
+  ref
+      .read(discoveryFeedProvider.notifier)
+      .loadNextBatch()
+      .then((hasMore) {
+        if (!hasMore && mounted) {
+          _showNoMoreCardsDialog();
+        }
+      });
+}
+
+
+    return true; // allow visual swipe
   }
 
   bool _onUndo(
@@ -551,19 +618,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     HapticFeedback.selectionClick();
   }
 
-  void _handlePass(UserProfile profile) {
-    debugPrint('Passed: ${profile.name}');
-    ref
-        .read(swipeProvider.notifier)
-        .swipe(targetProfileId: profile.id, action: 'pass');
-  }
+  // void _handlePass(UserProfile profile) {
+  //   debugPrint('Passed: ${profile.name}');
+  //   ref
+  //       .read(swipeProvider.notifier)
+  //       .swipe(targetProfileId: profile.id, action: 'pass');
+  // }
 
-  void _handleLike(UserProfile profile) {
-    showSuccessPopup(context, 'You liked ${profile.name}! 💚');
-    ref
-        .read(swipeProvider.notifier)
-        .swipe(targetProfileId: profile.id, action: 'like');
-  }
+  // void _handleLike(UserProfile profile) {
+  //   showSuccessPopup(context, 'You liked ${profile.name}! 💚');
+  //   ref
+  //       .read(swipeProvider.notifier)
+  //       .swipe(targetProfileId: profile.id, action: 'like');
+  // }
 
   void _showPremiumDialog() {
     showDialog(

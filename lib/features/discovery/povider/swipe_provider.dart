@@ -1,8 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repository/swipe_repository.dart';
-
-// ❌ DO NOT redefine swipeRepositoryProvider here
-// It is already defined in swipe_repository.dart
+import '../../matches/provider/match_provider.dart';
 
 // ======================================================
 // Swipe State Provider
@@ -10,7 +8,10 @@ import '../repository/swipe_repository.dart';
 final swipeProvider =
     StateNotifierProvider<SwipeNotifier, AsyncValue<void>>(
   (ref) {
-    return SwipeNotifier(ref.read(swipeRepositoryProvider));
+    return SwipeNotifier(
+      ref.read(swipeRepositoryProvider),
+      ref, // 🔥 PASS REF
+    );
   },
 );
 
@@ -19,8 +20,10 @@ final swipeProvider =
 // ======================================================
 class SwipeNotifier extends StateNotifier<AsyncValue<void>> {
   final SwipeRepository _repository;
+  final Ref _ref;
 
-  SwipeNotifier(this._repository) : super(const AsyncData(null));
+  SwipeNotifier(this._repository, this._ref)
+      : super(const AsyncData(null));
 
   // --------------------------------------------------
   // RECORD SWIPE
@@ -41,11 +44,15 @@ class SwipeNotifier extends StateNotifier<AsyncValue<void>> {
         actionType: action,
       );
 
+      // 🔥🔥🔥 CRITICAL FIX
+      // Force refresh matches immediately
+      _ref.read(myMatchesProvider.notifier).loadMatches();
+
       // ✅ Success
       state = const AsyncData(null);
     } catch (e, st) {
       state = AsyncError(e, st);
-      rethrow; // 🔥 UI must receive the error
+      rethrow; // UI must receive the error
     }
   }
 
@@ -58,11 +65,13 @@ class SwipeNotifier extends StateNotifier<AsyncValue<void>> {
 
       await _repository.undoLastSwipe();
 
-      // ✅ Success
+      // 🔥 Refresh matches after undo as well
+      _ref.read(myMatchesProvider.notifier).loadMatches();
+
       state = const AsyncData(null);
     } catch (e, st) {
       state = AsyncError(e, st);
-      rethrow; // 🔥 UI handles PREMIUM_REQUIRED, etc.
+      rethrow;
     }
   }
 }
