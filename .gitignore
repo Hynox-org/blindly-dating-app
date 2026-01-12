@@ -14,10 +14,11 @@ migrate_working_dir/
 
 # IntelliJ related
 *.iml
-*.ipr
+*.ipr  
 *.iws
 .idea/
 
+.env
 .env.development
 .env.production
 # The .vscode folder contains launch configuration and tasks you configure in
