@@ -34,7 +34,7 @@ class NoMoreProfilesWidget extends StatelessWidget {
                     ConstrainedBox(
                       constraints: const BoxConstraints(maxHeight: 300),
                       child: Image.asset(
-                        'assests/static/no_feed_screen.png', // Trying to use the uploaded image if it exists in assets, otherwise fallback
+                        'assets/static/no_feed_screen.png', // Trying to use the uploaded image if it exists in assets, otherwise fallback
                         errorBuilder: (context, error, stackTrace) {
                           return Icon(
                             Icons
