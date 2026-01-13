@@ -644,7 +644,7 @@ $$;
 
 
 ALTER FUNCTION "public"."get_discovery_feed"("p_radius_km" double precision, "p_limit" integer, "p_offset" integer) OWNER TO "postgres";
-
+ 
 SET default_tablespace = '';
 
 SET default_table_access_method = "heap";

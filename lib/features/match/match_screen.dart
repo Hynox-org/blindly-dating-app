@@ -33,7 +33,7 @@ class _MatchScreenState extends State<MatchScreen> {
                 children: [
                   // Only the image - no fallback icons
                   Image.asset(
-                    'assests/static/match_illustration.png',
+                    'assets/static/match_illustration.png',
                     height: 250,
                     errorBuilder: (context, error, stackTrace) {
                       return const SizedBox(height: 250);

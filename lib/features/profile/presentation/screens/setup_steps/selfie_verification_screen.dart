@@ -643,7 +643,7 @@ class _SelfieVerificationScreenState
                 children: [
                   // Illustration
                   Image.asset(
-                    'assests/static/selfie_verification_screen.png',
+                    'assets/static/selfie_verification_screen.png',
                     height: 250,
                     fit: BoxFit.contain,
                   ),

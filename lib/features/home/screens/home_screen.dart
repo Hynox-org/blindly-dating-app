@@ -16,7 +16,6 @@ import '../../../../core/utils/gender_utils.dart';
 import '../../../../core/utils/custom_popups.dart';
 
 // ✅ 4. New Integrations
-import '../../../../core/services/bootstrap_service.dart';
 import '../../discovery/presentation/widgets/no_more_profiles_widget.dart';
 import '../../discovery/povider/swipe_provider.dart';
 import '../../../../core/utils/navigation_utils.dart';
@@ -36,10 +35,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final CardSwiperController _controller = CardSwiperController();
 
   // State Variables
-  int _swipeCount = 10;
-  final int _maxSwipes = 10;
-  final bool _isPremium = false;
+  final bool _isPremium = true;
   double _swipeProgress = 0.0;
+  final List<DiscoveryUser> _undoStack = [];
 
   // ✅ Controls the initialization flow
   bool _isLocationReady = false;
@@ -50,18 +48,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _initLocationAndFeed();
   }
 
+  
+
   /// ✅ SEQUENTIAL INITIALIZATION
   /// Uses BootstrapService to handle everything (Cache, Location, Network)
   Future<void> _initLocationAndFeed() async {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
-        debugPrint('🚀 HOMESCREEN: initializing Bootstrap...');
-
-        // 1. Initialize App Services (Hive, Cache, Background Refresh)
-        await ref.read(bootstrapServiceProvider).initApp();
-        debugPrint('✅ HOMESCREEN: Bootstrap Complete.');
-
-        // 2. Update UI state to show the feed
         if (mounted) {
           setState(() {
             _isLocationReady = true;
@@ -83,6 +76,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleDeckFinished() async {
+    debugPrint('🟡 Deck empty → requesting next batch');
+
+    final hasMore = await ref
+        .read(discoveryFeedProvider.notifier)
+        .loadNextBatch();
+
+    if (!hasMore && mounted) {
+      debugPrint('🔴 No more profiles from DB');
+      _showNoMoreCardsDialog();
+    } else {
+      debugPrint('🟢 New batch loaded');
+    }
   }
 
   // ✅ Helper to map API data to UI data
@@ -280,7 +288,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     right: true,
                                   ),
                               onSwipe: (prev, curr, dir) =>
-                                  _onSwipe(prev, curr, dir, profiles),
+                                  _onSwipe(prev, curr, dir, discoveryData),
                               onUndo: _onUndo,
                               cardBuilder: (context, index, horiz, vert) {
                                 // Track swipe progress for indicators
@@ -307,20 +315,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   verticalThreshold: vert.toDouble(),
                                   isHomeScreen: true,
                                   onLike: () {
-                                    if (_swipeCount > 0) {
-                                      _handleLike(profiles[index]);
-                                      _controller.swipe(
-                                        CardSwiperDirection.right,
-                                      );
-                                    }
+                                    _handleLike(profiles[index]);
+                                    _controller.swipe(
+                                      CardSwiperDirection.right,
+                                    );
                                   },
                                   onBlock: () {
-                                    if (_swipeCount > 0) {
-                                      _handlePass(profiles[index]);
-                                      _controller.swipe(
-                                        CardSwiperDirection.left,
-                                      );
-                                    }
+                                    _handlePass(profiles[index]);
+                                    _controller.swipe(CardSwiperDirection.left);
                                   },
                                   onReport: () {
                                     debugPrint(
@@ -369,49 +371,70 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   bool _onSwipe(
-    int previousIndex,
-    int? currentIndex,
-    CardSwiperDirection direction,
-    List<UserProfile> profiles,
-  ) {
-    setState(() {
-      _swipeProgress = 0.0;
-    });
+  int previousIndex,
+  int? currentIndex,
+  CardSwiperDirection direction,
+  List<DiscoveryUser> discoveryUsers,
+) {
+  setState(() {
+    _swipeProgress = 0.0;
+  });
 
-    if (_swipeCount <= 0) {
-      _showLimitReachedDialog();
-      return false;
-    }
+  _triggerHapticFeedback(direction);
 
-    _triggerHapticFeedback(direction);
-    setState(() {
-      _swipeCount--;
-    });
+  // 1️⃣ Get swiped profile
+  final swipedUser = discoveryUsers[previousIndex];
 
-    final profile = profiles[previousIndex];
-    if (direction == CardSwiperDirection.left) _handlePass(profile);
-    if (direction == CardSwiperDirection.right) _handleLike(profile);
+  // 2️⃣ Save for undo
+  _undoStack.add(swipedUser);
 
-    if (currentIndex == null) _showNoMoreCardsDialog();
-    return true;
+  // 3️⃣ REMOVE FROM PROVIDER IMMEDIATELY 🔥🔥🔥
+  ref.read(discoveryFeedProvider.notifier).removeTopProfile();
+
+  // 4️⃣ Record swipe
+  final uiProfile = _mapToUserProfiles([swipedUser]).first;
+
+  if (direction == CardSwiperDirection.left) {
+    _handlePass(uiProfile);
+  } else if (direction == CardSwiperDirection.right) {
+    _handleLike(uiProfile);
   }
+
+  // 5️⃣ If deck empty → load next batch
+  if (currentIndex == null) {
+    _handleDeckFinished();
+  }
+
+  return true;
+}
+
 
   bool _onUndo(
-    int? previousIndex,
-    int currentIndex,
-    CardSwiperDirection direction,
-  ) {
-    if (!_isPremium) {
-      _showPremiumDialog();
-      return false;
-    }
-    HapticFeedback.mediumImpact();
-    setState(() {
-      _swipeCount++;
-      _swipeProgress = 0.0;
-    });
-    return true;
-  }
+  int? previousIndex,
+  int currentIndex,
+  CardSwiperDirection direction,
+) {
+  if (_undoStack.isEmpty) return false;
+
+  HapticFeedback.mediumImpact();
+
+  final restoredUser = _undoStack.removeLast();
+
+  // 1️⃣ Restore feed state
+  ref.read(discoveryFeedProvider.notifier).insertAtTop(restoredUser);
+
+  // 2️⃣ Delete swipe in DB
+  ref.read(swipeProvider.notifier).undo();
+
+  // 3️⃣ Animate card back
+  _controller.undo();
+
+  setState(() {
+    _swipeProgress = 0.0;
+  });
+
+  return true;
+}
 
   void _triggerHapticFeedback(CardSwiperDirection direction) {
     HapticFeedback.selectionClick();

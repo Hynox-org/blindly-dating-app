@@ -28,13 +28,13 @@ class NoMoreProfilesWidget extends StatelessWidget {
                   children: [
                     // Illustration
                     // Using a placeholder image or icon as per plan since we don't have the exact asset ready in code imports yet
-                    // Ideally: Image.asset('assests/static/no_feed_screen.png'), but I'll use a semantic icon for now
-                    // user provided path: f:\Projects\Blindly\blindly-dating-app\assests\static\no_feed_screen.png
+                    // Ideally: Image.asset('assets/static/no_feed_screen.png'), but I'll use a semantic icon for now
+                    // user provided path: f:\Projects\Blindly\blindly-dating-app\assets\static\no_feed_screen.png
                     // which seems to be the design reference, NOT the asset to use.
                     ConstrainedBox(
                       constraints: const BoxConstraints(maxHeight: 300),
                       child: Image.asset(
-                        'assests/static/no_feed_screen.png', // Trying to use the uploaded image if it exists in assets, otherwise fallback
+                        'assets/static/no_feed_screen.png', // Trying to use the uploaded image if it exists in assets, otherwise fallback
                         errorBuilder: (context, error, stackTrace) {
                           return Icon(
                             Icons

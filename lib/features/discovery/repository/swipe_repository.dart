@@ -2,20 +2,17 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 
-
 // ======================================================
-// Custom Exception (used by UI & Provider)
+// Custom Exception
 // ======================================================
 class SwipeException implements Exception {
   final String message;
-  final String code;
 
-  SwipeException(this.message, {this.code = 'UNKNOWN'});
+  SwipeException(this.message);
 
   @override
   String toString() => message;
 }
-
 
 // ======================================================
 // Provider
@@ -23,7 +20,6 @@ class SwipeException implements Exception {
 final swipeRepositoryProvider = Provider<SwipeRepository>((ref) {
   return SwipeRepository(Supabase.instance.client);
 });
-
 
 // ======================================================
 // Repository
@@ -34,139 +30,57 @@ class SwipeRepository {
   SwipeRepository(this._supabase);
 
   // --------------------------------------------------
-  // RECORD SWIPE
+  // 👍 RECORD SWIPE (like / pass / super_like)
   // --------------------------------------------------
-  /// actionType must be one of:
-  /// - like
-  /// - pass
-  /// - super_like
-  /// - rewind (handled via undo function instead)
   Future<void> recordSwipe({
-    required String targetProfileId, // profiles.id
-    required String actionType,
+    required String targetProfileId,
+    required String action, // like | pass | super_like
   }) async {
     try {
       debugPrint('👉 RECORD SWIPE');
-      debugPrint('TARGET PROFILE ID: $targetProfileId');
-      debugPrint('ACTION TYPE: $actionType');
+      debugPrint('TARGET: $targetProfileId');
+      debugPrint('ACTION: $action');
 
-      final response = await _supabase.rpc(
-        'record_swipe',
+      await _supabase.rpc(
+        'record_swipe_action',
         params: {
           'p_target_profile_id': targetProfileId,
-          'p_action_type': actionType,
+          'p_action': action,
         },
       );
 
-      debugPrint('🧪 SWIPE RESPONSE: $response');
-
-      if (response is Map && response['success'] == false) {
-        final code = response['code'] as String? ?? 'UNKNOWN';
-
-        switch (code) {
-          case 'LIKE_LIMIT_REACHED':
-            throw SwipeException(
-              'Daily like limit reached',
-              code: code,
-            );
-
-          case 'PREMIUM_REQUIRED':
-            throw SwipeException(
-              'This feature is for premium users',
-              code: code,
-            );
-
-          case 'PROFILE_NOT_FOUND':
-            throw SwipeException(
-              'Profile not found',
-              code: code,
-            );
-
-          case 'INVALID_ACTION_TYPE':
-            throw SwipeException(
-              'Invalid swipe action',
-              code: code,
-            );
-
-          default:
-            throw SwipeException(
-              'Swipe failed: $code',
-              code: code,
-            );
-        }
-      }
-
-      // success == true → do nothing
-      return;
-    } on SwipeException {
-      rethrow;
+      // If no exception → success
+      debugPrint('✅ Swipe recorded');
     } catch (e) {
-      debugPrint('❌ SWIPE ERROR: $e');
+      debugPrint('❌ RECORD SWIPE ERROR: $e');
 
-      // Ignore duplicate swipe silently
+      // Ignore duplicate swipe (unique constraint)
       if (e.toString().contains('unique_swipe_per_actor_target')) {
+        debugPrint('⚠️ Duplicate swipe ignored');
         return;
       }
 
-      throw SwipeException(
-        'Unexpected error while recording swipe',
-        code: 'UNEXPECTED_ERROR',
-      );
+      throw SwipeException('Failed to record swipe');
     }
   }
 
-
   // --------------------------------------------------
-  // UNDO LAST SWIPE (PREMIUM ONLY)
+  // ↩️ UNDO LAST SWIPE
   // --------------------------------------------------
-  Future<void> undoLastSwipe() async {
+  Future<bool> undoLastSwipe() async {
     try {
       debugPrint('↩️ UNDO LAST SWIPE');
 
-      final response = await _supabase.rpc('undo_last_swipe');
+      final result = await _supabase.rpc('undo_last_swipe');
 
-      debugPrint('🧪 UNDO RESPONSE: $response');
+      // undo_last_swipe RETURNS boolean
+      final success = result == true;
 
-      if (response is Map && response['success'] == false) {
-        final code = response['code'] as String? ?? 'UNKNOWN';
-
-        switch (code) {
-          case 'PREMIUM_REQUIRED':
-            throw SwipeException(
-              'Undo is a premium feature',
-              code: code,
-            );
-
-          case 'NO_SWIPE_FOUND':
-            throw SwipeException(
-              'No swipe to undo',
-              code: code,
-            );
-
-          case 'PROFILE_NOT_FOUND':
-            throw SwipeException(
-              'Profile not found',
-              code: code,
-            );
-
-          default:
-            throw SwipeException(
-              'Undo failed: $code',
-              code: code,
-            );
-        }
-      }
-
-      return;
-    } on SwipeException {
-      rethrow;
+      debugPrint('🧪 UNDO RESULT: $success');
+      return success;
     } catch (e) {
       debugPrint('❌ UNDO ERROR: $e');
-
-      throw SwipeException(
-        'Unexpected error while undoing swipe',
-        code: 'UNEXPECTED_ERROR',
-      );
+      throw SwipeException('Failed to undo swipe');
     }
   }
 }

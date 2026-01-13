@@ -1,10 +1,14 @@
 import 'dart:ui' as ui;
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:math' as math;
+import 'package:geolocator/geolocator.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../../auth/providers/auth_providers.dart';
-import '../../onboarding/presentation/screens/onboarding_shell.dart';
 import '../../onboarding/data/repositories/onboarding_repository.dart';
+import '../../onboarding/presentation/screens/onboarding_shell.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -17,47 +21,87 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     with TickerProviderStateMixin {
   late AnimationController _mainController;
 
-  // Scene 1: Bokeh/Background Animations
+  // Scene 1: Background
   late Animation<double> _bokehOpacity;
   late Animation<Color?> _backgroundColor;
 
-  // Scene 3: Text Animations
+  // Scene 3: Text
   late Animation<double> _textBlur;
   late Animation<double> _textOpacity;
   late Animation<double> _textScale;
 
+  bool _isInitialized = false;
+
+  // --------------------------------------------------
+  // INIT
+  // --------------------------------------------------
   @override
   void initState() {
     super.initState();
-    // Total Duration: 4.5 seconds (Reduced from 7.5)
+
     _mainController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 4500),
     );
 
     _mainController.addStatusListener((status) async {
-      if (status == AnimationStatus.completed) {
-        // Check for existing session
-        final user = ref.read(authRepositoryProvider).currentUser;
+      if (status != AnimationStatus.completed) return;
 
-        if (user != null) {
-          // Check onboarding status
-          await _checkOnboardingAndNavigate(user.id);
-        } else {
-          if (mounted) {
-            Navigator.pushReplacementNamed(context, '/welcome');
-          }
+      final user = ref.read(authRepositoryProvider).currentUser;
+
+      if (user != null) {
+        // ✅ LOCATION UPDATE (NON-BLOCKING & SAFE)
+        await _updateLocationIfPossible();
+
+        // ✅ ONBOARDING CHECK
+        await _checkOnboardingAndNavigate(user.id);
+      } else {
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/welcome');
         }
       }
     });
   }
 
+  // --------------------------------------------------
+  // LOCATION UPDATE (SAFE, FIRE-AND-FORGET)
+  // --------------------------------------------------
+  Future<void> _updateLocationIfPossible() async {
+    try {
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.low,
+        timeLimit: const Duration(seconds: 6),
+      );
+
+      await Supabase.instance.client.rpc(
+        'update_passport_location',
+        params: {
+          'p_lat': position.latitude,
+          'p_long': position.longitude,
+        },
+      );
+
+      debugPrint('📍 Passport location updated');
+    } catch (e) {
+      // ❗ NEVER block app startup
+      debugPrint('⚠️ Location update skipped: $e');
+    }
+  }
+
+  // --------------------------------------------------
+  // ONBOARDING FLOW
+  // --------------------------------------------------
   Future<void> _checkOnboardingAndNavigate(String userId) async {
-    // We'll use a direct Supabase call for speed or reuse repo if possible.
-    // Since we are in ConsumerStateful, we can use ref.
-    // However, we need to import OnboardingRepository.
-    // Let's assume we can fetch it.
-    // Use the repository to validate and potentially fix the status
     try {
       final isComplete = await ref
           .read(onboardingRepositoryProvider)
@@ -66,73 +110,70 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       if (!mounted) return;
 
       if (isComplete) {
-        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/home',
+          (route) => false,
+        );
       } else {
-        // Navigate to Onboarding Shell
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const OnboardingShell()),
         );
       }
-    } catch (e) {
-      if (mounted) Navigator.pushReplacementNamed(context, '/welcome');
+    } catch (_) {
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/welcome');
+      }
     }
   }
 
-  bool _isInitialized = false;
-
+  // --------------------------------------------------
+  // ANIMATIONS
+  // --------------------------------------------------
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!_isInitialized) {
-      _initAnimations();
-      _mainController.forward();
-      _isInitialized = true;
-    }
+    if (_isInitialized) return;
+
+    _initAnimations();
+    _mainController.forward();
+    _isInitialized = true;
   }
 
   void _initAnimations() {
-    // 0s - 1.5s: Display Bokeh (Scene 1)
-    // 1.5s - 2.5s: Fade out Bokeh / Transition Background (Scene 2)
-    _bokehOpacity = Tween<double>(begin: 1.0, end: 0.0).animate(
+    _bokehOpacity = Tween<double>(begin: 1, end: 0).animate(
       CurvedAnimation(
         parent: _mainController,
-        // Fade out between 1.5s (33%) and 2.5s (55%)
         curve: const Interval(0.33, 0.55, curve: Curves.easeOut),
       ),
     );
 
-    // Background Color Transition
-    _backgroundColor =
-        ColorTween(
-          begin: Theme.of(context).colorScheme.onPrimary, // Secondary Gold
-          end: Theme.of(context).colorScheme.surface, // White
-        ).animate(
-          CurvedAnimation(
-            parent: _mainController,
-            curve: const Interval(0.33, 0.55, curve: Curves.easeIn),
-          ),
-        );
-
-    // 2.5s - 4.5s: Text Reveal (Scene 3)
-    // Blur: 20 -> 0
-    _textBlur = Tween<double>(begin: 20.0, end: 0.0).animate(
+    _backgroundColor = ColorTween(
+      begin: Theme.of(context).colorScheme.onPrimary,
+      end: Theme.of(context).colorScheme.surface,
+    ).animate(
       CurvedAnimation(
         parent: _mainController,
-        // 2.5s (55%) to 4s (90%)
+        curve: const Interval(0.33, 0.55),
+      ),
+    );
+
+    _textBlur = Tween<double>(begin: 20, end: 0).animate(
+      CurvedAnimation(
+        parent: _mainController,
         curve: const Interval(0.55, 0.90, curve: Curves.easeOut),
       ),
     );
 
-    _textOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
+    _textOpacity = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(
         parent: _mainController,
-        curve: const Interval(0.55, 0.80, curve: Curves.easeIn),
+        curve: const Interval(0.55, 0.80),
       ),
     );
 
-    // Subtle scale up for text
-    _textScale = Tween<double>(begin: 0.95, end: 1.0).animate(
+    _textScale = Tween<double>(begin: 0.95, end: 1).animate(
       CurvedAnimation(
         parent: _mainController,
         curve: const Interval(0.55, 0.90, curve: Curves.easeOutQuad),
@@ -146,46 +187,39 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     super.dispose();
   }
 
+  // --------------------------------------------------
+  // UI
+  // --------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _mainController,
-      builder: (context, child) {
+      builder: (_, __) {
         return Scaffold(
           backgroundColor: _backgroundColor.value,
           body: Stack(
             fit: StackFit.expand,
             children: [
-              // Scene 1: Abstract Bokeh Background
               Opacity(
                 opacity: _bokehOpacity.value,
                 child: const _BokehBackground(),
               ),
-
-              // Main Content
               Center(
-                child: Stack(
-                  alignment: Alignment.center,
-                  clipBehavior: Clip.none,
-                  children: [
-                    // Text Logo
-                    Opacity(
-                      opacity: _textOpacity.value,
-                      child: Transform.scale(
-                        scale: _textScale.value,
-                        child: ImageFiltered(
-                          imageFilter: ui.ImageFilter.blur(
-                            sigmaX: _textBlur.value,
-                            sigmaY: _textBlur.value,
-                          ),
-                          child: Image.asset(
-                            'assests/images/blindly-text-logo.png',
-                            width: 280, // Slightly larger
-                          ),
-                        ),
+                child: Opacity(
+                  opacity: _textOpacity.value,
+                  child: Transform.scale(
+                    scale: _textScale.value,
+                    child: ImageFiltered(
+                      imageFilter: ui.ImageFilter.blur(
+                        sigmaX: _textBlur.value,
+                        sigmaY: _textBlur.value,
+                      ),
+                      child: Image.asset(
+                        'assets/images/blindly-text-logo.png',
+                        width: 280,
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
             ],
@@ -196,6 +230,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   }
 }
 
+// --------------------------------------------------
+// BACKGROUND
+// --------------------------------------------------
 class _BokehBackground extends StatefulWidget {
   const _BokehBackground();
 
@@ -210,10 +247,9 @@ class _BokehBackgroundState extends State<_BokehBackground>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 10),
-    )..repeat(reverse: true);
+    _controller =
+        AnimationController(vsync: this, duration: const Duration(seconds: 10))
+          ..repeat(reverse: true);
   }
 
   @override
@@ -226,25 +262,22 @@ class _BokehBackgroundState extends State<_BokehBackground>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _controller,
-      builder: (context, child) {
+      builder: (_, __) {
         return Stack(
           children: [
-            // Moving Blobs
-            _buildBlob(
+            _blob(
               Alignment(math.sin(_controller.value * 2 * math.pi) * 0.5, -0.2),
-              // Use primary color (Dark Green) with opacity
               Theme.of(context).colorScheme.primary.withOpacity(0.2),
               150,
             ),
-            _buildBlob(
-              Alignment(-0.3, math.cos(_controller.value * 2 * math.pi) * 0.5),
-              // Use secondary color (Gold) or just white with opacity for contrast
+            _blob(
+              Alignment(-0.3,
+                  math.cos(_controller.value * 2 * math.pi) * 0.5),
               Theme.of(context).colorScheme.secondary.withOpacity(0.3),
               200,
             ),
-            _buildBlob(
+            _blob(
               const Alignment(0.4, 0.4),
-              // Use primary color (Dark Green) with opacity
               Theme.of(context).colorScheme.primary.withOpacity(0.1),
               180,
             ),
@@ -254,7 +287,7 @@ class _BokehBackgroundState extends State<_BokehBackground>
     );
   }
 
-  Widget _buildBlob(Alignment alignment, Color color, double size) {
+  Widget _blob(Alignment alignment, Color color, double size) {
     return Align(
       alignment: alignment,
       child: Container(
@@ -263,7 +296,7 @@ class _BokehBackgroundState extends State<_BokehBackground>
         decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         child: BackdropFilter(
           filter: ui.ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-          child: Container(color: Colors.transparent),
+          child: const SizedBox(),
         ),
       ),
     );

@@ -1,16 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repository/swipe_repository.dart';
 
-// ❌ DO NOT redefine swipeRepositoryProvider here
-// It is already defined in swipe_repository.dart
-
 // ======================================================
-// Swipe State Provider
+// Swipe Provider
 // ======================================================
 final swipeProvider =
     StateNotifierProvider<SwipeNotifier, AsyncValue<void>>(
   (ref) {
-    return SwipeNotifier(ref.read(swipeRepositoryProvider));
+    final repository = ref.read(swipeRepositoryProvider);
+    return SwipeNotifier(repository);
   },
 );
 
@@ -23,46 +21,41 @@ class SwipeNotifier extends StateNotifier<AsyncValue<void>> {
   SwipeNotifier(this._repository) : super(const AsyncData(null));
 
   // --------------------------------------------------
-  // RECORD SWIPE
+  // 👍 RECORD SWIPE (like / pass / super_like)
   // --------------------------------------------------
-  /// action must be:
-  /// - like
-  /// - pass
-  /// - super_like
   Future<void> swipe({
     required String targetProfileId,
-    required String action,
+    required String action, // like | pass | super_like
   }) async {
     try {
       state = const AsyncLoading();
 
       await _repository.recordSwipe(
         targetProfileId: targetProfileId,
-        actionType: action,
+        action: action, // ✅ fixed param
       );
 
-      // ✅ Success
       state = const AsyncData(null);
     } catch (e, st) {
       state = AsyncError(e, st);
-      rethrow; // 🔥 UI must receive the error
+      rethrow;
     }
   }
 
   // --------------------------------------------------
-  // UNDO LAST SWIPE (PREMIUM ONLY)
+  // ↩️ UNDO LAST SWIPE
   // --------------------------------------------------
-  Future<void> undo() async {
+  Future<bool> undo() async {
     try {
       state = const AsyncLoading();
 
-      await _repository.undoLastSwipe();
+      final success = await _repository.undoLastSwipe();
 
-      // ✅ Success
       state = const AsyncData(null);
+      return success;
     } catch (e, st) {
       state = AsyncError(e, st);
-      rethrow; // 🔥 UI handles PREMIUM_REQUIRED, etc.
+      rethrow;
     }
   }
 }

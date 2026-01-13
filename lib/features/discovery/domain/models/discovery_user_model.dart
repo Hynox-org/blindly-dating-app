@@ -1,8 +1,5 @@
 import 'package:hive/hive.dart';
 
-// ⚠️ THIS LINE IS CRITICAL: It links the generated file
-part 'discovery_user_model.g.dart';
-
 @HiveType(typeId: 0) // Unique ID for this class
 class DiscoveryUser {
   @HiveField(0)
