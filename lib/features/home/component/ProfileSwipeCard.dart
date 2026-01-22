@@ -856,70 +856,59 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
     );
   }
 
-  Widget _buildHomeScreenButtons() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        Column(
-          children: [
-            _buildActionButton(
-              icon: Icons.close,
-              color: const Color.fromRGBO(65, 72, 51, 1),
-              onTap: widget.onBlock ?? () => _showBlockDialog(),
+ Widget _buildHomeScreenButtons() {
+  return Column(
+    children: [
+      // Icons row - horizontally aligned
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildActionButton(
+            icon: Icons.close,
+            color: const Color.fromRGBO(65, 72, 51, 1),
+            onTap: widget.onBlock ?? () => _showBlockDialog(),
+          ),
+          _buildActionButton(
+            icon: Icons.flag,
+            color: const Color.fromRGBO(65, 72, 51, 1),
+            onTap: widget.onReport ?? () => _showReportDialog(),
+          ),
+          _buildActionButton(
+            icon: Icons.favorite,
+            color: const Color.fromRGBO(65, 72, 51, 1),
+            onTap: widget.onLike ?? () {},
+          ),
+        ],
+      ),
+      const SizedBox(height: 8),
+      // Text row - horizontally aligned, vertically below icons
+      Column(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          const Text(
+            'Block',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Poppins',
+              color: Color.fromRGBO(0, 0, 0, 1),
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Block',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Poppins',
-                color: Color.fromRGBO(0, 0, 0, 1),
-              ),
+          ),
+          const Text(
+            'Report',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Poppins',
+              color: Color.fromRGBO(0, 0, 0, 1),
             ),
-          ],
-        ),
-        Column(
-          children: [
-            _buildActionButton(
-              icon: Icons.flag,
-              color: const Color.fromRGBO(65, 72, 51, 1),
-              onTap: widget.onReport ?? () => _showReportDialog(),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Report',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Poppins',
-                color: Color.fromRGBO(0, 0, 0, 1),
-              ),
-            ),
-          ],
-        ),
-        Column(
-          children: [
-            _buildActionButton(
-              icon: Icons.favorite,
-              color: const Color.fromRGBO(65, 72, 51, 1),
-              onTap: widget.onLike ?? () {},
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Like',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Poppins',
-                color: Color.fromRGBO(0, 0, 0, 1),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
+          ),
+        ],
+      ),
+    ],
+  );
+}
+
 
   Widget _buildActionButton({
     required IconData icon,
