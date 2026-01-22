@@ -601,7 +601,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         if (isFirstImage) {
           return SizedBox(
             width: double.infinity,
-            height: MediaQuery.of(context).size.height * 0.75,
+            height: MediaQuery.of(context).size.height * 0.72,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16), // all 4 corners
               child: Stack(
@@ -722,21 +722,16 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                 const SizedBox(height: 22),
                 // Gold buttons + scores
                 Row(
-  children: [
-    goldButton(loveChatIcon()),
-
-    const Spacer(),
-
-    scoreBox(),
-
-    const Spacer(),
-
-    goldButton(
-      const Icon(Icons.star, color: Color(0xFFD4AF37), size: 28),
-    ),
-  ],
-),
-
+                  children: [
+                    goldButton(loveChatIcon()),
+                    const Spacer(),
+                    scoreBox(),
+                    const Spacer(), 
+                    goldButton(
+                      const Icon(Icons.star, color: Color(0xFFD4AF37), size: 28),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
