@@ -1,160 +1,173 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../features/discovery/repository/discovery_repository.dart';
 import '../domain/models/discovery_user_model.dart';
 
 // ======================================================
-// Discovery Feed Notifier
+// 1. THE STATE
 // ======================================================
-class DiscoveryFeedNotifier
-    extends StateNotifier<AsyncValue<List<DiscoveryUser>>> {
-  final DiscoveryRepository _repository;
+class DiscoveryState {
+  final List<DiscoveryUser> mainDeck;     // All fetched profiles (Cumulative)
+  final List<DiscoveryUser> historyDeck;  // Track swiped profiles for DB Undo
+  final bool isLoading;                   
+  final bool isFetchingMore;
+  // ✅ NEW: Tracks if the DB has run out of profiles completely
+  final bool isDeckExhausted; 
 
-  static const int _limit = 20;
+  DiscoveryState({
+    required this.mainDeck,
+    this.historyDeck = const [],
+    this.isLoading = false,
+    this.isFetchingMore = false,
+    this.isDeckExhausted = false, // Default false
+  });
 
-  int _offset = 0;
-  bool _hasMore = true;
-  bool _isLoading = false;
-
-  DiscoveryFeedNotifier(this._repository)
-      : super(const AsyncLoading()) {
-    // ✅ AUTO-LOAD DISCOVERY FEED ON PROVIDER CREATION
-    _initialLoad();
+  DiscoveryState copyWith({
+    List<DiscoveryUser>? mainDeck,
+    List<DiscoveryUser>? historyDeck,
+    bool? isLoading,
+    bool? isFetchingMore,
+    bool? isDeckExhausted,
+  }) {
+    return DiscoveryState(
+      mainDeck: mainDeck ?? this.mainDeck,
+      historyDeck: historyDeck ?? this.historyDeck,
+      isLoading: isLoading ?? this.isLoading,
+      isFetchingMore: isFetchingMore ?? this.isFetchingMore,
+      isDeckExhausted: isDeckExhausted ?? this.isDeckExhausted,
+    );
   }
-
-  // --------------------------------------------------
-  // 🔥 FIRST LOAD (CALLED ONLY ONCE)
-  // --------------------------------------------------
-  Future<void> _initialLoad() async {
-    try {
-      _isLoading = true;
-
-      final users = await _repository.getDiscoveryFeed(
-        radius: 50000,
-        limit: _limit,
-        offset: 0,
-      );
-
-      _offset = 0;
-      _hasMore = users.length == _limit;
-
-      state = AsyncData(users);
-    } catch (e, st) {
-      state = AsyncError(e, st);
-    } finally {
-      _isLoading = false;
-    }
-  }
-
-  void removeTopProfile() {
-  final current = state.value ?? [];
-  if (current.isEmpty) return;
-
-  state = AsyncData(current.sublist(1));
 }
 
+// ======================================================
+// 2. THE NOTIFIER
+// ======================================================
+class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
+  final DiscoveryRepository _repository;
+
+  static const int _pageSize = 20;
+  static const int _prefetchThreshold = 5; 
+
+  DiscoveryFeedNotifier(this._repository)
+      : super(DiscoveryState(mainDeck: [])) {
+    refreshFeed();
+  }
+
   // --------------------------------------------------
-  // 🔁 FORCE REFRESH (MODE CHANGE, MANUAL REFRESH)
+  // 🔄 REFRESH (Start Fresh)
   // --------------------------------------------------
-  Future<List<DiscoveryUser>> refreshFeed() async {
-    if (_isLoading) return state.value ?? [];
+  Future<void> refreshFeed() async {
+    // Reset exhaustion flag on refresh
+    state = state.copyWith(
+      isLoading: true, 
+      mainDeck: [], 
+      historyDeck: [],
+      isDeckExhausted: false, 
+    );
+    
+    await _loadBatch();
+    state = state.copyWith(isLoading: false);
+  }
 
-    try {
-      _isLoading = true;
-      _offset = 0;
-      _hasMore = true;
+  // --------------------------------------------------
+  // ⏩ ACTION: CONSUME CARD (Swipe Right/Left)
+  // --------------------------------------------------
+  void consumeCard(DiscoveryUser user, int currentIndex) {
+    final newHistoryDeck = List<DiscoveryUser>.from(state.historyDeck);
+    newHistoryDeck.add(user); 
+    if (newHistoryDeck.length > 50) newHistoryDeck.removeAt(0);
 
-      state = const AsyncLoading();
-
-      final freshUsers = await _repository.getDiscoveryFeed(
-        radius: 50000,
-        limit: _limit,
-        offset: 0,
-      );
-
-      _hasMore = freshUsers.length == _limit;
-      state = AsyncData(freshUsers);
-
-      return freshUsers;
-    } catch (e, st) {
-      state = AsyncError(e, st);
-      rethrow;
-    } finally {
-      _isLoading = false;
+    // Check Threshold & Fetch
+    final itemsRemaining = state.mainDeck.length - currentIndex;
+    if (itemsRemaining <= _prefetchThreshold && !state.isDeckExhausted) {
+      _loadBatch();
     }
+
+    state = state.copyWith(historyDeck: newHistoryDeck);
   }
 
   // --------------------------------------------------
-  // 🔁 LOAD NEXT BATCH (WHEN DECK IS EMPTY)
+  // ⏩ ACTION: ADD TO HISTORY ONLY (For Undo Support)
   // --------------------------------------------------
-  Future<bool> loadNextBatch() async {
-    if (!_hasMore || _isLoading) return false;
-
-    try {
-      _isLoading = true;
-
-      final nextOffset = _offset + _limit;
-
-      final newUsers = await _repository.getDiscoveryFeed(
-        radius: 50000,
-        limit: _limit,
-        offset: nextOffset,
-      );
-
-      if (newUsers.isEmpty) {
-        _hasMore = false;
-        state = const AsyncData([]);
-        return false;
-      }
-
-      _offset = nextOffset;
-      _hasMore = newUsers.length == _limit;
-
-      state = AsyncData(newUsers);
-      return true;
-    } catch (e, st) {
-      state = AsyncError(e, st);
-      return false;
-    } finally {
-      _isLoading = false;
-    }
+  // This helper function is cleaner for the UI to call
+  void addToHistory(DiscoveryUser user) {
+     final newHistoryDeck = List<DiscoveryUser>.from(state.historyDeck);
+     newHistoryDeck.add(user);
+     if (newHistoryDeck.length > 50) newHistoryDeck.removeAt(0);
+     state = state.copyWith(historyDeck: newHistoryDeck);
   }
 
   // --------------------------------------------------
-  // ↩️ INSERT PROFILE BACK (UNDO)
+  // ⏪ ACTION: UNDO
   // --------------------------------------------------
-  void insertAtTop(DiscoveryUser user) {
-    final current = state.value ?? [];
-    state = AsyncData([user, ...current]);
+  void undoSwipe() {
+    if (state.historyDeck.isEmpty) return;
+
+    final newHistoryDeck = List<DiscoveryUser>.from(state.historyDeck);
+    newHistoryDeck.removeLast();
+
+    state = state.copyWith(historyDeck: newHistoryDeck);
   }
 
   // --------------------------------------------------
-  // 🔄 CHANGE DISCOVERY MODE
+  // 🔄 MODE CHANGE
   // --------------------------------------------------
   Future<void> changeDiscoveryMode(String uiMode) async {
-    final String dbMode;
-    if (uiMode.toLowerCase() == 'date') {
-      dbMode = 'dating';
-    } else if (uiMode.toLowerCase() == 'bff') {
-      dbMode = 'bff';
-    } else {
-      throw Exception('Unsupported discovery mode');
-    }
-
+    final String dbMode = uiMode.toLowerCase() == 'date' ? 'dating' : 'bff';
     await _repository.updateDiscoveryMode(dbMode);
     await refreshFeed();
   }
+
+  // --------------------------------------------------
+  // 📥 INTERNAL: FETCH & DEDUPLICATE
+  // --------------------------------------------------
+  Future<bool> _loadBatch() async {
+    if (state.isFetchingMore || state.isDeckExhausted) return false;
+
+    state = state.copyWith(isFetchingMore: true);
+
+    try {
+      final newCandidates = await _repository.getDiscoveryFeed(
+        limit: _pageSize, 
+        offset: 0 
+      );
+
+      // Deduplicate against existing decks
+      final currentIds = {
+        ...state.mainDeck.map((u) => u.profileId),
+        ...state.historyDeck.map((u) => u.profileId)
+      };
+
+      final uniqueUsers = newCandidates
+          .where((u) => !currentIds.contains(u.profileId))
+          .toList();
+
+      if (uniqueUsers.isNotEmpty) {
+        state = state.copyWith(
+          mainDeck: [...state.mainDeck, ...uniqueUsers],
+          isFetchingMore: false,
+        );
+        debugPrint("✅ Added ${uniqueUsers.length} profiles. Total: ${state.mainDeck.length}");
+        return true;
+      } else {
+        // ✅ EMPTY BATCH: Mark deck as exhausted so UI knows to show "No More Profiles"
+        debugPrint("🏁 No more profiles found in DB.");
+        state = state.copyWith(
+          isFetchingMore: false,
+          isDeckExhausted: true, 
+        );
+        return false;
+      }
+    } catch (e) {
+      debugPrint("❌ Fetch Error: $e");
+      state = state.copyWith(isFetchingMore: false);
+      return false;
+    }
+  }
 }
 
-
-// ======================================================
-// Provider
-// ======================================================
 final discoveryFeedProvider =
-    StateNotifierProvider<
-      DiscoveryFeedNotifier,
-      AsyncValue<List<DiscoveryUser>>
-    >((ref) {
-      final repository = ref.watch(discoveryRepositoryProvider);
-      return DiscoveryFeedNotifier(repository);
-    });
+    StateNotifierProvider<DiscoveryFeedNotifier, DiscoveryState>((ref) {
+  final repository = ref.watch(discoveryRepositoryProvider);
+  return DiscoveryFeedNotifier(repository);
+});

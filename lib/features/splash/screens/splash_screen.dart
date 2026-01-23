@@ -3,8 +3,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../auth/providers/auth_providers.dart';
 import '../../onboarding/data/repositories/onboarding_repository.dart';
@@ -50,10 +48,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       final user = ref.read(authRepositoryProvider).currentUser;
 
       if (user != null) {
-        // ✅ LOCATION UPDATE (NON-BLOCKING & SAFE)
-        await _updateLocationIfPossible();
-
-        // ✅ ONBOARDING CHECK
         await _checkOnboardingAndNavigate(user.id);
       } else {
         if (mounted) {
@@ -63,40 +57,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     });
   }
 
-  // --------------------------------------------------
-  // LOCATION UPDATE (SAFE, FIRE-AND-FORGET)
-  // --------------------------------------------------
-  Future<void> _updateLocationIfPossible() async {
-    try {
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        return;
-      }
-
-      final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.low,
-        timeLimit: const Duration(seconds: 6),
-      );
-
-      await Supabase.instance.client.rpc(
-        'update_passport_location',
-        params: {
-          'p_lat': position.latitude,
-          'p_long': position.longitude,
-        },
-      );
-
-      debugPrint('📍 Passport location updated');
-    } catch (e) {
-      // ❗ NEVER block app startup
-      debugPrint('⚠️ Location update skipped: $e');
-    }
-  }
 
   // --------------------------------------------------
   // ONBOARDING FLOW

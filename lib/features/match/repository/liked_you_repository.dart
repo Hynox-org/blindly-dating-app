@@ -101,4 +101,38 @@ class LikedYouRepository {
       return [];
     }
   }
+Future<void> ignoreLike(String fromProfileId) async {
+  try {
+    await _supabase.rpc(
+      'ignore_like',
+      params: {
+        'p_from_profile_id': fromProfileId,
+      },
+    );
+  } catch (e) {
+    debugPrint('❌ Failed to ignore like: $e');
+    rethrow;
+  }
+}
+
+Future<void> matchUser({
+  required String otherProfileId,
+}) async {
+  try {
+    await _supabase.rpc(
+      'create_match',
+      params: {
+        'p_other_profile_id': otherProfileId,
+      },
+    );
+
+    debugPrint('✅ Match created for $otherProfileId');
+  } catch (e, st) {
+    debugPrint('🛑 Match failed');
+    debugPrint(e.toString());
+    debugPrint(st.toString());
+    rethrow;
+  }
+}
+
 }

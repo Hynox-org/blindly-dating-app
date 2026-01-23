@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import '../../../../core/widgets/app_layout.dart';
 import '../../../home/screens/connection_type_screen.dart';
 import '../../../../core/utils/navigation_utils.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class ChatScreen extends StatelessWidget {
+
+import '../../provider/recent_matches_provider.dart';
+
+class ChatScreen extends ConsumerWidget{
   const ChatScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return AppLayout(
       selectedIndex: 4,
       child: Scaffold(
@@ -82,35 +86,27 @@ class ChatScreen extends StatelessWidget {
               // Recent Matches Section
               SizedBox(
                 height: 110,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  children: [
-                    _buildRecentMatchItem(
-                      'James',
-                      'https://randomuser.me/api/portraits/men/32.jpg',
-                    ),
-                    _buildRecentMatchItem(
-                      'Rosey',
-                      'https://randomuser.me/api/portraits/women/44.jpg',
-                    ),
-                    _buildRecentMatchItem(
-                      'Alexa',
-                      'https://randomuser.me/api/portraits/women/68.jpg',
-                    ),
-                    _buildRecentMatchItem(
-                      'Lauren',
-                      'https://randomuser.me/api/portraits/women/33.jpg',
-                    ),
-                    _buildRecentMatchItem(
-                      'James',
-                      'https://randomuser.me/api/portraits/men/45.jpg',
-                    ),
-                    _buildRecentMatchItem(
-                      'Alex',
-                      'https://randomuser.me/api/portraits/men/22.jpg',
-                    ),
-                  ],
+                child: Consumer(
+                  builder: (context, ref, _) {
+                    final state = ref.watch(recentMatchesProvider);
+
+                    return state.when(
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
+                      error: (_, __) => const SizedBox(),
+                      data: (matches) => ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: matches.length,
+                        itemBuilder: (_, i) {
+                          final m = matches[i];
+                          return _buildRecentMatchItem(
+                            m.displayName,
+                            m.imageUrl ?? '',
+                          );
+                        },
+                      ),
+                    );
+                  },
                 ),
               ),
 

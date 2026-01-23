@@ -1,19 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // ✅ Added Riverpod
+
 import '../../core/widgets/app_layout.dart';
 import '../../core/utils/navigation_utils.dart';
 import '../home/screens/connection_type_screen.dart';
-import '../home/component/ProfileSwipeCard.dart'; // Import for ProfileSwipeCard and UserProfile (local definition)
+import '../home/component/ProfileSwipeCard.dart'; 
+import '../discovery/domain/models/discovery_user_model.dart'; // Needed for UserProfile mapping
+import './profile_edit_screen.dart';
 
-class ProfileScreen extends StatefulWidget {
+// ✅ Import Provider & Model
+import '../profile/domain/models/profile_user_model.dart.dart';
+import '../profile/provider/profile_provider.dart';
+
+class ProfileScreen extends ConsumerStatefulWidget { // ✅ Changed to ConsumerStatefulWidget
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
+    // ✅ Watch the provider
+    final userAsync = ref.watch(currentUserProfileProvider);
+
     return AppLayout(
       showFooter: true,
       selectedIndex: 0,
@@ -54,52 +65,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       child: Container(
         color: Colors.white,
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 20),
-                      _buildHeader(),
-                      const SizedBox(height: 24),
-                      _buildPremiumBanner(),
-                      const SizedBox(height: 24),
-                      _buildActionButtons(),
-                      const SizedBox(height: 24),
-                      _buildScoreBreakdown(),
-                      const SizedBox(height: 24),
-                      _buildWaysToImprove(),
-                      const SizedBox(height: 24),
-                      _buildFooterNote(),
-                      const SizedBox(height: 100), // Space for floating button
-                    ],
+        child: userAsync.when(
+          loading: () => const Center(
+            child: CircularProgressIndicator(color: Color(0xFF4B5320)),
+          ),
+          error: (err, stack) => Center(child: Text("Error loading profile")),
+          data: (user) {
+            return Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 20),
+                          // ✅ Pass Real User Data
+                          _buildHeader(user),
+                          const SizedBox(height: 24),
+                          _buildPremiumBanner(),
+                          const SizedBox(height: 24),
+                          _buildActionButtons(),
+                          const SizedBox(height: 24),
+                          _buildScoreBreakdown(user),
+                          const SizedBox(height: 24),
+                          _buildWaysToImprove(),
+                          const SizedBox(height: 24),
+                          _buildFooterNote(),
+                          const SizedBox(height: 100), 
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-          ],
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
-  // Sticky-like button at the bottom (implemented via Stack or overlay in a real scaffold,
-  // but here we can just put it in the scroll view or use a bottom sheet.
-  // The UI shows it at the bottom. The requirement says "Use the app layout with the footer".
-  // The AppLayout footer is the navigation bar. The "Improve your Profile" button is likely
-  // part of the scrollable content or fixed above the nav bar.
-  // Given the long scroll, I'll add it as a float or at the end of scroll.
-  // The design shows it at the bottom, likely fixed.
-  // I will append it to the scroll view for now, but to match "sticky" feel it might need a Stack.
-  // However, AppLayout has a BottomNavigationBar.
-  // Let's verify if 'Improve your Profile' should be pinned.
-  // Usually such buttons are pinned.
-  // But for now, let's put it at the end of the scroll view as per standard flow.
+  // ✅ Updated to accept ProfileUser
+  Widget _buildHeader(ProfileUser user) {
+    // Calculate percentage integer (e.g., 0.35 -> 35)
+    final int percentInt = (user.completionPercentage * 100).toInt();
 
-  Widget _buildHeader() {
     return Column(
       children: [
         Stack(
@@ -109,23 +120,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
               width: 100,
               height: 100,
               child: CircularProgressIndicator(
-                value: 0.35,
+                value: user.completionPercentage, // ✅ Real Value
                 strokeWidth: 4,
                 backgroundColor: Colors.grey.shade200,
-                color: const Color(0xFF4B5320), // Olive/Dark Green
+                color: const Color(0xFF4B5320), 
               ),
             ),
             GestureDetector(
-              onTap: _showProfilePopup,
+              onTap: () => _showProfilePopup(user),
               child: Container(
                 width: 88,
                 height: 88,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  image: const DecorationImage(
+                  image: DecorationImage(
+                    // ✅ Real Primary Image
                     image: NetworkImage(
-                      'https://picsum.photos/400/600',
-                    ), // Placeholder
+                      user.imageUrls.isNotEmpty 
+                          ? user.imageUrls.first 
+                          : 'https://picsum.photos/400/600'
+                    ),
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -139,9 +153,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   color: const Color(0xFF4B5320),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Text(
-                  '35%',
-                  style: TextStyle(
+                child: Text(
+                  '$percentInt%', // ✅ Real Text
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
@@ -155,15 +169,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              'Vignesh, 27',
-              style: TextStyle(
+            Text(
+              '${user.name}, ${user.age}', // ✅ Real Name & Age
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
               ),
             ),
             const SizedBox(width: 4),
+            // Only show verified check if verified (assuming logic exists, else static for now)
             const Icon(Icons.verified, color: Colors.blue, size: 20),
           ],
         ),
@@ -174,9 +189,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: Colors.grey.shade200,
             borderRadius: BorderRadius.circular(20),
           ),
-          child: const Text(
-            'Complete profile',
-            style: TextStyle(fontSize: 12, color: Colors.black87),
+          child: Text(
+            percentInt == 100 ? 'Profile Completed' : 'Complete profile',
+            style: const TextStyle(fontSize: 12, color: Colors.black87),
           ),
         ),
         const SizedBox(height: 16),
@@ -189,38 +204,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _showProfilePopup() {
-    // Static dummy data matches ProfileSwipeCard's UserProfile definition
-    final dummyProfile = UserProfile(
-      id: '1',
-      name: 'Vignesh',
-      age: 27,
-      distance: 0,
-      bio: 'Lover of sunsets and coffee.',
-      imageUrls: [
-        'https://picsum.photos/400/600',
-        'https://picsum.photos/400/601',
-        'https://picsum.photos/400/602',
-      ],
-      height: '175 cm',
-      activityLevel: 'Active',
-      education: 'B.Tech',
-      gender: 'Male',
-      religion: 'Hindu',
-      zodiac: 'Taurus',
-      drinking: 'Socially',
-      smoking: 'Never',
-      hobbies: ['Photography', 'Travel', 'Coding'],
-      summary:
-          'I am a software engineer who loves to travel and explore new places.',
-      lookingFor: 'A serious relationship',
-      lookingForTags: ['Long-term', 'Partner'],
-      quickestWay: 'Cook me a good meal',
-      causes: ['Environment', 'Animal Welfare'],
-      simplePleasure: 'Morning coffee',
-      languages: ['English', 'Tamil'],
-      location: 'Chennai, India',
-      spotifyArtists: ['A.R. Rahman', 'Anirudh'],
+  // ✅ Updated to map DB data to SwipeCard
+  void _showProfilePopup(ProfileUser user) {
+    
+    // Mapping ProfileUser (DB) to UserProfile (UI Component)
+    // We use Default Data for fields missing in your DB Schema
+    final realProfile = UserProfile(
+      id: user.id,
+      name: user.name,
+      age: user.age,
+      distance: 0, 
+      bio: user.bio.isNotEmpty ? user.bio : 'No bio added yet.',
+      // ✅ IMAGE LOGIC: This list will have 2 or 3 images based on provider fetch
+      imageUrls: user.imageUrls, 
+      height: 'Ask me', // Default (Not in DB)
+      activityLevel: 'Active', // Default
+      education: 'Add Education', // Default (Not in DB)
+      gender: user.gender,
+      religion: 'Add Religion', // Default
+      zodiac: 'Add Zodiac', // Default
+      drinking: 'Socially', // Default
+      smoking: 'Never', // Default
+      hobbies: user.interests.isNotEmpty ? user.interests : ['Add Interests'],
+      summary: user.bio,
+      lookingFor: 'Connection', // Default
+      lookingForTags: [],
+      quickestWay: 'Ask me',
+      causes: [],
+      simplePleasure: 'Ask me',
+      languages: ['English'], // Default
+      location: user.city.isNotEmpty ? user.city : 'Unknown',
+      spotifyArtists: [],
     );
 
     showDialog(
@@ -235,7 +249,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Profile Card with Padding for Buttons
                 Padding(
                   padding: const EdgeInsets.only(
                     top: 60,
@@ -246,16 +259,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(20),
                     child: ProfileSwipeCard(
-                      profile: dummyProfile,
+                      profile: realProfile, // ✅ Passing the real data
                       horizontalThreshold: 0,
                       verticalThreshold: 0,
                       isHomeScreen: false,
-                      isProfileScreen: false,
+                      // isProfileScreen: true, // Uncomment if your card supports this flag
                     ),
                   ),
                 ),
 
-                // Close Button (Fixed at Top Right)
                 Positioned(
                   top: 10,
                   right: 10,
@@ -273,7 +285,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
 
-                // Edit Button (Fixed at Bottom Center)
                 Positioned(
                   bottom: 10,
                   left: 0,
@@ -283,8 +294,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       width: MediaQuery.of(context).size.width * 0.6,
                       child: ElevatedButton.icon(
                         onPressed: () {
-                          Navigator.of(context).pop();
-                          // TODO: Navigate to Edit Profile
+                          Navigator.pop(context); // Close popup first
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ProfileEditScreen(),
+                            ),
+                          );
                         },
                         icon: const Icon(Icons.edit, color: Colors.white),
                         label: const Text(
@@ -299,7 +315,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           backgroundColor: const Color.fromRGBO(65, 72, 51, 1),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
+                            borderRadius: BorderRadius.circular(20),
                           ),
                           elevation: 5,
                         ),
@@ -315,6 +331,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // ... (Rest of your UI widgets: _buildPremiumBanner, _buildActionButtons, etc. remain UNCHANGED)
+
   Widget _buildPremiumBanner() {
     return Container(
       width: double.infinity,
@@ -325,7 +343,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         image: const DecorationImage(
           image: NetworkImage(
             'https://picsum.photos/800/400',
-          ), // Placeholder for couple image
+          ), 
           fit: BoxFit.cover,
           opacity: 0.6,
         ),
@@ -387,11 +405,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         Expanded(
           child: _buildActionCard(
-            icon: Icons.cyclone, // Placeholder for Spotlight
+            icon: Icons.cyclone, 
             title: 'Spot light',
             subtitle: 'Stand out',
             color: const Color(0xFFF5F5F5),
-            iconColor: const Color(0xFF6B5E3C), // Dark Gold
+            iconColor: const Color(0xFF6B5E3C), 
           ),
         ),
         const SizedBox(width: 16),
@@ -401,7 +419,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             title: 'Super swipe',
             subtitle: 'Get noticed',
             color: const Color(0xFFF5F5F5),
-            iconColor: const Color(0xFF4B5320), // Dark Green
+            iconColor: const Color(0xFF4B5320), 
           ),
         ),
       ],
@@ -426,7 +444,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.2), // Lighter shade background
+              color: iconColor.withOpacity(0.2), 
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: iconColor),
@@ -454,7 +472,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildScoreBreakdown() {
+  Widget _buildScoreBreakdown(ProfileUser user) {
+    // Determine status based on actual data
+    bool detailsComplete = user.bio.isNotEmpty && user.interests.isNotEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -470,15 +491,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _buildScoreItem(
           icon: Icons.person_outline,
           title: 'Profile photo verified',
-          status: 'Completed',
+          status: 'Completed', // Assuming verified for now
           isCompleted: true,
         ),
         const SizedBox(height: 8),
         _buildScoreItem(
           icon: Icons.person_outline,
           title: 'Profile details',
-          status: 'Completed',
-          isCompleted: true,
+          status: detailsComplete ? 'Completed' : 'Incomplete',
+          isCompleted: detailsComplete,
         ),
         const SizedBox(height: 8),
         _buildScoreItem(
@@ -614,7 +635,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: () {},
+            onPressed: () {
+               Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfileEditScreen()),
+              );
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF4B5320), // Dark Green/Olive
               foregroundColor: Colors.white,

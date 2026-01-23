@@ -33,20 +33,19 @@ class DiscoveryRepository {
   // 🔁 UPDATE DISCOVERY MODE (dating / bff)
   // --------------------------------------------------
   Future<void> updateDiscoveryMode(String mode) async {
-  final user = _supabase.auth.currentUser;
-  if (user == null) {
-    throw Exception('User not logged in');
+    final user = _supabase.auth.currentUser;
+    if (user == null) {
+      throw Exception('User not logged in');
+    }
+
+    final response = await _supabase
+        .from('profiles')
+        .update({'discovery_mode': mode})
+        .eq('user_id', user.id)
+        .select(); // 👈 FORCE RESPONSE
+
+    debugPrint('✅ discovery_mode update response: $response');
   }
-
-  final response = await _supabase
-      .from('profiles')
-      .update({'discovery_mode': mode})
-      .eq('user_id', user.id)
-      .select(); // 👈 FORCE RESPONSE
-
-  debugPrint('✅ discovery_mode update response: $response');
-}
-
 
   // --------------------------------------------------
   // 🔥 MAIN DISCOVERY FEED
@@ -78,6 +77,7 @@ class DiscoveryRepository {
       debugPrint(
         'RADIUS  : ${kDevMode ? _devRadiusMeters : radius}',
       );
+      
 
       final int effectiveRadius =
           kDevMode ? _devRadiusMeters : radius;
@@ -87,13 +87,13 @@ class DiscoveryRepository {
       // --------------------------------------------------
       final List<dynamic> response =
           (await _supabase.rpc(
-        'get_discovery_feed_final',
-        params: {
-          'p_radius_meters': effectiveRadius,
-          'p_limit': limit,
-          'p_offset': offset,
-        },
-      )) ??
+                'get_discovery_feed_final',
+                params: {
+                  'p_radius_meters': effectiveRadius,
+                  'p_limit': limit,
+                  'p_offset': offset,
+                },
+              )) ??
               [];
 
       debugPrint('🧪 DISCOVERY ROWS: ${response.length}');
@@ -107,22 +107,22 @@ class DiscoveryRepository {
         final Map<String, dynamic> data =
             Map<String, dynamic>.from(raw);
 
-        final String? imagePath = data['image_url'];
+        final String? imagePath = data['media_url'];
 
         // --------------------------------------------------
-        // 🖼️ HANDLE MEDIA URLS
+        // 🖼️ HANDLE MEDIA URLS (FIXED)
         // --------------------------------------------------
         if (imagePath != null && imagePath.isNotEmpty) {
-          if (imagePath.startsWith('http')) {
-            data['image_url'] = imagePath;
-          } else {
+          if (!imagePath.startsWith('http')) {
             final signedUrl = await _supabase.storage
                 .from('user_photos')
                 .createSignedUrl(imagePath, 15 * 60);
-            data['image_url'] = signedUrl;
+
+            // ✅ IMPORTANT: write back to SAME key model reads
+            data['media_url'] = signedUrl;
           }
         } else {
-          data['image_url'] = null;
+          data['media_url'] = null;
         }
 
         users.add(DiscoveryUser.fromJson(data));

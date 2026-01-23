@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 // ✅ 1. Providers
-
 import '../../../features/discovery/povider/discovery_provider.dart';
+import '../../discovery/povider/swipe_provider.dart';
+import '../../../../core/providers/session_provider.dart';
 
 // ✅ 2. Models
 import '../../discovery/domain/models/discovery_user_model.dart';
@@ -14,14 +17,11 @@ import '../../discovery/domain/models/discovery_user_model.dart';
 import '../component/ProfileSwipeCard.dart';
 import '../../../../core/utils/gender_utils.dart';
 import '../../../../core/utils/custom_popups.dart';
-
-// ✅ 4. New Integrations
 import '../../discovery/presentation/widgets/no_more_profiles_widget.dart';
-import '../../discovery/povider/swipe_provider.dart';
 import '../../../../core/utils/navigation_utils.dart';
 import 'connection_type_screen.dart';
 
-// ✅ 5. Layout
+// ✅ 4. Layout
 import '../../../../core/widgets/app_layout.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -31,38 +31,120 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+// ✅ Added: with SingleTickerProviderStateMixin
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with SingleTickerProviderStateMixin {
   final CardSwiperController _controller = CardSwiperController();
 
-  // State Variables
-  final bool _isPremium = true;
-  double _swipeProgress = 0.0;
-  final List<DiscoveryUser> _undoStack = [];
+  // ✅ NEW: Animation Controller for the blinking logo
+  late final AnimationController _blinkController;
 
+  // State Variables
+  double _swipeProgress = 0.0;
+
+  // 🔒 Run location update only once
+  bool _locationUpdateDone = false;
   // ✅ Controls the initialization flow
   bool _isLocationReady = false;
+  bool _isDeckFinished = false; // <--- ADD THIS
+  int _currentIndex = 0;
 
   @override
   void initState() {
     super.initState();
+
+    // ✅ NEW: Setup the blink (Breath effect)
+    _blinkController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000), // 1 second per pulse
+      lowerBound: 0.4, // Don't fade out completely (keeps it visible)
+      upperBound: 1.0, // Full opacity
+    )..repeat(reverse: true); // Loop forever: Fade In -> Fade Out
+
     _initLocationAndFeed();
   }
 
-  
+  // ✅ NEW FUNCTION: Handles undo when the deck is empty
+  void _handleManualUndo(List<DiscoveryUser> mainDeck) {
+    if (mainDeck.isEmpty) return;
 
-  /// ✅ SEQUENTIAL INITIALIZATION
-  /// Uses BootstrapService to handle everything (Cache, Location, Network)
+    HapticFeedback.mediumImpact();
+
+    // 1. Undo the database action
+    ref.read(swipeProvider.notifier).undo();
+
+    // 2. Bring the Swiper back
+    setState(() {
+      _isDeckFinished = false;
+      // Set the index to the last card so it appears correctly
+      _currentIndex = mainDeck.length - 1;
+    });
+  }
+
+  @override
+  void dispose() {
+    _blinkController.dispose(); // ✅ NEW: Clean up animation
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _updatePassportLocationOnce() async {
+    if (_locationUpdateDone) return;
+    _locationUpdateDone = true;
+
+    try {
+      final permission = await Geolocator.checkPermission();
+
+      if (permission == LocationPermission.denied) {
+        await Geolocator.requestPermission();
+      }
+
+      final finalPermission = await Geolocator.checkPermission();
+
+      if (finalPermission == LocationPermission.denied ||
+          finalPermission == LocationPermission.deniedForever) {
+        debugPrint('📍 Location permission denied');
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.low,
+        timeLimit: const Duration(seconds: 6),
+      );
+
+      await Supabase.instance.client.rpc(
+        'update_passport_location',
+        params: {'p_lat': position.latitude, 'p_long': position.longitude},
+      );
+
+      debugPrint('📍 Passport location updated (HomeScreen)');
+    } catch (e) {
+      debugPrint('⚠️ Passport location update skipped: $e');
+    }
+  }
+
   Future<void> _initLocationAndFeed() async {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // ✅ 1. CHECK SESSION FLAG
+      // If we already updated location this session, skip the heavy lifting.
+      final isAlreadyUpdated = ref.read(locationUpdateSessionProvider);
+
+      if (isAlreadyUpdated) {
+        debugPrint('⏩ Session: Location already updated. Skipping.');
+        if (mounted) setState(() => _isLocationReady = true);
+        return;
+      }
+
+      // ✅ 2. RUN UPDATE (First time only)
       try {
-        if (mounted) {
-          setState(() {
-            _isLocationReady = true;
-          });
-        }
+        await _updatePassportLocationOnce();
+
+        // ✅ 3. SET FLAG TO TRUE
+        // Next time you come here, it will skip this block.
+        ref.read(locationUpdateSessionProvider.notifier).state = true;
       } catch (e) {
-        debugPrint('❌ HOMESCREEN: Bootstrap Error: $e');
-        // Even if it fails, we try to load the feed (maybe using old location/cache)
+        debugPrint('❌ HOMESCREEN: Location update failed: $e');
+      } finally {
         if (mounted) {
           setState(() {
             _isLocationReady = true;
@@ -70,27 +152,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         }
       }
     });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Future<void> _handleDeckFinished() async {
-    debugPrint('🟡 Deck empty → requesting next batch');
-
-    final hasMore = await ref
-        .read(discoveryFeedProvider.notifier)
-        .loadNextBatch();
-
-    if (!hasMore && mounted) {
-      debugPrint('🔴 No more profiles from DB');
-      _showNoMoreCardsDialog();
-    } else {
-      debugPrint('🟢 New batch loaded');
-    }
   }
 
   // ✅ Helper to map API data to UI data
@@ -130,9 +191,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final AsyncValue<List<DiscoveryUser>>? discoveryState = _isLocationReady
+    // ✅ NEW: Watch the DiscoveryState object (which holds mainDeck + historyDeck)
+    final DiscoveryState feedState = _isLocationReady
         ? ref.watch(discoveryFeedProvider)
-        : null;
+        : DiscoveryState(mainDeck: [], isLoading: true);
+
+    final mainDeck = feedState.mainDeck;
+    final isLoading = feedState.isLoading;
+    final historyDeck = feedState.historyDeck;
 
     return AppLayout(
       showFooter: true,
@@ -162,10 +228,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           IconButton(
             icon: Icon(
               Icons.reply,
-              color: Theme.of(context).colorScheme.onSurface,
+              color: historyDeck.isEmpty
+                  ? Colors.grey
+                  : Theme.of(context).colorScheme.onSurface,
               size: 28,
             ),
-            onPressed: () => _onUndo(null, 0, CardSwiperDirection.left),
+            // ✅ NEW: Just trigger the controller.
+            // This will automatically fire the _onUndo callback below.
+            onPressed: () {
+              // ✅ NEW LOGIC:
+              // If the deck is finished, do Manual Undo. Otherwise, do Controller Undo.
+              final showEmptyState = mainDeck.isEmpty || _isDeckFinished;
+
+              if (showEmptyState && mainDeck.isNotEmpty) {
+                _handleManualUndo(mainDeck);
+              } else {
+                _controller.undo();
+              }
+            },
           ),
           IconButton(
             icon: Icon(
@@ -184,157 +264,170 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Column(
           children: [
             Expanded(
-              child: !_isLocationReady || discoveryState == null
+              // 1. Check Location -> 2. Check Loading -> 3. Check Initial Empty -> 4. Show Stack
+              child: !_isLocationReady
                   ? _buildInitializingState()
-                  : discoveryState.when(
-                      loading: () => Center(
-                        child: CircularProgressIndicator(
-                          color: Theme.of(context).colorScheme.secondary,
-                        ),
-                      ),
-                      error: (err, stack) => Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(20.0),
-                          child: Text(
-                            'Error loading matches: $err',
-                            textAlign: TextAlign.center,
+                  : isLoading
+                  ? _buildInitializingState()
+                  : (mainDeck.isEmpty || _isDeckFinished)
+                  ? _buildEmptyState() // Show immediately if 0 matches found
+                  : Stack(
+                      children: [
+                        // --------------------------------------------------
+                        // 0. LAYER ZERO: The Empty State (Background)
+                        // --------------------------------------------------
+                        // ✅ FIX 1: Only render this when 1 or fewer cards left.
+                        // // This solves "background peeking".
+                        // if (mainDeck.length <= 1)
+                        //   Positioned.fill(child: _buildEmptyState()),
+
+                        // --------------------------------------------------
+                        // 1. LAYER ONE: Right Indicator (Cross / Pass)
+                        // --------------------------------------------------
+                        Positioned.fill(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24.0),
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: AnimatedOpacity(
+                                opacity: _swipeProgress < -0.1
+                                    ? (_swipeProgress.abs() * 2).clamp(0.0, 1.0)
+                                    : 0.0,
+                                duration: const Duration(milliseconds: 100),
+                                child: Container(
+                                  width: 80,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.4),
+                                  ),
+                                  child: const Icon(
+                                    Icons.close,
+                                    color: Colors.white,
+                                    size: 50,
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                      data: (discoveryData) {
-                        final profiles = _mapToUserProfiles(discoveryData);
 
-                        if (profiles.isEmpty) {
-                          return _buildEmptyState();
-                        }
-
-                        return Stack(
-                          children: [
-                            Positioned.fill(
-                              child: Padding(
-                                padding: const EdgeInsets.all(24.0),
-                                child: Align(
-                                  alignment: Alignment.centerRight,
-                                  child: AnimatedOpacity(
-                                    opacity: _swipeProgress < -0.1
-                                        ? (_swipeProgress.abs() * 2).clamp(
-                                            0.0,
-                                            1.0,
-                                          )
-                                        : 0.0,
-                                    duration: const Duration(milliseconds: 100),
-                                    child: Container(
-                                      width: 80,
-                                      height: 80,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurface
-                                            .withValues(alpha: 0.4),
-                                      ),
-                                      child: const Icon(
-                                        Icons.close,
-                                        color: Colors.white,
-                                        size: 50,
-                                      ),
-                                    ),
+                        // --------------------------------------------------
+                        // 2. LAYER TWO: Left Indicator (Heart / Like)
+                        // --------------------------------------------------
+                        Positioned.fill(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24.0),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: AnimatedOpacity(
+                                opacity: _swipeProgress > 0.1
+                                    ? (_swipeProgress.abs() * 2).clamp(0.0, 1.0)
+                                    : 0.0,
+                                duration: const Duration(milliseconds: 100),
+                                child: Container(
+                                  width: 80,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.4),
+                                  ),
+                                  child: const Icon(
+                                    Icons.favorite,
+                                    color: Colors.white,
+                                    size: 50,
                                   ),
                                 ),
                               ),
                             ),
-                            Positioned.fill(
-                              child: Padding(
-                                padding: const EdgeInsets.all(24.0),
-                                child: Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: AnimatedOpacity(
-                                    opacity: _swipeProgress > 0.1
-                                        ? (_swipeProgress.abs() * 2).clamp(
-                                            0.0,
-                                            1.0,
-                                          )
-                                        : 0.0,
-                                    duration: const Duration(milliseconds: 100),
-                                    child: Container(
-                                      width: 80,
-                                      height: 80,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurface
-                                            .withValues(alpha: 0.4),
-                                      ),
-                                      child: const Icon(
-                                        Icons.favorite,
-                                        color: Colors.white,
-                                        size: 50,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
+                          ),
+                        ),
 
-                            CardSwiper(
-                              controller: _controller,
-                              cardsCount: profiles.length,
-                              numberOfCardsDisplayed: 1,
-                              padding: const EdgeInsets.all(24.0),
-                              allowedSwipeDirection:
-                                  const AllowedSwipeDirection.only(
-                                    left: true,
-                                    right: true,
-                                  ),
-                              onSwipe: (prev, curr, dir) =>
-                                  _onSwipe(prev, curr, dir, discoveryData),
-                              onUndo: _onUndo,
-                              cardBuilder: (context, index, horiz, vert) {
-                                // Track swipe progress for indicators
-                                if ((_swipeProgress - horiz).abs() > 10.0 ||
-                                    (horiz == 0 && _swipeProgress != 0)) {
-                                  WidgetsBinding.instance.addPostFrameCallback((
-                                    _,
-                                  ) {
-                                    if (mounted &&
-                                            (_swipeProgress - horiz).abs() >
-                                                10.0 ||
-                                        (horiz == 0 && _swipeProgress != 0)) {
-                                      setState(
-                                        () => _swipeProgress = horiz.toDouble(),
-                                      );
-                                    }
-                                  });
+                        // --------------------------------------------------
+                        // 3. LAYER THREE: The Card Swiper (Top)
+                        // --------------------------------------------------
+                        CardSwiper(
+                          controller: _controller,
+                          // ✅ 1. ADD KEY: Prevents "ghost" cards from old states
+                          key: ValueKey(
+                            mainDeck.isNotEmpty
+                                ? mainDeck.first.profileId
+                                : 'empty',
+                          ),
+
+                          cardsCount: mainDeck.length,
+                          // ✅ ADD THIS LINE:
+                          initialIndex: _currentIndex,
+                          numberOfCardsDisplayed: 1,
+                          padding: const EdgeInsets.all(24.0),
+
+                          // ✅ 2. ADD LOOP FALSE: Stops random restarts
+                          isLoop: false,
+
+                          allowedSwipeDirection:
+                              const AllowedSwipeDirection.only(
+                                left: true,
+                                right: true,
+                              ),
+                          onSwipe: (prev, curr, dir) =>
+                              _onSwipe(prev, curr, dir, mainDeck),
+                          onUndo: _onUndo,
+
+                          // ✅ 3. ADD ON END: Triggers the empty state when you swipe the last card
+                          onEnd: () {
+                            debugPrint("✅ Deck finished locally");
+                            setState(() {
+                              _isDeckFinished = true;
+                            });
+                          },
+
+                          cardBuilder: (context, index, horiz, vert) {
+                            // Track swipe progress for indicators
+                            if ((_swipeProgress - horiz).abs() > 10.0 ||
+                                (horiz == 0 && _swipeProgress != 0)) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if (mounted &&
+                                    ((_swipeProgress - horiz).abs() > 10.0 ||
+                                        (horiz == 0 && _swipeProgress != 0))) {
+                                  setState(
+                                    () => _swipeProgress = horiz.toDouble(),
+                                  );
                                 }
+                              });
+                            }
 
-                                return ProfileSwipeCard(
-                                  key: ValueKey(profiles[index].id),
-                                  profile: profiles[index],
-                                  horizontalThreshold: horiz.toDouble(),
-                                  verticalThreshold: vert.toDouble(),
-                                  isHomeScreen: true,
-                                  onLike: () {
-                                    _handleLike(profiles[index]);
-                                    _controller.swipe(
-                                      CardSwiperDirection.right,
-                                    );
-                                  },
-                                  onBlock: () {
-                                    _handlePass(profiles[index]);
-                                    _controller.swipe(CardSwiperDirection.left);
-                                  },
-                                  onReport: () {
-                                    debugPrint(
-                                      'Report: ${profiles[index].name}',
-                                    );
-                                  },
-                                );
+                            // ✅ Map Single Profile on the fly
+                            final uiProfile = _mapToUserProfiles([
+                              mainDeck[index],
+                            ]).first;
+
+                            return ProfileSwipeCard(
+                              key: ValueKey(mainDeck[index].profileId),
+                              profile: uiProfile,
+                              horizontalThreshold: horiz.toDouble(),
+                              verticalThreshold: vert.toDouble(),
+                              isHomeScreen: true,
+                              onLike: () {
+                                _handleLike(uiProfile);
+                                _controller.swipe(CardSwiperDirection.right);
                               },
-                            ),
-                          ],
-                        );
-                      },
+                              onBlock: () {
+                                _handlePass(uiProfile);
+                                _controller.swipe(CardSwiperDirection.left);
+                              },
+                              onReport: () {
+                                debugPrint('Report: ${uiProfile.name}');
+                              },
+                            );
+                          },
+                        ),
+                      ],
                     ),
             ),
           ],
@@ -343,25 +436,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  // 2. UPDATED LOADING SCREEN (Logo instead of Spinner)
   Widget _buildInitializingState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(
-            color: Theme.of(context).colorScheme.secondary,
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(
+        // ✅ WRAP WITH FADE TRANSITION
+        child: FadeTransition(
+          opacity: _blinkController,
+          child: Image.asset(
+            'assets/images/blindly-app-icon-white.jpg',
+            width: 150, // kept your preferred size
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) {
+              return Text(
+                "Blindly",
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Poppins',
+                ),
+              );
+            },
           ),
-          const SizedBox(height: 16),
-          Text(
-            "Updating your location...",
-            style: TextStyle(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.5),
-              fontFamily: 'Poppins',
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -370,71 +469,77 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     NavigationUtils.navigateToWithSlide(context, const ConnectionTypeScreen());
   }
 
+  // -----------------------------------------------------------------------
+  // ✅ UPDATED SWIPE LOGIC
+  // -----------------------------------------------------------------------
   bool _onSwipe(
-  int previousIndex,
-  int? currentIndex,
-  CardSwiperDirection direction,
-  List<DiscoveryUser> discoveryUsers,
-) {
-  setState(() {
-    _swipeProgress = 0.0;
-  });
+    int previousIndex,
+    int? currentIndex,
+    CardSwiperDirection direction,
+    List<DiscoveryUser> currentDeck,
+  ) {
+    setState(() {
+      _swipeProgress = 0.0;
+      _currentIndex = currentIndex ?? 0;
+    });
 
-  _triggerHapticFeedback(direction);
+    _triggerHapticFeedback(direction);
 
-  // 1️⃣ Get swiped profile
-  final swipedUser = discoveryUsers[previousIndex];
+    // 1. Identify User
+    final swipedUser = currentDeck[previousIndex];
+    final uiProfile = _mapToUserProfiles([swipedUser]).first;
 
-  // 2️⃣ Save for undo
-  _undoStack.add(swipedUser);
+    // 2. DB Record (Fire & Forget)
+    if (direction == CardSwiperDirection.left) {
+      _handlePass(uiProfile);
+    } else if (direction == CardSwiperDirection.right) {
+      _handleLike(uiProfile);
+    }
 
-  // 3️⃣ REMOVE FROM PROVIDER IMMEDIATELY 🔥🔥🔥
-  ref.read(discoveryFeedProvider.notifier).removeTopProfile();
+    // 3. Update Provider (Consume Card)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref
+            .read(discoveryFeedProvider.notifier)
+            .consumeCard(swipedUser, previousIndex);
+      }
+    });
 
-  // 4️⃣ Record swipe
-  final uiProfile = _mapToUserProfiles([swipedUser]).first;
-
-  if (direction == CardSwiperDirection.left) {
-    _handlePass(uiProfile);
-  } else if (direction == CardSwiperDirection.right) {
-    _handleLike(uiProfile);
+    return true;
   }
 
-  // 5️⃣ If deck empty → load next batch
-  if (currentIndex == null) {
-    _handleDeckFinished();
-  }
-
-  return true;
-}
-
-
+  // -----------------------------------------------------------------------
+  // ✅ UPDATED UNDO LOGIC
+  // -----------------------------------------------------------------------
   bool _onUndo(
-  int? previousIndex,
-  int currentIndex,
-  CardSwiperDirection direction,
-) {
-  if (_undoStack.isEmpty) return false;
+    int? previousIndex,
+    int currentIndex,
+    CardSwiperDirection direction,
+  ) {
+    // 1. Check History
+    final historyDeck = ref.read(discoveryFeedProvider).historyDeck;
+    if (historyDeck.isEmpty) return false;
 
-  HapticFeedback.mediumImpact();
+    // Optional: Premium Check
+    // if (!_isPremium) { _showPremiumDialog(); return false; }
 
-  final restoredUser = _undoStack.removeLast();
+    HapticFeedback.mediumImpact();
 
-  // 1️⃣ Restore feed state
-  ref.read(discoveryFeedProvider.notifier).insertAtTop(restoredUser);
+    // 2. Logic: Move Memory (Provider)
+    ref.read(discoveryFeedProvider.notifier).undoSwipe();
 
-  // 2️⃣ Delete swipe in DB
-  ref.read(swipeProvider.notifier).undo();
+    // 3. Logic: Delete DB Record
+    ref.read(swipeProvider.notifier).undo();
 
-  // 3️⃣ Animate card back
-  _controller.undo();
+    // ❌ DELETED: _controller.undo();
+    // (Removing this stops the infinite loop)
 
-  setState(() {
-    _swipeProgress = 0.0;
-  });
+    setState(() {
+      _swipeProgress = 0.0;
+    });
 
-  return true;
-}
+    return true; // Returning true tells the Controller "Yes, proceed with the animation"
+  }
 
   void _triggerHapticFeedback(CardSwiperDirection direction) {
     HapticFeedback.selectionClick();
@@ -448,7 +553,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _handleLike(UserProfile profile) {
-    showSuccessPopup(context, 'You liked ${profile.name}! 💚');
+    // showSuccessPopup(context, 'You liked ${profile.name}! 💚');
     ref
         .read(swipeProvider.notifier)
         .swipe(targetProfileId: profile.id, action: 'like');
@@ -470,32 +575,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  void _showLimitReachedDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Limit Reached'),
-        content: const Text('No more swipes for today!'),
-      ),
-    );
-  }
-
-  void _showNoMoreCardsDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('No More Profiles'),
-        content: const Text('Check back later!'),
-      ),
-    );
-  }
-
   Widget _buildEmptyState() {
     return NoMoreProfilesWidget(
       onAdjustFilters: () {
         debugPrint("Adjust Filters clicked from No Feed Screen");
-        // Trigger the same filter logic as the app bar button
-        // For now, just show a message since the filter logic implementation isn't visible in the snippets
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Filter capability coming soon!")),
         );

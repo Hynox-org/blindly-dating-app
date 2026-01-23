@@ -17,14 +17,14 @@ class LikedYouScreen extends ConsumerStatefulWidget {
 }
 
 class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
-@override
+  @override
   void initState() {
     super.initState();
 
-    // 🔄 Fetch fresh data every time screen opens
-    Future.microtask(() {
-      ref.read(likedYouProvider.notifier).refresh();
-    });
+    // // // 🔄 Fetch fresh data every time screen opens
+    // // Future.microtask(() {
+    // //   ref.read(likedYouProvider.notifier).refresh();
+    // });
   }
 
   @override
@@ -145,7 +145,7 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
   }
 
   // --------------------------------------------------
-  // PROFILE CARD (LOCKED)
+  // PROFILE CARD WITH MATCH / PASS BUTTONS
   // --------------------------------------------------
   Widget _buildProfileCard(LikedYouUser user) {
     return ClipRRect(
@@ -153,6 +153,7 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
       child: Stack(
         fit: StackFit.expand,
         children: [
+          // Image
           user.hasImage
               ? Image.network(
                   user.imageUrl!,
@@ -161,29 +162,66 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
                 )
               : _imageFallback(),
 
-          Positioned(
-            left: 12,
-            right: 12,
-            bottom: 12,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                '${user.displayName}, ${user.age}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Poppins',
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+          // Gradient overlay
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.transparent, Colors.black.withOpacity(0.65)],
               ),
             ),
           ),
+
+          // Name + age
+          Positioned(
+            left: 12,
+            right: 12,
+            bottom: 64,
+            child: Text(
+              '${user.displayName}, ${user.age}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'Poppins',
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+
+          // 🔥 ACTION BUTTONS
+          Positioned(
+            left: 10,
+            right: 10,
+            bottom: 10,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _overlayActionButton(
+                  label: 'Like',
+                  // icon: Icons.favorite_border,
+                  onTap: () async {
+                    await ref
+                        .read(likedYouProvider.notifier)
+                        .matchUser(user.profileId);
+                  },
+                ),
+
+                _overlayActionButton(
+                  label: 'Pause',
+                  // icon: Icons.pause,
+                  onTap: () async {
+                    await ref
+                        .read(likedYouProvider.notifier)
+                        .passUser(user.profileId);
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
         ],
       ),
     );
@@ -232,7 +270,7 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
   }
 
   // --------------------------------------------------
-  // UNLOCK BUTTON
+  // UNLOCK BUTTON (UNCHANGED)
   // --------------------------------------------------
   Widget _buildUnlockButton() {
     return Container(
@@ -262,17 +300,39 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
       ),
     );
   }
+}
 
-  // --------------------------------------------------
-  // PREMIUM DIALOG (DEV)
-  // --------------------------------------------------
-  void _showPremiumDialog() {
-    showDialog(
-      context: context,
-      builder: (_) => const AlertDialog(
-        title: Text('Premium Required'),
-        content: Text('This feature will be unlocked with Premium.'),
+//--------------------------------------------------
+//HELPER FUNCTION FOR ACTION BUTTONS
+//--------------------------------------------------
+Widget _overlayActionButton({
+  required String label,
+  // required IconData icon,
+  required VoidCallback onTap,
+}) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
       ),
-    );
-  }
+      child: Row(
+        children: [
+          // Icon(icon, size: 16, color: Colors.Black),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.black,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              fontFamily: 'Poppins',
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }

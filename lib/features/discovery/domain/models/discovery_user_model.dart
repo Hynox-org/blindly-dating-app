@@ -61,7 +61,7 @@ class DiscoveryUser {
       sharedInterestsCount: json['interest_match_count'] as int? ?? 0,
       sharedLifestyleCount: json['lifestyle_match_count'] as int? ?? 0,
       matchScore: json['match_score'] as int? ?? 0,
-      mediaUrl: json['image_url'] as String?,
+      mediaUrl: json['media_url'] as String?,
     );
   }
 }
