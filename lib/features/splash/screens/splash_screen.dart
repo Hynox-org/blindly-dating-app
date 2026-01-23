@@ -179,7 +179,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                             sigmaY: _textBlur.value,
                           ),
                           child: Image.asset(
-                            'assests/images/blindly-text-logo.png',
+                            'assets/images/blindly-text-logo.png',
                             width: 280, // Slightly larger
                           ),
                         ),

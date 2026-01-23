@@ -3,7 +3,7 @@ import '../../core/widgets/app_layout.dart';
 import '../../core/utils/navigation_utils.dart';
 import '../home/screens/connection_type_screen.dart';
 import '../home/component/ProfileSwipeCard.dart'; // Import for ProfileSwipeCard and UserProfile (local definition)
-
+import './profile_edit_screen.dart';
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -283,7 +283,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       width: MediaQuery.of(context).size.width * 0.6,
                       child: ElevatedButton.icon(
                         onPressed: () {
-                          Navigator.of(context).pop();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ProfileEditScreen(),
+                            ),
+                          );
                           // TODO: Navigate to Edit Profile
                         },
                         icon: const Icon(Icons.edit, color: Colors.white),
@@ -299,7 +304,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           backgroundColor: const Color.fromRGBO(65, 72, 51, 1),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
+                            borderRadius: BorderRadius.circular(20),
                           ),
                           elevation: 5,
                         ),
