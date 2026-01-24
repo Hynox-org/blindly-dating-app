@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/onboarding_provider.dart';
+import '../../../../core/widgets/app_loader.dart';
 
 import '../../../auth/providers/auth_providers.dart';
 
@@ -58,7 +59,7 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
     final stepConfig = state.currentStepConfig;
 
     if (state.isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: AppLoader());
     }
 
     if (state.errorMessage != null) {

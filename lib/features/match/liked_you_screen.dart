@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/widgets/app_loader.dart';
 import '../../../core/widgets/app_layout.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../features/home/screens/connection_type_screen.dart';
@@ -59,7 +60,7 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
       child: Container(
         color: const Color(0xFFF5F5F5),
         child: likedYouState.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const AppLoader(),
           error: (e, _) => _buildErrorState(),
           data: (users) {
             final likeCount = users.length;
@@ -256,11 +257,7 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
   }
 
   Widget _buildErrorState() {
-    return const Center(
-      child: Text(
-        'Failed to load likes',
-      ),
-    );
+    return const Center(child: Text('Failed to load likes'));
   }
 
   // --------------------------------------------------
@@ -284,10 +281,7 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
           ),
           child: const Text(
             'Unlock all likes',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
         ),
       ),

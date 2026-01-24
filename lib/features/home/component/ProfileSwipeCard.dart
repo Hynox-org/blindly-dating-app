@@ -144,377 +144,395 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
             ),
           ],
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: SingleChildScrollView(
-            controller: _scrollController,
-            physics: const ClampingScrollPhysics(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ============ IMAGE 1 ============
-                _buildImageSection(0),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                physics: const ClampingScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ============ IMAGE 1 ============
+                    _buildImageSection(0, cardHeight: constraints.maxHeight),
 
-                // ============ CONTENT SECTION 1 ============
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // KUDOS SECTIONS (Only on Home Screen)
-                      if (widget.isHomeScreen &&
-                          widget.profile.summary.trim().isNotEmpty) ...[
-                        _buildKudosSection(
-                          title: 'My self Summary',
-                          content: widget.profile.summary,
-                        ),
-                        const SizedBox(height: 20),
-                      ],
-                      if (widget.isHomeScreen &&
-                          widget.profile.lookingFor.trim().isNotEmpty) ...[
-                        _buildKudosSection(
-                          title: 'What makes a relationship great is',
-                          content: widget.profile.lookingFor,
-                        ),
-                        const SizedBox(height: 20),
-                      ],
-
-                      // About Me (Only if not empty)
-                      if (!_isAboutMeEmpty()) ...[
-                        _buildSection(
-                          title: 'About me',
-                          child: Wrap(
-                            spacing: 10,
-                            runSpacing: 10,
-                            children: [
-                              if (!_isSectionEmpty(widget.profile.height))
-                                _buildInfoChip(
-                                  widget.profile.height,
-                                  Colors.blue,
-                                ),
-                              if (!_isSectionEmpty(
-                                widget.profile.activityLevel,
-                              ))
-                                _buildInfoChip(
-                                  widget.profile.activityLevel,
-                                  Colors.purple,
-                                ),
-                              if (!_isSectionEmpty(widget.profile.education))
-                                _buildInfoChip(
-                                  widget.profile.education,
-                                  Colors.orange,
-                                ),
-                              if (!_isSectionEmpty(widget.profile.gender))
-                                _buildInfoChip(
-                                  widget.profile.gender,
-                                  Colors.blue,
-                                ),
-                              if (!_isSectionEmpty(widget.profile.religion))
-                                _buildInfoChip(
-                                  widget.profile.religion,
-                                  Colors.orange,
-                                ),
-                              if (!_isSectionEmpty(widget.profile.zodiac))
-                                _buildInfoChip(
-                                  widget.profile.zodiac,
-                                  Colors.brown,
-                                ),
-                              if (!_isSectionEmpty(widget.profile.drinking))
-                                _buildInfoChip(
-                                  widget.profile.drinking,
-                                  Colors.green,
-                                ),
-                              if (!_isSectionEmpty(widget.profile.smoking))
-                                _buildInfoChip(
-                                  widget.profile.smoking,
-                                  Colors.red,
-                                ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                      ],
-                    ],
-                  ),
-                ),
-
-                // ============ IMAGE 2 ============
-                _buildImageSection(1),
-
-                // ============ CONTENT SECTION 2 ============
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // I'm looking for (Only if not empty)
-                      if (!_isLookingForEmpty()) ...[
-                        _buildSection(
-                          title: 'I\'m looking for',
-                          child: Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: widget.profile.lookingForTags
-                                .where((tag) => tag.trim().isNotEmpty)
-                                .map(
-                                  (tag) => Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 8,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey[100],
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
-                                        color: Colors.grey[300]!,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      tag.trim(),
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        color: Color.fromRGBO(0, 0, 0, 1),
-                                      ),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                      ],
-
-                      // KUDOS SECTION 3 (Only on Home Screen)
-                      if (widget.isHomeScreen &&
-                          widget.profile.quickestWay.trim().isNotEmpty) ...[
-                        _buildKudosSection(
-                          title: 'The quickest way to my heart is',
-                          content: widget.profile.quickestWay,
-                          isItalic: true,
-                        ),
-                        const SizedBox(height: 20),
-                      ],
-
-                      // My Interests (Only if not empty)
-                      if (!_isInterestsEmpty()) ...[
-                        _buildSection(
-                          title: 'My interests',
-                          child: Wrap(
-                            spacing: 10,
-                            runSpacing: 10,
-                            children: widget.profile.hobbies
-                                .where((hobby) => hobby.trim().isNotEmpty)
-                                .map(
-                                  (hobby) => Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 8,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
-                                        color: Colors.grey[300]!,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      hobby.trim(),
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        color: Color.fromRGBO(0, 0, 0, 1),
-                                      ),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                      ],
-                    ],
-                  ),
-                ),
-
-                // ============ IMAGE 3 ============
-                _buildImageSection(2),
-
-                // ============ CONTENT SECTION 3 ============
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // My Causes (Only if not empty)
-                      if (!_isCausesEmpty()) ...[
-                        _buildSection(
-                          title: 'My causes and communities',
-                          child: Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: widget.profile.causes
-                                .where((cause) => cause.trim().isNotEmpty)
-                                .map(
-                                  (cause) => Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 8,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
-                                        color: Colors.grey[300]!,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      cause.trim(),
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        color: Color.fromRGBO(0, 0, 0, 1),
-                                      ),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                      ],
-
-                      // KUDOS SECTION 4 (Only on Home Screen)
-                      if (widget.isHomeScreen &&
-                          widget.profile.simplePleasure.trim().isNotEmpty) ...[
-                        _buildKudosSection(
-                          title: 'My simple pleasures are',
-                          content: widget.profile.simplePleasure,
-                        ),
-                        const SizedBox(height: 20),
-                      ],
-
-                      // Languages (Only if not empty)
-                      if (!_isLanguagesEmpty()) ...[
-                        _buildSection(
-                          title: 'Languages',
-                          child: Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: widget.profile.languages
-                                .where((lang) => lang.trim().isNotEmpty)
-                                .map(
-                                  (lang) => Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 10,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue[50],
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
-                                        color: Colors.blue[200]!,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      lang.trim(),
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        color: Colors.blue,
-                                      ),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                      ],
-
-                      // Location (Only if not empty)
-                      if (!_isLocationEmpty()) ...[
-                        _buildSection(
-                          title: 'My location',
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: Colors.grey[300]!),
+                    // ============ CONTENT SECTION 1 ============
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // KUDOS SECTIONS (Only on Home Screen)
+                          if (widget.isHomeScreen &&
+                              widget.profile.summary.trim().isNotEmpty) ...[
+                            _buildKudosSection(
+                              title: 'My self Summary',
+                              content: widget.profile.summary,
                             ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.location_on,
-                                  color: Color.fromRGBO(0, 0, 0, 1),
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  widget.profile.location.trim(),
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: Color.fromRGBO(0, 0, 0, 1),
-                                  ),
-                                ),
-                              ],
+                            const SizedBox(height: 20),
+                          ],
+                          if (widget.isHomeScreen &&
+                              widget.profile.lookingFor.trim().isNotEmpty) ...[
+                            _buildKudosSection(
+                              title: 'What makes a relationship great is',
+                              content: widget.profile.lookingFor,
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                      ],
+                            const SizedBox(height: 20),
+                          ],
 
-                      // Spotify Artists (Only if not empty)
-                      if (!_isSpotifyEmpty()) ...[
-                        _buildSection(
-                          title: 'My top artist on spotify',
-                          child: Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: widget.profile.spotifyArtists
-                                .where((artist) => artist.trim().isNotEmpty)
-                                .map(
-                                  (artist) => Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 8,
+                          // About Me (Only if not empty)
+                          if (!_isAboutMeEmpty()) ...[
+                            _buildSection(
+                              title: 'About me',
+                              child: Wrap(
+                                spacing: 10,
+                                runSpacing: 10,
+                                children: [
+                                  if (!_isSectionEmpty(widget.profile.height))
+                                    _buildInfoChip(
+                                      widget.profile.height,
+                                      Colors.blue,
                                     ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
-                                        color: Colors.grey[300]!,
+                                  if (!_isSectionEmpty(
+                                    widget.profile.activityLevel,
+                                  ))
+                                    _buildInfoChip(
+                                      widget.profile.activityLevel,
+                                      Colors.purple,
+                                    ),
+                                  if (!_isSectionEmpty(
+                                    widget.profile.education,
+                                  ))
+                                    _buildInfoChip(
+                                      widget.profile.education,
+                                      Colors.orange,
+                                    ),
+                                  if (!_isSectionEmpty(widget.profile.gender))
+                                    _buildInfoChip(
+                                      widget.profile.gender,
+                                      Colors.blue,
+                                    ),
+                                  if (!_isSectionEmpty(widget.profile.religion))
+                                    _buildInfoChip(
+                                      widget.profile.religion,
+                                      Colors.orange,
+                                    ),
+                                  if (!_isSectionEmpty(widget.profile.zodiac))
+                                    _buildInfoChip(
+                                      widget.profile.zodiac,
+                                      Colors.brown,
+                                    ),
+                                  if (!_isSectionEmpty(widget.profile.drinking))
+                                    _buildInfoChip(
+                                      widget.profile.drinking,
+                                      Colors.green,
+                                    ),
+                                  if (!_isSectionEmpty(widget.profile.smoking))
+                                    _buildInfoChip(
+                                      widget.profile.smoking,
+                                      Colors.red,
+                                    ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+                        ],
+                      ),
+                    ),
+
+                    // ============ IMAGE 2 ============
+                    _buildImageSection(1),
+
+                    // ============ CONTENT SECTION 2 ============
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // I'm looking for (Only if not empty)
+                          if (!_isLookingForEmpty()) ...[
+                            _buildSection(
+                              title: 'I\'m looking for',
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: widget.profile.lookingForTags
+                                    .where((tag) => tag.trim().isNotEmpty)
+                                    .map(
+                                      (tag) => Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 14,
+                                          vertical: 8,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey[100],
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                          border: Border.all(
+                                            color: Colors.grey[300]!,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          tag.trim(),
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            color: Color.fromRGBO(0, 0, 0, 1),
+                                          ),
+                                        ),
                                       ),
+                                    )
+                                    .toList(),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+
+                          // KUDOS SECTION 3 (Only on Home Screen)
+                          if (widget.isHomeScreen &&
+                              widget.profile.quickestWay.trim().isNotEmpty) ...[
+                            _buildKudosSection(
+                              title: 'The quickest way to my heart is',
+                              content: widget.profile.quickestWay,
+                              isItalic: true,
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+
+                          // My Interests (Only if not empty)
+                          if (!_isInterestsEmpty()) ...[
+                            _buildSection(
+                              title: 'My interests',
+                              child: Wrap(
+                                spacing: 10,
+                                runSpacing: 10,
+                                children: widget.profile.hobbies
+                                    .where((hobby) => hobby.trim().isNotEmpty)
+                                    .map(
+                                      (hobby) => Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 14,
+                                          vertical: 8,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                          border: Border.all(
+                                            color: Colors.grey[300]!,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          hobby.trim(),
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            color: Color.fromRGBO(0, 0, 0, 1),
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+                        ],
+                      ),
+                    ),
+
+                    // ============ IMAGE 3 ============
+                    _buildImageSection(2),
+
+                    // ============ CONTENT SECTION 3 ============
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // My Causes (Only if not empty)
+                          if (!_isCausesEmpty()) ...[
+                            _buildSection(
+                              title: 'My causes and communities',
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: widget.profile.causes
+                                    .where((cause) => cause.trim().isNotEmpty)
+                                    .map(
+                                      (cause) => Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 14,
+                                          vertical: 8,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                          border: Border.all(
+                                            color: Colors.grey[300]!,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          cause.trim(),
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            color: Color.fromRGBO(0, 0, 0, 1),
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+
+                          // KUDOS SECTION 4 (Only on Home Screen)
+                          if (widget.isHomeScreen &&
+                              widget.profile.simplePleasure
+                                  .trim()
+                                  .isNotEmpty) ...[
+                            _buildKudosSection(
+                              title: 'My simple pleasures are',
+                              content: widget.profile.simplePleasure,
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+
+                          // Languages (Only if not empty)
+                          if (!_isLanguagesEmpty()) ...[
+                            _buildSection(
+                              title: 'Languages',
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: widget.profile.languages
+                                    .where((lang) => lang.trim().isNotEmpty)
+                                    .map(
+                                      (lang) => Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 10,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue[50],
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                          border: Border.all(
+                                            color: Colors.blue[200]!,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          lang.trim(),
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.blue,
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+
+                          // Location (Only if not empty)
+                          if (!_isLocationEmpty()) ...[
+                            _buildSection(
+                              title: 'My location',
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: Colors.grey[300]!),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.location_on,
+                                      color: Color.fromRGBO(0, 0, 0, 1),
+                                      size: 20,
                                     ),
-                                    child: Text(
-                                      artist.trim(),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      widget.profile.location.trim(),
                                       style: const TextStyle(
-                                        fontSize: 13,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
                                         color: Color.fromRGBO(0, 0, 0, 1),
                                       ),
                                     ),
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                        ),
-                        const SizedBox(height: 30),
-                      ],
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                          ],
 
-                      // ============ CONDITIONAL ACTION BUTTONS ============
-                      if (widget.isHomeScreen) ...[
-                        _buildHomeScreenButtons(),
-                        const SizedBox(height: 20),
-                      ],
+                          // Spotify Artists (Only if not empty)
+                          if (!_isSpotifyEmpty()) ...[
+                            _buildSection(
+                              title: 'My top artist on spotify',
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: widget.profile.spotifyArtists
+                                    .where((artist) => artist.trim().isNotEmpty)
+                                    .map(
+                                      (artist) => Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 14,
+                                          vertical: 8,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                          border: Border.all(
+                                            color: Colors.grey[300]!,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          artist.trim(),
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            color: Color.fromRGBO(0, 0, 0, 1),
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                            ),
+                            const SizedBox(height: 30),
+                          ],
 
-                      if (widget.isProfileScreen) ...[
-                        _buildProfileScreenEditButton(),
-                        const SizedBox(height: 20),
-                      ],
-                    ],
-                  ),
+                          // ============ CONDITIONAL ACTION BUTTONS ============
+                          if (widget.isHomeScreen) ...[
+                            _buildHomeScreenButtons(),
+                            const SizedBox(height: 20),
+                          ],
+
+                          if (widget.isProfileScreen) ...[
+                            _buildProfileScreenEditButton(),
+                            const SizedBox(height: 20),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -629,7 +647,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
   }
 
   // Full viewport height first image
-  Widget _buildImageSection(int index) {
+  Widget _buildImageSection(int index, {double? cardHeight}) {
     if (index >= 3 || index >= widget.profile.imageUrls.length) {
       return const SizedBox.shrink();
     }
@@ -641,7 +659,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         if (isFirstImage) {
           return SizedBox(
             width: double.infinity,
-            height: MediaQuery.of(context).size.height * 0.72,
+            height: cardHeight ?? MediaQuery.of(context).size.height,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16), // all 4 corners
               child: Stack(

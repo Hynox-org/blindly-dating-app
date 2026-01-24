@@ -9,6 +9,7 @@ import '../../onboarding/providers/onboarding_providers.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../onboarding/presentation/screens/onboarding_shell.dart';
 // import '../../discovery/repository/discovery_repository.dart';
+import '../../../../core/widgets/app_loader.dart';
 
 enum AuthMethod { selection, phone, phoneOTP, email, emailOTP, apple }
 
@@ -758,15 +759,10 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                       }),
                     ),
                 child: _isLoading
-                    ? SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
+                    ? AppLoader(
+                        size: 20,
+                        color: Theme.of(context).colorScheme.onSurface,
+                        strokeWidth: 2,
                       )
                     : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -1424,9 +1420,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                 RegExp(r'\s'),
               ), // No spaces allowed
             ],
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
             decoration: InputDecoration(
               hintText: 'Abcd@gmail.com',
               hintStyle: TextStyle(
