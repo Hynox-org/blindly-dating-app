@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class ConnectionTypeScreen extends StatefulWidget {
+import '../../../features/discovery/povider/discovery_provider.dart';
+
+class ConnectionTypeScreen extends ConsumerStatefulWidget {
   const ConnectionTypeScreen({super.key});
 
   @override
-  State<ConnectionTypeScreen> createState() => _ConnectionTypeScreenState();
+  ConsumerState<ConnectionTypeScreen> createState() =>
+      _ConnectionTypeScreenState();
 }
 
-class _ConnectionTypeScreenState extends State<ConnectionTypeScreen> {
+class _ConnectionTypeScreenState
+    extends ConsumerState<ConnectionTypeScreen> {
   String _selectedMode = 'Date';
+  bool _isSaving = false;
 
   @override
   Widget build(BuildContext context) {
@@ -73,12 +79,6 @@ class _ConnectionTypeScreenState extends State<ConnectionTypeScreen> {
                       subtitle: 'Make new friends and find your community',
                       mode: 'BFF',
                     ),
-                    const SizedBox(height: 16),
-                    _buildOptionCard(
-                      title: 'Events',
-                      subtitle: 'Let\'s find your vibe',
-                      mode: 'Events',
-                    ),
                   ],
                 ),
               ),
@@ -88,14 +88,9 @@ class _ConnectionTypeScreenState extends State<ConnectionTypeScreen> {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // TODO: Handle mode selection save
-                    Navigator.pop(context);
-                  },
+                  onPressed: _isSaving ? null : _onContinue,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(
-                      0xFF4B5320,
-                    ), // Dark Green/Olive
+                    backgroundColor: const Color(0xFF4B5320),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -103,14 +98,18 @@ class _ConnectionTypeScreenState extends State<ConnectionTypeScreen> {
                     ),
                     elevation: 0,
                   ),
-                  child: Text(
-                    'Continue with $_selectedMode',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Poppins',
-                    ),
-                  ),
+                  child: _isSaving
+                      ? const CircularProgressIndicator(
+                          color: Colors.white,
+                        )
+                      : Text(
+                          'Continue with $_selectedMode',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Poppins',
+                          ),
+                        ),
                 ),
               ),
             ),
@@ -120,29 +119,42 @@ class _ConnectionTypeScreenState extends State<ConnectionTypeScreen> {
     );
   }
 
+  Future<void> _onContinue() async {
+    setState(() => _isSaving = true);
+
+    try {
+      await ref
+          .read(discoveryFeedProvider.notifier)
+          .changeDiscoveryMode(_selectedMode);
+
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      debugPrint('❌ Failed to update discovery mode: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
   Widget _buildOptionCard({
     required String title,
     required String subtitle,
     required String mode,
   }) {
     final isSelected = _selectedMode == mode;
-    final borderColor = isSelected ? Colors.transparent : Colors.grey[300]!;
-    final backgroundColor = isSelected
-        ? const Color(0xFFE4C687)
-        : const Color(0xFFF5F5F5);
 
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedMode = mode;
-        });
-      },
+      onTap: () => setState(() => _selectedMode = mode),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: backgroundColor,
+          color: isSelected
+              ? const Color(0xFFE4C687)
+              : const Color(0xFFF5F5F5),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: borderColor),
         ),
         child: Row(
           children: [
@@ -156,34 +168,19 @@ class _ConnectionTypeScreenState extends State<ConnectionTypeScreen> {
                       fontFamily: 'Poppins',
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
-                      color: Colors.black,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 14,
-                      color: Colors.black.withValues(alpha: 0.8),
-                    ),
+                    style: const TextStyle(fontSize: 14),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 12),
             if (isSelected)
-              const Icon(Icons.check_circle, color: Color(0xFF4B5320), size: 28)
-            else
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
-                  border: Border.all(color: Colors.grey[400]!),
-                ),
-              ),
+              const Icon(Icons.check_circle,
+                  color: Color(0xFF4B5320), size: 28),
           ],
         ),
       ),

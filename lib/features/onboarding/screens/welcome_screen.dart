@@ -20,7 +20,7 @@ class WelcomeScreen extends StatelessWidget {
                   const SizedBox(height: 8),
                   // Replaced Text widget with Image
                   Image.asset(
-                    'assests/images/blindly-text-logo.png',
+                    'assets/images/blindly-text-logo.png',
                     width: 200,
                     height: 200,
                     fit: BoxFit.contain,

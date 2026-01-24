@@ -1,24 +1,61 @@
 import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../../../features/discovery/domain/models/discovery_user_model.dart';
 
-// 1. Provider
+// ======================================================
+// Provider
+// ======================================================
 final discoveryRepositoryProvider = Provider<DiscoveryRepository>((ref) {
   return DiscoveryRepository(Supabase.instance.client);
 });
 
-// 2. Repository
+// ======================================================
+// Repository
+// ======================================================
 class DiscoveryRepository {
   final SupabaseClient _supabase;
 
   DiscoveryRepository(this._supabase);
 
-  // ✅ CONSTANTS
-  static const bool kDevMode =
-      true; // Set to true to bypass checks (like OTP) for testing
+  // --------------------------------------------------
+  // 🔧 CONFIG
+  // --------------------------------------------------
 
-  /// 🔥 MAIN DISCOVERY FEED
+  /// Dev mode ignores distance limits
+  static const bool kDevMode = true;
+
+  /// Huge radius when dev mode is ON (≈ entire world)
+  static const int _devRadiusMeters = 20000000;
+
+  // --------------------------------------------------
+  // 🔁 UPDATE DISCOVERY MODE (dating / bff)
+  // --------------------------------------------------
+  Future<void> updateDiscoveryMode(String mode) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) {
+      throw Exception('User not logged in');
+    }
+
+    final response = await _supabase
+        .from('profiles')
+        .update({'discovery_mode': mode})
+        .eq('user_id', user.id)
+        .select(); // 👈 FORCE RESPONSE
+
+    debugPrint('✅ discovery_mode update response: $response');
+  }
+
+  // --------------------------------------------------
+  // 🔥 MAIN DISCOVERY FEED
+  // --------------------------------------------------
+  ///
+  /// Supabase is the source of truth.
+  /// - discovery_mode is read from profiles table
+  /// - gender logic is handled inside SQL
+  /// - swipe filtering is handled inside SQL
+  ///
   Future<List<DiscoveryUser>> getDiscoveryFeed({
     int radius = 5000, // meters
     int limit = 20,
@@ -30,49 +67,62 @@ class DiscoveryRepository {
         throw Exception('User not logged in');
       }
 
-      // 🔍 Debug params
-      debugPrint('🚀 RPC CALL PARAMS');
-      debugPrint('FUNCTION: get_discovery_feed_final');
-      debugPrint('AUTH USER ID: ${authUser.id}');
-      debugPrint('RADIUS: $radius');
-      debugPrint('LIMIT: $limit');
-      debugPrint('OFFSET: $offset');
-
-      // ✅ Call SQL function
-      // If Dev Mode is ON, we ignore location by setting a huge radius (e.g. 20,000 km)
-      // Otherwise, we use the passed radius.
-      final int effectiveRadius = kDevMode ? 20000000 : radius;
-
-      final List<dynamic> response = await _supabase.rpc(
-        'get_discovery_feed_final',
-        params: {
-          'p_radius_meters': effectiveRadius,
-          'p_limit': limit,
-          'p_offset': offset,
-        },
+      // --------------------------------------------------
+      // 🧪 DEBUG LOGS
+      // --------------------------------------------------
+      debugPrint('🚀 DISCOVERY RPC CALL');
+      debugPrint('USER ID : ${authUser.id}');
+      debugPrint('LIMIT   : $limit');
+      debugPrint('OFFSET  : $offset');
+      debugPrint(
+        'RADIUS  : ${kDevMode ? _devRadiusMeters : radius}',
       );
+      
 
-      debugPrint('🧪 RAW RPC RESPONSE COUNT: ${response.length}');
+      final int effectiveRadius =
+          kDevMode ? _devRadiusMeters : radius;
 
+      // --------------------------------------------------
+      // 📡 RPC CALL
+      // --------------------------------------------------
+      final List<dynamic> response =
+          (await _supabase.rpc(
+                'get_discovery_feed_final',
+                params: {
+                  'p_radius_meters': effectiveRadius,
+                  'p_limit': limit,
+                  'p_offset': offset,
+                },
+              )) ??
+              [];
+
+      debugPrint('🧪 DISCOVERY ROWS: ${response.length}');
+
+      // --------------------------------------------------
+      // 🔁 MAP RESPONSE
+      // --------------------------------------------------
       final List<DiscoveryUser> users = [];
 
-      // 🔁 Process rows + handle images
       for (final raw in response) {
-        final Map<String, dynamic> data = Map<String, dynamic>.from(raw);
+        final Map<String, dynamic> data =
+            Map<String, dynamic>.from(raw);
 
-        final String? imagePath = data['image_url'];
+        final String? imagePath = data['media_url'];
 
+        // --------------------------------------------------
+        // 🖼️ HANDLE MEDIA URLS (FIXED)
+        // --------------------------------------------------
         if (imagePath != null && imagePath.isNotEmpty) {
-          if (imagePath.startsWith('http')) {
-            data['image_url'] = imagePath;
-          } else {
+          if (!imagePath.startsWith('http')) {
             final signedUrl = await _supabase.storage
                 .from('user_photos')
                 .createSignedUrl(imagePath, 15 * 60);
-            data['image_url'] = signedUrl;
+
+            // ✅ IMPORTANT: write back to SAME key model reads
+            data['media_url'] = signedUrl;
           }
         } else {
-          data['image_url'] = null;
+          data['media_url'] = null;
         }
 
         users.add(DiscoveryUser.fromJson(data));
@@ -80,7 +130,7 @@ class DiscoveryRepository {
 
       return users;
     } catch (e, stackTrace) {
-      debugPrint('🛑 DISCOVERY RPC FAILED');
+      debugPrint('🛑 DISCOVERY FEED FAILED');
       debugPrint(e.toString());
       debugPrint(stackTrace.toString());
       rethrow;
