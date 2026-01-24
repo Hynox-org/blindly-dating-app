@@ -5,7 +5,6 @@ import './../onboarding/presentation/screens/steps/name_birth_entry_screen.dart'
 import './../onboarding/presentation/screens/steps/gender_select_screen.dart';
 import './../profile/presentation/screens/setup_steps/language_select_screen.dart';
 import './../profile/presentation/screens/setup_steps/location_set_screen.dart';
-import './../profile/presentation/screens/setup_steps/interests_select_screen.dart';
 import './../profile/presentation/screens/setup_steps/lifestyle_prefs_screen.dart';
 // ============================================================
 // PROFILE EDIT SCREEN (Complete Redesign)

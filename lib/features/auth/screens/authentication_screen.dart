@@ -8,7 +8,7 @@ import '../providers/auth_providers.dart';
 import '../../onboarding/providers/onboarding_providers.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../onboarding/presentation/screens/onboarding_shell.dart';
-import '../../discovery/repository/discovery_repository.dart';
+// import '../../discovery/repository/discovery_repository.dart';
 
 enum AuthMethod { selection, phone, phoneOTP, email, emailOTP, apple }
 
@@ -94,6 +94,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
     });
   }
 
+  /*
   void _changeMethod(AuthMethod method) {
     setState(() {
       _currentMethod = method;
@@ -101,6 +102,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
       _inlineSuccess = null;
     });
   }
+  */
 
   void _clearOTPFields() {
     for (var controller in _otpControllers) {
@@ -792,6 +794,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               ),
               SizedBox(height: 12),
 
+              /*
               // Email button
               ElevatedButton(
                 onPressed: () {
@@ -846,7 +849,9 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   ],
                 ),
               ),
+              */
 
+              /*
               if (!DiscoveryRepository.kDevMode) ...[
                 SizedBox(height: 12),
 
@@ -907,7 +912,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   ),
                 ),
               ],
-
+              */
               SizedBox(height: 20),
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 10.0),
