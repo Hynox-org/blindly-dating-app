@@ -364,7 +364,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           // ✅ ADD THIS LINE:
                           initialIndex: _currentIndex,
                           numberOfCardsDisplayed: 1,
-                          padding: const EdgeInsets.all(24.0),
+                          padding: const EdgeInsets.all(10.0),
 
                           // ✅ 2. ADD LOOP FALSE: Stops random restarts
                           isLoop: false,
