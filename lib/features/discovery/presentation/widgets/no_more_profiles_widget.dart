@@ -53,7 +53,6 @@ class NoMoreProfilesWidget extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        fontFamily: 'Poppins',
                         color: colorScheme.onSurface,
                       ),
                     ),
@@ -67,7 +66,6 @@ class NoMoreProfilesWidget extends StatelessWidget {
                         fontSize: 14,
                         color: colorScheme.onSurface.withOpacity(0.7),
                         height: 1.5,
-                        fontFamily: 'Poppins',
                       ),
                     ),
                     const SizedBox(height: 40),
@@ -92,7 +90,6 @@ class NoMoreProfilesWidget extends StatelessWidget {
                             color: colorScheme.onPrimary, // Goldish text
                             fontWeight: FontWeight.w600,
                             fontSize: 16,
-                            fontFamily: 'Poppins',
                           ),
                         ),
                       ),
@@ -118,7 +115,6 @@ class NoMoreProfilesWidget extends StatelessWidget {
                             color: colorScheme.onSurface,
                             fontWeight: FontWeight.w600,
                             fontSize: 16,
-                            fontFamily: 'Poppins',
                           ),
                         ),
                       ),

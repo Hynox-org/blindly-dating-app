@@ -23,7 +23,6 @@ class ChatScreen extends ConsumerWidget{
           title: Text(
             'Chat',
             style: TextStyle(
-              fontFamily: 'Poppins',
               fontSize: 24,
               fontWeight: FontWeight.bold,
               color: Colors.black,
@@ -60,7 +59,6 @@ class ChatScreen extends ConsumerWidget{
                       hintText: 'Search conversations',
                       hintStyle: TextStyle(
                         color: Colors.grey,
-                        fontFamily: 'Poppins',
                       ),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.symmetric(vertical: 14),
@@ -75,7 +73,6 @@ class ChatScreen extends ConsumerWidget{
                 child: Text(
                   'Recent matches',
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
@@ -116,7 +113,6 @@ class ChatScreen extends ConsumerWidget{
                 child: Text(
                   'Conversations',
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
@@ -186,7 +182,6 @@ class ChatScreen extends ConsumerWidget{
           Text(
             name,
             style: const TextStyle(
-              fontFamily: 'Poppins',
               fontWeight: FontWeight.w500,
               fontSize: 12,
             ),
@@ -217,7 +212,6 @@ class ChatScreen extends ConsumerWidget{
           title: Text(
             name,
             style: const TextStyle(
-              fontFamily: 'Poppins',
               fontWeight: FontWeight.bold,
               fontSize: 16,
             ),
@@ -227,7 +221,6 @@ class ChatScreen extends ConsumerWidget{
             child: Text(
               message,
               style: TextStyle(
-                fontFamily: 'Poppins',
                 color: Colors.grey[800],
                 fontSize: 14,
               ),
@@ -242,7 +235,6 @@ class ChatScreen extends ConsumerWidget{
               Text(
                 time,
                 style: const TextStyle(
-                  fontFamily: 'Poppins',
                   color: Colors.grey,
                   fontSize: 12,
                 ),

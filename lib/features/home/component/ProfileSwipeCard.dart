@@ -99,10 +99,10 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
 
   /// Check if section data is empty
   bool _isSectionEmpty(String data) => data.trim().isEmpty;
-  bool _isListEmpty(List<String> items) => 
+  bool _isListEmpty(List<String> items) =>
       items.isEmpty || items.every((item) => item.trim().isEmpty);
-  
-  bool _isAboutMeEmpty() => 
+
+  bool _isAboutMeEmpty() =>
       _isSectionEmpty(widget.profile.height) &&
       _isSectionEmpty(widget.profile.activityLevel) &&
       _isSectionEmpty(widget.profile.education) &&
@@ -162,14 +162,16 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // KUDOS SECTIONS (Only on Home Screen)
-                      if (widget.isHomeScreen && widget.profile.summary.trim().isNotEmpty) ...[
+                      if (widget.isHomeScreen &&
+                          widget.profile.summary.trim().isNotEmpty) ...[
                         _buildKudosSection(
                           title: 'My self Summary',
                           content: widget.profile.summary,
                         ),
                         const SizedBox(height: 20),
                       ],
-                      if (widget.isHomeScreen && widget.profile.lookingFor.trim().isNotEmpty) ...[
+                      if (widget.isHomeScreen &&
+                          widget.profile.lookingFor.trim().isNotEmpty) ...[
                         _buildKudosSection(
                           title: 'What makes a relationship great is',
                           content: widget.profile.lookingFor,
@@ -186,21 +188,47 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                             runSpacing: 10,
                             children: [
                               if (!_isSectionEmpty(widget.profile.height))
-                                _buildInfoChip(widget.profile.height, Colors.blue),
-                              if (!_isSectionEmpty(widget.profile.activityLevel))
-                                _buildInfoChip(widget.profile.activityLevel, Colors.purple),
+                                _buildInfoChip(
+                                  widget.profile.height,
+                                  Colors.blue,
+                                ),
+                              if (!_isSectionEmpty(
+                                widget.profile.activityLevel,
+                              ))
+                                _buildInfoChip(
+                                  widget.profile.activityLevel,
+                                  Colors.purple,
+                                ),
                               if (!_isSectionEmpty(widget.profile.education))
-                                _buildInfoChip(widget.profile.education, Colors.orange),
+                                _buildInfoChip(
+                                  widget.profile.education,
+                                  Colors.orange,
+                                ),
                               if (!_isSectionEmpty(widget.profile.gender))
-                                _buildInfoChip(widget.profile.gender, Colors.blue),
+                                _buildInfoChip(
+                                  widget.profile.gender,
+                                  Colors.blue,
+                                ),
                               if (!_isSectionEmpty(widget.profile.religion))
-                                _buildInfoChip(widget.profile.religion, Colors.orange),
+                                _buildInfoChip(
+                                  widget.profile.religion,
+                                  Colors.orange,
+                                ),
                               if (!_isSectionEmpty(widget.profile.zodiac))
-                                _buildInfoChip(widget.profile.zodiac, Colors.brown),
+                                _buildInfoChip(
+                                  widget.profile.zodiac,
+                                  Colors.brown,
+                                ),
                               if (!_isSectionEmpty(widget.profile.drinking))
-                                _buildInfoChip(widget.profile.drinking, Colors.green),
+                                _buildInfoChip(
+                                  widget.profile.drinking,
+                                  Colors.green,
+                                ),
                               if (!_isSectionEmpty(widget.profile.smoking))
-                                _buildInfoChip(widget.profile.smoking, Colors.red),
+                                _buildInfoChip(
+                                  widget.profile.smoking,
+                                  Colors.red,
+                                ),
                             ],
                           ),
                         ),
@@ -228,25 +256,28 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                             runSpacing: 8,
                             children: widget.profile.lookingForTags
                                 .where((tag) => tag.trim().isNotEmpty)
-                                .map((tag) => Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 14,
-                                        vertical: 8,
+                                .map(
+                                  (tag) => Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[100],
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: Colors.grey[300]!,
                                       ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.grey[100],
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(color: Colors.grey[300]!),
+                                    ),
+                                    child: Text(
+                                      tag.trim(),
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        color: Color.fromRGBO(0, 0, 0, 1),
                                       ),
-                                      child: Text(
-                                        tag.trim(),
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          fontFamily: 'Poppins',
-                                          color: Color.fromRGBO(0, 0, 0, 1),
-                                        ),
-                                      ),
-                                    ))
+                                    ),
+                                  ),
+                                )
                                 .toList(),
                           ),
                         ),
@@ -254,7 +285,8 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                       ],
 
                       // KUDOS SECTION 3 (Only on Home Screen)
-                      if (widget.isHomeScreen && widget.profile.quickestWay.trim().isNotEmpty) ...[
+                      if (widget.isHomeScreen &&
+                          widget.profile.quickestWay.trim().isNotEmpty) ...[
                         _buildKudosSection(
                           title: 'The quickest way to my heart is',
                           content: widget.profile.quickestWay,
@@ -272,25 +304,28 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                             runSpacing: 10,
                             children: widget.profile.hobbies
                                 .where((hobby) => hobby.trim().isNotEmpty)
-                                .map((hobby) => Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 14,
-                                        vertical: 8,
+                                .map(
+                                  (hobby) => Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: Colors.grey[300]!,
                                       ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(color: Colors.grey[300]!),
+                                    ),
+                                    child: Text(
+                                      hobby.trim(),
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        color: Color.fromRGBO(0, 0, 0, 1),
                                       ),
-                                      child: Text(
-                                        hobby.trim(),
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          fontFamily: 'Poppins',
-                                          color: Color.fromRGBO(0, 0, 0, 1),
-                                        ),
-                                      ),
-                                    ))
+                                    ),
+                                  ),
+                                )
                                 .toList(),
                           ),
                         ),
@@ -318,25 +353,28 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                             runSpacing: 8,
                             children: widget.profile.causes
                                 .where((cause) => cause.trim().isNotEmpty)
-                                .map((cause) => Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 14,
-                                        vertical: 8,
+                                .map(
+                                  (cause) => Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: Colors.grey[300]!,
                                       ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(color: Colors.grey[300]!),
+                                    ),
+                                    child: Text(
+                                      cause.trim(),
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        color: Color.fromRGBO(0, 0, 0, 1),
                                       ),
-                                      child: Text(
-                                        cause.trim(),
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          fontFamily: 'Poppins',
-                                          color: Color.fromRGBO(0, 0, 0, 1),
-                                        ),
-                                      ),
-                                    ))
+                                    ),
+                                  ),
+                                )
                                 .toList(),
                           ),
                         ),
@@ -344,7 +382,8 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                       ],
 
                       // KUDOS SECTION 4 (Only on Home Screen)
-                      if (widget.isHomeScreen && widget.profile.simplePleasure.trim().isNotEmpty) ...[
+                      if (widget.isHomeScreen &&
+                          widget.profile.simplePleasure.trim().isNotEmpty) ...[
                         _buildKudosSection(
                           title: 'My simple pleasures are',
                           content: widget.profile.simplePleasure,
@@ -361,25 +400,28 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                             runSpacing: 8,
                             children: widget.profile.languages
                                 .where((lang) => lang.trim().isNotEmpty)
-                                .map((lang) => Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 10,
+                                .map(
+                                  (lang) => Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 10,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue[50],
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: Colors.blue[200]!,
                                       ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.blue[50],
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(color: Colors.blue[200]!),
+                                    ),
+                                    child: Text(
+                                      lang.trim(),
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.blue,
                                       ),
-                                      child: Text(
-                                        lang.trim(),
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          fontFamily: 'Poppins',
-                                          color: Colors.blue,
-                                        ),
-                                      ),
-                                    ))
+                                    ),
+                                  ),
+                                )
                                 .toList(),
                           ),
                         ),
@@ -410,7 +452,6 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                                   style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
-                                    fontFamily: 'Poppins',
                                     color: Color.fromRGBO(0, 0, 0, 1),
                                   ),
                                 ),
@@ -430,25 +471,28 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                             runSpacing: 8,
                             children: widget.profile.spotifyArtists
                                 .where((artist) => artist.trim().isNotEmpty)
-                                .map((artist) => Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 14,
-                                        vertical: 8,
+                                .map(
+                                  (artist) => Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: Colors.grey[300]!,
                                       ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(color: Colors.grey[300]!),
+                                    ),
+                                    child: Text(
+                                      artist.trim(),
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        color: Color.fromRGBO(0, 0, 0, 1),
                                       ),
-                                      child: Text(
-                                        artist.trim(),
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          fontFamily: 'Poppins',
-                                          color: Color.fromRGBO(0, 0, 0, 1),
-                                        ),
-                                      ),
-                                    ))
+                                    ),
+                                  ),
+                                )
                                 .toList(),
                           ),
                         ),
@@ -493,7 +537,6 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              fontFamily: 'Poppins',
               color: Color.fromRGBO(0, 0, 0, 1),
             ),
           ),
@@ -525,7 +568,6 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
             style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              fontFamily: 'Poppins',
               color: Color.fromRGBO(0, 0, 0, 1),
             ),
           ),
@@ -536,7 +578,6 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
               fontSize: 14,
               height: 1.5,
               fontStyle: isItalic ? FontStyle.italic : FontStyle.normal,
-              fontFamily: 'Poppins',
               color: const Color.fromRGBO(0, 0, 0, 1),
             ),
           ),
@@ -578,7 +619,6 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                fontFamily: 'Poppins',
                 color: Colors.grey[700],
               ),
             ),
@@ -702,18 +742,27 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                       children: [
                         Icon(Icons.work_outline, color: Colors.white, size: 16),
                         SizedBox(width: 6),
-                        Text("UI/UX Designer",
-                            style: TextStyle(color: Colors.white, fontSize: 13)),
+                        Text(
+                          "UI/UX Designer",
+                          style: TextStyle(color: Colors.white, fontSize: 13),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        const Icon(Icons.location_on, color: Colors.white, size: 16),
+                        const Icon(
+                          Icons.location_on,
+                          color: Colors.white,
+                          size: 16,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           "${widget.profile.distance.toStringAsFixed(1)} miles away",
-                          style: const TextStyle(color: Colors.white, fontSize: 13),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                          ),
                         ),
                       ],
                     ),
@@ -726,9 +775,13 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                     goldButton(loveChatIcon()),
                     const Spacer(),
                     scoreBox(),
-                    const Spacer(), 
+                    const Spacer(),
                     goldButton(
-                      const Icon(Icons.star, color: Color(0xFFD4AF37), size: 28),
+                      const Icon(
+                        Icons.star,
+                        color: Color(0xFFD4AF37),
+                        size: 28,
+                      ),
                     ),
                   ],
                 ),
@@ -777,7 +830,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
             color: Colors.black.withOpacity(0.4),
             blurRadius: 8,
             offset: const Offset(0, 4),
-          )
+          ),
         ],
       ),
       child: Center(child: icon),
@@ -793,11 +846,15 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
       ),
       child: const Column(
         children: [
-          Text("Compatibility Score: 70%",
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+          Text(
+            "Compatibility Score: 70%",
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          ),
           SizedBox(height: 4),
-          Text("Trust Score: 70%",
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+          Text(
+            "Trust Score: 70%",
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          ),
         ],
       ),
     );
@@ -814,11 +871,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
       child: Stack(
         alignment: Alignment.center,
         children: const [
-          Icon(
-            Icons.circle_outlined,
-            color: Color(0xFFD4AF37),
-            size: 44,
-          ),
+          Icon(Icons.circle_outlined, color: Color(0xFFD4AF37), size: 44),
           // Icon(
           //   Icons.chat_bubble_outline,
           //   color: Color(0xFFD4AF37),
@@ -826,11 +879,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
           // ),
           Positioned(
             top: 18,
-            child: Icon(
-              Icons.favorite,
-              color: Color(0xFFD4AF37),
-              size: 14,
-            ),
+            child: Icon(Icons.favorite, color: Color(0xFFD4AF37), size: 14),
           ),
         ],
       ),
@@ -847,68 +896,61 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
       ),
       child: Text(
         text.trim(),
-        style: const TextStyle(
-          fontSize: 13,
-          fontFamily: 'Poppins',
-          color: Color.fromRGBO(0, 0, 0, 1),
-        ),
+        style: const TextStyle(fontSize: 13, color: Color.fromRGBO(0, 0, 0, 1)),
       ),
     );
   }
 
- Widget _buildHomeScreenButtons() {
-  return Column(
-    children: [
-      // Icons row - horizontally aligned
-      Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildActionButton(
-            icon: Icons.close,
-            color: const Color.fromRGBO(65, 72, 51, 1),
-            onTap: widget.onBlock ?? () => _showBlockDialog(),
-          ),
-          _buildActionButton(
-            icon: Icons.flag,
-            color: const Color.fromRGBO(65, 72, 51, 1),
-            onTap: widget.onReport ?? () => _showReportDialog(),
-          ),
-          _buildActionButton(
-            icon: Icons.favorite,
-            color: const Color.fromRGBO(65, 72, 51, 1),
-            onTap: widget.onLike ?? () {},
-          ),
-        ],
-      ),
-      const SizedBox(height: 8),
-      // Text row - horizontally aligned, vertically below icons
-      Column(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          const Text(
-            'Block',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              fontFamily: 'Poppins',
-              color: Color.fromRGBO(0, 0, 0, 1),
+  Widget _buildHomeScreenButtons() {
+    return Column(
+      children: [
+        // Icons row - horizontally aligned
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildActionButton(
+              icon: Icons.close,
+              color: const Color.fromRGBO(65, 72, 51, 1),
+              onTap: widget.onBlock ?? () => _showBlockDialog(),
             ),
-          ),
-          const Text(
-            'Report',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              fontFamily: 'Poppins',
-              color: Color.fromRGBO(0, 0, 0, 1),
+            _buildActionButton(
+              icon: Icons.flag,
+              color: const Color.fromRGBO(65, 72, 51, 1),
+              onTap: widget.onReport ?? () => _showReportDialog(),
             ),
-          ),
-        ],
-      ),
-    ],
-  );
-}
-
+            _buildActionButton(
+              icon: Icons.favorite,
+              color: const Color.fromRGBO(65, 72, 51, 1),
+              onTap: widget.onLike ?? () {},
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // Text row - horizontally aligned, vertically below icons
+        Column(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            const Text(
+              'Block',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Color.fromRGBO(0, 0, 0, 1),
+              ),
+            ),
+            const Text(
+              'Report',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Color.fromRGBO(0, 0, 0, 1),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 
   Widget _buildActionButton({
     required IconData icon,
@@ -940,20 +982,21 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
-        onPressed: widget.onEdit ?? () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const ProfileEditScreen(),
-            ),
-          );
-        },
+        onPressed:
+            widget.onEdit ??
+            () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const ProfileEditScreen(),
+                ),
+              );
+            },
         icon: const Icon(Icons.edit, color: Colors.white),
         label: const Text(
           'Edit Profile',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            fontFamily: 'Poppins',
             color: Colors.white,
           ),
         ),
@@ -973,26 +1016,17 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text(
-          'Block User',
-          style: TextStyle(fontFamily: 'Poppins'),
-        ),
-        content: Text(
-          'Are you sure you want to block ${widget.profile.name}?',
-          style: const TextStyle(fontFamily: 'Poppins'),
-        ),
+        title: const Text('Block User'),
+        content: Text('Are you sure you want to block ${widget.profile.name}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(fontFamily: 'Poppins'),
-            ),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Block', style: TextStyle(fontFamily: 'Poppins')),
+            child: const Text('Block'),
           ),
         ],
       ),
@@ -1003,29 +1037,17 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text(
-          'Report User',
-          style: TextStyle(fontFamily: 'Poppins'),
-        ),
-        content: Text(
-          'Why are you reporting ${widget.profile.name}?',
-          style: const TextStyle(fontFamily: 'Poppins'),
-        ),
+        title: const Text('Report User'),
+        content: Text('Why are you reporting ${widget.profile.name}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(fontFamily: 'Poppins'),
-            ),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-            child: const Text(
-              'Report',
-              style: TextStyle(fontFamily: 'Poppins'),
-            ),
+            child: const Text('Report'),
           ),
         ],
       ),

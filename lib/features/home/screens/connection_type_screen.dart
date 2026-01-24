@@ -31,7 +31,6 @@ class _ConnectionTypeScreenState
           'Types of Connections',
           style: TextStyle(
             color: Colors.black,
-            fontFamily: 'Poppins',
             fontWeight: FontWeight.bold,
             fontSize: 20,
           ),
@@ -50,7 +49,6 @@ class _ConnectionTypeScreenState
                     const Text(
                       'What type of connection are you looking for on Blindly?',
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                         height: 1.4,
@@ -60,7 +58,6 @@ class _ConnectionTypeScreenState
                     Text(
                       'Dates and romances, new friends, or strictly business? You can change this any time.',
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         color: Colors.grey[700],
                         fontSize: 14,
                         height: 1.5,
@@ -107,7 +104,6 @@ class _ConnectionTypeScreenState
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            fontFamily: 'Poppins',
                           ),
                         ),
                 ),
@@ -165,7 +161,6 @@ class _ConnectionTypeScreenState
                   Text(
                     title,
                     style: const TextStyle(
-                      fontFamily: 'Poppins',
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
                     ),

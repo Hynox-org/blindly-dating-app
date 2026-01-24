@@ -61,7 +61,6 @@ class _TermsScreenState extends ConsumerState<TermsScreen> {
           textAlign: TextAlign.center,
           text: TextSpan(
             style: TextStyle(
-              fontFamily: 'Poppins',
               fontSize: 11,
               color: Theme.of(context).colorScheme.onSurface,
             ),
@@ -96,7 +95,6 @@ class _TermsScreenState extends ConsumerState<TermsScreen> {
             Text(
               'Welcome to our community! To ensure safe and positive experience for every one, we ask that you follow simple guidelines.',
               style: TextStyle(
-                fontFamily: 'Poppins',
                 fontSize: 13,
                 color: Theme.of(context).colorScheme.onSurface,
               ),
@@ -181,7 +179,6 @@ class _TermsScreenState extends ConsumerState<TermsScreen> {
           Text(
             title,
             style: TextStyle(
-              fontFamily: 'Poppins',
               fontSize: 13,
               fontWeight: FontWeight.bold,
               color: Theme.of(context).colorScheme.onSurface,
@@ -191,7 +188,6 @@ class _TermsScreenState extends ConsumerState<TermsScreen> {
           Text(
             description,
             style: TextStyle(
-              fontFamily: 'Poppins',
               fontSize: 12,
               color: Theme.of(context).colorScheme.onSurface,
             ),

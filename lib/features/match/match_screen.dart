@@ -47,7 +47,6 @@ class _MatchScreenState extends State<MatchScreen> {
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
-                      fontFamily: 'Poppins',
                       color: Colors.black,
                     ),
                   ),
@@ -59,7 +58,6 @@ class _MatchScreenState extends State<MatchScreen> {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
-                      fontFamily: 'Poppins',
                       color: Colors.grey[600],
                       height: 1.4,
                     ),
@@ -88,7 +86,6 @@ class _MatchScreenState extends State<MatchScreen> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          fontFamily: 'Poppins',
                         ),
                       ),
                     ),
@@ -113,7 +110,6 @@ class _MatchScreenState extends State<MatchScreen> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          fontFamily: 'Poppins',
                           color: Colors.grey[700],
                         ),
                       ),

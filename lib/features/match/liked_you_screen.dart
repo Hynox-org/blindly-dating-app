@@ -50,7 +50,6 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
           'Liked You',
           style: TextStyle(
             color: Colors.black,
-            fontFamily: 'Poppins',
             fontWeight: FontWeight.w600,
             fontSize: 20,
           ),
@@ -113,7 +112,6 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              fontFamily: 'Poppins',
               color: Colors.black,
             ),
           ),
@@ -122,7 +120,6 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
             text: TextSpan(
               style: TextStyle(
                 fontSize: 14,
-                fontFamily: 'Poppins',
                 color: Colors.grey[600],
                 height: 1.4,
               ),
@@ -184,7 +181,6 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
                 color: Colors.white,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                fontFamily: 'Poppins',
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -252,7 +248,6 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
               fontSize: 20,
               fontWeight: FontWeight.w600,
               color: Colors.grey[600],
-              fontFamily: 'Poppins',
             ),
           ),
         ],
@@ -264,7 +259,6 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
     return const Center(
       child: Text(
         'Failed to load likes',
-        style: TextStyle(fontFamily: 'Poppins'),
       ),
     );
   }
@@ -293,7 +287,6 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              fontFamily: 'Poppins',
             ),
           ),
         ),
@@ -328,7 +321,6 @@ Widget _overlayActionButton({
               color: Colors.black,
               fontSize: 14,
               fontWeight: FontWeight.w700,
-              fontFamily: 'Poppins',
             ),
           ),
         ],

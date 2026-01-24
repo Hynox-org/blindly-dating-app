@@ -218,7 +218,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           "Blindly",
           style: TextStyle(
             color: Theme.of(context).colorScheme.onSurface,
-            fontFamily: 'Poppins',
             fontWeight: FontWeight.bold,
             fontSize: 22,
           ),
@@ -455,7 +454,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   color: Theme.of(context).colorScheme.primary,
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
-                  fontFamily: 'Poppins',
                 ),
               );
             },

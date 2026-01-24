@@ -47,7 +47,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             color: Colors.black,
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            fontFamily: 'Poppins',
           ),
         ),
         actions: [

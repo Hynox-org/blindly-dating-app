@@ -150,7 +150,6 @@ class AppLayout extends StatelessWidget {
             duration: const Duration(milliseconds: 200),
             style: TextStyle(
               fontSize: 12,
-              fontFamily: 'Poppins',
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
               color: isSelected ? selectedColor : unselectedColor,
             ),

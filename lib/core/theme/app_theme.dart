@@ -16,7 +16,7 @@ class AppTheme {
       onSurface: Color(0xFF000000),
       secondary: Color(0xFFE6C97A),
     ),
-    textTheme: GoogleFonts.interTextTheme(
+    textTheme: GoogleFonts.expletusSansTextTheme(
       ThemeData.light().textTheme,
     ).apply(bodyColor: Colors.black, displayColor: Colors.black),
     cardTheme: const CardThemeData(

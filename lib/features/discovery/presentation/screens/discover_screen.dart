@@ -30,7 +30,6 @@ class DiscoverScreen extends StatelessWidget {
             color: Colors.black,
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            fontFamily: 'Poppins',
           ),
         ),
       ),
@@ -77,7 +76,6 @@ class DiscoverScreen extends StatelessWidget {
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              fontFamily: 'Poppins',
               color: Colors.black,
             ),
           ),
@@ -149,7 +147,6 @@ class DiscoverScreen extends StatelessWidget {
                         color: Colors.white,
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        fontFamily: 'Poppins',
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -170,7 +167,6 @@ class DiscoverScreen extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    fontFamily: 'Poppins',
                     color: Colors.black,
                   ),
                 ),
