@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../features/discovery/povider/discovery_provider.dart';
 import '../../discovery/povider/swipe_provider.dart';
 import '../../../../core/providers/session_provider.dart';
+import '../../../../core/widgets/app_loader.dart';
 
 // ✅ 2. Models
 import '../../discovery/domain/models/discovery_user_model.dart';
@@ -32,12 +33,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 // ✅ Added: with SingleTickerProviderStateMixin
-class _HomeScreenState extends ConsumerState<HomeScreen>
-    with SingleTickerProviderStateMixin {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   final CardSwiperController _controller = CardSwiperController();
-
-  // ✅ NEW: Animation Controller for the blinking logo
-  late final AnimationController _blinkController;
 
   // State Variables
   double _swipeProgress = 0.0;
@@ -52,15 +49,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   void initState() {
     super.initState();
-
-    // ✅ NEW: Setup the blink (Breath effect)
-    _blinkController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000), // 1 second per pulse
-      lowerBound: 0.4, // Don't fade out completely (keeps it visible)
-      upperBound: 1.0, // Full opacity
-    )..repeat(reverse: true); // Loop forever: Fade In -> Fade Out
-
     _initLocationAndFeed();
   }
 
@@ -83,7 +71,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   void dispose() {
-    _blinkController.dispose(); // ✅ NEW: Clean up animation
     _controller.dispose();
     super.dispose();
   }
@@ -205,6 +192,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       selectedIndex: 2, // ✅ Home/Peoples tab selected
       appBar: AppBar(
         backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: Icon(
@@ -438,28 +426,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   // 2. UPDATED LOADING SCREEN (Logo instead of Spinner)
   Widget _buildInitializingState() {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
-        // ✅ WRAP WITH FADE TRANSITION
-        child: FadeTransition(
-          opacity: _blinkController,
-          child: Image.asset(
-            'assets/images/blindly-app-icon-white.jpg',
-            width: 150, // kept your preferred size
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) {
-              return Text(
-                "Blindly",
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                ),
-              );
-            },
-          ),
-        ),
-      ),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: Center(child: AppLoader()),
     );
   }
 

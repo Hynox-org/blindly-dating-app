@@ -7,6 +7,7 @@ import '../../../../onboarding/data/repositories/onboarding_repository.dart';
 import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
 import '../../../../onboarding/presentation/widgets/selection_chip.dart';
 import '../../../../../core/utils/custom_popups.dart';
+import '../../../../../core/widgets/app_loader.dart';
 
 class InterestsSelectScreen extends ConsumerStatefulWidget {
   const InterestsSelectScreen({super.key});
@@ -200,7 +201,7 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
                   const SizedBox(height: 20),
 
                   _isLoading && _allChips.isEmpty
-                      ? const Center(child: CircularProgressIndicator())
+                      ? const Center(child: AppLoader())
                       : _error != null
                       ? Center(child: Text(_error!))
                       : Column(
@@ -279,9 +280,10 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
                         ? SizedBox(
                             height: 24,
                             width: 24,
-                            child: CircularProgressIndicator(
+                            child: AppLoader(
                               strokeWidth: 2,
                               color: colorScheme.onPrimary,
+                              size: 24,
                             ),
                           )
                         : const Text(

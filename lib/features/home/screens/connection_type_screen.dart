@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../features/discovery/povider/discovery_provider.dart';
+import '../../../core/widgets/app_loader.dart';
 
 class ConnectionTypeScreen extends ConsumerStatefulWidget {
   const ConnectionTypeScreen({super.key});
@@ -11,26 +12,27 @@ class ConnectionTypeScreen extends ConsumerStatefulWidget {
       _ConnectionTypeScreenState();
 }
 
-class _ConnectionTypeScreenState
-    extends ConsumerState<ConnectionTypeScreen> {
+class _ConnectionTypeScreenState extends ConsumerState<ConnectionTypeScreen> {
   String _selectedMode = 'Date';
   bool _isSaving = false;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          icon: Icon(Icons.arrow_back_ios, color: theme.colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Types of Connections',
           style: TextStyle(
-            color: Colors.black,
+            color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.bold,
             fontSize: 20,
           ),
@@ -58,7 +60,7 @@ class _ConnectionTypeScreenState
                     Text(
                       'Dates and romances, new friends, or strictly business? You can change this any time.',
                       style: TextStyle(
-                        color: Colors.grey[700],
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
                         fontSize: 14,
                         height: 1.5,
                       ),
@@ -87,8 +89,8 @@ class _ConnectionTypeScreenState
                 child: ElevatedButton(
                   onPressed: _isSaving ? null : _onContinue,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4B5320),
-                    foregroundColor: Colors.white,
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: theme.colorScheme.onPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -96,8 +98,10 @@ class _ConnectionTypeScreenState
                     elevation: 0,
                   ),
                   child: _isSaving
-                      ? const CircularProgressIndicator(
-                          color: Colors.white,
+                      ? AppLoader(
+                          color: theme.colorScheme.onPrimary,
+                          size: 24,
+                          strokeWidth: 2,
                         )
                       : Text(
                           'Continue with $_selectedMode',
@@ -141,6 +145,7 @@ class _ConnectionTypeScreenState
     required String mode,
   }) {
     final isSelected = _selectedMode == mode;
+    final theme = Theme.of(context);
 
     return GestureDetector(
       onTap: () => setState(() => _selectedMode = mode),
@@ -148,8 +153,8 @@ class _ConnectionTypeScreenState
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: isSelected
-              ? const Color(0xFFE4C687)
-              : const Color(0xFFF5F5F5),
+              ? theme.colorScheme.secondary
+              : theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
@@ -166,16 +171,16 @@ class _ConnectionTypeScreenState
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(fontSize: 14),
-                  ),
+                  Text(subtitle, style: const TextStyle(fontSize: 14)),
                 ],
               ),
             ),
             if (isSelected)
-              const Icon(Icons.check_circle,
-                  color: Color(0xFF4B5320), size: 28),
+              Icon(
+                Icons.check_circle,
+                color: theme.colorScheme.primary,
+                size: 28,
+              ),
           ],
         ),
       ),

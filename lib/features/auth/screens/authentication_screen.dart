@@ -615,7 +615,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                       backgroundColor: WidgetStateProperty.all(
                         Theme.of(context).brightness == Brightness.dark
                             ? Colors.white.withOpacity(0.05)
-                            : Colors.white,
+                            : Theme.of(context).scaffoldBackgroundColor,
                       ),
                       overlayColor: WidgetStateProperty.resolveWith<Color?>((
                         Set<WidgetState> states,
@@ -1148,13 +1148,10 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   }),
                 ),
             child: _isLoading
-                ? SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      strokeWidth: 2,
-                    ),
+                ? AppLoader(
+                    strokeWidth: 2,
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    size: 20,
                   )
                 : Text(
                     'Continue',
@@ -1366,14 +1363,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   }),
                 ),
             child: _isLoading
-                ? SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  )
+                ? AppLoader(strokeWidth: 2, color: Colors.white, size: 20)
                 : Text(
                     'Continue',
                     style: TextStyle(
@@ -1529,13 +1519,10 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   }),
                 ),
             child: _isLoading
-                ? SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      strokeWidth: 2,
-                    ),
+                ? AppLoader(
+                    strokeWidth: 2,
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    size: 20,
                   )
                 : Text(
                     'Continue',
@@ -1745,13 +1732,10 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   }),
                 ),
             child: _isLoading
-                ? SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      strokeWidth: 2,
-                    ),
+                ? AppLoader(
+                    strokeWidth: 2,
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    size: 20,
                   )
                 : Text(
                     'Continue',
@@ -1956,13 +1940,10 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   }),
                 ),
             child: _isLoading
-                ? SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      strokeWidth: 2,
-                    ),
+                ? AppLoader(
+                    strokeWidth: 2,
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    size: 20,
                   )
                 : Text(
                     'Continue',

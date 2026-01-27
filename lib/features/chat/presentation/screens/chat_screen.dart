@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../../../core/widgets/app_layout.dart';
+import '../../../../core/widgets/app_loader.dart';
 import '../../../home/screens/connection_type_screen.dart';
 import '../../../../core/utils/navigation_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-
 import '../../provider/recent_matches_provider.dart';
 
-class ChatScreen extends ConsumerWidget{
+class ChatScreen extends ConsumerWidget {
   const ChatScreen({super.key});
 
   @override
@@ -57,9 +57,7 @@ class ChatScreen extends ConsumerWidget{
                     decoration: InputDecoration(
                       prefixIcon: Icon(Icons.search, color: Colors.grey),
                       hintText: 'Search conversations',
-                      hintStyle: TextStyle(
-                        color: Colors.grey,
-                      ),
+                      hintStyle: TextStyle(color: Colors.grey),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.symmetric(vertical: 14),
                     ),
@@ -88,8 +86,7 @@ class ChatScreen extends ConsumerWidget{
                     final state = ref.watch(recentMatchesProvider);
 
                     return state.when(
-                      loading: () =>
-                          const Center(child: CircularProgressIndicator()),
+                      loading: () => const Center(child: AppLoader()),
                       error: (_, __) => const SizedBox(),
                       data: (matches) => ListView.builder(
                         scrollDirection: Axis.horizontal,
@@ -181,10 +178,7 @@ class ChatScreen extends ConsumerWidget{
           const SizedBox(height: 8),
           Text(
             name,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-              fontSize: 12,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
           ),
         ],
       ),
@@ -211,19 +205,13 @@ class ChatScreen extends ConsumerWidget{
           ),
           title: Text(
             name,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 4.0),
             child: Text(
               message,
-              style: TextStyle(
-                color: Colors.grey[800],
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.grey[800], fontSize: 14),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -234,10 +222,7 @@ class ChatScreen extends ConsumerWidget{
             children: [
               Text(
                 time,
-                style: const TextStyle(
-                  color: Colors.grey,
-                  fontSize: 12,
-                ),
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
               ),
               if (unreadCount > 0) ...[
                 const SizedBox(height: 6),

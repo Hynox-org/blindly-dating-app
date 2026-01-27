@@ -12,6 +12,7 @@ import '../../../../onboarding/data/repositories/verification_repository.dart';
 import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
 import '../../../../onboarding/presentation/utils/pose_matcher.dart';
 import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
+import '../../../../../core/widgets/app_loader.dart';
 import '../../../../../core/utils/custom_popups.dart';
 
 enum SelfieStep { instructions, capture, processing, verified }
@@ -429,9 +430,7 @@ class _SelfieVerificationScreenState
                 ),
               )
             else
-              const Center(
-                child: CircularProgressIndicator(color: Colors.white),
-              ),
+              const Center(child: AppLoader(color: Colors.white)),
 
             // 2. Dark Overlay Gradients for text visibility
             Positioned.fill(

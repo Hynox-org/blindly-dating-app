@@ -2,17 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // ✅ Added Riverpod
 
 import '../../core/widgets/app_layout.dart';
+import '../../core/widgets/app_loader.dart';
 import '../../core/utils/navigation_utils.dart';
 import '../home/screens/connection_type_screen.dart';
-import '../home/component/ProfileSwipeCard.dart'; 
-import '../discovery/domain/models/discovery_user_model.dart'; // Needed for UserProfile mapping
+import '../home/component/ProfileSwipeCard.dart';
+// Needed for UserProfile mapping
 import './profile_edit_screen.dart';
 
 // ✅ Import Provider & Model
 import '../profile/domain/models/profile_user_model.dart.dart';
 import '../profile/provider/profile_provider.dart';
 
-class ProfileScreen extends ConsumerStatefulWidget { // ✅ Changed to ConsumerStatefulWidget
+class ProfileScreen extends ConsumerStatefulWidget {
+  // ✅ Changed to ConsumerStatefulWidget
   const ProfileScreen({super.key});
 
   @override
@@ -29,11 +31,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       showFooter: true,
       selectedIndex: 0,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.more_vert, color: Colors.black),
+          icon: Icon(
+            Icons.more_vert,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
           onPressed: () {
             NavigationUtils.navigateToWithSlide(
               context,
@@ -41,21 +46,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             );
           },
         ),
-        title: const Text(
+        title: Text(
           'Profile',
           style: TextStyle(
-            color: Colors.black,
+            color: Theme.of(context).colorScheme.onSurface,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.verified_outlined, color: Colors.black),
+            icon: Icon(
+              Icons.verified_outlined,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
             onPressed: () {},
           ),
           IconButton(
-            icon: const Icon(Icons.settings_outlined, color: Colors.black),
+            icon: Icon(
+              Icons.settings_outlined,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
             onPressed: () {
               // TODO: Settings
             },
@@ -63,11 +74,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ],
       ),
       child: Container(
-        color: Colors.white,
+        color: Theme.of(context).scaffoldBackgroundColor,
         child: userAsync.when(
-          loading: () => const Center(
-            child: CircularProgressIndicator(color: Color(0xFF4B5320)),
-          ),
+          loading: () => const AppLoader(),
           error: (err, stack) => Center(child: Text("Error loading profile")),
           data: (user) {
             return Column(
@@ -91,7 +100,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           _buildWaysToImprove(),
                           const SizedBox(height: 24),
                           _buildFooterNote(),
-                          const SizedBox(height: 100), 
+                          const SizedBox(height: 100),
                         ],
                       ),
                     ),
@@ -121,8 +130,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               child: CircularProgressIndicator(
                 value: user.completionPercentage, // ✅ Real Value
                 strokeWidth: 4,
-                backgroundColor: Colors.grey.shade200,
-                color: const Color(0xFF4B5320), 
+                backgroundColor: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHighest,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
             GestureDetector(
@@ -135,9 +146,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   image: DecorationImage(
                     // ✅ Real Primary Image
                     image: NetworkImage(
-                      user.imageUrls.isNotEmpty 
-                          ? user.imageUrls.first 
-                          : 'https://picsum.photos/400/600'
+                      user.imageUrls.isNotEmpty
+                          ? user.imageUrls.first
+                          : 'https://picsum.photos/400/600',
                     ),
                     fit: BoxFit.cover,
                   ),
@@ -149,13 +160,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF4B5320),
+                  color: Theme.of(context).colorScheme.primary,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   '$percentInt%', // ✅ Real Text
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimary,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
@@ -170,10 +181,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           children: [
             Text(
               '${user.name}, ${user.age}', // ✅ Real Name & Age
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.black,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(width: 4),
@@ -185,19 +196,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
-            color: Colors.grey.shade200,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
             percentInt == 100 ? 'Profile Completed' : 'Complete profile',
-            style: const TextStyle(fontSize: 12, color: Colors.black87),
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
         ),
         const SizedBox(height: 16),
-        const Text(
+        Text(
           'A higher score helps you get more\nauthentic matches',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 14, color: Colors.black87),
+          style: TextStyle(
+            fontSize: 14,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
         ),
       ],
     );
@@ -205,17 +222,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   // ✅ Updated to map DB data to SwipeCard
   void _showProfilePopup(ProfileUser user) {
-    
     // Mapping ProfileUser (DB) to UserProfile (UI Component)
     // We use Default Data for fields missing in your DB Schema
     final realProfile = UserProfile(
       id: user.id,
       name: user.name,
       age: user.age,
-      distance: 0, 
+      distance: 0,
       bio: user.bio.isNotEmpty ? user.bio : 'No bio added yet.',
       // ✅ IMAGE LOGIC: This list will have 2 or 3 images based on provider fetch
-      imageUrls: user.imageUrls, 
+      imageUrls: user.imageUrls,
       height: 'Ask me', // Default (Not in DB)
       activityLevel: 'Active', // Default
       education: 'Add Education', // Default (Not in DB)
@@ -240,7 +256,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           insetPadding: EdgeInsets.zero,
           child: SizedBox(
             width: double.infinity,
@@ -273,7 +289,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   child: GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
                     child: CircleAvatar(
-                      backgroundColor: const Color.fromARGB(255, 0, 0, 0),
+                      backgroundColor: Colors.black,
                       radius: 20,
                       child: const Icon(
                         Icons.close,
@@ -301,17 +317,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             ),
                           );
                         },
-                        icon: const Icon(Icons.edit, color: Colors.white),
-                        label: const Text(
+                        icon: Icon(
+                          Icons.edit,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                        label: Text(
                           'Edit Profile',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.onPrimary,
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color.fromRGBO(65, 72, 51, 1),
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
@@ -340,9 +361,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         color: Colors.black,
         borderRadius: BorderRadius.circular(16),
         image: const DecorationImage(
-          image: NetworkImage(
-            'https://picsum.photos/800/400',
-          ), 
+          image: NetworkImage('https://picsum.photos/800/400'),
           fit: BoxFit.cover,
           opacity: 0.6,
         ),
@@ -376,8 +395,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ElevatedButton(
                   onPressed: () {},
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE4C687), // Goldish
-                    foregroundColor: Colors.black,
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.secondary, // Goldish
+                    foregroundColor: Theme.of(context).colorScheme.onSecondary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
                     ),
@@ -404,11 +425,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       children: [
         Expanded(
           child: _buildActionCard(
-            icon: Icons.cyclone, 
+            icon: Icons.cyclone,
             title: 'Spot light',
             subtitle: 'Stand out',
-            color: const Color(0xFFF5F5F5),
-            iconColor: const Color(0xFF6B5E3C), 
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            iconColor: const Color(
+              0xFF6B5E3C,
+            ), // Keep distinct specific color or move to theme extension? Keeping for now
           ),
         ),
         const SizedBox(width: 16),
@@ -417,8 +440,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             icon: Icons.star,
             title: 'Super swipe',
             subtitle: 'Get noticed',
-            color: const Color(0xFFF5F5F5),
-            iconColor: const Color(0xFF4B5320), 
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            iconColor: Theme.of(context).colorScheme.primary,
           ),
         ),
       ],
@@ -443,7 +466,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.2), 
+              color: iconColor.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: iconColor),
@@ -454,15 +477,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
-                  color: Colors.black,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               Text(
                 subtitle,
-                style: const TextStyle(fontSize: 12, color: Colors.black54),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -478,12 +504,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Score breakdown',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,
-            color: Colors.black,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 12),
@@ -549,12 +575,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Ways to improve',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,
-            color: Colors.black,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 12),
@@ -580,28 +606,31 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F5F5),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: ListTile(
-        leading: Icon(icon, color: Colors.black87),
+        leading: Icon(icon, color: Theme.of(context).colorScheme.onSurface),
         title: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         subtitle: Text(
           subtitle,
-          style: const TextStyle(fontSize: 12, color: Colors.black54),
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
-        trailing: const Icon(
+        trailing: Icon(
           Icons.arrow_forward_ios,
           size: 16,
-          color: Colors.black54,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
       ),
     );
@@ -610,18 +639,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget _buildFooterNote() {
     return Column(
       children: [
-        const Padding(
+        Padding(
           padding: EdgeInsets.symmetric(horizontal: 16.0),
           child: Text.rich(
             TextSpan(
               text:
                   'You\'re verification data is handled secured and is not shared on your public profile. ',
-              style: TextStyle(color: Colors.black54, fontSize: 12),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 12,
+              ),
               children: [
                 TextSpan(
                   text: 'Learn more',
                   style: TextStyle(
-                    color: Colors.black,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -635,14 +667,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           width: double.infinity,
           child: ElevatedButton(
             onPressed: () {
-               Navigator.push(
+              Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const ProfileEditScreen()),
+                MaterialPageRoute(
+                  builder: (context) => const ProfileEditScreen(),
+                ),
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4B5320), // Dark Green/Olive
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.primary, // Dark Green/Olive
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),

@@ -23,7 +23,7 @@ class _MatchScreenState extends State<MatchScreen> {
       showFooter: true,
       selectedIndex: 2, // ✅ Peoples tab since this is shown from home
       child: Container(
-        color: Colors.white,
+        color: Theme.of(context).scaffoldBackgroundColor,
         child: SafeArea(
           child: Center(
             child: Padding(
@@ -42,12 +42,12 @@ class _MatchScreenState extends State<MatchScreen> {
 
                   const SizedBox(height: 32),
 
-                  const Text(
+                  Text(
                     "It's a Match!",
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
 
@@ -58,7 +58,7 @@ class _MatchScreenState extends State<MatchScreen> {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.grey[600],
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       height: 1.4,
                     ),
                   ),
@@ -73,8 +73,10 @@ class _MatchScreenState extends State<MatchScreen> {
                         // TODO: Navigate to chat with matched user
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4A5A4A),
-                        foregroundColor: Colors.white,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -110,7 +112,7 @@ class _MatchScreenState extends State<MatchScreen> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: Colors.grey[700],
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ),

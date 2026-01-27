@@ -11,6 +11,7 @@ import '../../../../auth/providers/auth_providers.dart';
 import '../../../../onboarding/data/repositories/onboarding_repository.dart';
 import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
 import '../../../../../core/utils/custom_popups.dart';
+import '../../../../../core/widgets/app_loader.dart';
 
 class LocationSetScreen extends ConsumerStatefulWidget {
   const LocationSetScreen({super.key});
@@ -264,7 +265,7 @@ class _LocationSetScreenState extends ConsumerState<LocationSetScreen> {
           ),
           const SizedBox(height: 16),
           if (_isSaving)
-            const Center(child: CircularProgressIndicator())
+            const Center(child: AppLoader())
           else
             Expanded(
               child: ListView.separated(

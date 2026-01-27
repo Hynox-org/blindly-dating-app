@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../profile/profile_edit_screen.dart';
-import 'dart:ui';
 
 class UserProfile {
   final String id;

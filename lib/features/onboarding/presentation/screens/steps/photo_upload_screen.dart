@@ -7,6 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../../../auth/providers/auth_providers.dart';
 import '../../../../media/providers/media_provider.dart';
 import '../../providers/onboarding_provider.dart';
+import '../../../../../core/widgets/app_loader.dart';
 import 'base_onboarding_step_screen.dart';
 
 class PhotoUploadScreen extends ConsumerStatefulWidget {
@@ -289,7 +290,7 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
           if (mediaState.isLoading)
             const Padding(
               padding: EdgeInsets.only(top: 20),
-              child: Center(child: CircularProgressIndicator()),
+              child: Center(child: AppLoader()),
             ),
 
           const Spacer(),

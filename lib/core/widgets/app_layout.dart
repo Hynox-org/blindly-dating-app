@@ -34,8 +34,9 @@ class AppLayout extends StatelessWidget {
     // Add haptic feedback
     HapticFeedback.lightImpact();
 
-    if (index == selectedIndex)
+    if (index == selectedIndex) {
       return; // Prevent navigation if already on the tab
+    }
 
     Widget? page;
 
