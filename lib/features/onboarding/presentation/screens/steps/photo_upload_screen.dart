@@ -221,111 +221,127 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
 
     final canProceed = mediaState.validPhotoCount >= 2;
 
-    return BaseOnboardingStepScreen(
-      title: 'Add Photos',
-      showBackButton: true,
-      nextLabel: 'Continue',
-      isNextEnabled: canProceed,
-      onNext: () {
-        final user = ref.read(authRepositoryProvider).currentUser;
-        if (user != null) {
-          _handleNext(user.id);
-        }
-      },
-      child: Column(
-        children: [
-          const SizedBox(height: 10),
-          Text(
-            'Add at least 2 photos to get your matches! First one is main picture',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.87),
-              height: 1.4,
-            ),
-            textAlign: TextAlign.start,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Tap on an added photo to edit or remove it.',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.6),
-            ),
-            textAlign: TextAlign.start,
-          ),
-          const SizedBox(height: 32),
-
-          // Photo Grid
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 0.85,
-            ),
-            itemCount: 6,
-            itemBuilder: (context, index) {
-              final photoContent = index < mediaState.selectedPhotos.length
-                  ? mediaState.selectedPhotos[index]
-                  : null;
-
-              return GestureDetector(
-                onTap: () {
-                  if (photoContent == null) {
-                    _showImageSourceSheet(context, index);
-                  } else {
-                    _showEditOrRemoveSheet(context, index, photoContent);
-                  }
-                },
-                child: _buildPhotoSlot(context, photoContent, index == 0),
-              );
-            },
-          ),
-
-          // Loading Indicator
-          if (mediaState.isLoading)
-            const Padding(
-              padding: EdgeInsets.only(top: 20),
-              child: Center(child: AppLoader()),
-            ),
-
-          const Spacer(),
-
-          // Helper Text
-          if (!canProceed)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Text(
-                'Please add one more photo',
+    return Stack(
+      children: [
+        BaseOnboardingStepScreen(
+          title: 'Add Photos',
+          showBackButton: true,
+          nextLabel: 'Continue',
+          isNextEnabled: canProceed,
+          onNext: () {
+            final user = ref.read(authRepositoryProvider).currentUser;
+            if (user != null) {
+              _handleNext(user.id);
+            }
+          },
+          child: Column(
+            children: [
+              const SizedBox(height: 10),
+              Text(
+                'Add at least 2 photos to get your matches! First one is main picture',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.87),
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.start,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Tap on an added photo to edit or remove it.',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: Theme.of(
                     context,
                   ).colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
+                textAlign: TextAlign.start,
               ),
-            ),
+              const SizedBox(height: 32),
 
-          if (mediaState.validPhotoCount > 0 && mediaState.validPhotoCount < 6)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: TextButton(
-                onPressed: () {
-                  int firstEmpty = mediaState.selectedPhotos.indexWhere(
-                    (e) => e == null,
+              // Photo Grid
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.85,
+                ),
+                itemCount: 6,
+                itemBuilder: (context, index) {
+                  final photoContent = index < mediaState.selectedPhotos.length
+                      ? mediaState.selectedPhotos[index]
+                      : null;
+
+                  return GestureDetector(
+                    onTap: () {
+                      if (photoContent == null) {
+                        _showImageSourceSheet(context, index);
+                      } else {
+                        _showEditOrRemoveSheet(context, index, photoContent);
+                      }
+                    },
+                    child: _buildPhotoSlot(context, photoContent, index == 0),
                   );
-                  if (firstEmpty != -1) {
-                    _showImageSourceSheet(context, firstEmpty);
-                  }
                 },
-                child: const Text('Add more photos'),
+              ),
+
+              const Spacer(),
+
+              // Helper Text
+              if (!canProceed)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Text(
+                    'Please add one more photo',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ),
+
+              if (mediaState.validPhotoCount > 0 &&
+                  mediaState.validPhotoCount < 6)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: TextButton(
+                    onPressed: () {
+                      int firstEmpty = mediaState.selectedPhotos.indexWhere(
+                        (e) => e == null,
+                      );
+                      if (firstEmpty != -1) {
+                        _showImageSourceSheet(context, firstEmpty);
+                      }
+                    },
+                    child: const Text('Add more photos'),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        if (mediaState.isLoading)
+          Positioned.fill(
+            child: ClipRRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+                child: Container(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  child: const Center(
+                    child: AppLoader(
+                      size: 40,
+                      strokeWidth: 4,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
               ),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 

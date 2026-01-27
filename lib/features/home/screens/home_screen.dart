@@ -10,6 +10,7 @@ import '../../../features/discovery/povider/discovery_provider.dart';
 import '../../discovery/povider/swipe_provider.dart';
 import '../../../../core/providers/session_provider.dart';
 import '../../../../core/widgets/app_loader.dart';
+import '../../../../core/providers/connection_mode_provider.dart';
 
 // ✅ 2. Models
 import '../../discovery/domain/models/discovery_user_model.dart';
@@ -432,7 +433,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _showModeMenu() {
-    NavigationUtils.navigateToWithSlide(context, const ConnectionTypeScreen());
+    final currentMode = ref.read(connectionModeProvider);
+    // If for some reason provider fails or is empty, fallback to 'Date'
+    final initial = currentMode.isNotEmpty ? currentMode : 'Date';
+
+    NavigationUtils.navigateToWithSlide(
+      context,
+      ConnectionTypeScreen(initialMode: initial),
+    );
   }
 
   // -----------------------------------------------------------------------

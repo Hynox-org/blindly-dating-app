@@ -3,9 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../features/discovery/povider/discovery_provider.dart';
 import '../../../core/widgets/app_loader.dart';
+import '../../events/screens/events_home_screen.dart';
+import 'home_screen.dart';
+
+import '../../../core/providers/connection_mode_provider.dart';
 
 class ConnectionTypeScreen extends ConsumerStatefulWidget {
-  const ConnectionTypeScreen({super.key});
+  final String? initialMode;
+
+  const ConnectionTypeScreen({super.key, this.initialMode});
 
   @override
   ConsumerState<ConnectionTypeScreen> createState() =>
@@ -13,8 +19,14 @@ class ConnectionTypeScreen extends ConsumerStatefulWidget {
 }
 
 class _ConnectionTypeScreenState extends ConsumerState<ConnectionTypeScreen> {
-  String _selectedMode = 'Date';
+  late String _selectedMode;
   bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedMode = widget.initialMode ?? 'Date';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,6 +90,12 @@ class _ConnectionTypeScreenState extends ConsumerState<ConnectionTypeScreen> {
                       subtitle: 'Make new friends and find your community',
                       mode: 'BFF',
                     ),
+                    const SizedBox(height: 16),
+                    _buildOptionCard(
+                      title: 'Events',
+                      subtitle: 'Find exciting events, book tickets, and more',
+                      mode: 'Events',
+                    ),
                   ],
                 ),
               ),
@@ -123,12 +141,29 @@ class _ConnectionTypeScreenState extends ConsumerState<ConnectionTypeScreen> {
     setState(() => _isSaving = true);
 
     try {
-      await ref
-          .read(discoveryFeedProvider.notifier)
-          .changeDiscoveryMode(_selectedMode);
+      // ✅ Update the provider state so other screens know
+      ref.read(connectionModeProvider.notifier).setMode(_selectedMode);
 
-      if (mounted) {
-        Navigator.pop(context);
+      if (_selectedMode == 'Events') {
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const EventsHomeScreen()),
+            (route) => false,
+          );
+        }
+      } else {
+        await ref
+            .read(discoveryFeedProvider.notifier)
+            .changeDiscoveryMode(_selectedMode);
+
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
+            (route) => false,
+          );
+        }
       }
     } catch (e) {
       debugPrint('❌ Failed to update discovery mode: $e');
