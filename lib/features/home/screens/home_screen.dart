@@ -145,6 +145,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // ✅ Helper to map API data to UI data
   List<UserProfile> _mapToUserProfiles(List<DiscoveryUser> discoveryUsers) {
     return discoveryUsers.map((user) {
+      final imgUrl = user.mediaUrl;
+
       return UserProfile(
         id: user.profileId,
         name: user.displayName,
@@ -152,9 +154,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         distance: double.parse((user.distanceMeters / 1000).toStringAsFixed(1)),
         location: user.city.isNotEmpty ? user.city : 'Nearby',
         gender: mapGender(user.gender),
-        imageUrls: user.mediaUrl != null
-            ? [user.mediaUrl!]
-            : ['https://picsum.photos/400/600'],
+        imageUrls: imgUrl != null && imgUrl.isNotEmpty
+            ? [imgUrl]
+            : [
+                'https://ui-avatars.com/api/?name=${Uri.encodeComponent(user.displayName)}&background=random&size=600&bold=true&font-size=0.5',
+              ],
         bio:
             'Match Score: ${user.matchScore}% • ${user.sharedInterestsCount} shared interests',
         height: 'Ask me',

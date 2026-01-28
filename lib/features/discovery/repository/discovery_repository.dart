@@ -74,29 +74,66 @@ class DiscoveryRepository {
       debugPrint('USER ID : ${authUser.id}');
       debugPrint('LIMIT   : $limit');
       debugPrint('OFFSET  : $offset');
-      debugPrint(
-        'RADIUS  : ${kDevMode ? _devRadiusMeters : radius}',
-      );
-      
+      debugPrint('RADIUS  : ${kDevMode ? _devRadiusMeters : radius}');
 
-      final int effectiveRadius =
-          kDevMode ? _devRadiusMeters : radius;
+      final int effectiveRadius = kDevMode ? _devRadiusMeters : radius;
 
       // --------------------------------------------------
       // 📡 RPC CALL
       // --------------------------------------------------
       final List<dynamic> response =
           (await _supabase.rpc(
-                'get_discovery_feed_final',
-                params: {
-                  'p_radius_meters': effectiveRadius,
-                  'p_limit': limit,
-                  'p_offset': offset,
-                },
-              )) ??
-              [];
+            'get_discovery_feed_final',
+            params: {
+              'p_radius_meters': effectiveRadius,
+              'p_limit': limit,
+              'p_offset': offset,
+            },
+          )) ??
+          [];
 
       debugPrint('🧪 DISCOVERY ROWS: ${response.length}');
+
+      // --------------------------------------------------
+      // 🛠️ FALLBACK: MANUALLY FETCH IMAGES
+      // --------------------------------------------------
+      // If RPC fails to join images, we fetch them manually here.
+      Map<String, String> manualMediaMap = {};
+
+      if (response.isNotEmpty) {
+        try {
+          final List<dynamic> profileIds = response
+              .map((r) => r['profile_id'])
+              .toList();
+
+          // Workaround for undefined 'in_' method: Fetch in parallel
+          final futures = profileIds.map(
+            (pid) => _supabase
+                .from('user_media')
+                .select('profile_id, media_url')
+                .eq('profile_id', pid)
+                .eq('is_primary', true)
+                .maybeSingle(),
+          );
+
+          final List<dynamic> results = await Future.wait(futures);
+
+          for (final item in results) {
+            if (item != null) {
+              final pid = item['profile_id'] as String;
+              final url = item['media_url'] as String?;
+              if (url != null && url.isNotEmpty) {
+                manualMediaMap[pid] = url;
+              }
+            }
+          }
+          debugPrint(
+            '📸 Manually fetched ${manualMediaMap.length} images from user_media',
+          );
+        } catch (e) {
+          debugPrint('⚠️ Failed to fetch manual images: $e');
+        }
+      }
 
       // --------------------------------------------------
       // 🔁 MAP RESPONSE
@@ -104,10 +141,17 @@ class DiscoveryRepository {
       final List<DiscoveryUser> users = [];
 
       for (final raw in response) {
-        final Map<String, dynamic> data =
-            Map<String, dynamic>.from(raw);
+        final Map<String, dynamic> data = Map<String, dynamic>.from(raw);
 
-        final String? imagePath = data['media_url'];
+        final String pid = data['profile_id'];
+
+        // Check potential keys for the image (RPC keys OR Manual Fetch)
+        final String? imagePath =
+            data['media_url'] ??
+            data['avatar_url'] ??
+            data['photo_url'] ??
+            data['image_url'] ??
+            manualMediaMap[pid];
 
         // --------------------------------------------------
         // 🖼️ HANDLE MEDIA URLS (FIXED)
@@ -120,6 +164,9 @@ class DiscoveryRepository {
 
             // ✅ IMPORTANT: write back to SAME key model reads
             data['media_url'] = signedUrl;
+          } else {
+            // ✅ Ensure media_url is populated even if from avatar_url/photo_url
+            data['media_url'] = imagePath;
           }
         } else {
           data['media_url'] = null;
