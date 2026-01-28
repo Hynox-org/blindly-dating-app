@@ -103,27 +103,63 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
       items.isEmpty || items.every((item) => item.trim().isEmpty);
 
   bool _isAboutMeEmpty() =>
-      _isSectionEmpty(widget.profile.height) &&
-      _isSectionEmpty(widget.profile.activityLevel) &&
-      _isSectionEmpty(widget.profile.education) &&
-      _isSectionEmpty(widget.profile.gender) &&
-      _isSectionEmpty(widget.profile.religion) &&
-      _isSectionEmpty(widget.profile.zodiac) &&
-      _isSectionEmpty(widget.profile.drinking) &&
-      _isSectionEmpty(widget.profile.smoking);
+      _isSectionEmpty(displayProfile.height) &&
+      _isSectionEmpty(displayProfile.activityLevel) &&
+      _isSectionEmpty(displayProfile.education) &&
+      _isSectionEmpty(displayProfile.gender) &&
+      _isSectionEmpty(displayProfile.religion) &&
+      _isSectionEmpty(displayProfile.zodiac) &&
+      _isSectionEmpty(displayProfile.drinking) &&
+      _isSectionEmpty(displayProfile.smoking);
 
-  bool _isLookingForEmpty() => _isListEmpty(widget.profile.lookingForTags);
-  bool _isInterestsEmpty() => _isListEmpty(widget.profile.hobbies);
-  bool _isCausesEmpty() => _isListEmpty(widget.profile.causes);
-  bool _isLanguagesEmpty() => _isListEmpty(widget.profile.languages);
-  bool _isSpotifyEmpty() => _isListEmpty(widget.profile.spotifyArtists);
-  bool _isLocationEmpty() => _isSectionEmpty(widget.profile.location);
+  bool _isLookingForEmpty() => _isListEmpty(displayProfile.lookingForTags);
+  bool _isInterestsEmpty() => _isListEmpty(displayProfile.hobbies);
+  bool _isCausesEmpty() => _isListEmpty(displayProfile.causes);
+  bool _isLanguagesEmpty() => _isListEmpty(displayProfile.languages);
+  bool _isSpotifyEmpty() => _isListEmpty(displayProfile.spotifyArtists);
+  bool _isLocationEmpty() => _isSectionEmpty(displayProfile.location);
 
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
   }
+
+  // --- HARDCODED PROFILE GENERATOR ---
+  // This combines real user data (Name, Photo) with static data for the client demo
+  UserProfile get displayProfile {
+    return UserProfile(
+      // 1. KEEP REAL DATA
+      id: widget.profile.id,
+      name: widget.profile.name,
+      age: widget.profile.age,
+      distance: widget.profile.distance,
+      imageUrls: widget.profile.imageUrls,
+
+      // 2. HARDCODE THE REST (Static Data for Demo)
+      bio: "Living life one adventure at a time! 🌍✈️ Love photography and spicy food.",
+      height: "5'10\"",
+      activityLevel: "Active",
+      education: "Masters in Design",
+      gender: "Male", 
+      religion: "Spiritual",
+      zodiac: "Libra",
+      drinking: "Socially",
+      smoking: "Never",
+      hobbies: ["Photography", "Hiking", "Cooking", "Travel", "Gym"],
+      summary: "I am a creative soul who loves to explore new places and meet new people. I believe in kindness and staying curious.",
+      lookingFor: "A partner in crime to explore the world with.",
+      lookingForTags: ["Commitment", "Travel Buddy", "Deep Chats"],
+      quickestWay: "Buy me a dark chocolate mocha ☕️",
+      causes: ["Climate Change", "Animal Rights"],
+      simplePleasure: "Watching the sunset with a good playlist.",
+      languages: ["English", "Spanish", "French"],
+      location: "New York, USA",
+      spotifyArtists: ["Coldplay", "The Weeknd", "Ed Sheeran", "Drake"],
+    );
+  }
+
+  
 
   @override
   Widget build(BuildContext context) {
@@ -165,18 +201,18 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                         children: [
                           // KUDOS SECTIONS (Only on Home Screen)
                           if (widget.isHomeScreen &&
-                              widget.profile.summary.trim().isNotEmpty) ...[
+                              displayProfile.summary.trim().isNotEmpty) ...[
                             _buildKudosSection(
                               title: 'My self Summary',
-                              content: widget.profile.summary,
+                              content: displayProfile.summary,
                             ),
                             const SizedBox(height: 20),
                           ],
                           if (widget.isHomeScreen &&
-                              widget.profile.lookingFor.trim().isNotEmpty) ...[
+                              displayProfile.lookingFor.trim().isNotEmpty) ...[
                             _buildKudosSection(
                               title: 'What makes a relationship great is',
-                              content: widget.profile.lookingFor,
+                              content: displayProfile.lookingFor,
                             ),
                             const SizedBox(height: 20),
                           ],
@@ -189,48 +225,48 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                                 spacing: 10,
                                 runSpacing: 10,
                                 children: [
-                                  if (!_isSectionEmpty(widget.profile.height))
+                                  if (!_isSectionEmpty(displayProfile.height))
                                     _buildInfoChip(
-                                      widget.profile.height,
+                                      displayProfile.height,
                                       Colors.blue,
                                     ),
                                   if (!_isSectionEmpty(
-                                    widget.profile.activityLevel,
+                                    displayProfile.activityLevel,
                                   ))
                                     _buildInfoChip(
-                                      widget.profile.activityLevel,
+                                      displayProfile.activityLevel,
                                       Colors.purple,
                                     ),
                                   if (!_isSectionEmpty(
-                                    widget.profile.education,
+                                    displayProfile.education,
                                   ))
                                     _buildInfoChip(
-                                      widget.profile.education,
+                                      displayProfile.education,
                                       Colors.orange,
                                     ),
-                                  if (!_isSectionEmpty(widget.profile.gender))
+                                  if (!_isSectionEmpty(displayProfile.gender))
                                     _buildInfoChip(
-                                      widget.profile.gender,
+                                      displayProfile.gender,
                                       Colors.blue,
                                     ),
-                                  if (!_isSectionEmpty(widget.profile.religion))
+                                  if (!_isSectionEmpty(displayProfile.religion))
                                     _buildInfoChip(
-                                      widget.profile.religion,
+                                      displayProfile.religion,
                                       Colors.orange,
                                     ),
-                                  if (!_isSectionEmpty(widget.profile.zodiac))
+                                  if (!_isSectionEmpty(displayProfile.zodiac))
                                     _buildInfoChip(
-                                      widget.profile.zodiac,
+                                      displayProfile.zodiac,
                                       Colors.brown,
                                     ),
-                                  if (!_isSectionEmpty(widget.profile.drinking))
+                                  if (!_isSectionEmpty(displayProfile.drinking))
                                     _buildInfoChip(
-                                      widget.profile.drinking,
+                                      displayProfile.drinking,
                                       Colors.green,
                                     ),
-                                  if (!_isSectionEmpty(widget.profile.smoking))
+                                  if (!_isSectionEmpty(displayProfile.smoking))
                                     _buildInfoChip(
-                                      widget.profile.smoking,
+                                      displayProfile.smoking,
                                       Colors.red,
                                     ),
                                 ],
@@ -258,7 +294,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                               child: Wrap(
                                 spacing: 8,
                                 runSpacing: 8,
-                                children: widget.profile.lookingForTags
+                                children: displayProfile.lookingForTags
                                     .where((tag) => tag.trim().isNotEmpty)
                                     .map(
                                       (tag) => Container(
@@ -292,10 +328,10 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
 
                           // KUDOS SECTION 3 (Only on Home Screen)
                           if (widget.isHomeScreen &&
-                              widget.profile.quickestWay.trim().isNotEmpty) ...[
+                              displayProfile.quickestWay.trim().isNotEmpty) ...[
                             _buildKudosSection(
                               title: 'The quickest way to my heart is',
-                              content: widget.profile.quickestWay,
+                              content: displayProfile.quickestWay,
                               isItalic: true,
                             ),
                             const SizedBox(height: 20),
@@ -308,7 +344,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                               child: Wrap(
                                 spacing: 10,
                                 runSpacing: 10,
-                                children: widget.profile.hobbies
+                                children: displayProfile.hobbies
                                     .where((hobby) => hobby.trim().isNotEmpty)
                                     .map(
                                       (hobby) => Container(
@@ -359,7 +395,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                               child: Wrap(
                                 spacing: 8,
                                 runSpacing: 8,
-                                children: widget.profile.causes
+                                children: displayProfile.causes
                                     .where((cause) => cause.trim().isNotEmpty)
                                     .map(
                                       (cause) => Container(
@@ -393,12 +429,12 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
 
                           // KUDOS SECTION 4 (Only on Home Screen)
                           if (widget.isHomeScreen &&
-                              widget.profile.simplePleasure
+                              displayProfile.simplePleasure
                                   .trim()
                                   .isNotEmpty) ...[
                             _buildKudosSection(
                               title: 'My simple pleasures are',
-                              content: widget.profile.simplePleasure,
+                              content: displayProfile.simplePleasure,
                             ),
                             const SizedBox(height: 20),
                           ],
@@ -410,7 +446,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                               child: Wrap(
                                 spacing: 8,
                                 runSpacing: 8,
-                                children: widget.profile.languages
+                                children: displayProfile.languages
                                     .where((lang) => lang.trim().isNotEmpty)
                                     .map(
                                       (lang) => Container(
@@ -462,7 +498,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                                     ),
                                     const SizedBox(width: 10),
                                     Text(
-                                      widget.profile.location.trim(),
+                                      displayProfile.location.trim(),
                                       style: const TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
@@ -483,7 +519,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                               child: Wrap(
                                 spacing: 8,
                                 runSpacing: 8,
-                                children: widget.profile.spotifyArtists
+                                children: displayProfile.spotifyArtists
                                     .where((artist) => artist.trim().isNotEmpty)
                                     .map(
                                       (artist) => Container(
@@ -613,7 +649,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
     return GestureDetector(
       onTap: () {
         // Add your Kudos functionality here
-        print('Kudos tapped for ${widget.profile.name}!');
+        print('Kudos tapped for ${displayProfile.name}!');
         // Example: _showKudosDialog(), increment score, etc.
       },
       child: Container(
@@ -648,7 +684,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
 
   // Full viewport height first image
   Widget _buildImageSection(int index, {double? cardHeight}) {
-    if (index >= 3 || index >= widget.profile.imageUrls.length) {
+    if (index >= 3 || index >= displayProfile.imageUrls.length) {
       return const SizedBox.shrink();
     }
 
@@ -686,7 +722,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
     final bool isFirstImage = index == 0;
     return [
       Image.network(
-        widget.profile.imageUrls[index],
+        displayProfile.imageUrls[index],
         width: double.infinity,
         height: double.infinity,
         fit: BoxFit.cover,
@@ -744,7 +780,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                 const SizedBox(height: 12),
                 // Name
                 Text(
-                  "${widget.profile.name}, ${widget.profile.age}",
+                  "${displayProfile.name}, ${displayProfile.age}",
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 28,
@@ -776,7 +812,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          "${widget.profile.distance.toStringAsFixed(1)} miles away",
+                          "${displayProfile.distance.toStringAsFixed(1)} miles away",
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 13,
@@ -1035,7 +1071,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Block User'),
-        content: Text('Are you sure you want to block ${widget.profile.name}?'),
+        content: Text('Are you sure you want to block ${displayProfile.name}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -1056,7 +1092,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Report User'),
-        content: Text('Why are you reporting ${widget.profile.name}?'),
+        content: Text('Why are you reporting ${displayProfile.name}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
