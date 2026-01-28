@@ -1,16 +1,14 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:veriff_flutter/veriff_flutter.dart'; // Import Veriff
 
-import '../../../../onboarding/data/repositories/verification_repository.dart';
 import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
 import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
-import '../../../../../core/utils/custom_popups.dart';
 
 enum GovIdStep { instructions, processing, verified }
 
+// We keep this for UI, but Veriff will actually ask the user again inside the SDK
 enum DocumentType { drivers_license, aadhar_card, pan_card }
 
 class GovernmentIdVerificationScreen extends ConsumerStatefulWidget {
@@ -23,52 +21,88 @@ class GovernmentIdVerificationScreen extends ConsumerStatefulWidget {
 
 class _GovernmentIdVerificationScreenState
     extends ConsumerState<GovernmentIdVerificationScreen> {
+  
   GovIdStep _currentStep = GovIdStep.instructions;
   DocumentType _selectedDocType = DocumentType.drivers_license;
-  File? _selectedImage;
-  final _verificationRepo = VerificationRepository();
+  bool _isLoading = false; // To show spinner on the button
 
-  // --- Actions ---
+  // --- 1. Real-time Database Listener ---
+  @override
+  void initState() {
+    super.initState();
+    _listenForVerificationStatus();
+  }
 
-  Future<void> _uploadAndVerify() async {
-    if (_selectedImage == null) return;
+  void _listenForVerificationStatus() {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return;
 
-    setState(() {
-      _currentStep = GovIdStep.processing;
-    });
+    // Listen to changes in the 'profiles' table for this user
+    Supabase.instance.client
+        .from('profiles')
+        .stream(primaryKey: ['id'])
+        .eq('user_id', userId)
+        .listen((List<Map<String, dynamic>> data) {
+          if (data.isNotEmpty) {
+            final isVerified = data.first['is_verified'] ?? false;
+            
+            if (mounted) {
+              if (isVerified) {
+                setState(() => _currentStep = GovIdStep.verified);
+              } 
+              // Optional: Check if verification failed or is pending to show 'processing'
+            }
+          }
+        });
+  }
+
+  // --- 2. The Veriff Logic ---
+  Future<void> _startVeriffFlow() async {
+    setState(() => _isLoading = true);
 
     try {
-      final userId = Supabase.instance.client.auth.currentUser?.id;
-      if (userId == null) throw Exception("User not logged in");
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) throw Exception("User not logged in");
 
-      // 1. Upload Image
-      final storagePath = await _verificationRepo.uploadGovernmentId(
-        _selectedImage!,
-        userId,
+      // A. Call Supabase Edge Function to get Session URL
+      // FIX: Added .client here
+      final response = await Supabase.instance.client.functions.invoke(
+        'veriff-session',
+        body: {
+          'firstName': user.userMetadata?['first_name'] ?? 'User',
+          'lastName': user.userMetadata?['last_name'] ?? '',
+        },
       );
 
-      // 2. Create Request
-      await _verificationRepo.createVerificationRequest(
-        userId: userId,
-        mediaStoragePath: storagePath,
-        verificationType: 'gov_id',
-        additionalData: {'document_type': _selectedDocType.name},
+      final sessionUrl = response.data['url'];
+      if (sessionUrl == null) throw Exception("Failed to generate Veriff URL");
+
+      // B. Configure and Start Veriff
+      Configuration config = Configuration(sessionUrl);
+      config.branding = Branding(
+        themeColor: '#4A5A4A', 
+        backgroundColor: '#FFFFFF',
       );
 
-      if (mounted) {
-        setState(() {
-          _currentStep = GovIdStep.verified;
-        });
-      }
+      Veriff veriff = Veriff();
+      veriff.start(config);
+
+      // C. Update UI to "Processing"
+      setState(() {
+        _currentStep = GovIdStep.processing;
+      });
+
     } catch (e) {
-      if (mounted) {
-        showErrorPopup(context, "Verification upload failed: $e");
-        setState(() {
-          _currentStep = GovIdStep.instructions;
-        });
-      }
+      print('Veriff Error: $e'); // Helpful for debugging
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error starting verification: $e")),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
+
+  // --- Actions ---
 
   void _onVerifiedComplete() {
     ref.read(onboardingProvider.notifier).completeStep('gov_id_optional');
@@ -82,11 +116,8 @@ class _GovernmentIdVerificationScreenState
     if (_currentStep == GovIdStep.instructions) {
       ref.read(onboardingProvider.notifier).goToPreviousStep();
     } else {
-      // In processing or verified, usually disable back or go to start
-      // For now, go back to instructions
       setState(() {
         _currentStep = GovIdStep.instructions;
-        _selectedImage = null;
       });
     }
   }
@@ -99,11 +130,14 @@ class _GovernmentIdVerificationScreenState
       return _buildStatusView(
         context,
         icon: Icons.access_time_filled_rounded,
-        title: "We’re reviewing your Government ID proof",
+        title: "We’re reviewing your ID",
         subtitle:
-            "Your ID verification is in progress. This usually take a few hours. We’ll notify you once complete.",
-        buttonText: "Got it",
-        onPressed: _onVerifiedComplete,
+            "Veriff is analyzing your documents. This usually takes less than 2 minutes. Stay on this screen or check back later.",
+        buttonText: "Refresh Status",
+        onPressed: () {
+           // The Stream listener handles updates, but this allows manual check if needed
+           setState(() {}); 
+        },
       );
     }
 
@@ -112,8 +146,8 @@ class _GovernmentIdVerificationScreenState
         context,
         icon: Icons.check_circle_rounded,
         title: "Verified Successfully!",
-        subtitle: "Government ID proof successfully verified",
-        buttonText: "Got it",
+        subtitle: "Your Government ID has been confirmed.",
+        buttonText: "Continue",
         onPressed: _onVerifiedComplete,
       );
     }
@@ -122,10 +156,10 @@ class _GovernmentIdVerificationScreenState
 
     return BaseOnboardingStepScreen(
       title: 'Verify Your Profile',
-      showBackButton: false, // Custom handling
+      showBackButton: false,
       onBack: _onBack,
       showNextButton: false,
-      showSkipButton: false, // Custom handling
+      showSkipButton: false,
       child: Column(
         children: [
           Expanded(
@@ -138,16 +172,14 @@ class _GovernmentIdVerificationScreenState
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary, // Dark Olive Green from image
+                      color: colorScheme.primary,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.shield_outlined,
                       size: 40,
-                      color: Theme.of(context).colorScheme.onPrimary,
-                    ), // Gold color
+                      color: colorScheme.onPrimary,
+                    ),
                   ),
                   const SizedBox(height: 24),
                   Text(
@@ -156,93 +188,83 @@ class _GovernmentIdVerificationScreenState
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSurface,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    "To confirm your identity and ensure community safety, Please upload a valid government issue ID.",
+                    "To confirm your identity, we use Veriff for secure document scanning.",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      color: colorScheme.onSurfaceVariant,
                       height: 1.5,
                     ),
                   ),
                   const SizedBox(height: 32),
 
-                  // Document Type Selector
+                  // Document Type Selector (Cosmetic only now, as Veriff handles it)
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 16),
                     decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(30), // More rounded
+                      color: colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(30),
                     ),
                     padding: const EdgeInsets.all(4),
                     child: Row(
                       children: [
-                        _buildTabItem(
-                          DocumentType.drivers_license,
-                          "Driver's License",
-                        ),
+                        _buildTabItem(DocumentType.drivers_license,"Driver's License"),
                         _buildTabItem(DocumentType.aadhar_card, "Aadhar Card"),
-                        _buildTabItem(DocumentType.pan_card, "PAN card"),
+                        _buildTabItem(DocumentType.pan_card, "Passport"),
                       ],
                     ),
                   ),
                   const SizedBox(height: 32),
 
-                  // Upload Area
-
-                  // Upload Area - Disabled
-                  Container(
-                    height: 220,
-                    width: double.infinity,
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest.withOpacity(
-                        0.5,
+                  // Upload Area - Changed to "Ready to Scan" visual
+                  GestureDetector(
+                    onTap: _startVeriffFlow, // Allow tapping the box to start
+                    child: Container(
+                      height: 220,
+                      width: double.infinity,
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: colorScheme.primary.withOpacity(0.5),
+                          width: 2, // Highlighted border
+                          style: BorderStyle.solid, 
+                        ),
                       ),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: colorScheme.outline.withOpacity(0.2),
-                      ),
-                    ),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.cloud_off_rounded,
-                            size: 40,
-                            color: colorScheme.onSurfaceVariant.withOpacity(
-                              0.5,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.camera_alt_rounded, // Changed icon
+                              size: 40,
+                              color: colorScheme.primary,
                             ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            "Upload currently disabled",
-                            style: TextStyle(
-                              color: colorScheme.onSurfaceVariant.withOpacity(
-                                0.5,
+                            const SizedBox(height: 16),
+                            Text(
+                              "Tap to Scan Document",
+                              style: TextStyle(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
                               ),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            "This feature will be available soon",
-                            style: TextStyle(
-                              color: colorScheme.onSurfaceVariant.withOpacity(
-                                0.5,
+                            const SizedBox(height: 8),
+                            Text(
+                              "Powered by Veriff",
+                              style: TextStyle(
+                                color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                                fontSize: 12,
                               ),
-                              fontSize: 12,
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -255,37 +277,20 @@ class _GovernmentIdVerificationScreenState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildGuidelineItem(
-                          context,
-                          Icons
-                              .circle, // Placeholder, updated in _buildGuidelineItem
-                          "Place on a flat and dark surface",
-                        ),
-                        const SizedBox(height: 16),
-                        _buildGuidelineItem(
-                          context,
-                          Icons.circle,
-                          "Avoid glare from lights",
-                        ),
-                        const SizedBox(height: 16),
-                        _buildGuidelineItem(
-                          context,
-                          Icons.circle,
-                          "Ensure all 4 corners are visible",
-                        ),
+                         _buildGuidelineItem(context, Icons.circle, "Prepare your physical ID card"),
+                         const SizedBox(height: 16),
+                         _buildGuidelineItem(context, Icons.circle, "Ensure good lighting"),
+                         const SizedBox(height: 16),
+                         _buildGuidelineItem(context, Icons.circle, "Be ready for a quick selfie"),
                       ],
                     ),
                   ),
                   const SizedBox(height: 32),
-
+                  
                   Text(
-                    "Your ID is encrypted and will be deleted after verification.\nWe never share it with other users. Learn more",
+                    "Your ID is encrypted and deleted after verification.\nWe never share it with other users.",
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Theme.of(context).colorScheme.onSurface,
-                      height: 1.4,
-                    ),
+                    style: TextStyle(fontSize: 11, color: colorScheme.onSurface, height: 1.4),
                   ),
                   const SizedBox(height: 24),
                 ],
@@ -299,77 +304,44 @@ class _GovernmentIdVerificationScreenState
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _selectedImage != null ? _uploadAndVerify : null,
+                // Button is ALWAYS active now
+                onPressed: _isLoading ? null : _startVeriffFlow, 
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 20),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  disabledBackgroundColor: Theme.of(context).colorScheme.primary
-                      .withOpacity(0.5), // Keep it green but dim
-                  disabledForegroundColor: colorScheme.onPrimary.withOpacity(
-                    0.7,
-                  ),
                 ),
-                child: const Text(
-                  "Upload & continue",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
+                child: _isLoading 
+                  ? const SizedBox(
+                      height: 20, width: 20, 
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                    )
+                  : const Text(
+                      "Start Verification",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
               ),
             ),
           ),
 
-          // Navigation Row: Back and Skip
+          // Navigation Row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               TextButton.icon(
                 onPressed: _onBack,
-                icon: Icon(
-                  Icons.arrow_back,
-                  size: 20,
-                  color: colorScheme.onSurface,
-                ),
-                label: Text(
-                  "Back",
-                  style: TextStyle(
-                    color: colorScheme.onSurface,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 12,
-                    horizontal: 8,
-                  ),
-                ),
+                icon: Icon(Icons.arrow_back, size: 20, color: colorScheme.onSurface),
+                label: Text("Back", style: TextStyle(color: colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w600)),
               ),
               Directionality(
                 textDirection: TextDirection.rtl,
                 child: TextButton.icon(
                   onPressed: _onSkip,
-                  icon: Icon(
-                    Icons.skip_next_rounded,
-                    size: 24,
-                    color: colorScheme.onSurface,
-                  ),
-                  label: Text(
-                    "Skip",
-                    style: TextStyle(
-                      color: colorScheme.onSurface,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 8,
-                    ),
-                  ),
+                  icon: Icon(Icons.skip_next_rounded, size: 24, color: colorScheme.onSurface),
+                  label: Text("Skip", style: TextStyle(color: colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w600)),
                 ),
               ),
             ],
@@ -379,17 +351,15 @@ class _GovernmentIdVerificationScreenState
     );
   }
 
+  // --- Helper Methods (Kept mostly same) ---
+
   Widget _buildTabItem(DocumentType type, String label) {
     final isSelected = _selectedDocType == type;
     final colorScheme = Theme.of(context).colorScheme;
 
     return Expanded(
       child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedDocType = type;
-          });
-        },
+        onTap: () => setState(() => _selectedDocType = type),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -412,7 +382,6 @@ class _GovernmentIdVerificationScreenState
   }
 
   Widget _buildGuidelineItem(BuildContext context, IconData icon, String text) {
-    // Override icon with simple circle for this specific design
     final colorScheme = Theme.of(context).colorScheme;
     return Row(
       children: [
@@ -421,11 +390,7 @@ class _GovernmentIdVerificationScreenState
         Expanded(
           child: Text(
             text,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: colorScheme.onSurface,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: colorScheme.onSurface),
           ),
         ),
       ],
@@ -449,42 +414,16 @@ class _GovernmentIdVerificationScreenState
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Back button only at the very bottom or top?
-              // Mockup shows "Back" at bottom for verified, but maybe top for processing?
-              // Standardize:
-              // Processing: No back.
-              // Verified: "Back" at bottom.
               const Spacer(),
               Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: colorScheme.primary,
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  // Inner shield icon logic or just the icon
-                  child: Icon(icon, size: 50, color: colorScheme.onPrimary),
-                ), // Updated to match likely "Green Circle with Check" or "Green Loading"
+                width: 120, height: 120,
+                decoration: BoxDecoration(color: colorScheme.primary, shape: BoxShape.circle),
+                child: Center(child: Icon(icon, size: 50, color: colorScheme.onPrimary)),
               ),
               const SizedBox(height: 32),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
-              Text(
-                subtitle,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
+              Text(subtitle, textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: colorScheme.onSurfaceVariant)),
               const Spacer(),
               SizedBox(
                 width: double.infinity,
@@ -494,33 +433,9 @@ class _GovernmentIdVerificationScreenState
                     backgroundColor: colorScheme.primary,
                     foregroundColor: colorScheme.onPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 20),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
-                  child: Text(
-                    buttonText,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              // Back Button
-              Padding(
-                padding: const EdgeInsets.only(top: 16.0),
-                child: TextButton.icon(
-                  onPressed: _onBack,
-                  icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
-                  label: Text(
-                    "Back",
-                    style: TextStyle(
-                      color: colorScheme.onSurface,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: Text(buttonText, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(height: 20),
@@ -529,62 +444,5 @@ class _GovernmentIdVerificationScreenState
         ),
       ),
     );
-  }
-}
-
-class DashedRectPainter extends CustomPainter {
-  final double strokeWidth;
-  final Color color;
-  final double gap;
-  final double borderRadius;
-
-  DashedRectPainter({
-    this.strokeWidth = 2.0,
-    this.color = Colors.black,
-    this.gap = 5.0,
-    this.borderRadius = 0,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    Paint dashedPaint = Paint()
-      ..color = color
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke;
-
-    final RRect rrect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      Radius.circular(borderRadius),
-    );
-
-    Path path = Path()..addRRect(rrect);
-
-    // Simple implementation of dashing a path
-    // For a perfect dashed RRect we can use path metrics, but for speed simplified approach:
-    // Just drawing the path with a dash effect is hard in vanilla flutter without path_drawing.
-    // I'll stick to manual if needed, OR use a simplified approach since importing path_drawing isn't allowed without pubspec check.
-    // Let's blindly try to use PathMetrics which IS in dart:ui (exported via material).
-
-    Path dashPath = Path();
-    double dashWidth = 10.0;
-    double dashSpace = gap;
-    double distance = 0.0;
-
-    for (var pathMetric in path.computeMetrics()) {
-      while (distance < pathMetric.length) {
-        dashPath.addPath(
-          pathMetric.extractPath(distance, distance + dashWidth),
-          Offset.zero,
-        );
-        distance += dashWidth;
-        distance += dashSpace;
-      }
-    }
-    canvas.drawPath(dashPath, dashedPaint);
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) {
-    return true;
   }
 }
