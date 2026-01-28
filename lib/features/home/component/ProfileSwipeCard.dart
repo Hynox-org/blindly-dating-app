@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 
 class UserProfile {
   final String id;
@@ -112,13 +113,6 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
-            ),
-          ],
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -202,13 +196,23 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         Positioned(
           top: 16,
           right: 16,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.65),
-              borderRadius: BorderRadius.circular(22),
+          child: ClipOval(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.25),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.15),
+                    width: 1,
+                  ),
+                ),
+                child: const Icon(Icons.share, color: Colors.white, size: 24),
+              ),
             ),
-            child: const Icon(Icons.share, color: Colors.white, size: 18),
           ),
         ),
         // Bottom overlay

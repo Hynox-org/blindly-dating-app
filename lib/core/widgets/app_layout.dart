@@ -71,16 +71,7 @@ class AppLayout extends StatelessWidget {
 
   Widget _buildFooter(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
+      decoration: const BoxDecoration(color: Colors.white),
       child: SafeArea(
         // Keep SafeArea but remove padding to let InkWell hit edges
         child: SizedBox(

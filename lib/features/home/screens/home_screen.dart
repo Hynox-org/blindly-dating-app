@@ -356,11 +356,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           cardsCount: mainDeck.length,
                           // ✅ ADD THIS LINE:
                           initialIndex: _currentIndex,
-                          numberOfCardsDisplayed: 1,
+                          numberOfCardsDisplayed: 1, // ✅ Depth of 3 like Bumble
+                          backCardOffset: const Offset(
+                            0,
+                            40,
+                          ), // ✅ Distinct stack
+                          scale: 0.9, // ✅ Visible scaling
+                          threshold: 60, // ✅ Intentional swipe
+                          duration: const Duration(
+                            milliseconds: 200,
+                          ), // ✅ Snappy return
                           padding: const EdgeInsets.all(10.0),
 
                           // ✅ 2. ADD LOOP FALSE: Stops random restarts
-                          isLoop: false,
+                          isLoop: true,
 
                           allowedSwipeDirection:
                               const AllowedSwipeDirection.only(
