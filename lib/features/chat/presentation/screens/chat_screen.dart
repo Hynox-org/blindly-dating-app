@@ -70,7 +70,7 @@ class ChatScreen extends ConsumerWidget {
 
               // Recent Matches Empty State (Placeholders)
               SizedBox(
-                height: 80,
+                height: 60,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -114,7 +114,7 @@ class ChatScreen extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16.0,
-                  vertical: 8.0,
+                  vertical: 16.0,
                 ),
                 child: Text(
                   'Your new matches will appear here.',
