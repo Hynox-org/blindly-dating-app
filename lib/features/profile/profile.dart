@@ -57,13 +57,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         actions: [
           IconButton(
             icon: Icon(
-              Icons.verified_outlined,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: Icon(
               Icons.settings_outlined,
               color: Theme.of(context).colorScheme.onSurface,
             ),

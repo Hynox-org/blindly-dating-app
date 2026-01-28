@@ -146,6 +146,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   List<UserProfile> _mapToUserProfiles(List<DiscoveryUser> discoveryUsers) {
     return discoveryUsers.map((user) {
       final imgUrl = user.mediaUrl;
+      final genderStr = mapGender(user.gender);
+
+      List<String> imageUrls = [];
+      if (imgUrl != null && imgUrl.isNotEmpty) {
+        imageUrls.add(imgUrl);
+      }
+
+      final hash = user.profileId.hashCode;
+      if (genderStr == 'Male') {
+        final men = ['assets/defaults/men1.jpeg', 'assets/defaults/men2.jpeg'];
+        while (imageUrls.length < 3) {
+          final idx = (hash + imageUrls.length) % men.length;
+          imageUrls.add(men[idx]);
+        }
+      } else if (genderStr == 'Female') {
+        final women = [
+          'assets/defaults/women1.jpeg',
+          'assets/defaults/women2.jpeg',
+          'assets/defaults/women3.jpeg',
+        ];
+        while (imageUrls.length < 3) {
+          final idx = (hash + imageUrls.length) % women.length;
+          imageUrls.add(women[idx]);
+        }
+      } else {
+        while (imageUrls.length < 3) {
+          imageUrls.add(
+            'https://ui-avatars.com/api/?name=${Uri.encodeComponent(user.displayName)}&background=random&size=600&bold=true&font-size=0.5',
+          );
+        }
+      }
 
       return UserProfile(
         id: user.profileId,
@@ -153,12 +184,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         age: user.age,
         distance: double.parse((user.distanceMeters / 1000).toStringAsFixed(1)),
         location: user.city.isNotEmpty ? user.city : 'Nearby',
-        gender: mapGender(user.gender),
-        imageUrls: imgUrl != null && imgUrl.isNotEmpty
-            ? [imgUrl]
-            : [
-                'https://ui-avatars.com/api/?name=${Uri.encodeComponent(user.displayName)}&background=random&size=600&bold=true&font-size=0.5',
-              ],
+        gender: genderStr,
+        imageUrls: imageUrls,
         bio:
             'Match Score: ${user.matchScore}% • ${user.sharedInterestsCount} shared interests',
         height: 'Ask me',
