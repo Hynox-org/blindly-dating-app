@@ -25,6 +25,7 @@ import 'connection_type_screen.dart';
 // ✅ 5. Layout
 import '../../../../core/widgets/app_layout.dart';
 
+import './../component/out_of_swipe_screen.dart';
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -309,26 +310,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   onLike: () {
                                     if (_swipeCount > 0) {
                                       _handleLike(profiles[index]);
-                                      _controller.swipe(
-                                        CardSwiperDirection.right,
-                                      );
+                                      _controller.swipe(CardSwiperDirection.right);
+                                    } else {
+                                      _showLimitReachedDialog(); // Navigate to SubscriptionScreen
                                     }
                                   },
                                   onBlock: () {
                                     if (_swipeCount > 0) {
                                       _handlePass(profiles[index]);
-                                      _controller.swipe(
-                                        CardSwiperDirection.left,
-                                      );
+                                      _controller.swipe(CardSwiperDirection.left);
+                                    } else {
+                                      _showLimitReachedDialog(); // Navigate to SubscriptionScreen
                                     }
                                   },
                                   onReport: () {
-                                    debugPrint(
-                                      'Report: ${profiles[index].name}',
-                                    );
+                                    debugPrint('Report: ${profiles[index].name}');
                                   },
-                                );
-                              },
+                                ); 
+                              },                              
                             ),
                           ],
                         );
@@ -379,7 +378,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
 
     if (_swipeCount <= 0) {
-      _showLimitReachedDialog();
+      _showLimitReachedDialog(); // Navigate to SubscriptionScreen instead of dialog
       return false;
     }
 
@@ -448,13 +447,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _showLimitReachedDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Limit Reached'),
-        content: const Text('No more swipes for today!'),
-      ),
-    );
+    Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => const OutOfSwipeScreen(),
+    ),
+  );
   }
 
   void _showNoMoreCardsDialog() {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/widgets/app_layout.dart';
 import '../../../home/screens/connection_type_screen.dart';
 import '../../../../core/utils/navigation_utils.dart';
+import './chat_detail_screen.dart';
 
 class ChatScreen extends StatelessWidget {
   const ChatScreen({super.key});
@@ -89,26 +90,32 @@ class ChatScreen extends StatelessWidget {
                     _buildRecentMatchItem(
                       'James',
                       'https://randomuser.me/api/portraits/men/32.jpg',
+                      context,
                     ),
                     _buildRecentMatchItem(
                       'Rosey',
                       'https://randomuser.me/api/portraits/women/44.jpg',
+                      context,
                     ),
                     _buildRecentMatchItem(
                       'Alexa',
                       'https://randomuser.me/api/portraits/women/68.jpg',
+                      context,
                     ),
                     _buildRecentMatchItem(
                       'Lauren',
                       'https://randomuser.me/api/portraits/women/33.jpg',
+                      context,
                     ),
                     _buildRecentMatchItem(
                       'James',
                       'https://randomuser.me/api/portraits/men/45.jpg',
+                      context,
                     ),
                     _buildRecentMatchItem(
                       'Alex',
                       'https://randomuser.me/api/portraits/men/22.jpg',
+                      context,
                     ),
                   ],
                 ),
@@ -139,14 +146,15 @@ class ChatScreen extends StatelessWidget {
                     time: '5m ago',
                     imageUrl: 'https://randomuser.me/api/portraits/men/86.jpg',
                     unreadCount: 2,
+                    context: context,
                   ),
                   _buildConversationItem(
                     name: 'Alexander',
                     message: 'Sent a photo',
                     time: 'Tue',
-                    imageUrl:
-                        'https://randomuser.me/api/portraits/women/65.jpg',
+                    imageUrl: 'https://randomuser.me/api/portraits/women/65.jpg',
                     unreadCount: 0,
+                    context: context,
                   ),
                   _buildConversationItem(
                     name: 'Alexander',
@@ -154,6 +162,7 @@ class ChatScreen extends StatelessWidget {
                     time: 'Sun',
                     imageUrl: 'https://randomuser.me/api/portraits/men/51.jpg',
                     unreadCount: 2,
+                    context: context,
                   ),
                   _buildConversationItem(
                     name: 'Alexander',
@@ -161,14 +170,15 @@ class ChatScreen extends StatelessWidget {
                     time: 'Sun',
                     imageUrl: 'https://randomuser.me/api/portraits/men/11.jpg',
                     unreadCount: 0,
+                    context: context,
                   ),
                   _buildConversationItem(
                     name: 'Alexander',
                     message: 'Sounds great! See you again',
                     time: 'Sat',
-                    imageUrl:
-                        'https://randomuser.me/api/portraits/women/90.jpg',
+                    imageUrl: 'https://randomuser.me/api/portraits/women/90.jpg',
                     unreadCount: 2,
+                    context: context,
                   ),
                 ],
               ),
@@ -180,22 +190,35 @@ class ChatScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentMatchItem(String name, String imageUrl) {
+  Widget _buildRecentMatchItem(String name, String imageUrl, BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(right: 16.0),
-      child: Column(
-        children: [
-          CircleAvatar(radius: 32, backgroundImage: NetworkImage(imageUrl)),
-          const SizedBox(height: 8),
-          Text(
-            name,
-            style: const TextStyle(
-              fontFamily: 'Poppins',
-              fontWeight: FontWeight.w500,
-              fontSize: 12,
+      child: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ChatDetailScreen(
+                name: name,
+                imageUrl: imageUrl,
+              ),
             ),
-          ),
-        ],
+          );
+        },
+        child: Column(
+          children: [
+            CircleAvatar(radius: 32, backgroundImage: NetworkImage(imageUrl)),
+            const SizedBox(height: 8),
+            Text(
+              name,
+              style: const TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w500,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -206,10 +229,22 @@ class ChatScreen extends StatelessWidget {
     required String time,
     required String imageUrl,
     required int unreadCount,
+    required BuildContext context,
   }) {
     return Column(
       children: [
         ListTile(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ChatDetailScreen(
+                  name: name,
+                  imageUrl: imageUrl,
+                ),
+              ),
+            );
+          },
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
             vertical: 4,
@@ -256,7 +291,7 @@ class ChatScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: const BoxDecoration(
-                    color: Color(0xFFEBC163), // Gold-ish color from image
+                    color: Color(0xFFEBC163),
                     shape: BoxShape.circle,
                   ),
                   child: Text(
