@@ -2,12 +2,15 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/widgets/app_loader.dart';
 import '../../../core/widgets/app_layout.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../features/home/screens/connection_type_screen.dart';
 
 import '../../features/match/provider/liked_you_provider.dart';
 import '../../features/match/domain/models/liked_you_user_model.dart';
+import '../../features/home/screens/home_screen.dart';
+import '../../features/profile/profile.dart';
 
 class LikedYouScreen extends ConsumerStatefulWidget {
   const LikedYouScreen({super.key});
@@ -21,10 +24,10 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
   void initState() {
     super.initState();
 
-    // 🔄 Fetch fresh data every time screen opens
-    Future.microtask(() {
-      ref.read(likedYouProvider.notifier).refresh();
-    });
+    // // // 🔄 Fetch fresh data every time screen opens
+    // // Future.microtask(() {
+    // //   ref.read(likedYouProvider.notifier).refresh();
+    // });
   }
 
   @override
@@ -38,7 +41,10 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.more_vert, color: Colors.black),
+          icon: Icon(
+            Icons.more_vert,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
           onPressed: () {
             NavigationUtils.navigateToWithSlide(
               context,
@@ -46,11 +52,10 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
             );
           },
         ),
-        title: const Text(
+        title: Text(
           'Liked You',
           style: TextStyle(
-            color: Colors.black,
-            fontFamily: 'Poppins',
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.w600,
             fontSize: 20,
           ),
@@ -58,34 +63,41 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
         centerTitle: true,
       ),
       child: Container(
-        color: const Color(0xFFF5F5F5),
+        color: Theme.of(context).scaffoldBackgroundColor,
         child: likedYouState.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const AppLoader(),
           error: (e, _) => _buildErrorState(),
           data: (users) {
             final likeCount = users.length;
+
+            // ✅ Empty State: Full Screen, White Background, No Header
+            if (users.isEmpty) {
+              return Container(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                width: double.infinity,
+                child: _buildEmptyState(),
+              );
+            }
 
             return Column(
               children: [
                 _buildHeader(likeCount),
 
                 Expanded(
-                  child: users.isEmpty
-                      ? _buildEmptyState()
-                      : GridView.builder(
-                          padding: const EdgeInsets.all(16),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 12,
-                                mainAxisSpacing: 12,
-                                childAspectRatio: 0.75,
-                              ),
-                          itemCount: users.length,
-                          itemBuilder: (context, index) {
-                            return _buildProfileCard(users[index]);
-                          },
+                  child: GridView.builder(
+                    padding: const EdgeInsets.all(16),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 0.75,
                         ),
+                    itemCount: users.length,
+                    itemBuilder: (context, index) {
+                      return _buildProfileCard(users[index]);
+                    },
+                  ),
                 ),
 
                 _buildUnlockButton(),
@@ -104,17 +116,16 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
-      color: Colors.white,
+      color: Theme.of(context).cardColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             "See Who's Interested",
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              fontFamily: 'Poppins',
-              color: Colors.black,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
@@ -122,17 +133,16 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
             text: TextSpan(
               style: TextStyle(
                 fontSize: 14,
-                fontFamily: 'Poppins',
-                color: Colors.grey[600],
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 height: 1.4,
               ),
               children: [
                 const TextSpan(text: 'You have '),
                 TextSpan(
                   text: '$likeCount likes',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const TextSpan(text: ' waiting for you.'),
@@ -184,7 +194,6 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
                 color: Colors.white,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                fontFamily: 'Poppins',
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -229,9 +238,13 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
 
   Widget _imageFallback() {
     return Container(
-      color: Colors.grey[700],
-      child: const Center(
-        child: Icon(Icons.person, size: 80, color: Colors.white54),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Center(
+        child: Icon(
+          Icons.person,
+          size: 80,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
       ),
     );
   }
@@ -241,32 +254,112 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
   // --------------------------------------------------
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.favorite_border, size: 100, color: Colors.grey[400]),
-          const SizedBox(height: 20),
-          Text(
-            'No likes yet',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[600],
-              fontFamily: 'Poppins',
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              'assets/static/liked_you_empty_state.png',
+              height: 200,
+              fit: BoxFit.contain,
             ),
-          ),
-        ],
+            const SizedBox(height: 24),
+            Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: "No likes yet, but don't\n",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                      height: 1.2,
+                      decorationColor: Theme.of(
+                        context,
+                      ).colorScheme.tertiary, // Adjust color to match reference
+                      decorationThickness: 2,
+                    ),
+                  ),
+                  TextSpan(
+                    text: "buzz off!",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                      height: 1.5,
+                      decorationColor: Theme.of(context).colorScheme.tertiary,
+                      decorationThickness: 2,
+                    ),
+                  ),
+                ],
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              "Keep swiping to find your honey.\nSomeone is bound to like you soon!",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const HomeScreen()),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primary, // Using primary
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'Start Swiping',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onPrimary,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () {
+                NavigationUtils.navigateToWithSlide(
+                  context,
+                  const ProfileScreen(),
+                );
+              },
+              child: Text(
+                'Improve Profile',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildErrorState() {
-    return const Center(
-      child: Text(
-        'Failed to load likes',
-        style: TextStyle(fontFamily: 'Poppins'),
-      ),
-    );
+    return const Center(child: Text('Failed to load likes'));
   }
 
   // --------------------------------------------------
@@ -276,13 +369,13 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
-      color: Colors.white,
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: SafeArea(
         child: ElevatedButton(
           onPressed: null,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF4A5A4A),
-            foregroundColor: Colors.white,
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
             padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -290,11 +383,7 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
           ),
           child: const Text(
             'Unlock all likes',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              fontFamily: 'Poppins',
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
         ),
       ),
@@ -310,29 +399,32 @@ Widget _overlayActionButton({
   // required IconData icon,
   required VoidCallback onTap,
 }) {
-  return GestureDetector(
-    onTap: onTap,
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        children: [
-          // Icon(icon, size: 16, color: Colors.Black),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.black,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              fontFamily: 'Poppins',
-            ),
+  return Builder(
+    builder: (context) {
+      return GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(20),
           ),
-        ],
-      ),
-    ),
+          child: Row(
+            children: [
+              // Icon(icon, size: 16, color: Colors.Black),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
   );
 }

@@ -41,7 +41,6 @@ class WelcomeScreen extends StatelessWidget {
                   'Real connections start here!',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
                     height: 1.3,
@@ -100,7 +99,6 @@ class WelcomeScreen extends StatelessWidget {
                     child: Text(
                       'Create an account',
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                         color: Theme.of(context).colorScheme.onPrimary,
@@ -156,7 +154,6 @@ class WelcomeScreen extends StatelessWidget {
                     child: Text(
                       'I have an account',
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                         color: Theme.of(context).colorScheme.onSurface,
@@ -170,7 +167,6 @@ class WelcomeScreen extends StatelessWidget {
                       textAlign: TextAlign.center,
                       text: TextSpan(
                         style: TextStyle(
-                          fontFamily: 'Poppins',
                           fontSize: 11,
                           color: Theme.of(
                             context,

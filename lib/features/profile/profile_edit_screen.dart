@@ -5,7 +5,6 @@ import './../onboarding/presentation/screens/steps/name_birth_entry_screen.dart'
 import './../onboarding/presentation/screens/steps/gender_select_screen.dart';
 import './../profile/presentation/screens/setup_steps/language_select_screen.dart';
 import './../profile/presentation/screens/setup_steps/location_set_screen.dart';
-import './../profile/presentation/screens/setup_steps/interests_select_screen.dart';
 import './../profile/presentation/screens/setup_steps/lifestyle_prefs_screen.dart';
 // ============================================================
 // PROFILE EDIT SCREEN (Complete Redesign)
@@ -111,7 +110,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             color: Colors.black,
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            fontFamily: 'Poppins',
           ),
         ),
         actions: [
@@ -167,7 +165,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              fontFamily: 'Poppins',
               color: Colors.black,
             ),
           ),
@@ -186,7 +183,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    fontFamily: 'Poppins',
                     color: Colors.black,
                   ),
                 ),
@@ -210,7 +206,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              fontFamily: 'Poppins',
               color: Colors.black,
             ),
           ),
@@ -220,7 +215,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             style: TextStyle(
               fontSize: 12,
               color: Colors.black,
-              fontFamily: 'Poppins',
             ),
           ),
           const SizedBox(height: 16),
@@ -259,7 +253,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             style: TextStyle(
               fontSize: 11,
               color: Colors.black,
-              fontFamily: 'Poppins',
             ),
           ),
           const SizedBox(height: 16),
@@ -283,7 +276,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                     'Best photo',
                     style: TextStyle(
                       fontSize: 14,
-                      fontFamily: 'Poppins',
                       color: Colors.black,
                       fontWeight: FontWeight.bold,
                     ),
@@ -293,7 +285,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                   'On',
                   style: TextStyle(
                     fontSize: 13,
-                    fontFamily: 'Poppins',
                     color: Colors.black,
                   ),
                 ),
@@ -319,7 +310,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                     'Verification',
                     style: TextStyle(
                       fontSize: 14,
-                      fontFamily: 'Poppins',
                       color: Colors.black,
                       fontWeight: FontWeight.bold,
                     ),
@@ -329,7 +319,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                   'Not Verified',
                   style: TextStyle(
                     fontSize: 13,
-                    fontFamily: 'Poppins',
                     color: Colors.black,
                   ),
                 ),
@@ -354,7 +343,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              fontFamily: 'Poppins',
               color: Colors.black,
             ),
           ),
@@ -364,7 +352,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             style: TextStyle(
               fontSize: 12,
               color: Colors.black,
-              fontFamily: 'Poppins',
             ),
           ),
           const SizedBox(height: 16),
@@ -386,7 +373,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                         'Add your favorite interests',
                         style: TextStyle(
                           fontSize: 14,
-                          fontFamily: 'Poppins',
                           fontWeight: FontWeight.bold,
                           color: Colors.black,
                         ),
@@ -421,7 +407,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                             interest,
                             style: const TextStyle(
                               fontSize: 12,
-                              fontFamily: 'Poppins',
                               color: Colors.black,
                             ),
                           ),
@@ -464,7 +449,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              fontFamily: 'Poppins',
               color: Colors.black,
             ),
           ),
@@ -474,7 +458,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             style: TextStyle(
               fontSize: 12,
               color: Colors.black,
-              fontFamily: 'Poppins',
             ),
           ),
           const SizedBox(height: 16),
@@ -494,7 +477,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       'Add your causes and communities',
                       style: TextStyle(
                         fontSize: 14,
-                        fontFamily: 'Poppins',
                         fontWeight: FontWeight.bold,
                         color: Colors.black,
                       ),
@@ -521,7 +503,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              fontFamily: 'Poppins',
               color: Colors.black,
             ),
           ),
@@ -531,7 +512,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             style: TextStyle(
               fontSize: 12,
               color: Colors.black,
-              fontFamily: 'Poppins',
             ),
           ),
           const SizedBox(height: 16),
@@ -563,7 +543,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                           quality,
                           style: const TextStyle(
                             fontSize: 13,
-                            fontFamily: 'Poppins',
                             color: Colors.black,
                           ),
                         ),
@@ -599,7 +578,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              fontFamily: 'Poppins',
               color: Colors.black,
             ),
           ),
@@ -609,7 +587,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             style: TextStyle(
               fontSize: 12,
               color: Colors.black,
-              fontFamily: 'Poppins',
             ),
           ),
           const SizedBox(height: 16),
@@ -639,7 +616,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       'Add a prompt',
                       style: TextStyle(
                         fontSize: 14,
-                        fontFamily: 'Poppins',
                         fontWeight: FontWeight.bold,
                         color: Colors.black,
                       ),
@@ -666,7 +642,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              fontFamily: 'Poppins',
               color: Colors.black,
             ),
           ),
@@ -676,7 +651,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             style: TextStyle(
               fontSize: 12,
               color: Colors.black,
-              fontFamily: 'Poppins',
             ),
           ),
           const SizedBox(height: 16),
@@ -696,7 +670,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       'Whats your ideal first date?',
                       style: TextStyle(
                         fontSize: 14,
-                        fontFamily: 'Poppins',
                         fontWeight: FontWeight.bold,
                         color: Colors.black,
                       ),
@@ -723,7 +696,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              fontFamily: 'Poppins',
               color: Colors.black,
             ),
           ),
@@ -733,7 +705,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             style: TextStyle(
               fontSize: 12,
               color: Colors.black,
-              fontFamily: 'Poppins',
             ),
           ),
           const SizedBox(height: 16),
@@ -750,14 +721,12 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                 hintStyle: const TextStyle(
                   fontSize: 14,
                   color: Colors.grey,
-                  fontFamily: 'Poppins',
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
               style: const TextStyle(
-                fontFamily: 'Poppins',
                 color: Colors.black,
               ),
             ),
@@ -778,7 +747,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              fontFamily: 'Poppins',
               color: Colors.black,
             ),
           ),
@@ -887,7 +855,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              fontFamily: 'Poppins',
               color: Colors.black,
             ),
           ),
@@ -1064,7 +1031,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              fontFamily: 'Poppins',
               color: Colors.black,
             ),
           ),
@@ -1074,7 +1040,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             style: TextStyle(
               fontSize: 12,
               color: Colors.black,
-              fontFamily: 'Poppins',
             ),
           ),
           const SizedBox(height: 16),
@@ -1094,7 +1059,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       'Add your pronouns',
                       style: TextStyle(
                         fontSize: 14,
-                        fontFamily: 'Poppins',
                         fontWeight: FontWeight.bold,
                         color: Colors.black,
                       ),
@@ -1121,7 +1085,6 @@ Widget _buildLanguagesSection() {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            fontFamily: 'Poppins',
             color: Colors.black,
           ),
         ),
@@ -1170,7 +1133,6 @@ Widget _buildLanguagesSection() {
                           lang,
                           style: const TextStyle(
                             fontSize: 12,
-                            fontFamily: 'Poppins',
                             color: Colors.black,
                           ),
                         ),
@@ -1204,7 +1166,6 @@ Widget _buildLanguagesSection() {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              fontFamily: 'Poppins',
               color: Colors.black,
             ),
           ),
@@ -1214,7 +1175,6 @@ Widget _buildLanguagesSection() {
             style: TextStyle(
               fontSize: 12,
               color: Colors.black,
-              fontFamily: 'Poppins',
             ),
           ),
           const SizedBox(height: 16),
@@ -1237,7 +1197,6 @@ Widget _buildLanguagesSection() {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
-                          fontFamily: 'Poppins',
                           color: Colors.black,
                         ),
                       ),
@@ -1255,7 +1214,6 @@ Widget _buildLanguagesSection() {
                   style: TextStyle(
                     fontSize: 11,
                     color: Colors.black,
-                    fontFamily: 'Poppins',
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -1304,7 +1262,6 @@ Widget _buildLanguagesSection() {
                 title,
                 style: const TextStyle(
                   fontSize: 14,
-                  fontFamily: 'Poppins',
                   color: Colors.black,
                 ),
               ),
@@ -1314,7 +1271,6 @@ Widget _buildLanguagesSection() {
               style: const TextStyle(
                 fontSize: 14,
                 color: Colors.black,
-                fontFamily: 'Poppins',
               ),
             ),
             if (showArrow) ...[
@@ -1355,7 +1311,6 @@ Widget _buildLanguagesSection() {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          fontFamily: 'Poppins',
                           color: Colors.black,
                         ),
                       ),
@@ -1405,7 +1360,6 @@ Widget _buildLanguagesSection() {
                               interest,
                               style: TextStyle(
                                 fontSize: 13,
-                                fontFamily: 'Poppins',
                                 color: isSelected ? Colors.white : Colors.black,
                               ),
                             ),

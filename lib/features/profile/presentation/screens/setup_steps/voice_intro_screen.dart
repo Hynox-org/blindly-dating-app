@@ -12,6 +12,7 @@ import '../../../../auth/providers/auth_providers.dart';
 import '../../../../media/providers/media_provider.dart';
 import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
 import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
+import '../../../../../core/widgets/app_loader.dart';
 
 class VoiceIntroScreen extends ConsumerStatefulWidget {
   const VoiceIntroScreen({super.key});
@@ -485,9 +486,10 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                         ? SizedBox(
                             height: 24,
                             width: 24,
-                            child: CircularProgressIndicator(
+                            child: AppLoader(
                               strokeWidth: 2,
                               color: colorScheme.onPrimary,
+                              size: 24,
                             ),
                           )
                         : const Text(

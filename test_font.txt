@@ -1,0 +1,5 @@
+
+fontFamily: 'Poppins',
+  fontFamily: 'Poppins',
+fontFamily: 'Inter',
+fontFamily: 'Other',

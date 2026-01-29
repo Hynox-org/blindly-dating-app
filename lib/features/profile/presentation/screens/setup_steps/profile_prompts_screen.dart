@@ -8,6 +8,7 @@ import '../../../../onboarding/domain/models/profile_prompt_model.dart';
 import '../../../../auth/providers/auth_providers.dart';
 import '../../../../../core/utils/custom_popups.dart';
 import 'package:blindly_dating_app/features/onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
+import '../../../../../core/widgets/app_loader.dart';
 
 class ProfilePromptsScreen extends ConsumerStatefulWidget {
   const ProfilePromptsScreen({super.key});
@@ -313,8 +314,10 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
                       elevation: 0,
                     ),
                     child: _isLoading
-                        ? CircularProgressIndicator(
+                        ? AppLoader(
                             color: colorScheme.onPrimary,
+                            size: 24,
+                            strokeWidth: 2.5,
                           )
                         : Text(
                             'Continue',
@@ -389,7 +392,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
   }
 
   Widget _buildTemplateList(ThemeData theme) {
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
+    if (_isLoading) return const AppLoader();
     if (_error != null) return Center(child: Text(_error!));
     if (_categories.isEmpty) return const SizedBox();
 

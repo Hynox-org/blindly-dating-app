@@ -8,7 +8,8 @@ import '../providers/auth_providers.dart';
 import '../../onboarding/providers/onboarding_providers.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../onboarding/presentation/screens/onboarding_shell.dart';
-import '../../discovery/repository/discovery_repository.dart';
+// import '../../discovery/repository/discovery_repository.dart';
+import '../../../../core/widgets/app_loader.dart';
 
 enum AuthMethod { selection, phone, phoneOTP, email, emailOTP, apple }
 
@@ -94,6 +95,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
     });
   }
 
+  /*
   void _changeMethod(AuthMethod method) {
     setState(() {
       _currentMethod = method;
@@ -101,6 +103,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
       _inlineSuccess = null;
     });
   }
+  */
 
   void _clearOTPFields() {
     for (var controller in _otpControllers) {
@@ -521,7 +524,6 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
         title: Text(
           _getAppBarTitle(),
           style: TextStyle(
-            fontFamily: 'Poppins',
             fontSize: 24,
             fontWeight: FontWeight.bold,
             color: Theme.of(context).appBarTheme.foregroundColor,
@@ -580,7 +582,6 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             'Login to a Lovely life',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Poppins',
               fontSize: 26,
               fontWeight: FontWeight.bold,
               color: Theme.of(context).colorScheme.onSurface,
@@ -614,7 +615,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                       backgroundColor: WidgetStateProperty.all(
                         Theme.of(context).brightness == Brightness.dark
                             ? Colors.white.withOpacity(0.05)
-                            : Colors.white,
+                            : Theme.of(context).scaffoldBackgroundColor,
                       ),
                       overlayColor: WidgetStateProperty.resolveWith<Color?>((
                         Set<WidgetState> states,
@@ -637,7 +638,6 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     Text(
                       'Continue with Apple',
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         color: Theme.of(context).colorScheme.onSurface,
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -759,15 +759,10 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                       }),
                     ),
                 child: _isLoading
-                    ? SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
+                    ? AppLoader(
+                        size: 20,
+                        color: Theme.of(context).colorScheme.onSurface,
+                        strokeWidth: 2,
                       )
                     : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -781,7 +776,6 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                           Text(
                             'Continue with Google',
                             style: TextStyle(
-                              fontFamily: 'Poppins',
                               color: Theme.of(context).colorScheme.onSurface,
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
@@ -792,6 +786,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               ),
               SizedBox(height: 12),
 
+              /*
               // Email button
               ElevatedButton(
                 onPressed: () {
@@ -837,7 +832,6 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     Text(
                       'Continue with Email',
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         color: Theme.of(context).colorScheme.onSurface,
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -846,7 +840,9 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   ],
                 ),
               ),
+              */
 
+              /*
               if (!DiscoveryRepository.kDevMode) ...[
                 SizedBox(height: 12),
 
@@ -897,7 +893,6 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                       Text(
                         'Continue with Mobile number',
                         style: TextStyle(
-                          fontFamily: 'Poppins',
                           color: Theme.of(context).colorScheme.onPrimary,
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
@@ -907,7 +902,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   ),
                 ),
               ],
-
+              */
               SizedBox(height: 20),
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 10.0),
@@ -915,7 +910,6 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   textAlign: TextAlign.center,
                   text: TextSpan(
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontSize: 11,
                       color: Theme.of(
                         context,
@@ -965,7 +959,6 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
           Text(
             'We only use phone numbers to make sure everyone on Blindly is real',
             style: TextStyle(
-              fontFamily: 'Poppins',
               fontSize: 14,
               color: Theme.of(context).colorScheme.onSurface, // Pure black
               height: 1.4,
@@ -977,7 +970,6 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               Text(
                 'Country',
                 style: TextStyle(
-                  fontFamily: 'Poppins',
                   fontSize: 14,
                   height: 1.4,
                   color: Theme.of(context).colorScheme.onSurface,
@@ -987,7 +979,6 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               Text(
                 'Phone number',
                 style: TextStyle(
-                  fontFamily: 'Poppins',
                   fontSize: 14,
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
@@ -1013,15 +1004,12 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   showOnlyCountryWhenClosed: false,
                   padding: EdgeInsets.zero,
                   textStyle: TextStyle(
-                    fontFamily: 'Poppins',
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
                   dialogTextStyle: TextStyle(
-                    fontFamily: 'Poppins',
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
                   searchStyle: TextStyle(
-                    fontFamily: 'Poppins',
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
                   dialogBackgroundColor: Theme.of(context).colorScheme.surface,
@@ -1041,13 +1029,11 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     FilteringTextInputFormatter.digitsOnly, // Only allow digits
                   ],
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     color: Theme.of(context).colorScheme.onSurface,
                   ), // Dark grey text
                   decoration: InputDecoration(
                     hintText: 'e.g. 9876543210',
                     hintStyle: TextStyle(
-                      fontFamily: 'Poppins',
                       color: Theme.of(
                         context,
                       ).colorScheme.onSurface.withOpacity(0.5),
@@ -1081,7 +1067,6 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               textAlign: TextAlign.center,
               text: TextSpan(
                 style: TextStyle(
-                  fontFamily: 'Poppins',
                   fontSize: 11,
                   color: Theme.of(context).colorScheme.onSurface, // Pure black
                   height: 1.4,
@@ -1163,18 +1148,14 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   }),
                 ),
             child: _isLoading
-                ? SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      strokeWidth: 2,
-                    ),
+                ? AppLoader(
+                    strokeWidth: 2,
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    size: 20,
                   )
                 : Text(
                     'Continue',
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                       color: Theme.of(context).colorScheme.onPrimary,
@@ -1196,7 +1177,6 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
           RichText(
             text: TextSpan(
               style: TextStyle(
-                fontFamily: 'Poppins',
                 fontSize: 14,
                 color: Theme.of(context).colorScheme.onSurface, // Pure black
               ),
@@ -1212,7 +1192,6 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     child: Text(
                       'Change number',
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         decoration: TextDecoration.underline,
                         color: Theme.of(
                           context,
@@ -1240,7 +1219,6 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   keyboardType: TextInputType.number,
                   maxLength: 1,
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: Theme.of(context).colorScheme.onSurface,
@@ -1310,7 +1288,6 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                         ? 'Resend code'
                         : 'The code should arrive within ${_resendTimer}s',
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontSize: 14,
                       color: _canResend
                           ? Theme.of(context).colorScheme.primary
@@ -1386,18 +1363,10 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   }),
                 ),
             child: _isLoading
-                ? SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  )
+                ? AppLoader(strokeWidth: 2, color: Colors.white, size: 20)
                 : Text(
                     'Continue',
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                       color: Theme.of(context).colorScheme.onPrimary,
@@ -1419,7 +1388,6 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
           Text(
             'Please enter your login details below',
             style: TextStyle(
-              fontFamily: 'Poppins',
               fontSize: 14,
               color: Theme.of(context).colorScheme.onSurface, // Pure black
             ),
@@ -1428,7 +1396,6 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
           Text(
             'Email',
             style: TextStyle(
-              fontFamily: 'Poppins',
               fontSize: 14,
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
             ),
@@ -1443,14 +1410,10 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                 RegExp(r'\s'),
               ), // No spaces allowed
             ],
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
             decoration: InputDecoration(
               hintText: 'Abcd@gmail.com',
               hintStyle: TextStyle(
-                fontFamily: 'Poppins',
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
               ),
               border: OutlineInputBorder(
@@ -1484,7 +1447,6 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               textAlign: TextAlign.center,
               text: TextSpan(
                 style: TextStyle(
-                  fontFamily: 'Poppins',
                   fontSize: 11,
                   color: Theme.of(
                     context,
@@ -1557,18 +1519,14 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   }),
                 ),
             child: _isLoading
-                ? SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      strokeWidth: 2,
-                    ),
+                ? AppLoader(
+                    strokeWidth: 2,
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    size: 20,
                   )
                 : Text(
                     'Continue',
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                       color: Theme.of(context).colorScheme.onPrimary,
@@ -1590,7 +1548,6 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
           RichText(
             text: TextSpan(
               style: TextStyle(
-                fontFamily: 'Poppins',
                 fontSize: 14,
                 color: Theme.of(context).colorScheme.onSurface,
               ),
@@ -1606,7 +1563,6 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     child: Text(
                       'Change email',
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         decoration: TextDecoration.underline,
                         color: Theme.of(context).colorScheme.primary,
                         fontSize: 14,
@@ -1633,7 +1589,6 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   keyboardType: TextInputType.number,
                   maxLength: 1,
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: Theme.of(context).colorScheme.onSurface,
@@ -1703,7 +1658,6 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                         ? 'Resend code'
                         : 'The code should arrive within ${_resendTimer}s',
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontSize: 14,
                       color: _canResend
                           ? Theme.of(context).colorScheme.primary
@@ -1778,18 +1732,14 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   }),
                 ),
             child: _isLoading
-                ? SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      strokeWidth: 2,
-                    ),
+                ? AppLoader(
+                    strokeWidth: 2,
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    size: 20,
                   )
                 : Text(
                     'Continue',
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                       color: Theme.of(context).colorScheme.onPrimary,
@@ -1811,7 +1761,6 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
           Text(
             'Please enter your login details below',
             style: TextStyle(
-              fontFamily: 'Poppins',
               fontSize: 14,
               color: Theme.of(context).colorScheme.onSurface, // Pure black
             ),
@@ -1820,7 +1769,6 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
           Text(
             'Email',
             style: TextStyle(
-              fontFamily: 'Poppins',
               fontSize: 14,
               color: Theme.of(context).colorScheme.onSurface,
             ),
@@ -1830,10 +1778,8 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             onChanged: (_) => setState(() => _inlineError = null),
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
-            style: TextStyle(fontFamily: 'Poppins'),
             decoration: InputDecoration(
               hintText: 'Abcd@gmail.com',
-              hintStyle: TextStyle(fontFamily: 'Poppins'),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
@@ -1860,7 +1806,6 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
           Text(
             'Password',
             style: TextStyle(
-              fontFamily: 'Poppins',
               fontSize: 14,
               color: Theme.of(context).colorScheme.onSurface,
             ),
@@ -1870,10 +1815,8 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             onChanged: (_) => setState(() => _inlineError = null),
             controller: _passwordController,
             obscureText: _obscurePassword,
-            style: TextStyle(fontFamily: 'Poppins'),
             decoration: InputDecoration(
               hintText: 'abc@123',
-              hintStyle: TextStyle(fontFamily: 'Poppins'),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
@@ -1912,7 +1855,6 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               child: Text(
                 'Forgot your password?',
                 style: TextStyle(
-                  fontFamily: 'Poppins',
                   color: Theme.of(context).colorScheme.onSurface, // Pure black
                   fontWeight: FontWeight.w500,
                 ),
@@ -1926,7 +1868,6 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               textAlign: TextAlign.center,
               text: TextSpan(
                 style: TextStyle(
-                  fontFamily: 'Poppins',
                   fontSize: 11,
                   color: Theme.of(
                     context,
@@ -1999,18 +1940,14 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   }),
                 ),
             child: _isLoading
-                ? SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      strokeWidth: 2,
-                    ),
+                ? AppLoader(
+                    strokeWidth: 2,
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    size: 20,
                   )
                 : Text(
                     'Continue',
                     style: TextStyle(
-                      fontFamily: 'Poppins',
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                       color: Theme.of(context).colorScheme.onPrimary,

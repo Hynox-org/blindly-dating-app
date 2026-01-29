@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
 import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
+import '../../../../../core/widgets/app_loader.dart';
 
 class PermissionsScreen extends ConsumerStatefulWidget {
   const PermissionsScreen({super.key});
@@ -150,7 +151,7 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen>
         ref.read(onboardingProvider.notifier).completeStep('permissions');
       },
       child: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const AppLoader()
           : SingleChildScrollView(
               child: Column(
                 children: [

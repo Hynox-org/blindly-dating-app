@@ -5,6 +5,7 @@ import '../../../../auth/providers/auth_providers.dart';
 import '../../../../onboarding/data/repositories/onboarding_repository.dart';
 import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
 import '../../../../../core/utils/custom_popups.dart';
+import '../../../../../core/widgets/app_loader.dart';
 
 class BioEntryScreen extends ConsumerStatefulWidget {
   const BioEntryScreen({super.key});
@@ -178,9 +179,10 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
                     ? SizedBox(
                         height: 24,
                         width: 24,
-                        child: CircularProgressIndicator(
+                        child: AppLoader(
                           strokeWidth: 2,
                           color: colorScheme.onPrimary,
+                          size: 24,
                         ),
                       )
                     : const Text(

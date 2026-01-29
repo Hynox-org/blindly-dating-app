@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../features/profile/profile.dart';
 import '../../features/home/screens/home_screen.dart';
 import '../../features/match/liked_you_screen.dart';
@@ -30,52 +31,54 @@ class AppLayout extends StatelessWidget {
 
   // ✅ Centralized navigation logic
   void _handleNavigation(BuildContext context, int index) {
+    // Add haptic feedback
+    HapticFeedback.lightImpact();
+
+    if (index == selectedIndex) {
+      return; // Prevent navigation if already on the tab
+    }
+
+    Widget? page;
+
     if (index == 0) {
-      // Navigate to Profile
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const ProfileScreen()),
-        (route) => false,
-      );
+      page = const ProfileScreen();
     } else if (index == 1) {
-      // Navigate to Discover screen
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const DiscoverScreen()),
-        (route) => false,
-      );
+      page = const DiscoverScreen();
     } else if (index == 2) {
-      // Navigate to Home Screen (Peoples/Swipe)
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-        (route) => false,
-      );
+      page = const HomeScreen();
     } else if (index == 3) {
-      // Navigate to Liked You Screen
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const LikedYouScreen()),
-        (route) => false,
-      );
+      page = const LikedYouScreen();
     } else if (index == 4) {
-      // Navigate to Chat screen
+      page = ChatScreen();
+    }
+
+    if (page != null) {
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (context) => const ChatScreen()),
+        _createRoute(page),
         (route) => false,
       );
     }
   }
 
+  Route _createRoute(Widget page) {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionDuration: Duration.zero,
+      reverseTransitionDuration: Duration.zero,
+    );
+  }
+
   Widget _buildFooter(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(color: Colors.white),
+      decoration: const BoxDecoration(color: Colors.white),
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        // Keep SafeArea but remove padding to let InkWell hit edges
+        child: SizedBox(
+          height: 60, // Fixed height for consistency
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment:
+                CrossAxisAlignment.stretch, // Stretch children to fill height
             children: [
               _buildNavItem(
                 context: context,
@@ -135,28 +138,32 @@ class AppLayout extends StatelessWidget {
     final Color selectedColor = Theme.of(context).colorScheme.primary;
     final Color unselectedColor = Colors.grey;
 
-    return GestureDetector(
-      onTap: () => _handleNavigation(context, index),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            isSelected ? selectedIcon : unselectedIcon,
-            color: isSelected ? selectedColor : unselectedColor,
-            size: 28,
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _handleNavigation(context, index),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                isSelected ? selectedIcon : unselectedIcon,
+                color: isSelected ? selectedColor : unselectedColor,
+                size: 26,
+              ),
+              const SizedBox(height: 6),
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 200),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  color: isSelected ? selectedColor : unselectedColor,
+                ),
+                child: Text(label),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          AnimatedDefaultTextStyle(
-            duration: const Duration(milliseconds: 200),
-            style: TextStyle(
-              fontSize: 12,
-              fontFamily: 'Poppins',
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-              color: isSelected ? selectedColor : unselectedColor,
-            ),
-            child: Text(label),
-          ),
-        ],
+        ),
       ),
     );
   }

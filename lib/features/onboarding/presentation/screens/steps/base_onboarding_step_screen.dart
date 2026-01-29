@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../core/widgets/primary_button.dart';
 import '../../providers/onboarding_provider.dart';
 
 class BaseOnboardingStepScreen extends ConsumerWidget {
@@ -106,46 +107,13 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
 
                   // Continue Button
                   if (showNextButton && onNext != null)
-                    SizedBox(
-                      height: 56, // Fixed height for a more substantial look
-                      child: ElevatedButton(
-                        onPressed: (isNextEnabled && !isLoading)
-                            ? onNext
-                            : null,
-                        style: ElevatedButton.styleFrom(
-                          elevation: 0,
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.primary,
-                          foregroundColor: Theme.of(
-                            context,
-                          ).colorScheme.onPrimary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              30,
-                            ), // Pill shape for modern look
-                          ),
-                        ),
-                        child: isLoading
-                            ? SizedBox(
-                                height: 24,
-                                width: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onPrimary,
-                                ),
-                              )
-                            : Text(
-                                nextLabel,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                    if (showNextButton && onNext != null)
+                      PrimaryButton(
+                        text: nextLabel,
+                        onPressed: onNext,
+                        isLoading: isLoading,
+                        isEnabled: isNextEnabled,
                       ),
-                    ),
 
                   const SizedBox(height: 16),
 

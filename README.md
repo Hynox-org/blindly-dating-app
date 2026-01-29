@@ -19,3 +19,8 @@ samples, guidance on mobile development, and a full API reference.
 
 flutter run --dart-define=ENV=dev
 flutter run --dart-define=ENV=prod
+
+## Flutter build command
+
+flutter build apk --release --dart-define=ENV=dev
+flutter build apk --release --dart-define=ENV=prod

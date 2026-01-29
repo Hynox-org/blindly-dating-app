@@ -1,8 +1,5 @@
 import 'package:hive/hive.dart';
 
-// ⚠️ THIS LINE IS CRITICAL: It links the generated file
-part 'discovery_user_model.g.dart';
-
 @HiveType(typeId: 0) // Unique ID for this class
 class DiscoveryUser {
   @HiveField(0)
@@ -64,7 +61,7 @@ class DiscoveryUser {
       sharedInterestsCount: json['interest_match_count'] as int? ?? 0,
       sharedLifestyleCount: json['lifestyle_match_count'] as int? ?? 0,
       matchScore: json['match_score'] as int? ?? 0,
-      mediaUrl: json['image_url'] as String?,
+      mediaUrl: json['media_url'] as String?,
     );
   }
 }

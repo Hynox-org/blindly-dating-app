@@ -7,6 +7,7 @@ import '../../../../onboarding/domain/models/lifestyle_category_model.dart';
 import '../../../../auth/providers/auth_providers.dart';
 import '../../../../onboarding/presentation/widgets/selection_chip.dart';
 import '../../../../../core/utils/custom_popups.dart';
+import '../../../../../core/widgets/app_loader.dart';
 
 class LifestylePrefsScreen extends ConsumerStatefulWidget {
   const LifestylePrefsScreen({super.key});
@@ -176,7 +177,7 @@ class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
                   ),
                   const SizedBox(height: 20),
                   if (_isLoading && _categories.isEmpty)
-                    const Center(child: CircularProgressIndicator())
+                    const Center(child: AppLoader())
                   else if (_error != null)
                     Center(child: Text(_error!))
                   else if (_categories.isEmpty)
@@ -257,9 +258,10 @@ class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
                         ? SizedBox(
                             height: 24,
                             width: 24,
-                            child: CircularProgressIndicator(
+                            child: AppLoader(
                               strokeWidth: 2,
                               color: colorScheme.onPrimary,
+                              size: 24,
                             ),
                           )
                         : const Text(
