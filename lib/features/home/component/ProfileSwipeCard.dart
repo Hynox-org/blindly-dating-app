@@ -405,6 +405,10 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
       fallbackAsset = 'assets/defaults/women1.jpeg';
     }
 
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double scaleFactor =
+        screenWidth / 400; // Base scale for a ~400px wide screen
+
     return [
       isAsset
           ? Image.asset(
@@ -430,14 +434,14 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
       if (isFirstImage) ...[
         // Share arrow (top right)
         Positioned(
-          top: 16,
-          right: 16,
+          top: 16 * scaleFactor,
+          right: 16 * scaleFactor,
           child: ClipOval(
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
               child: Container(
-                width: 48,
-                height: 48,
+                width: 48 * scaleFactor,
+                height: 48 * scaleFactor,
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.25),
                   shape: BoxShape.circle,
@@ -446,7 +450,11 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                     width: 1,
                   ),
                 ),
-                child: const Icon(Icons.share, color: Colors.white, size: 24),
+                child: Icon(
+                  Icons.share,
+                  color: Colors.white,
+                  size: 24 * scaleFactor,
+                ),
               ),
             ),
           ),
@@ -457,7 +465,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
           left: 0,
           right: 0,
           child: Container(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(20 * scaleFactor),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
@@ -472,70 +480,78 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    verifiedTag("Profile Verified", Colors.blue),
-                    const SizedBox(height: 6),
-                    verifiedTag("Photo Verified", Colors.black),
+                    verifiedTag("Profile Verified", Colors.blue, scaleFactor),
+                    SizedBox(height: 6 * scaleFactor),
+                    verifiedTag("Photo Verified", Colors.black, scaleFactor),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12 * scaleFactor),
                 // Name
                 Text(
                   "${widget.profile.name}, ${widget.profile.age}",
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 28,
+                    fontSize: 28 * scaleFactor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10 * scaleFactor),
                 // Job + Distance
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(
+                    Row(
                       children: [
-                        Icon(Icons.work_outline, color: Colors.white, size: 16),
-                        SizedBox(width: 6),
+                        Icon(
+                          Icons.work_outline,
+                          color: Colors.white,
+                          size: 16 * scaleFactor,
+                        ),
+                        SizedBox(width: 6 * scaleFactor),
                         Text(
                           "UI/UX Designer",
-                          style: TextStyle(color: Colors.white, fontSize: 13),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13 * scaleFactor,
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: 6 * scaleFactor),
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.location_on,
                           color: Colors.white,
-                          size: 16,
+                          size: 16 * scaleFactor,
                         ),
-                        const SizedBox(width: 6),
+                        SizedBox(width: 6 * scaleFactor),
                         Text(
                           "${widget.profile.distance.toStringAsFixed(1)} miles away",
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
-                            fontSize: 13,
+                            fontSize: 13 * scaleFactor,
                           ),
                         ),
                       ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 22),
+                SizedBox(height: 22 * scaleFactor),
                 // Gold buttons + scores
                 Row(
                   children: [
-                    goldButton(loveChatIcon()),
+                    goldButton(loveChatIcon(scaleFactor), scaleFactor),
                     const Spacer(),
-                    scoreBox(),
+                    scoreBox(scaleFactor),
                     const Spacer(),
                     goldButton(
-                      const Icon(
+                      Icon(
                         Icons.star,
-                        color: Color(0xFFD4AF37),
-                        size: 28,
+                        color: const Color(0xFFD4AF37),
+                        size: 28 * scaleFactor,
                       ),
+                      scaleFactor,
                     ),
                   ],
                 ),
@@ -547,23 +563,30 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
     ];
   }
 
-  Widget verifiedTag(String text, Color bg) {
+  Widget verifiedTag(String text, Color bg, double scaleFactor) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: EdgeInsets.symmetric(
+        horizontal: 12 * scaleFactor,
+        vertical: 6 * scaleFactor,
+      ),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20 * scaleFactor),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.verified_user, size: 18, color: Colors.white),
-          const SizedBox(width: 6),
+          Icon(
+            Icons.verified_user,
+            size: 18 * scaleFactor,
+            color: Colors.white,
+          ),
+          SizedBox(width: 6 * scaleFactor),
           Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
-              fontSize: 12,
+              fontSize: 12 * scaleFactor,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -572,18 +595,18 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
     );
   }
 
-  Widget goldButton(Widget icon) {
+  Widget goldButton(Widget icon, double scaleFactor) {
     return Container(
-      height: 58,
-      width: 58,
+      height: 58 * scaleFactor,
+      width: 58 * scaleFactor,
       decoration: BoxDecoration(
         color: const Color(0xFF414833),
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.4),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            blurRadius: 8 * scaleFactor,
+            offset: Offset(0, 4 * scaleFactor),
           ),
         ],
       ),
@@ -591,49 +614,61 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
     );
   }
 
-  Widget scoreBox() {
+  Widget scoreBox(double scaleFactor) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+      padding: EdgeInsets.symmetric(
+        horizontal: 18 * scaleFactor,
+        vertical: 10 * scaleFactor,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(22 * scaleFactor),
       ),
-      child: const Column(
+      child: Column(
         children: [
           Text(
             "Compatibility Score: 70%",
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              fontSize: 12 * scaleFactor,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          SizedBox(height: 4),
+          SizedBox(height: 4 * scaleFactor),
           Text(
             "Trust Score: 70%",
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              fontSize: 12 * scaleFactor,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget loveChatIcon() {
+  Widget loveChatIcon(double scaleFactor) {
     return Container(
-      width: 52,
-      height: 52,
+      width: 52 * scaleFactor,
+      height: 52 * scaleFactor,
       decoration: const BoxDecoration(
         shape: BoxShape.circle,
         color: Color.fromRGBO(65, 72, 51, 1),
       ),
       child: Stack(
         alignment: Alignment.center,
-        children: const [
-          Icon(Icons.circle_outlined, color: Color(0xFFD4AF37), size: 44),
-          // Icon(
-          //   Icons.chat_bubble_outline,
-          //   color: Color(0xFFD4AF37),
-          //   size: 28,
-          // ),
+        children: [
+          Icon(
+            Icons.circle_outlined,
+            color: const Color(0xFFD4AF37),
+            size: 44 * scaleFactor,
+          ),
           Positioned(
-            top: 18,
-            child: Icon(Icons.favorite, color: Color(0xFFD4AF37), size: 14),
+            top: 18 * scaleFactor,
+            child: Icon(
+              Icons.favorite,
+              color: const Color(0xFFD4AF37),
+              size: 14 * scaleFactor,
+            ),
           ),
         ],
       ),
