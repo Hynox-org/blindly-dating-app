@@ -214,6 +214,11 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
 
       if (profileId == null) throw Exception('Profile not found');
 
+      // Resolve profile_mode_id for 'date' mode
+      final profileModeId = await mediaRepo.getProfileModeId(profileId, 'date');
+      if (profileModeId == null)
+        throw Exception('Profile mode record not found');
+
       // 1. Upload File
       final file = File(_recordedFilePath!);
       // returns filePath (e.g. userId/uuid.m4a)
@@ -221,18 +226,17 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
 
       // 2. Save Metadata
       final mediaData = {
-        'profile_id': profileId,
+        'profile_mode_id': profileModeId,
         'media_url': mediaPath, // Save PATH
         'media_type': 'voice_intro',
-        'display_order': 0,
+        'display_order': 99, // Avoid conflict with photos (which use 0-5)
         'is_primary': false,
-        'file_size_bytes': await file.length(),
         'duration_seconds': _currentTimerSeconds,
         'moderation_status': 'pending',
       };
 
       // 3. Cleanup old entries for this user (enforce 1 voice limit)
-      await mediaRepo.deleteUserVoiceIntro(profileId);
+      await mediaRepo.deleteUserVoiceIntro(profileModeId);
 
       // 4. Save new entry
       await mediaRepo.saveMedia([mediaData]);

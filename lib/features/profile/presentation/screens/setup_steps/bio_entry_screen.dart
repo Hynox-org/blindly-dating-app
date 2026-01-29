@@ -30,12 +30,12 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
   Future<void> _fetchExistingData() async {
     final user = ref.read(authRepositoryProvider).currentUser;
     if (user != null) {
-      final profile = await ref
+      final bio = await ref
           .read(onboardingRepositoryProvider)
-          .getProfileRaw(user.id);
-      if (profile != null && profile['bio'] != null) {
+          .getUserBio(user.id);
+      if (bio != null) {
         setState(() {
-          _controller.text = profile['bio'];
+          _controller.text = bio;
         });
       }
     }
@@ -58,10 +58,7 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
     try {
       final user = ref.read(authRepositoryProvider).currentUser;
       if (user != null) {
-        await ref.read(onboardingRepositoryProvider).updateProfileData(
-          user.id,
-          {'bio': bio},
-        );
+        await ref.read(onboardingRepositoryProvider).saveBio(user.id, bio);
       }
       if (mounted) {
         ref.read(onboardingProvider.notifier).completeStep('bio_entry');

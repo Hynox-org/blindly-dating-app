@@ -2,17 +2,18 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../features/discovery/repository/discovery_repository.dart';
 import '../domain/models/discovery_user_model.dart';
+import '../../../core/providers/connection_mode_provider.dart';
 
 // ======================================================
 // 1. THE STATE
 // ======================================================
 class DiscoveryState {
-  final List<DiscoveryUser> mainDeck;     // All fetched profiles (Cumulative)
-  final List<DiscoveryUser> historyDeck;  // Track swiped profiles for DB Undo
-  final bool isLoading;                   
+  final List<DiscoveryUser> mainDeck; // All fetched profiles (Cumulative)
+  final List<DiscoveryUser> historyDeck; // Track swiped profiles for DB Undo
+  final bool isLoading;
   final bool isFetchingMore;
   // ✅ NEW: Tracks if the DB has run out of profiles completely
-  final bool isDeckExhausted; 
+  final bool isDeckExhausted;
 
   DiscoveryState({
     required this.mainDeck,
@@ -44,12 +45,13 @@ class DiscoveryState {
 // ======================================================
 class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
   final DiscoveryRepository _repository;
+  final String _currentMode;
 
   static const int _pageSize = 20;
-  static const int _prefetchThreshold = 5; 
+  static const int _prefetchThreshold = 5;
 
-  DiscoveryFeedNotifier(this._repository)
-      : super(DiscoveryState(mainDeck: [])) {
+  DiscoveryFeedNotifier(this._repository, this._currentMode)
+    : super(DiscoveryState(mainDeck: [])) {
     refreshFeed();
   }
 
@@ -59,12 +61,12 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
   Future<void> refreshFeed() async {
     // Reset exhaustion flag on refresh
     state = state.copyWith(
-      isLoading: true, 
-      mainDeck: [], 
+      isLoading: true,
+      mainDeck: [],
       historyDeck: [],
-      isDeckExhausted: false, 
+      isDeckExhausted: false,
     );
-    
+
     await _loadBatch();
     state = state.copyWith(isLoading: false);
   }
@@ -74,7 +76,7 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
   // --------------------------------------------------
   void consumeCard(DiscoveryUser user, int currentIndex) {
     final newHistoryDeck = List<DiscoveryUser>.from(state.historyDeck);
-    newHistoryDeck.add(user); 
+    newHistoryDeck.add(user);
     if (newHistoryDeck.length > 50) newHistoryDeck.removeAt(0);
 
     // Check Threshold & Fetch
@@ -91,10 +93,10 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
   // --------------------------------------------------
   // This helper function is cleaner for the UI to call
   void addToHistory(DiscoveryUser user) {
-     final newHistoryDeck = List<DiscoveryUser>.from(state.historyDeck);
-     newHistoryDeck.add(user);
-     if (newHistoryDeck.length > 50) newHistoryDeck.removeAt(0);
-     state = state.copyWith(historyDeck: newHistoryDeck);
+    final newHistoryDeck = List<DiscoveryUser>.from(state.historyDeck);
+    newHistoryDeck.add(user);
+    if (newHistoryDeck.length > 50) newHistoryDeck.removeAt(0);
+    state = state.copyWith(historyDeck: newHistoryDeck);
   }
 
   // --------------------------------------------------
@@ -110,15 +112,6 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
   }
 
   // --------------------------------------------------
-  // 🔄 MODE CHANGE
-  // --------------------------------------------------
-  Future<void> changeDiscoveryMode(String uiMode) async {
-    final String dbMode = uiMode.toLowerCase() == 'date' ? 'dating' : 'bff';
-    await _repository.updateDiscoveryMode(dbMode);
-    await refreshFeed();
-  }
-
-  // --------------------------------------------------
   // 📥 INTERNAL: FETCH & DEDUPLICATE
   // --------------------------------------------------
   Future<bool> _loadBatch() async {
@@ -128,14 +121,15 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
 
     try {
       final newCandidates = await _repository.getDiscoveryFeed(
-        limit: _pageSize, 
-        offset: 0 
+        mode: _currentMode,
+        limit: _pageSize,
+        offset: 0,
       );
 
       // Deduplicate against existing decks
       final currentIds = {
         ...state.mainDeck.map((u) => u.profileId),
-        ...state.historyDeck.map((u) => u.profileId)
+        ...state.historyDeck.map((u) => u.profileId),
       };
 
       final uniqueUsers = newCandidates
@@ -147,15 +141,14 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
           mainDeck: [...state.mainDeck, ...uniqueUsers],
           isFetchingMore: false,
         );
-        debugPrint("✅ Added ${uniqueUsers.length} profiles. Total: ${state.mainDeck.length}");
+        debugPrint(
+          "✅ Added ${uniqueUsers.length} profiles. Total: ${state.mainDeck.length}",
+        );
         return true;
       } else {
         // ✅ EMPTY BATCH: Mark deck as exhausted so UI knows to show "No More Profiles"
         debugPrint("🏁 No more profiles found in DB.");
-        state = state.copyWith(
-          isFetchingMore: false,
-          isDeckExhausted: true, 
-        );
+        state = state.copyWith(isFetchingMore: false, isDeckExhausted: true);
         return false;
       }
     } catch (e) {
@@ -168,6 +161,11 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
 
 final discoveryFeedProvider =
     StateNotifierProvider<DiscoveryFeedNotifier, DiscoveryState>((ref) {
-  final repository = ref.watch(discoveryRepositoryProvider);
-  return DiscoveryFeedNotifier(repository);
-});
+      final repository = ref.watch(discoveryRepositoryProvider);
+      // Import missing provider if needed, assuming it is available in context or needs import
+      // But wait, connection_mode_provider might not be imported here.
+      // I need to add the import. But replace_file_content replaces a block.
+      // I will check imports first.
+      final currentMode = ref.watch(connectionModeProvider);
+      return DiscoveryFeedNotifier(repository, currentMode);
+    });

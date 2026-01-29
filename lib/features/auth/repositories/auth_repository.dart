@@ -179,13 +179,28 @@ class AuthRepository {
     await _client.auth.signOut();
   }
 
-  /// Creates a profile for the user.
+  /// Creates a profile for the user and initializes default 'date' mode.
   Future<void> createProfile(String userId) async {
     try {
-      await _client.from('profiles').upsert({
-        'user_id': userId,
-      }, onConflict: 'user_id');
-      AppLogger.info('AUTH_REPO: Profile created/updated for user: $userId');
+      // 1. Ensure Profile exists
+      final profileResponse = await _client
+          .from('profiles')
+          .upsert({'user_id': userId}, onConflict: 'user_id')
+          .select('id')
+          .single();
+
+      final profileId = profileResponse['id'] as String;
+
+      // 2. Initialize default 'date' mode
+      await _client.from('profile_modes').upsert({
+        'profile_id': profileId,
+        'mode': 'date',
+        'is_active': true,
+      }, onConflict: 'profile_id, mode');
+
+      AppLogger.info(
+        'AUTH_REPO: Profile and default Mode created/updated for user: $userId',
+      );
     } catch (e, stackTrace) {
       AppLogger.error('AUTH_REPO: Failed to create profile', e, stackTrace);
       throw Exception('Failed to create profile: $e');

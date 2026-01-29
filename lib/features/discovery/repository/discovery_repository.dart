@@ -32,20 +32,6 @@ class DiscoveryRepository {
   // --------------------------------------------------
   // 🔁 UPDATE DISCOVERY MODE (dating / bff)
   // --------------------------------------------------
-  Future<void> updateDiscoveryMode(String mode) async {
-    final user = _supabase.auth.currentUser;
-    if (user == null) {
-      throw Exception('User not logged in');
-    }
-
-    final response = await _supabase
-        .from('profiles')
-        .update({'discovery_mode': mode})
-        .eq('user_id', user.id)
-        .select(); // 👈 FORCE RESPONSE
-
-    debugPrint('✅ discovery_mode update response: $response');
-  }
 
   // --------------------------------------------------
   // 🔥 MAIN DISCOVERY FEED
@@ -57,6 +43,7 @@ class DiscoveryRepository {
   /// - swipe filtering is handled inside SQL
   ///
   Future<List<DiscoveryUser>> getDiscoveryFeed({
+    required String mode,
     int radius = 5000, // meters
     int limit = 20,
     int offset = 0,
@@ -72,6 +59,7 @@ class DiscoveryRepository {
       // --------------------------------------------------
       debugPrint('🚀 DISCOVERY RPC CALL');
       debugPrint('USER ID : ${authUser.id}');
+      debugPrint('MODE    : $mode');
       debugPrint('LIMIT   : $limit');
       debugPrint('OFFSET  : $offset');
       debugPrint('RADIUS  : ${kDevMode ? _devRadiusMeters : radius}');
@@ -83,8 +71,9 @@ class DiscoveryRepository {
       // --------------------------------------------------
       final List<dynamic> response =
           (await _supabase.rpc(
-            'get_discovery_feed_final',
+            'get_discovery_feed_v2',
             params: {
+              'p_mode': mode.toLowerCase(),
               'p_radius_meters': effectiveRadius,
               'p_limit': limit,
               'p_offset': offset,

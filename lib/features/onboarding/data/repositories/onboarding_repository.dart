@@ -17,6 +17,34 @@ class OnboardingRepository {
 
   OnboardingRepository(this._supabase);
 
+  // --- Profile Mode Helpers ---
+
+  Future<String> getOrUpdateProfileModeId(String userId, String mode) async {
+    final profile = await getProfileRaw(userId);
+    if (profile == null) throw Exception('Profile not found for $userId');
+    final profileId = profile['id'] as String;
+
+    final response = await _supabase
+        .from('profile_modes')
+        .select('id')
+        .eq('profile_id', profileId)
+        .eq('mode', mode)
+        .maybeSingle();
+
+    if (response != null) {
+      return response['id'] as String;
+    }
+
+    // Fallback: Create if missing (should be handled by AuthRepo, but for safety)
+    final createResponse = await _supabase
+        .from('profile_modes')
+        .insert({'profile_id': profileId, 'mode': mode, 'is_active': true})
+        .select('id')
+        .single();
+
+    return createResponse['id'] as String;
+  }
+
   // ... [Existing Step Configuration Methods remain unchanged] ...
 
   Future<OnboardingStep?> getStepConfig(String stepKey) async {
@@ -197,16 +225,25 @@ class OnboardingRepository {
     }
   }
 
-  // ✅ UPDATED: Save directly to profiles table (Array Column)
+  // ✅ UPDATED: Save to profile_mode_interestchips (Multi-mode Schema)
   Future<void> saveUserInterests(String userId, List<String> chipIds) async {
     try {
+      final profileModeId = await getOrUpdateProfileModeId(userId, 'date');
+
+      // 1. Delete existing
       await _supabase
-          .from('profiles')
-          .update({
-            'selected_interest_ids': chipIds, // Stores list of UUIDs
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .eq('user_id', userId);
+          .from('profile_mode_interestchips')
+          .delete()
+          .eq('profile_mode_id', profileModeId);
+
+      // 2. Insert new
+      if (chipIds.isNotEmpty) {
+        final data = chipIds
+            .map((id) => {'profile_mode_id': profileModeId, 'chip_id': id})
+            .toList();
+
+        await _supabase.from('profile_mode_interestchips').insert(data);
+      }
     } catch (e) {
       AppLogger.info('Error saving interests: $e');
       throw Exception('Failed to save interests: $e');
@@ -246,19 +283,28 @@ class OnboardingRepository {
     }
   }
 
-  // ✅ UPDATED: Save directly to profiles table (Array Column)
+  // ✅ UPDATED: Save to profile_mode_lifestylechips (Multi-mode Schema)
   Future<void> saveLifestylePreferences(
     String userId,
     List<String> chipIds,
   ) async {
     try {
+      final profileModeId = await getOrUpdateProfileModeId(userId, 'date');
+
+      // 1. Delete existing
       await _supabase
-          .from('profiles')
-          .update({
-            'selected_lifestyle_ids': chipIds, // Stores list of UUIDs
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .eq('user_id', userId);
+          .from('profile_mode_lifestylechips')
+          .delete()
+          .eq('profile_mode_id', profileModeId);
+
+      // 2. Insert new
+      if (chipIds.isNotEmpty) {
+        final data = chipIds
+            .map((id) => {'profile_mode_id': profileModeId, 'chip_id': id})
+            .toList();
+
+        await _supabase.from('profile_mode_lifestylechips').insert(data);
+      }
     } catch (e) {
       AppLogger.info('Error saving lifestyle preferences: $e');
       throw Exception('Failed to save lifestyle preferences: $e');
@@ -301,74 +347,59 @@ class OnboardingRepository {
     String userId,
     List<ProfilePrompt> prompts,
   ) async {
-    final profileResponse = await _supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-    if (profileResponse == null) {
-      throw Exception('Profile not found for user $userId');
-    }
-
-    final profileId = profileResponse['id'] as String;
+    final profileModeId = await getOrUpdateProfileModeId(userId, 'date');
 
     await _supabase
-        .from('profile_prompts')
+        .from('profile_mode_prompts')
         .delete()
-        .eq('profile_id', profileId);
+        .eq('profile_mode_id', profileModeId);
 
     if (prompts.isNotEmpty) {
       final data = prompts.map((p) {
         return {
-          'profile_id': profileId,
+          'profile_mode_id': profileModeId,
           'prompt_template_id': p.promptTemplateId,
           'user_response': p.userResponse,
-          'prompt_display_order': p.promptDisplayOrder,
+          'display_order': p
+              .promptDisplayOrder, // Column name changed to display_order in new schema
           'created_at': DateTime.now().toIso8601String(),
         };
       }).toList();
 
-      await _supabase.from('profile_prompts').insert(data);
+      await _supabase.from('profile_mode_prompts').insert(data);
     }
   }
 
   // --- Fetch User Selections methods for Bidirectional Navigation ---
 
-  // ✅ UPDATED: Fetch from profiles table (Array Column)
+  // ✅ UPDATED: Fetch from profile_mode_interestchips
   Future<List<String>> getUserInterestChips(String userId) async {
     try {
+      final profileModeId = await getOrUpdateProfileModeId(userId, 'date');
+
       final response = await _supabase
-          .from('profiles')
-          .select('selected_interest_ids')
-          .eq('user_id', userId)
-          .maybeSingle();
+          .from('profile_mode_interestchips')
+          .select('chip_id')
+          .eq('profile_mode_id', profileModeId);
 
-      if (response == null || response['selected_interest_ids'] == null) {
-        return [];
-      }
-
-      return List<String>.from(response['selected_interest_ids']);
+      return (response as List).map((e) => e['chip_id'] as String).toList();
     } catch (e) {
       AppLogger.info('Error fetching user interest chips: $e');
       return [];
     }
   }
 
-  // ✅ UPDATED: Fetch from profiles table (Array Column)
+  // ✅ UPDATED: Fetch from profile_mode_lifestylechips
   Future<List<String>> getUserLifestyleChips(String userId) async {
     try {
+      final profileModeId = await getOrUpdateProfileModeId(userId, 'date');
+
       final response = await _supabase
-          .from('profiles')
-          .select('selected_lifestyle_ids')
-          .eq('user_id', userId)
-          .maybeSingle();
+          .from('profile_mode_lifestylechips')
+          .select('chip_id')
+          .eq('profile_mode_id', profileModeId);
 
-      if (response == null || response['selected_lifestyle_ids'] == null) {
-        return [];
-      }
-
-      return List<String>.from(response['selected_lifestyle_ids']);
+      return (response as List).map((e) => e['chip_id'] as String).toList();
     } catch (e) {
       AppLogger.info('Error fetching user lifestyle chips: $e');
       return [];
@@ -377,19 +408,119 @@ class OnboardingRepository {
 
   Future<List<ProfilePrompt>> getUserProfilePrompts(String userId) async {
     try {
-      final profile = await getProfileRaw(userId);
-      if (profile == null) return [];
-      final profileId = profile['id'];
+      final profileModeId = await getOrUpdateProfileModeId(userId, 'date');
 
       final response = await _supabase
-          .from('profile_prompts')
+          .from('profile_mode_prompts')
           .select()
-          .eq('profile_id', profileId)
-          .order('prompt_display_order');
+          .eq('profile_mode_id', profileModeId)
+          .order('display_order');
 
-      return (response as List).map((e) => ProfilePrompt.fromJson(e)).toList();
+      return (response as List).map((e) {
+        // Map display_order back to prompt_display_order for the model if needed,
+        // or update model to use display_order. Assuming model needs previous name for now.
+        final map = Map<String, dynamic>.from(e);
+        map['prompt_display_order'] = e['display_order'];
+        return ProfilePrompt.fromJson(map);
+      }).toList();
     } catch (e) {
       AppLogger.info('Error fetching user profile prompts: $e');
+      return [];
+    }
+  }
+
+  // --- Bio Methods ---
+
+  Future<void> saveBio(
+    String userId,
+    String bio, {
+    String mode = 'date',
+  }) async {
+    try {
+      final profileModeId = await getOrUpdateProfileModeId(userId, mode);
+
+      await _supabase
+          .from('profile_modes')
+          .update({'bio': bio, 'updated_at': DateTime.now().toIso8601String()})
+          .eq('id', profileModeId);
+    } catch (e) {
+      AppLogger.info('Error saving bio: $e');
+      throw Exception('Failed to save bio: $e');
+    }
+  }
+
+  Future<String?> getUserBio(String userId, {String mode = 'date'}) async {
+    try {
+      final profileIdResponse = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+      if (profileIdResponse == null) return null;
+      final profileId = profileIdResponse['id'];
+
+      final response = await _supabase
+          .from('profile_modes')
+          .select('bio')
+          .eq('profile_id', profileId)
+          .eq('mode', mode)
+          .maybeSingle();
+
+      return response?['bio'] as String?;
+    } catch (e) {
+      AppLogger.info('Error fetching user bio: $e');
+      return null;
+    }
+  }
+
+  // --- Language Methods ---
+
+  Future<void> saveUserLanguages(
+    String userId,
+    List<String> languageCodes,
+  ) async {
+    try {
+      final profile = await getProfileRaw(userId);
+      if (profile == null) throw Exception('Profile not found for $userId');
+      final profileId = profile['id'] as String;
+
+      // 1. Delete existing
+      await _supabase
+          .from('profile_languages')
+          .delete()
+          .eq('profile_id', profileId);
+
+      // 2. Insert new
+      if (languageCodes.isNotEmpty) {
+        final data = languageCodes
+            .map((code) => {'profile_id': profileId, 'language_code': code})
+            .toList();
+
+        await _supabase.from('profile_languages').insert(data);
+      }
+    } catch (e) {
+      AppLogger.info('Error saving languages: $e');
+      throw Exception('Failed to save languages: $e');
+    }
+  }
+
+  Future<List<String>> getUserLanguages(String userId) async {
+    try {
+      final profile = await getProfileRaw(userId);
+      if (profile == null) return [];
+      final profileId = profile['id'] as String;
+
+      final response = await _supabase
+          .from('profile_languages')
+          .select('language_code')
+          .eq('profile_id', profileId);
+
+      return (response as List)
+          .map((e) => e['language_code'] as String)
+          .toList();
+    } catch (e) {
+      AppLogger.info('Error fetching user languages: $e');
       return [];
     }
   }

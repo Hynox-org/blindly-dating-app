@@ -85,6 +85,19 @@ class VerificationRepository {
       }
       final String profileId = profileResponse['id'];
 
+      // 1b. Get Profile Mode ID (defaulting to 'date' for onboarding verification)
+      final modeResponse = await _supabase
+          .from('profile_modes')
+          .select('id')
+          .eq('profile_id', profileId)
+          .eq('mode', 'date')
+          .maybeSingle();
+
+      if (modeResponse == null) {
+        throw Exception('Profile mode record not found for user: $userId');
+      }
+      final String profileModeId = modeResponse['id'];
+
       // 2. Insert into 'verifications' table
       final verificationData = {
         'profile_id': profileId,
@@ -98,11 +111,11 @@ class VerificationRepository {
 
       await _supabase.from('verifications').insert(verificationData);
 
-      // 3. Calculate next display_order for user_media
+      // 3. Calculate next display_order for profile_mode_media
       final countResponse = await _supabase
-          .from('user_media')
+          .from('profile_mode_media')
           .select('display_order')
-          .eq('profile_id', profileId)
+          .eq('profile_mode_id', profileModeId)
           .order('display_order', ascending: false)
           .limit(1)
           .maybeSingle();
@@ -112,15 +125,14 @@ class VerificationRepository {
         nextOrder = (countResponse['display_order'] as int) + 1;
       }
 
-      // 4. Insert into 'user_media' table
-      await _supabase.from('user_media').insert({
-        'profile_id': profileId,
+      // 4. Insert into 'profile_mode_media' table
+      await _supabase.from('profile_mode_media').insert({
+        'profile_mode_id': profileModeId,
         'media_url': mediaStoragePath,
         'media_type': 'photo',
         'display_order': nextOrder,
         'is_primary': false,
         'moderation_status': 'pending',
-        'file_size_bytes': 0, // We could get this from File object if passed
       });
     } catch (e) {
       throw Exception('Failed to create verification request: $e');
