@@ -112,6 +112,35 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
   }
 
   // --------------------------------------------------
+  // 👍 ACTION: LIKE
+  // --------------------------------------------------
+  Future<void> likeUser(DiscoveryUser user, int currentIndex) async {
+    // 1. Optimistic UI update
+    consumeCard(user, currentIndex);
+    // 2. Fire & Forget DB update
+    _repository
+        .swipeUser(targetUserId: user.profileId, isLike: true)
+        .catchError((e) {
+          // If critical, we could undo, but usually we just log
+          debugPrint("Background Like Failed: $e");
+        });
+  }
+
+  // --------------------------------------------------
+  // 👎 ACTION: PASS
+  // --------------------------------------------------
+  Future<void> passUser(DiscoveryUser user, int currentIndex) async {
+    // 1. Optimistic UI update
+    consumeCard(user, currentIndex);
+    // 2. Fire & Forget DB update
+    _repository
+        .swipeUser(targetUserId: user.profileId, isLike: false)
+        .catchError((e) {
+          debugPrint("Background Pass Failed: $e");
+        });
+  }
+
+  // --------------------------------------------------
   // 📥 INTERNAL: FETCH & DEDUPLICATE
   // --------------------------------------------------
   Future<bool> _loadBatch() async {

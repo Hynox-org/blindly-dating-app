@@ -45,6 +45,7 @@ class _TermsScreenState extends ConsumerState<TermsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('📜 TermsScreen: BUILD');
     return BaseOnboardingStepScreen(
       title: 'Community guidelines',
       nextLabel: 'Agree & Continue',

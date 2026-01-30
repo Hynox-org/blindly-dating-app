@@ -86,7 +86,23 @@ class OnboardingRepository {
           .select()
           .order('step_position', ascending: true);
 
-      return (response as List).map((e) => OnboardingStep.fromJson(e)).toList();
+      final List<dynamic> data = response as List;
+      final List<OnboardingStep> steps = [];
+
+      for (var item in data) {
+        try {
+          AppLogger.info('DEBUG: Parsing step raw: $item');
+          final step = OnboardingStep.fromJson(item);
+          steps.add(step);
+          AppLogger.info('DEBUG: Parsed step successfully: ${step.stepKey}');
+        } catch (e) {
+          AppLogger.info('ERROR parsing onboarding step: $item, Error: $e');
+        }
+      }
+      AppLogger.info(
+        'Fetched ${steps.length} valid steps from DB out of ${data.length}',
+      );
+      return steps;
     } catch (e) {
       AppLogger.info('Error fetching all steps: $e');
       return [];
@@ -189,11 +205,23 @@ class OnboardingRepository {
           : {};
 
       if (status == 'complete') {
-        if (stepsProgress.isEmpty) {
-          AppLogger.info(
-            'Integrity Check Failed: Status is Complete but Progress is Empty. Reverting to in_progress.',
-          );
+        // STRICT CHECK: Ensure ALL known steps are present in progress map
+        final allSteps = await getAllSteps();
 
+        bool hasMissingSteps = false;
+        for (final step in allSteps) {
+          final s = stepsProgress[step.stepKey];
+          if (s != 'completed' && s != 'skipped') {
+            hasMissingSteps = true;
+            AppLogger.info(
+              'Strict Check: Step ${step.stepKey} is missing/incomplete. Revoking complete status.',
+            );
+            break;
+          }
+        }
+
+        if (hasMissingSteps || stepsProgress.isEmpty) {
+          // Revert status to in_progress so SplashScreen sends them to OnboardingShell
           await _supabase
               .from('profiles')
               .update({'onboarding_status': 'in_progress'})
@@ -226,9 +254,13 @@ class OnboardingRepository {
   }
 
   // ✅ UPDATED: Save to profile_mode_interestchips (Multi-mode Schema)
-  Future<void> saveUserInterests(String userId, List<String> chipIds) async {
+  Future<void> saveUserInterests(
+    String userId,
+    List<String> chipIds, {
+    String mode = 'date',
+  }) async {
     try {
-      final profileModeId = await getOrUpdateProfileModeId(userId, 'date');
+      final profileModeId = await getOrUpdateProfileModeId(userId, mode);
 
       // 1. Delete existing
       await _supabase
@@ -286,10 +318,11 @@ class OnboardingRepository {
   // ✅ UPDATED: Save to profile_mode_lifestylechips (Multi-mode Schema)
   Future<void> saveLifestylePreferences(
     String userId,
-    List<String> chipIds,
-  ) async {
+    List<String> chipIds, {
+    String mode = 'date',
+  }) async {
     try {
-      final profileModeId = await getOrUpdateProfileModeId(userId, 'date');
+      final profileModeId = await getOrUpdateProfileModeId(userId, mode);
 
       // 1. Delete existing
       await _supabase
@@ -345,9 +378,10 @@ class OnboardingRepository {
 
   Future<void> saveProfilePrompts(
     String userId,
-    List<ProfilePrompt> prompts,
-  ) async {
-    final profileModeId = await getOrUpdateProfileModeId(userId, 'date');
+    List<ProfilePrompt> prompts, {
+    String mode = 'date',
+  }) async {
+    final profileModeId = await getOrUpdateProfileModeId(userId, mode);
 
     await _supabase
         .from('profile_mode_prompts')
@@ -373,9 +407,12 @@ class OnboardingRepository {
   // --- Fetch User Selections methods for Bidirectional Navigation ---
 
   // ✅ UPDATED: Fetch from profile_mode_interestchips
-  Future<List<String>> getUserInterestChips(String userId) async {
+  Future<List<String>> getUserInterestChips(
+    String userId, {
+    String mode = 'date',
+  }) async {
     try {
-      final profileModeId = await getOrUpdateProfileModeId(userId, 'date');
+      final profileModeId = await getOrUpdateProfileModeId(userId, mode);
 
       final response = await _supabase
           .from('profile_mode_interestchips')
@@ -390,9 +427,12 @@ class OnboardingRepository {
   }
 
   // ✅ UPDATED: Fetch from profile_mode_lifestylechips
-  Future<List<String>> getUserLifestyleChips(String userId) async {
+  Future<List<String>> getUserLifestyleChips(
+    String userId, {
+    String mode = 'date',
+  }) async {
     try {
-      final profileModeId = await getOrUpdateProfileModeId(userId, 'date');
+      final profileModeId = await getOrUpdateProfileModeId(userId, mode);
 
       final response = await _supabase
           .from('profile_mode_lifestylechips')
@@ -406,9 +446,12 @@ class OnboardingRepository {
     }
   }
 
-  Future<List<ProfilePrompt>> getUserProfilePrompts(String userId) async {
+  Future<List<ProfilePrompt>> getUserProfilePrompts(
+    String userId, {
+    String mode = 'date',
+  }) async {
     try {
-      final profileModeId = await getOrUpdateProfileModeId(userId, 'date');
+      final profileModeId = await getOrUpdateProfileModeId(userId, mode);
 
       final response = await _supabase
           .from('profile_mode_prompts')
@@ -417,10 +460,11 @@ class OnboardingRepository {
           .order('display_order');
 
       return (response as List).map((e) {
-        // Map display_order back to prompt_display_order for the model if needed,
-        // or update model to use display_order. Assuming model needs previous name for now.
+        // Map display_order back to prompt_display_order
         final map = Map<String, dynamic>.from(e);
         map['prompt_display_order'] = e['display_order'];
+        // Map profile_mode_id to profile_id as expected by the model
+        map['profile_id'] = e['profile_mode_id'];
         return ProfilePrompt.fromJson(map);
       }).toList();
     } catch (e) {

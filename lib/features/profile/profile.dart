@@ -12,6 +12,7 @@ import './profile_edit_screen.dart';
 // ✅ Import Provider & Model
 import '../profile/domain/models/profile_user_model.dart.dart';
 import '../profile/provider/profile_provider.dart';
+import './settings_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   // ✅ Changed to ConsumerStatefulWidget
@@ -61,7 +62,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               color: Theme.of(context).colorScheme.onSurface,
             ),
             onPressed: () {
-              // TODO: Settings
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              );
             },
           ),
         ],

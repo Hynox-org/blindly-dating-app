@@ -67,16 +67,55 @@ class DiscoveryRepository {
       final int effectiveRadius = kDevMode ? _devRadiusMeters : radius;
 
       // --------------------------------------------------
-      // 📡 RPC CALL
+      // 🧩 DYNAMIC PREFERENCE LOGIC (CLIENT SIDE)
+      // --------------------------------------------------
+      final profileData = await _supabase
+          .from('profiles')
+          .select('gender')
+          .eq('user_id', authUser.id)
+          .maybeSingle();
+
+      final String? gender = profileData?['gender'];
+      List<String> lookingFor = [];
+
+      if (gender != null) {
+        if (mode.toLowerCase() == 'date') {
+          // Date Mode: Opposite Gender
+          if (gender == 'M')
+            lookingFor = ['F'];
+          else if (gender == 'F')
+            lookingFor = ['M'];
+          else
+            lookingFor = ['M', 'F', 'NB']; // NB sees everyone
+        } else if (mode.toLowerCase() == 'bff') {
+          // BFF Mode: Same Gender + NB?
+          // Simplification: Same gender + NB
+          lookingFor = [gender];
+          if (gender != 'NB') lookingFor.add('NB');
+        }
+      }
+
+      // If still empty (gender unknown), default to Everyone
+      if (lookingFor.isEmpty) {
+        lookingFor = ['M', 'F', 'NB'];
+      }
+
+      debugPrint(
+        '🎯 DYNAMIC LOOKING FOR: $lookingFor (Gender: $gender, Mode: $mode)',
+      );
+
+      // --------------------------------------------------
+      // 📡 RPC CALL (V3)
       // --------------------------------------------------
       final List<dynamic> response =
           (await _supabase.rpc(
-            'get_discovery_feed_v2',
+            'get_discovery_feed_v3', // calling new V3
             params: {
               'p_mode': mode.toLowerCase(),
               'p_radius_meters': effectiveRadius,
               'p_limit': limit,
               'p_offset': offset,
+              'p_looking_for': lookingFor, // Passing dynamic param
             },
           )) ??
           [];
@@ -170,6 +209,30 @@ class DiscoveryRepository {
       debugPrint(e.toString());
       debugPrint(stackTrace.toString());
       rethrow;
+    }
+  }
+
+  // --------------------------------------------------
+  // 👆 ACTION: SWIPE
+  // --------------------------------------------------
+  Future<void> swipeUser({
+    required String targetUserId,
+    required bool isLike,
+  }) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      await _supabase.from('swipes').upsert({
+        'actor_id': user.id,
+        'target_id': targetUserId,
+        'is_like': isLike,
+        'swiped_at': DateTime.now().toIso8601String(),
+      });
+      debugPrint('✅ Swipe Recorded: $targetUserId (Like: $isLike)');
+    } catch (e) {
+      debugPrint('❌ Failed to record swipe: $e');
+      throw e;
     }
   }
 }

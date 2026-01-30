@@ -68,6 +68,7 @@ class _GenderSelectScreenState extends ConsumerState<GenderSelectScreen> {
       if (user != null) {
         // Map internal values to Database Enum values: M, F, NB, Prefer Not
         String dbGender;
+
         switch (_selectedGender) {
           case 'male':
             dbGender = 'M';

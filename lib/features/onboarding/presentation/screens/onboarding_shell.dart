@@ -116,6 +116,7 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
   }
 
   Widget getScreenForStep(String stepKey, WidgetRef ref) {
+    debugPrint('🚦 OnboardingShell: getScreenForStep $stepKey');
     switch (stepKey) {
       case 'terms_accept':
         return const TermsScreen();
