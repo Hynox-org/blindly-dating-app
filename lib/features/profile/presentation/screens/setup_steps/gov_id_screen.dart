@@ -41,10 +41,11 @@ class _GovernmentIdVerificationScreenState
     Supabase.instance.client
         .from('profiles')
         .stream(primaryKey: ['id'])
-        .eq('user_id', userId)
+        .eq('id', userId) // <--- CHANGED from 'user_id' to 'id' (Check your DB to be sure!)
         .listen((List<Map<String, dynamic>> data) {
           if (data.isNotEmpty) {
-            final isVerified = data.first['is_verified'] ?? false;
+            // <--- CHANGED from 'is_verified' to 'is_identity_verified'
+            final isVerified = data.first['is_identity_verified'] ?? false;
             
             if (mounted) {
               if (isVerified) {
@@ -79,10 +80,10 @@ class _GovernmentIdVerificationScreenState
 
       // B. Configure and Start Veriff
       Configuration config = Configuration(sessionUrl);
-      config.branding = Branding(
-        themeColor: '#4A5A4A', 
-        backgroundColor: '#FFFFFF',
-      );
+      // config.branding = Branding(
+      //   themeColor: '#4A5A4A', 
+      //   backgroundColor: '#FFFFFF',
+      // );
 
       Veriff veriff = Veriff();
       veriff.start(config);

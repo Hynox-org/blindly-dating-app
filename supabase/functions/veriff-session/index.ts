@@ -62,7 +62,8 @@ serve(async (req) => {
 
     const data = await veriffResponse.json();
 
-    if (data.status !== 'created') {
+    // ✅ CORRECTED CHECK: Allow 'success' OR 'created'
+    if (data.status !== 'created' && data.status !== 'success') {
       console.error("Veriff Error:", data);
       throw new Error(`Veriff rejected request: ${JSON.stringify(data)}`);
     }
