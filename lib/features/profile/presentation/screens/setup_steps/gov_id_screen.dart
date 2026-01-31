@@ -1,14 +1,13 @@
+import 'dart:convert'; // Needed for jsonEncode if body is complex
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:veriff_flutter/veriff_flutter.dart'; // Import Veriff
+import 'package:veriff_flutter/veriff_flutter.dart';
 
 import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
 import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
 
 enum GovIdStep { instructions, processing, verified }
-
-// We keep this for UI, but Veriff will actually ask the user again inside the SDK
 enum DocumentType { drivers_license, aadhar_card, pan_card }
 
 class GovernmentIdVerificationScreen extends ConsumerStatefulWidget {
@@ -24,7 +23,7 @@ class _GovernmentIdVerificationScreenState
   
   GovIdStep _currentStep = GovIdStep.instructions;
   DocumentType _selectedDocType = DocumentType.drivers_license;
-  bool _isLoading = false; // To show spinner on the button
+  bool _isLoading = false;
 
   // --- 1. Real-time Database Listener ---
   @override
@@ -37,27 +36,29 @@ class _GovernmentIdVerificationScreenState
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId == null) return;
 
-    // Listen to changes in the 'profiles' table for this user
+    // Listen to the 'profiles' table. 
+    // When the webhook updates 'is_verified' -> this stream fires -> UI updates automatically.
     Supabase.instance.client
         .from('profiles')
         .stream(primaryKey: ['id'])
-        .eq('id', userId) // <--- CHANGED from 'user_id' to 'id' (Check your DB to be sure!)
+        .eq('id', userId)
         .listen((List<Map<String, dynamic>> data) {
           if (data.isNotEmpty) {
-            // <--- CHANGED from 'is_verified' to 'is_identity_verified'
-            final isVerified = data.first['is_identity_verified'] ?? false;
+            // Note: Ensure your column name matches DB ('is_verified' or 'is_identity_verified')
+            final isVerified = data.first['is_verified'] ?? false; 
             
             if (mounted) {
               if (isVerified) {
                 setState(() => _currentStep = GovIdStep.verified);
               } 
-              // Optional: Check if verification failed or is pending to show 'processing'
+              // If you want to handle "failures" (e.g. is_verified = false but they tried),
+              // you might need to query the 'veriff_verifications' table separately.
             }
           }
         });
   }
 
-  // --- 2. The Veriff Logic ---
+  // --- 2. The Veriff Logic (WIRED UP) ---
   Future<void> _startVeriffFlow() async {
     setState(() => _isLoading = true);
 
@@ -66,11 +67,11 @@ class _GovernmentIdVerificationScreenState
       if (user == null) throw Exception("User not logged in");
 
       // A. Call Supabase Edge Function to get Session URL
-      // FIX: Added .client here
+      // We use the function name 'create-veriff-session' we deployed earlier
       final response = await Supabase.instance.client.functions.invoke(
-        'veriff-session',
+        'create-veriff-session',
         body: {
-          'firstName': user.userMetadata?['first_name'] ?? 'User',
+          'firstName': user.userMetadata?['first_name'] ?? '',
           'lastName': user.userMetadata?['last_name'] ?? '',
         },
       );
@@ -78,27 +79,44 @@ class _GovernmentIdVerificationScreenState
       final sessionUrl = response.data['url'];
       if (sessionUrl == null) throw Exception("Failed to generate Veriff URL");
 
-      // B. Configure and Start Veriff
+      // B. Configure Veriff
       Configuration config = Configuration(sessionUrl);
-      // config.branding = Branding(
-      //   themeColor: '#4A5A4A', 
-      //   backgroundColor: '#FFFFFF',
-      // );
+      // Optional: Customize branding colors to match your app if needed
+      // config.branding = Branding(themeColor: '#YOUR_COLOR_HEX');
 
       Veriff veriff = Veriff();
-      veriff.start(config);
 
-      // C. Update UI to "Processing"
-      setState(() {
-        _currentStep = GovIdStep.processing;
-      });
+      // C. Start the SDK and AWAIT the result 🚨
+      // We pause execution here until the user closes the Veriff screen
+      print("🚀 Launching Veriff SDK...");
+      Result result = await veriff.start(config);
+
+      // D. Handle the Result
+      print("🏁 Veriff SDK Closed. Status: ${result.status}, Error: ${result.error}");
+
+      if (result.status == Status.done) {
+        // User clicked "Submit" in Veriff. 
+        // We move to "Processing" state while the Webhook talks to Supabase.
+        setState(() {
+          _currentStep = GovIdStep.processing;
+        });
+      } else if (result.status == Status.error) {
+        // Technical error (camera permission, no internet)
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Verification Error: ${result.error}")),
+        );
+      } else if (result.status == Status.canceled) {
+        // User clicked "X" to close. Do nothing, just stop loading.
+        print("User cancelled verification");
+      }
 
     } catch (e) {
-      print('Veriff Error: $e'); // Helpful for debugging
+      print('❌ Error starting verification: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error starting verification: $e")),
+        SnackBar(content: Text("Could not start verification. Please try again.")),
       );
     } finally {
+      // Always stop the spinner when they come back
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -123,10 +141,11 @@ class _GovernmentIdVerificationScreenState
     }
   }
 
-  // --- UI Builders ---
+  // --- UI Builders (Your Exact UI - Unchanged) ---
 
   @override
   Widget build(BuildContext context) {
+    // 1. PROCESSING VIEW
     if (_currentStep == GovIdStep.processing) {
       return _buildStatusView(
         context,
@@ -136,12 +155,13 @@ class _GovernmentIdVerificationScreenState
             "Veriff is analyzing your documents. This usually takes less than 2 minutes. Stay on this screen or check back later.",
         buttonText: "Refresh Status",
         onPressed: () {
-           // The Stream listener handles updates, but this allows manual check if needed
+           // The Stream listener handles updates, but this allows manual check/refresh if needed
            setState(() {}); 
         },
       );
     }
 
+    // 2. VERIFIED VIEW
     if (_currentStep == GovIdStep.verified) {
       return _buildStatusView(
         context,
@@ -153,6 +173,7 @@ class _GovernmentIdVerificationScreenState
       );
     }
 
+    // 3. MAIN INSTRUCTIONS VIEW
     final colorScheme = Theme.of(context).colorScheme;
 
     return BaseOnboardingStepScreen(
@@ -204,7 +225,7 @@ class _GovernmentIdVerificationScreenState
                   ),
                   const SizedBox(height: 32),
 
-                  // Document Type Selector (Cosmetic only now, as Veriff handles it)
+                  // Document Type Selector (Visual Only)
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 16),
                     decoration: BoxDecoration(
@@ -222,7 +243,7 @@ class _GovernmentIdVerificationScreenState
                   ),
                   const SizedBox(height: 32),
 
-                  // Upload Area - Changed to "Ready to Scan" visual
+                  // Upload/Start Area
                   GestureDetector(
                     onTap: _startVeriffFlow, // Allow tapping the box to start
                     child: Container(
@@ -234,7 +255,7 @@ class _GovernmentIdVerificationScreenState
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
                           color: colorScheme.primary.withOpacity(0.5),
-                          width: 2, // Highlighted border
+                          width: 2,
                           style: BorderStyle.solid, 
                         ),
                       ),
@@ -243,7 +264,7 @@ class _GovernmentIdVerificationScreenState
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
-                              Icons.camera_alt_rounded, // Changed icon
+                              Icons.camera_alt_rounded,
                               size: 40,
                               color: colorScheme.primary,
                             ),
@@ -278,11 +299,11 @@ class _GovernmentIdVerificationScreenState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                         _buildGuidelineItem(context, Icons.circle, "Prepare your physical ID card"),
-                         const SizedBox(height: 16),
-                         _buildGuidelineItem(context, Icons.circle, "Ensure good lighting"),
-                         const SizedBox(height: 16),
-                         _buildGuidelineItem(context, Icons.circle, "Be ready for a quick selfie"),
+                          _buildGuidelineItem(context, Icons.circle, "Prepare your physical ID card"),
+                          const SizedBox(height: 16),
+                          _buildGuidelineItem(context, Icons.circle, "Ensure good lighting"),
+                          const SizedBox(height: 16),
+                          _buildGuidelineItem(context, Icons.circle, "Be ready for a quick selfie"),
                       ],
                     ),
                   ),
@@ -305,7 +326,8 @@ class _GovernmentIdVerificationScreenState
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                // Button is ALWAYS active now
+                // Button is disabled ONLY if loading. 
+                // If not loading, it triggers the flow.
                 onPressed: _isLoading ? null : _startVeriffFlow, 
                 style: ElevatedButton.styleFrom(
                   backgroundColor: colorScheme.primary,
@@ -352,7 +374,7 @@ class _GovernmentIdVerificationScreenState
     );
   }
 
-  // --- Helper Methods (Kept mostly same) ---
+  // --- Helper Methods ---
 
   Widget _buildTabItem(DocumentType type, String label) {
     final isSelected = _selectedDocType == type;
