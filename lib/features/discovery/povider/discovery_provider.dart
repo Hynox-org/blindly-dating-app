@@ -3,16 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../features/discovery/repository/discovery_repository.dart';
 import '../domain/models/discovery_user_model.dart';
 
+import '../../../core/providers/connection_mode_provider.dart';
+
 // ======================================================
 // 1. THE STATE
 // ======================================================
 class DiscoveryState {
-  final List<DiscoveryUser> mainDeck;     // The cards currently in the stack
-  final List<DiscoveryUser> historyDeck;  // The cards swiped (for undo)
-  final Set<String> seenIds;              // Deduplication Set (Memory Cache)
-  final bool isLoading;                   // Initial load state
-  final bool isFetchingMore;              // Pagination background load state
-  final bool isDeckExhausted;             // True when server returns 0 items
+  final List<DiscoveryUser> mainDeck; // The cards currently in the stack
+  final List<DiscoveryUser> historyDeck; // The cards swiped (for undo)
+  final Set<String> seenIds; // Deduplication Set (Memory Cache)
+  final bool isLoading; // Initial load state
+  final bool isFetchingMore; // Pagination background load state
+  final bool isDeckExhausted; // True when server returns 0 items
 
   DiscoveryState({
     required this.mainDeck,
@@ -49,12 +51,13 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
   final DiscoveryRepository _repository;
 
   // ⚙️ CONFIG
-  static const int _batchSize = 10;       // Fetch 10 at a time
+  static const int _batchSize = 10; // Fetch 10 at a time
   static const int _prefetchThreshold = 3; // Fetch more when 3 cards left
-  String _currentMode = 'date';           // Default mode
+  String _currentMode; // Current mode (e.g. 'date', 'bff')
 
-  DiscoveryFeedNotifier(this._repository)
-      : super(DiscoveryState(mainDeck: [])) {
+  DiscoveryFeedNotifier(this._repository, String mode)
+    : _currentMode = mode.toLowerCase(),
+      super(DiscoveryState(mainDeck: [])) {
     // Initial Load
     refreshFeed();
   }
@@ -63,7 +66,7 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
   // 🔄 REFRESH (Start Fresh / Pull-to-Refresh)
   // --------------------------------------------------
   Future<void> refreshFeed({String? mode}) async {
-    if (mode != null) _currentMode = mode;
+    if (mode != null) _currentMode = mode.toLowerCase();
 
     state = state.copyWith(
       isLoading: true,
@@ -74,7 +77,7 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
     );
 
     await _loadBatch();
-    
+
     state = state.copyWith(isLoading: false);
   }
 
@@ -94,10 +97,7 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
       ..removeWhere((u) => u.profileId == user.profileId);
 
     // 3. Update State
-    state = state.copyWith(
-      historyDeck: newHistory,
-      mainDeck: newMainDeck,
-    );
+    state = state.copyWith(historyDeck: newHistory, mainDeck: newMainDeck);
 
     // 4. Check if we need more cards
     if (newMainDeck.length <= _prefetchThreshold) {
@@ -108,8 +108,8 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
   // --------------------------------------------------
   // ⏪ ACTION: UNDO (Remove from History -> Add to Deck)
   // --------------------------------------------------
-  // In DiscoveryFeedNotifier...
- // --------------------------------------------------
+
+  // --------------------------------------------------
   // ⏪ ACTION: UNDO (OPTIMISTIC & INSTANT)
   // --------------------------------------------------
   void undoLastSwipe() {
@@ -130,9 +130,9 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
       mainDeck: newMainDeck,
       isDeckExhausted: false, // Important: We have cards again!
     );
-    
+
     // 4. SYNC DB (Fire & Forget)
-    // We call the repo to clean up the DB, but we don't wait for it 
+    // We call the repo to clean up the DB, but we don't wait for it
     // to update the UI. This makes it feel instant.
     _repository.undoLastSwipe();
   }
@@ -148,7 +148,7 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
 
     try {
       // 1. Fetch from Repo
-      // We pass 'offset' as 0 because the SQL function intelligently filters 
+      // We pass 'offset' as 0 because the SQL function intelligently filters
       // out users we've already swiped. So we always ask for the "Next 10".
       final newCandidates = await _repository.getDiscoveryFeed(
         currentMode: _currentMode,
@@ -157,7 +157,7 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
       );
 
       // 2. Deduplicate (Client-Side Safety Net)
-      // Even though SQL filters swipes, it might send the same person twice 
+      // Even though SQL filters swipes, it might send the same person twice
       // if paginating rapidly. We filter against `state.seenIds`.
       final validUsers = <DiscoveryUser>[];
       final newSeenIds = Set<String>.from(state.seenIds);
@@ -184,7 +184,6 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
           isDeckExhausted: false,
         );
       }
-
     } catch (e) {
       debugPrint("❌ Discovery Fetch Error: $e");
       state = state.copyWith(isFetchingMore: false);
@@ -198,6 +197,7 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
 // ======================================================
 final discoveryFeedProvider =
     StateNotifierProvider<DiscoveryFeedNotifier, DiscoveryState>((ref) {
-  final repository = ref.watch(discoveryRepositoryProvider);
-  return DiscoveryFeedNotifier(repository);
-});
+      final repository = ref.watch(discoveryRepositoryProvider);
+      final mode = ref.watch(connectionModeProvider);
+      return DiscoveryFeedNotifier(repository, mode);
+    });

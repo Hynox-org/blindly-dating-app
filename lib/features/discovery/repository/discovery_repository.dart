@@ -115,4 +115,59 @@ class DiscoveryRepository {
       return false;
     }
   }
+
+  // --------------------------------------------------
+  // 🛠 ENSURE PROFILE MODE EXISTS
+  // --------------------------------------------------
+  Future<void> ensureProfileMode(String mode) async {
+    // 1. Validate Mode (Only Date/BFF supported in DB for now)
+    final dbMode = mode.toLowerCase();
+    if (dbMode != 'date' && dbMode != 'bff') return;
+
+    try {
+      final authUserId = _supabase.auth.currentUser?.id;
+      if (authUserId == null) return;
+
+      // 2. Resolve Profile ID from Auth ID
+      // The 'profiles' table usually maps 1:1 with auth.users but has its own UUID PK or uses the same UUID.
+      // The FK error suggests we must be careful. Let's look it up.
+      final profileData = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', authUserId)
+          .maybeSingle();
+
+      if (profileData == null) {
+        debugPrint(
+          '⚠️ ensureProfileMode: No profile found for auth user $authUserId',
+        );
+        return;
+      }
+
+      final String profileId = profileData['id'];
+
+      // 3. Check if mode exists
+      final existing = await _supabase
+          .from('profile_modes')
+          .select('id')
+          .eq('profile_id', profileId)
+          .eq('mode', dbMode)
+          .maybeSingle();
+
+      if (existing == null) {
+        debugPrint('🆕 Creating new profile mode: $dbMode');
+        // 4. Create if missing
+        await _supabase.from('profile_modes').insert({
+          'profile_id': profileId,
+          'mode': dbMode,
+          'is_active': true, // Default to active
+        });
+      } else {
+        debugPrint('✅ Profile mode exists: $dbMode');
+      }
+    } catch (e) {
+      debugPrint('❌ Failed to ensure profile mode: $e');
+      // Don't rethrow, strictly background task
+    }
+  }
 }

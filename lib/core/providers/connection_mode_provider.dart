@@ -8,11 +8,13 @@ class ConnectionModeNotifier extends StateNotifier<String> {
 
   void setMode(String mode) {
     state = mode;
+    // Fire and forget
+    _repository.ensureProfileMode(mode);
   }
 
   Future<void> syncWithDb() async {
-    // Ideally fetch from DB. For now, we trust the local default or last set
-    // But if we wanted to support persistent "Events" mode, we'd fetch here.
+    // Sync current state
+    await _repository.ensureProfileMode(state);
   }
 }
 

@@ -22,9 +22,10 @@ class DiscoveryUser {
       profileId: json['profile_id'],
       displayName: json['display_name'] ?? 'Unknown',
       age: json['age'] ?? 0,
-      distanceKm: (json['distance_km'] as num).toDouble(),
+      // Ensure we handle both int and double from JSON safely
+      distanceKm: (json['distance_km'] as num?)?.toDouble() ?? 0.0,
       bio: json['bio'] ?? '',
-      modeId: json['mode_id'],
+      modeId: json['mode_id'] ?? 'date',
       primaryImageUrl: json['primary_image_url'],
     );
   }
