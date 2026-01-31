@@ -161,14 +161,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         id: user.profileId,
         name: user.displayName,
         age: user.age,
-        distance: double.parse((user.distanceMeters / 1000).toStringAsFixed(1)),
-        location: user.city.isNotEmpty ? user.city : 'Nearby',
-        gender: mapGender(user.gender),
-        imageUrls: user.mediaUrl != null
-            ? [user.mediaUrl!]
+        distance: double.parse((user.distanceKm / 1000).toStringAsFixed(1)),
+        location: 'Nearby',
+        gender: 'Male',
+        imageUrls: user.primaryImageUrl != null
+            ? [user.primaryImageUrl!]
             : ['https://picsum.photos/400/600'],
         bio:
-            'Match Score: ${user.matchScore}% • ${user.sharedInterestsCount} shared interests',
+            'Match Score: 70 shared interests',
         height: 'Ask me',
         activityLevel: 'Active',
         education: '',
@@ -176,7 +176,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         zodiac: '',
         drinking: '',
         smoking: '',
-        summary: user.bio.isNotEmpty ? user.bio : 'Swipe right to know more!',
+        summary: 'Swipe right to know more!',
         lookingFor: 'Connection',
         lookingForTags: [],
         quickestWay: '',
@@ -224,25 +224,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         ),
         centerTitle: true,
         actions: [
-          IconButton(
+         IconButton(
             icon: Icon(
               Icons.reply,
+              // Grey out if there is nothing to undo
               color: historyDeck.isEmpty
                   ? Colors.grey
                   : Theme.of(context).colorScheme.onSurface,
               size: 28,
             ),
-            // ✅ NEW: Just trigger the controller.
-            // This will automatically fire the _onUndo callback below.
             onPressed: () {
-              // ✅ NEW LOGIC:
-              // If the deck is finished, do Manual Undo. Otherwise, do Controller Undo.
-              final showEmptyState = mainDeck.isEmpty || _isDeckFinished;
+              // 1. Safety Check
+              if (historyDeck.isEmpty) return;
+              
+              HapticFeedback.mediumImpact();
 
-              if (showEmptyState && mainDeck.isNotEmpty) {
-                _handleManualUndo(mainDeck);
-              } else {
-                _controller.undo();
+              // 2. Call Provider (Instant)
+              ref.read(discoveryFeedProvider.notifier).undoLastSwipe();
+
+              // 3. FORCE UI RESTORE (The Fix for "Not coming back")
+              // If the deck was finished or empty, we must manually tell the UI 
+              // "Hey, we are not finished anymore, reset to the first card!"
+              if (mounted) {
+                 // Check if we need to revive the stack
+                 if (_isDeckFinished || mainDeck.isEmpty) {
+                   setState(() {
+                     _isDeckFinished = false;
+                     _currentIndex = 0; 
+                   });
+                 }
               }
             },
           ),
@@ -353,22 +363,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         // --------------------------------------------------
                         CardSwiper(
                           controller: _controller,
-                          // ✅ 1. ADD KEY: Prevents "ghost" cards from old states
-                          key: ValueKey(
-                            mainDeck.isNotEmpty
-                                ? mainDeck.first.profileId
-                                : 'empty',
-                          ),
+                            // ✅ KEY FIX 1:
+                            // The Key forces the widget to refresh when the top user changes.
+                            // This is already correct in your code, keep it!
+                            key: ValueKey(
+                              mainDeck.isNotEmpty
+                                  ? mainDeck.first.profileId
+                                  : 'empty',
+                            ),
 
-                          cardsCount: mainDeck.length,
-                          // ✅ ADD THIS LINE:
-                          initialIndex: _currentIndex,
-                          numberOfCardsDisplayed: 1,
-                          padding: const EdgeInsets.all(10.0),
+                            cardsCount: mainDeck.length,
 
-                          // ✅ 2. ADD LOOP FALSE: Stops random restarts
-                          isLoop: false,
-
+                            // ✅ KEY FIX 2: FORCE ZERO
+                            // Since we remove cards from the list, the current card 
+                            // is ALWAYS at index 0. Never use _currentIndex here.
+                            initialIndex: 0,
+                            
+                            numberOfCardsDisplayed: 1,
+                            padding: const EdgeInsets.all(10.0),
+                            isLoop: false,
                           allowedSwipeDirection:
                               const AllowedSwipeDirection.only(
                                 left: true,
@@ -478,28 +491,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   ) {
     setState(() {
       _swipeProgress = 0.0;
-      _currentIndex = currentIndex ?? 0;
+      // We don't strictly need _currentIndex for the logic anymore, 
+      // but keeping it 0 is safer.
+      _currentIndex = 0; 
     });
 
     _triggerHapticFeedback(direction);
 
-    // 1. Identify User
-    final swipedUser = currentDeck[previousIndex];
+    // 1. Identify User (Safely)
+    // Since we always show the top card (Index 0), the swiped user is likely at 0.
+    // However, the 'previousIndex' passed by the library might be 0.
+    if (currentDeck.isEmpty) return true;
+    
+    // We target the FIRST card because that's the one being swiped away.
+    final swipedUser = currentDeck.first; 
     final uiProfile = _mapToUserProfiles([swipedUser]).first;
 
-    // 2. DB Record (Fire & Forget)
+    // 2. DB Record
     if (direction == CardSwiperDirection.left) {
       _handlePass(uiProfile);
     } else if (direction == CardSwiperDirection.right) {
       _handleLike(uiProfile);
     }
 
-    // 3. Update Provider (Consume Card)
+    // 3. Update Provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        ref
-            .read(discoveryFeedProvider.notifier)
-            .consumeCard(swipedUser, previousIndex);
+        ref.read(discoveryFeedProvider.notifier).onSwipe(swipedUser);
       }
     });
 
@@ -509,34 +527,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   // -----------------------------------------------------------------------
   // ✅ UPDATED UNDO LOGIC
   // -----------------------------------------------------------------------
-  bool _onUndo(
+ bool _onUndo(
     int? previousIndex,
     int currentIndex,
     CardSwiperDirection direction,
   ) {
-    // 1. Check History
+    // 1. Check History from Provider
     final historyDeck = ref.read(discoveryFeedProvider).historyDeck;
     if (historyDeck.isEmpty) return false;
-
-    // Optional: Premium Check
-    // if (!_isPremium) { _showPremiumDialog(); return false; }
 
     HapticFeedback.mediumImpact();
 
     // 2. Logic: Move Memory (Provider)
-    ref.read(discoveryFeedProvider.notifier).undoSwipe();
+    // ✅ FIX: Use 'undoLastSwipe' to match the new Provider method name
+    ref.read(discoveryFeedProvider.notifier).undoLastSwipe();
 
     // 3. Logic: Delete DB Record
     ref.read(swipeProvider.notifier).undo();
 
-    // ❌ DELETED: _controller.undo();
-    // (Removing this stops the infinite loop)
-
     setState(() {
       _swipeProgress = 0.0;
+      _isDeckFinished = false; // Ensure we exit empty state
     });
 
-    return true; // Returning true tells the Controller "Yes, proceed with the animation"
+    return true; 
   }
 
   void _triggerHapticFeedback(CardSwiperDirection direction) {

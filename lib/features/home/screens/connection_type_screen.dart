@@ -119,9 +119,12 @@ class _ConnectionTypeScreenState
     setState(() => _isSaving = true);
 
     try {
+      // ✅ FIX: Don't call DB update. Just refresh the feed with the new mode.
+      // We convert to lowercase because your UI uses 'Date'/'BFF' 
+      // but the Provider/SQL expects 'date'/'bff'.
       await ref
           .read(discoveryFeedProvider.notifier)
-          .changeDiscoveryMode(_selectedMode);
+          .refreshFeed(mode: _selectedMode.toLowerCase());
 
       if (mounted) {
         Navigator.pop(context);

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+// Make sure this path points to your actual model file
 import '../../../features/discovery/domain/models/discovery_user_model.dart';
 
 // ======================================================
@@ -26,39 +27,16 @@ class DiscoveryRepository {
   /// Dev mode ignores distance limits
   static const bool kDevMode = true;
 
-  /// Huge radius when dev mode is ON (≈ entire world)
-  static const int _devRadiusMeters = 20000000;
+  /// Huge radius when dev mode is ON (20,000 KM to cover the world)
+  static const int _devRadiusKm = 20000;
 
   // --------------------------------------------------
-  // 🔁 UPDATE DISCOVERY MODE (dating / bff)
+  // 🔥 MAIN DISCOVERY FEED (OPTIMIZED)
   // --------------------------------------------------
-  Future<void> updateDiscoveryMode(String mode) async {
-    final user = _supabase.auth.currentUser;
-    if (user == null) {
-      throw Exception('User not logged in');
-    }
-
-    final response = await _supabase
-        .from('profiles')
-        .update({'discovery_mode': mode})
-        .eq('user_id', user.id)
-        .select(); // 👈 FORCE RESPONSE
-
-    debugPrint('✅ discovery_mode update response: $response');
-  }
-
-  // --------------------------------------------------
-  // 🔥 MAIN DISCOVERY FEED
-  // --------------------------------------------------
-  ///
-  /// Supabase is the source of truth.
-  /// - discovery_mode is read from profiles table
-  /// - gender logic is handled inside SQL
-  /// - swipe filtering is handled inside SQL
-  ///
   Future<List<DiscoveryUser>> getDiscoveryFeed({
-    int radius = 5000, // meters
-    int limit = 20,
+    required String currentMode,
+    int radiusKm = 50,
+    int limit = 10,
     int offset = 0,
   }) async {
     try {
@@ -67,66 +45,54 @@ class DiscoveryRepository {
         throw Exception('User not logged in');
       }
 
-      // --------------------------------------------------
-      // 🧪 DEBUG LOGS
-      // --------------------------------------------------
-      debugPrint('🚀 DISCOVERY RPC CALL');
-      debugPrint('USER ID : ${authUser.id}');
-      debugPrint('LIMIT   : $limit');
+      final int effectiveRadius = kDevMode ? _devRadiusKm : radiusKm;
+
+      debugPrint('🚀 DISCOVERY RPC CALL: get_discovery_prospects');
+      debugPrint('MODE    : $currentMode');
+      debugPrint('RADIUS  : $effectiveRadius KM');
       debugPrint('OFFSET  : $offset');
-      debugPrint(
-        'RADIUS  : ${kDevMode ? _devRadiusMeters : radius}',
+
+      // 1. Call DB
+      final List<dynamic>? response = await _supabase.rpc(
+        'get_discovery_prospects',
+        params: {
+          'search_mode': currentMode,
+          'radius_km': effectiveRadius,
+          'limit_count': limit,
+          'offset_count': offset,
+        },
       );
-      
 
-      final int effectiveRadius =
-          kDevMode ? _devRadiusMeters : radius;
+      if (response == null || response.isEmpty) return [];
 
-      // --------------------------------------------------
-      // 📡 RPC CALL
-      // --------------------------------------------------
-      final List<dynamic> response =
-          (await _supabase.rpc(
-                'get_discovery_feed_final',
-                params: {
-                  'p_radius_meters': effectiveRadius,
-                  'p_limit': limit,
-                  'p_offset': offset,
-                },
-              )) ??
-              [];
+      debugPrint('🧪 DISCOVERY ROWS FOUND: ${response.length}');
 
-      debugPrint('🧪 DISCOVERY ROWS: ${response.length}');
+      // 2. PARALLEL PROCESSING (Production Speed ⚡)
+      final futureUsers = response.map((raw) async {
+        final Map<String, dynamic> data = Map<String, dynamic>.from(raw);
+        final String? imagePath = data['primary_image_url'];
 
-      // --------------------------------------------------
-      // 🔁 MAP RESPONSE
-      // --------------------------------------------------
-      final List<DiscoveryUser> users = [];
-
-      for (final raw in response) {
-        final Map<String, dynamic> data =
-            Map<String, dynamic>.from(raw);
-
-        final String? imagePath = data['media_url'];
-
-        // --------------------------------------------------
-        // 🖼️ HANDLE MEDIA URLS (FIXED)
-        // --------------------------------------------------
-        if (imagePath != null && imagePath.isNotEmpty) {
-          if (!imagePath.startsWith('http')) {
+        // Handle Signing
+        if (imagePath != null &&
+            imagePath.isNotEmpty &&
+            !imagePath.startsWith('http')) {
+          try {
+            // ⚠️ VERIFY BUCKET NAME: 'user_photos'
             final signedUrl = await _supabase.storage
                 .from('user_photos')
-                .createSignedUrl(imagePath, 15 * 60);
+                .createSignedUrl(imagePath, 60 * 60);
 
-            // ✅ IMPORTANT: write back to SAME key model reads
-            data['media_url'] = signedUrl;
+            data['primary_image_url'] = signedUrl;
+          } catch (e) {
+            debugPrint('⚠️ Image sign failed for ${data['profile_id']}: $e');
           }
-        } else {
-          data['media_url'] = null;
         }
 
-        users.add(DiscoveryUser.fromJson(data));
-      }
+        return DiscoveryUser.fromJson(data);
+      });
+
+      // 3. Wait for all to finish instantly
+      final List<DiscoveryUser> users = await Future.wait(futureUsers);
 
       return users;
     } catch (e, stackTrace) {
@@ -134,6 +100,19 @@ class DiscoveryRepository {
       debugPrint(e.toString());
       debugPrint(stackTrace.toString());
       rethrow;
+    }
+  }
+
+  // --------------------------------------------------
+  // ⏪ UNDO LAST SWIPE (✅ ADDED THIS MISSING PART)
+  // --------------------------------------------------
+  Future<bool> undoLastSwipe() async {
+    try {
+      final response = await _supabase.rpc('undo_last_swipe');
+      return response as bool;
+    } catch (e) {
+      debugPrint('❌ Undo RPC failed: $e');
+      return false;
     }
   }
 }
