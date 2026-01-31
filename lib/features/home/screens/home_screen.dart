@@ -145,8 +145,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // ✅ Helper to map API data to UI data
   List<UserProfile> _mapToUserProfiles(List<DiscoveryUser> discoveryUsers) {
     return discoveryUsers.map((user) {
-      final imgUrl = user.mediaUrl;
-      final genderStr = mapGender(user.gender);
+      final imgUrl = user.primaryImageUrl;
+      final genderStr = "Male";
 
       List<String> imageUrls = [];
       if (imgUrl != null && imgUrl.isNotEmpty) {
@@ -182,12 +182,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         id: user.profileId,
         name: user.displayName,
         age: user.age,
-        distance: double.parse((user.distanceMeters / 1000).toStringAsFixed(1)),
-        location: user.city.isNotEmpty ? user.city : 'Nearby',
+        distance: double.parse((user.distanceKm / 1000).toStringAsFixed(1)),
+        location: 'Nearby',
         gender: genderStr,
         imageUrls: imageUrls,
         bio:
-            'Match Score: ${user.matchScore}% • ${user.sharedInterestsCount} shared interests',
+            'Match Score: shared interests',
         height: 'Ask me',
         activityLevel: 'Active',
         education: '',
@@ -247,22 +247,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           IconButton(
             icon: Icon(
               Icons.reply,
+              // Grey out if there is nothing to undo
               color: historyDeck.isEmpty
                   ? Colors.grey
                   : Theme.of(context).colorScheme.onSurface,
               size: 28,
             ),
-            // ✅ NEW: Just trigger the controller.
-            // This will automatically fire the _onUndo callback below.
             onPressed: () {
-              // ✅ NEW LOGIC:
-              // If the deck is finished, do Manual Undo. Otherwise, do Controller Undo.
-              final showEmptyState = mainDeck.isEmpty || _isDeckFinished;
+              // 1. Safety Check
+              if (historyDeck.isEmpty) return;
+              
+              HapticFeedback.mediumImpact();
 
-              if (showEmptyState && mainDeck.isNotEmpty) {
-                _handleManualUndo(mainDeck);
-              } else {
-                _controller.undo();
+              // 2. Call Provider (Instant)
+              ref.read(discoveryFeedProvider.notifier).undoLastSwipe();
+
+              // 3. FORCE UI RESTORE (The Fix for "Not coming back")
+              // If the deck was finished or empty, we must manually tell the UI 
+              // "Hey, we are not finished anymore, reset to the first card!"
+              if (mounted) {
+                 // Check if we need to revive the stack
+                 if (_isDeckFinished || mainDeck.isEmpty) {
+                   setState(() {
+                     _isDeckFinished = false;
+                     _currentIndex = 0; 
+                   });
+                 }
               }
             },
           ),
@@ -494,76 +504,72 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   ) {
     setState(() {
       _swipeProgress = 0.0;
-      _currentIndex = currentIndex ?? 0;
+      // We don't strictly need _currentIndex for the logic anymore, 
+      // but keeping it 0 is safer.
+      _currentIndex = 0; 
     });
 
     _triggerHapticFeedback(direction);
 
-    // 1. Identify User
-    final swipedUser = currentDeck[previousIndex];
+    // 1. Identify User (Safely)
+    // Since we always show the top card (Index 0), the swiped user is likely at 0.
+    // However, the 'previousIndex' passed by the library might be 0.
+    if (currentDeck.isEmpty) return true;
+    
+    // We target the FIRST card because that's the one being swiped away.
+    final swipedUser = currentDeck.first; 
     final uiProfile = _mapToUserProfiles([swipedUser]).first;
 
-    // 2. DB Record (Fire & Forget)
+    // 2. DB Record
     if (direction == CardSwiperDirection.left) {
       _handlePass(uiProfile);
     } else if (direction == CardSwiperDirection.right) {
       _handleLike(uiProfile);
     }
 
-    // 3. Update Provider (Consume Card)
+    // 3. Update Provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        ref
-            .read(discoveryFeedProvider.notifier)
-            .consumeCard(swipedUser, previousIndex);
+        ref.read(discoveryFeedProvider.notifier).onSwipe(swipedUser);
       }
     });
 
     return true;
   }
 
+
   // -----------------------------------------------------------------------
   // ✅ UPDATED UNDO LOGIC
   // -----------------------------------------------------------------------
-  bool _onUndo(
+   bool _onUndo(
     int? previousIndex,
     int currentIndex,
     CardSwiperDirection direction,
   ) {
-    // 1. Check History
+    // 1. Check History from Provider
     final historyDeck = ref.read(discoveryFeedProvider).historyDeck;
     if (historyDeck.isEmpty) return false;
-
-    // Optional: Premium Check
-    // if (!_isPremium) { _showPremiumDialog(); return false; }
 
     HapticFeedback.mediumImpact();
 
     // 2. Logic: Move Memory (Provider)
-    ref.read(discoveryFeedProvider.notifier).undoSwipe();
+    // ✅ FIX: Use 'undoLastSwipe' to match the new Provider method name
+    ref.read(discoveryFeedProvider.notifier).undoLastSwipe();
 
     // 3. Logic: Delete DB Record
     ref.read(swipeProvider.notifier).undo();
 
-    // ❌ DELETED: _controller.undo();
-    // (Removing this stops the infinite loop)
-
     setState(() {
       _swipeProgress = 0.0;
+      _isDeckFinished = false; // Ensure we exit empty state
     });
 
-    return true; // Returning true tells the Controller "Yes, proceed with the animation"
+    return true; 
   }
+
 
   void _triggerHapticFeedback(CardSwiperDirection direction) {
     HapticFeedback.selectionClick();
-  }
-
-  void _handlePass(UserProfile profile) {
-    debugPrint('Passed: ${profile.name}');
-    ref
-        .read(swipeProvider.notifier)
-        .swipe(targetProfileId: profile.id, action: 'pass');
   }
 
   void _handleLike(UserProfile profile) {
@@ -571,6 +577,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ref
         .read(swipeProvider.notifier)
         .swipe(targetProfileId: profile.id, action: 'like');
+  }
+  void _handlePass(UserProfile profile) {
+    debugPrint('Passed: ${profile.name}');
+    ref
+        .read(swipeProvider.notifier)
+        .swipe(targetProfileId: profile.id, action: 'pass');
   }
 
   void _showPremiumDialog() {
