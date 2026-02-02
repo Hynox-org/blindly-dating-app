@@ -49,7 +49,7 @@ class SettingsScreen extends ConsumerWidget {
                     trailing: Switch(
                       value: true,
                       onChanged: (val) {},
-                      activeColor: const Color(
+                      activeThumbColor: const Color(
                         0xFFE9C46A,
                       ), // Match the goldish color in image
                     ),

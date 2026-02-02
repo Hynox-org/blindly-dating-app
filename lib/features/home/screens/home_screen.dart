@@ -17,7 +17,6 @@ import '../../discovery/domain/models/discovery_user_model.dart';
 
 // ✅ 3. Components
 import '../component/ProfileSwipeCard.dart';
-import '../../../../core/utils/gender_utils.dart';
 import '../../../../core/utils/custom_popups.dart';
 import '../../discovery/presentation/widgets/no_more_profiles_widget.dart';
 import '../../../../core/utils/navigation_utils.dart';

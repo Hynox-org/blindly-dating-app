@@ -170,4 +170,46 @@ class DiscoveryRepository {
       // Don't rethrow, strictly background task
     }
   }
+
+  // --------------------------------------------------
+  // 🔄 SOURCE OF TRUTH: PROFILES TABLE
+  // --------------------------------------------------
+  
+  /// Fetches the current mode from the profiles table. Defaults to 'date'.
+  Future<String> fetchCurrentMode() async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return 'date';
+
+      final response = await _supabase
+          .from('profiles')
+          .select('current_mode')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+      if (response != null && response['current_mode'] != null) {
+        return response['current_mode'] as String;
+      }
+    } catch (e) {
+      debugPrint('⚠️ Failed to fetch current mode from DB: $e');
+    }
+    return 'date'; 
+  }
+
+  /// Updates the current mode in the profiles table.
+  Future<void> updateCurrentMode(String mode) async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return;
+
+      await _supabase
+          .from('profiles')
+          .update({'current_mode': mode})
+          .eq('user_id', userId);
+          
+      debugPrint('✅ Synced current mode to DB: $mode');
+    } catch (e) {
+      debugPrint('❌ Failed to update current mode in DB: $e');
+    }
+  }
 }

@@ -216,8 +216,9 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
 
       // Resolve profile_mode_id for 'date' mode
       final profileModeId = await mediaRepo.getProfileModeId(profileId, 'date');
-      if (profileModeId == null)
+      if (profileModeId == null) {
         throw Exception('Profile mode record not found');
+      }
 
       // 1. Upload File
       final file = File(_recordedFilePath!);
