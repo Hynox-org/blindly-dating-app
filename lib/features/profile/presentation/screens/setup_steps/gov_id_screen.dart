@@ -1,4 +1,4 @@
-import 'dart:convert'; // Needed for jsonEncode if body is complex
+// import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -7,7 +7,8 @@ import 'package:veriff_flutter/veriff_flutter.dart';
 import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
 import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
 
-enum GovIdStep { instructions, processing, verified }
+enum GovIdStep { instructions, verified } // Removed 'processing' as we skip it
+
 enum DocumentType { drivers_license, aadhar_card, pan_card }
 
 class GovernmentIdVerificationScreen extends ConsumerStatefulWidget {
@@ -20,45 +21,177 @@ class GovernmentIdVerificationScreen extends ConsumerStatefulWidget {
 
 class _GovernmentIdVerificationScreenState
     extends ConsumerState<GovernmentIdVerificationScreen> {
-  
   GovIdStep _currentStep = GovIdStep.instructions;
   DocumentType _selectedDocType = DocumentType.drivers_license;
   bool _isLoading = false;
 
-  // --- 1. Real-time Database Listener ---
+  // Track the last handled status to prevent duplicate popups
+  String? _lastHandledStatus;
+
   @override
   void initState() {
     super.initState();
-    _listenForVerificationStatus();
+    _listenForDetailedVerificationStatus();
   }
 
-  void _listenForVerificationStatus() {
-    final userId = Supabase.instance.client.auth.currentUser?.id;
-    if (userId == null) return;
+  // --- 1. INTELLIGENT LISTENER (Updated to check status immediately) ---
+  Future<void> _listenForDetailedVerificationStatus() async {
+    final authUserId = Supabase.instance.client.auth.currentUser?.id;
+    if (authUserId == null) return;
 
-    // Listen to the 'profiles' table. 
-    // When the webhook updates 'is_verified' -> this stream fires -> UI updates automatically.
-    Supabase.instance.client
-        .from('profiles')
-        .stream(primaryKey: ['id'])
-        .eq('id', userId)
-        .listen((List<Map<String, dynamic>> data) {
-          if (data.isNotEmpty) {
-            // Note: Ensure your column name matches DB ('is_verified' or 'is_identity_verified')
-            final isVerified = data.first['is_verified'] ?? false; 
-            
-            if (mounted) {
-              if (isVerified) {
-                setState(() => _currentStep = GovIdStep.verified);
-              } 
-              // If you want to handle "failures" (e.g. is_verified = false but they tried),
-              // you might need to query the 'veriff_verifications' table separately.
+    try {
+      // 🕵️ STEP 1: Get Profile ID AND Current Status
+      final profileData = await Supabase.instance.client
+          .from('profiles')
+          .select('id, is_verified') // <--- 1. Fetch 'is_verified' too
+          .eq('user_id', authUserId)
+          .maybeSingle();
+
+      if (profileData == null) {
+        print("❌ Error: Could not find a profile for this user.");
+        return;
+      }
+
+      final profileId = profileData['id'];
+      final bool isAlreadyVerified = profileData['is_verified'] ?? false;
+
+      // 🛑 CHECK: Are they already verified?
+      if (isAlreadyVerified) {
+        print("✅ User is already verified. Skipping stream.");
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _currentStep = GovIdStep.verified; // Show Success Screen immediately
+          });
+          // 🔔 Show the specific message you asked for
+          _showProfessionalToast("You have been already verified", isError: false);
+        }
+        return; // STOP HERE. No need to listen to streams.
+      }
+
+      print("✅ Found Profile ID: $profileId. Listening for updates...");
+
+      // 🕵️ STEP 2: Listen using the Profile ID (Only if NOT verified yet)
+      Supabase.instance.client
+          .from('veriff_verifications')
+          .stream(primaryKey: ['id'])
+          .eq('profile_id', profileId)
+          .order('created_at', ascending: false)
+          .limit(1)
+          .listen((List<Map<String, dynamic>> data) {
+            if (data.isNotEmpty && mounted) {
+              final latestLog = data.first;
+              final String status = latestLog['status'] ?? 'created';
+              final String? reason = latestLog['fail_reason'];
+
+              if (_lastHandledStatus == status) return;
+              _lastHandledStatus = status;
+
+              // ✅ CASE A: APPROVED
+              if (status == 'approved' || status == 'full_verified') {
+                if (mounted) {
+                  setState(() {
+                    _isLoading = false;
+                    _currentStep = GovIdStep.verified;
+                  });
+                  _showProfessionalToast(
+                    "Verification Successful",
+                    isError: false,
+                  );
+                }
+              }
+              // ❌ CASE B: FAILED / RESUBMIT
+              else if (status == 'resubmission_requested' || status == 'declined') {
+                if (mounted) {
+                  setState(() => _isLoading = false);
+                  _showFailureDialog(
+                    reason ?? "Document could not be verified.",
+                  );
+                }
+              }
             }
-          }
-        });
+          });
+    } catch (e) {
+      print("❌ Listener Error: $e");
+    }
   }
 
-  // --- 2. The Veriff Logic (WIRED UP) ---
+  // --- 2. PROFESSIONAL DIALOGS ---
+
+  void _showFailureDialog(String reason) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+            SizedBox(width: 10),
+            Text("Verification Failed"),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("We could not verify your ID. Veriff provided this reason:"),
+            SizedBox(height: 12),
+            Container(
+              padding: EdgeInsets.all(12),
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.shade200),
+              ),
+              child: Text(
+                reason, // <--- SHOWS THE EXACT REASON FROM DB
+                style: TextStyle(
+                  color: Colors.brown.shade800,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            SizedBox(height: 12),
+            Text("Please try again with a clearer image."),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              "Try Again",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showProfessionalToast(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              isError ? Icons.error_outline : Icons.check_circle,
+              color: Colors.white,
+            ),
+            SizedBox(width: 12),
+            Text(message, style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        backgroundColor: isError ? Colors.red.shade700 : Colors.green.shade700,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  // --- 3. VERIFF LOGIC ---
   Future<void> _startVeriffFlow() async {
     setState(() => _isLoading = true);
 
@@ -66,8 +199,7 @@ class _GovernmentIdVerificationScreenState
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) throw Exception("User not logged in");
 
-      // A. Call Supabase Edge Function to get Session URL
-      // We use the function name 'create-veriff-session' we deployed earlier
+      // A. Call Edge Function
       final response = await Supabase.instance.client.functions.invoke(
         'create-veriff-session',
         body: {
@@ -79,46 +211,32 @@ class _GovernmentIdVerificationScreenState
       final sessionUrl = response.data['url'];
       if (sessionUrl == null) throw Exception("Failed to generate Veriff URL");
 
-      // B. Configure Veriff
+      // B. Start SDK
       Configuration config = Configuration(sessionUrl);
-      // Optional: Customize branding colors to match your app if needed
-      // config.branding = Branding(themeColor: '#YOUR_COLOR_HEX');
-
       Veriff veriff = Veriff();
 
-      // C. Start the SDK and AWAIT the result 🚨
-      // We pause execution here until the user closes the Veriff screen
-      print("🚀 Launching Veriff SDK...");
+      // Wait for user to finish
       Result result = await veriff.start(config);
 
-      // D. Handle the Result
-      print("🏁 Veriff SDK Closed. Status: ${result.status}, Error: ${result.error}");
-
       if (result.status == Status.done) {
-        // User clicked "Submit" in Veriff. 
-        // We move to "Processing" state while the Webhook talks to Supabase.
-        setState(() {
-          _currentStep = GovIdStep.processing;
-        });
+        // User finished. We keep spinner loading while waiting for Webhook.
+        print("Veriff finished. Waiting for webhook...");
       } else if (result.status == Status.error) {
-        // Technical error (camera permission, no internet)
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Verification Error: ${result.error}")),
-        );
+        setState(() => _isLoading = false);
+        _showProfessionalToast("Camera Error: ${result.error}", isError: true);
       } else if (result.status == Status.canceled) {
-        // User clicked "X" to close. Do nothing, just stop loading.
+        setState(() => _isLoading = false);
         print("User cancelled verification");
       }
-
     } catch (e) {
-      print('❌ Error starting verification: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Could not start verification. Please try again.")),
+      setState(() => _isLoading = false);
+      _showProfessionalToast(
+        "Connection Failed. Please try again.",
+        isError: true,
       );
-    } finally {
-      // Always stop the spinner when they come back
-      if (mounted) setState(() => _isLoading = false);
     }
+    // Note: We DO NOT set isLoading = false in 'finally' if success,
+    // because we want the spinner to keep going until the Webhook arrives!
   }
 
   // --- Actions ---
@@ -132,48 +250,30 @@ class _GovernmentIdVerificationScreenState
   }
 
   void _onBack() {
+    // If verified, maybe disable back or handle specific logic
     if (_currentStep == GovIdStep.instructions) {
       ref.read(onboardingProvider.notifier).goToPreviousStep();
-    } else {
-      setState(() {
-        _currentStep = GovIdStep.instructions;
-      });
     }
   }
 
-  // --- UI Builders (Your Exact UI - Unchanged) ---
+  // --- UI Builders ---
 
   @override
   Widget build(BuildContext context) {
-    // 1. PROCESSING VIEW
-    if (_currentStep == GovIdStep.processing) {
-      return _buildStatusView(
-        context,
-        icon: Icons.access_time_filled_rounded,
-        title: "We’re reviewing your ID",
-        subtitle:
-            "Veriff is analyzing your documents. This usually takes less than 2 minutes. Stay on this screen or check back later.",
-        buttonText: "Refresh Status",
-        onPressed: () {
-           // The Stream listener handles updates, but this allows manual check/refresh if needed
-           setState(() {}); 
-        },
-      );
-    }
-
-    // 2. VERIFIED VIEW
+    // 1. VERIFIED SUCCESS VIEW
     if (_currentStep == GovIdStep.verified) {
       return _buildStatusView(
         context,
-        icon: Icons.check_circle_rounded,
-        title: "Verified Successfully!",
-        subtitle: "Your Government ID has been confirmed.",
-        buttonText: "Continue",
+        icon: Icons.verified_user_rounded, // Better icon
+        title: "You are Verified!",
+        subtitle:
+            "Thank you. Your identity has been securely confirmed. You can now access all features.",
+        buttonText: "Continue to App",
         onPressed: _onVerifiedComplete,
       );
     }
 
-    // 3. MAIN INSTRUCTIONS VIEW
+    // 2. MAIN INSTRUCTIONS VIEW
     final colorScheme = Theme.of(context).colorScheme;
 
     return BaseOnboardingStepScreen(
@@ -189,7 +289,6 @@ class _GovernmentIdVerificationScreenState
               child: Column(
                 children: [
                   const SizedBox(height: 16),
-                  // Shield Icon
                   Container(
                     width: 80,
                     height: 80,
@@ -225,110 +324,111 @@ class _GovernmentIdVerificationScreenState
                   ),
                   const SizedBox(height: 32),
 
-                  // Document Type Selector (Visual Only)
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    padding: const EdgeInsets.all(4),
-                    child: Row(
-                      children: [
-                        _buildTabItem(DocumentType.drivers_license,"Driver's License"),
-                        _buildTabItem(DocumentType.aadhar_card, "Aadhar Card"),
-                        _buildTabItem(DocumentType.pan_card, "Passport"),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
                   // Upload/Start Area
                   GestureDetector(
-                    onTap: _startVeriffFlow, // Allow tapping the box to start
+                    onTap: _isLoading ? null : _startVeriffFlow,
                     child: Container(
                       height: 220,
                       width: double.infinity,
                       margin: const EdgeInsets.symmetric(horizontal: 16),
                       decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                        color: colorScheme.surfaceContainerHighest.withOpacity(
+                          0.3,
+                        ),
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: colorScheme.primary.withOpacity(0.5),
+                          color: _isLoading
+                              ? Colors.grey
+                              : colorScheme.primary.withOpacity(0.5),
                           width: 2,
-                          style: BorderStyle.solid, 
                         ),
                       ),
                       child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.camera_alt_rounded,
-                              size: 40,
-                              color: colorScheme.primary,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              "Tap to Scan Document",
-                              style: TextStyle(
-                                color: colorScheme.primary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                        child: _isLoading
+                            ? Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  CircularProgressIndicator(),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    "Verifying Results...",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.camera_alt_rounded,
+                                    size: 40,
+                                    color: colorScheme.primary,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    "Tap to Scan Document",
+                                    style: TextStyle(
+                                      color: colorScheme.primary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    "Powered by Veriff",
+                                    style: TextStyle(
+                                      color: colorScheme.onSurfaceVariant
+                                          .withOpacity(0.5),
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              "Powered by Veriff",
-                              style: TextStyle(
-                                color: colorScheme.onSurfaceVariant.withOpacity(0.5),
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
                       ),
                     ),
                   ),
 
                   const SizedBox(height: 32),
 
-                  // Guidelines
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                          _buildGuidelineItem(context, Icons.circle, "Prepare your physical ID card"),
-                          const SizedBox(height: 16),
-                          _buildGuidelineItem(context, Icons.circle, "Ensure good lighting"),
-                          const SizedBox(height: 16),
-                          _buildGuidelineItem(context, Icons.circle, "Be ready for a quick selfie"),
+                        _buildGuidelineItem(
+                          context,
+                          Icons.circle,
+                          "Prepare your physical ID card",
+                        ),
+                        const SizedBox(height: 16),
+                        _buildGuidelineItem(
+                          context,
+                          Icons.circle,
+                          "Ensure good lighting",
+                        ),
+                        const SizedBox(height: 16),
+                        _buildGuidelineItem(
+                          context,
+                          Icons.circle,
+                          "Be ready for a quick selfie",
+                        ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 32),
-                  
-                  Text(
-                    "Your ID is encrypted and deleted after verification.\nWe never share it with other users.",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 11, color: colorScheme.onSurface, height: 1.4),
-                  ),
-                  const SizedBox(height: 24),
                 ],
               ),
             ),
           ),
 
-          // Bottom Button
           Padding(
             padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                // Button is disabled ONLY if loading. 
-                // If not loading, it triggers the flow.
-                onPressed: _isLoading ? null : _startVeriffFlow, 
+                onPressed: _isLoading ? null : _startVeriffFlow,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: colorScheme.primary,
                   foregroundColor: colorScheme.onPrimary,
@@ -337,34 +437,61 @@ class _GovernmentIdVerificationScreenState
                     borderRadius: BorderRadius.circular(16),
                   ),
                 ),
-                child: _isLoading 
-                  ? const SizedBox(
-                      height: 20, width: 20, 
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-                    )
-                  : const Text(
-                      "Start Verification",
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
+                child: _isLoading
+                    ? const Text(
+                        "Processing...",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                    : const Text(
+                        "Start Verification",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
             ),
           ),
 
-          // Navigation Row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               TextButton.icon(
-                onPressed: _onBack,
-                icon: Icon(Icons.arrow_back, size: 20, color: colorScheme.onSurface),
-                label: Text("Back", style: TextStyle(color: colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w600)),
+                onPressed: _isLoading ? null : _onBack,
+                icon: Icon(
+                  Icons.arrow_back,
+                  size: 20,
+                  color: colorScheme.onSurface,
+                ),
+                label: Text(
+                  "Back",
+                  style: TextStyle(
+                    color: colorScheme.onSurface,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
               Directionality(
                 textDirection: TextDirection.rtl,
                 child: TextButton.icon(
-                  onPressed: _onSkip,
-                  icon: Icon(Icons.skip_next_rounded, size: 24, color: colorScheme.onSurface),
-                  label: Text("Skip", style: TextStyle(color: colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w600)),
+                  onPressed: _isLoading ? null : _onSkip,
+                  icon: Icon(
+                    Icons.skip_next_rounded,
+                    size: 24,
+                    color: colorScheme.onSurface,
+                  ),
+                  label: Text(
+                    "Skip",
+                    style: TextStyle(
+                      color: colorScheme.onSurface,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -374,35 +501,7 @@ class _GovernmentIdVerificationScreenState
     );
   }
 
-  // --- Helper Methods ---
-
-  Widget _buildTabItem(DocumentType type, String label) {
-    final isSelected = _selectedDocType == type;
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _selectedDocType = type),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? colorScheme.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(30),
-          ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              fontSize: 12,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  // --- Helpers ---
 
   Widget _buildGuidelineItem(BuildContext context, IconData icon, String text) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -413,7 +512,11 @@ class _GovernmentIdVerificationScreenState
         Expanded(
           child: Text(
             text,
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: colorScheme.onSurface),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurface,
+            ),
           ),
         ),
       ],
@@ -439,14 +542,34 @@ class _GovernmentIdVerificationScreenState
             children: [
               const Spacer(),
               Container(
-                width: 120, height: 120,
-                decoration: BoxDecoration(color: colorScheme.primary, shape: BoxShape.circle),
-                child: Center(child: Icon(icon, size: 50, color: colorScheme.onPrimary)),
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Icon(icon, size: 60, color: Colors.green.shade600),
+                ),
               ),
               const SizedBox(height: 32),
-              Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 16),
-              Text(subtitle, textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: colorScheme.onSurfaceVariant)),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
               const Spacer(),
               SizedBox(
                 width: double.infinity,
@@ -456,9 +579,17 @@ class _GovernmentIdVerificationScreenState
                     backgroundColor: colorScheme.primary,
                     foregroundColor: colorScheme.onPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 20),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
-                  child: Text(buttonText, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  child: Text(
+                    buttonText,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
