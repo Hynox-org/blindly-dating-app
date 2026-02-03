@@ -1,15 +1,13 @@
-import 'dart:io';
-
+// import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:veriff_flutter/veriff_flutter.dart';
 
-import '../../../../onboarding/data/repositories/verification_repository.dart';
 import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
 import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
-import '../../../../../core/utils/custom_popups.dart';
 
-enum GovIdStep { instructions, processing, verified }
+enum GovIdStep { instructions, verified } // Removed 'processing' as we skip it
 
 enum DocumentType { drivers_license, aadhar_card, pan_card }
 
@@ -25,54 +23,227 @@ class _GovernmentIdVerificationScreenState
     extends ConsumerState<GovernmentIdVerificationScreen> {
   GovIdStep _currentStep = GovIdStep.instructions;
   DocumentType _selectedDocType = DocumentType.drivers_license;
-  File? _selectedImage;
-  final _verificationRepo = VerificationRepository();
+  bool _isLoading = false;
 
-  // --- Actions ---
+  // Track the last handled status to prevent duplicate popups
+  String? _lastHandledStatus;
 
-  Future<void> _uploadAndVerify() async {
-    if (_selectedImage == null) return;
+  @override
+  void initState() {
+    super.initState();
+    _listenForDetailedVerificationStatus();
+  }
 
-    setState(() {
-      _currentStep = GovIdStep.processing;
-    });
+  // --- 1. INTELLIGENT LISTENER (Updated to check status immediately) ---
+  Future<void> _listenForDetailedVerificationStatus() async {
+    final authUserId = Supabase.instance.client.auth.currentUser?.id;
+    if (authUserId == null) return;
 
     try {
-      final userId = Supabase.instance.client.auth.currentUser?.id;
-      if (userId == null) throw Exception("User not logged in");
+      // 🕵️ STEP 1: Get Profile ID AND Current Status
+      final profileData = await Supabase.instance.client
+          .from('profiles')
+          .select('id, is_verified')
+          .eq('user_id', authUserId)
+          .maybeSingle();
 
-      // 1. Upload Image
-      final storagePath = await _verificationRepo.uploadGovernmentId(
-        _selectedImage!,
-        userId,
-      );
-
-      // 2. Create Request
-      await _verificationRepo.createVerificationRequest(
-        userId: userId,
-        mediaStoragePath: storagePath,
-        verificationType: 'gov_id',
-        additionalData: {'document_type': _selectedDocType.name},
-      );
-
-      if (mounted) {
-        setState(() {
-          _currentStep = GovIdStep.verified;
-        });
+      if (profileData == null) {
+        print("❌ Error: Could not find a profile for this user.");
+        return;
       }
+
+      final profileId = profileData['id'];
+      final bool isAlreadyVerified = profileData['is_verified'] ?? false;
+
+      // 🛑 CHECK: Are they already verified?
+      if (isAlreadyVerified) {
+        print("✅ User is already verified. Skipping stream.");
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _currentStep = GovIdStep
+                .verified; // Used to track state, but we stay on same screen
+          });
+          // 🔔 Show the specific message you asked for
+          _showProfessionalToast(
+            "You have been already verified",
+            isError: false,
+          );
+        }
+        return; // STOP HERE.
+      }
+
+      print("✅ Found Profile ID: $profileId. Listening for updates...");
+
+      // 🕵️ STEP 2: Listen using the Profile ID (Only if NOT verified yet)
+      Supabase.instance.client
+          .from('veriff_verifications')
+          .stream(primaryKey: ['id'])
+          .eq('profile_id', profileId)
+          .order('created_at', ascending: false)
+          .limit(1)
+          .listen((List<Map<String, dynamic>> data) {
+            if (data.isNotEmpty && mounted) {
+              final latestLog = data.first;
+              final String status = latestLog['status'] ?? 'created';
+              final String? reason = latestLog['fail_reason'];
+
+              if (_lastHandledStatus == status) return;
+              _lastHandledStatus = status;
+
+              // ✅ CASE A: APPROVED
+              if (status == 'approved' || status == 'full_verified') {
+                if (mounted) {
+                  setState(() {
+                    _isLoading = false;
+                    _currentStep = GovIdStep.verified;
+                  });
+                  _showProfessionalToast(
+                    "Verification Successful",
+                    isError: false,
+                  );
+                }
+              }
+              // ❌ CASE B: FAILED / RESUBMIT
+              else if (status == 'resubmission_requested' ||
+                  status == 'declined') {
+                if (mounted) {
+                  setState(() => _isLoading = false);
+                  // Don't change step, stay here to retry
+                  _showFailureDialog(
+                    reason ?? "Document could not be verified.",
+                  );
+                }
+              }
+            }
+          });
     } catch (e) {
-      if (mounted) {
-        showErrorPopup(context, "Verification upload failed: $e");
-        setState(() {
-          _currentStep = GovIdStep.instructions;
-        });
-      }
+      print("❌ Listener Error: $e");
     }
   }
 
-  void _onVerifiedComplete() {
-    ref.read(onboardingProvider.notifier).completeStep('gov_id_optional');
+  // --- 2. PROFESSIONAL DIALOGS ---
+
+  void _showFailureDialog(String reason) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+            SizedBox(width: 10),
+            Text("Verification Failed"),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("We could not verify your ID. Veriff provided this reason:"),
+            SizedBox(height: 12),
+            Container(
+              padding: EdgeInsets.all(12),
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.shade200),
+              ),
+              child: Text(
+                reason,
+                style: TextStyle(
+                  color: Colors.brown.shade800,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            SizedBox(height: 12),
+            Text("Please try again with a clearer image."),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              "Try Again",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
   }
+
+  void _showProfessionalToast(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              isError ? Icons.error_outline : Icons.check_circle,
+              color: Colors.white,
+            ),
+            SizedBox(width: 12),
+            Text(message, style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        backgroundColor: isError ? Colors.red.shade700 : Colors.green.shade700,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  // --- 3. VERIFF LOGIC ---
+  Future<void> _startVeriffFlow() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) throw Exception("User not logged in");
+
+      // A. Call Edge Function
+      final response = await Supabase.instance.client.functions.invoke(
+        'create-veriff-session',
+        body: {
+          'firstName': user.userMetadata?['first_name'] ?? '',
+          'lastName': user.userMetadata?['last_name'] ?? '',
+        },
+      );
+
+      final sessionUrl = response.data['url'];
+      if (sessionUrl == null) throw Exception("Failed to generate Veriff URL");
+
+      // B. Start SDK
+      Configuration config = Configuration(sessionUrl);
+      Veriff veriff = Veriff();
+
+      // Wait for user to finish
+      Result result = await veriff.start(config);
+
+      if (result.status == Status.done) {
+        // User finished. We keep spinner loading while waiting for Webhook.
+        print("Veriff finished. Waiting for webhook...");
+      } else if (result.status == Status.error) {
+        setState(() => _isLoading = false);
+        _showProfessionalToast("Camera Error: ${result.error}", isError: true);
+      } else if (result.status == Status.canceled) {
+        setState(() => _isLoading = false);
+        print("User cancelled verification");
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _showProfessionalToast(
+        "Connection Failed. Please try again.",
+        isError: true,
+      );
+    }
+  }
+
+  // --- Actions ---
 
   void _onSkip() {
     ref.read(onboardingProvider.notifier).skipStep('gov_id_optional');
@@ -81,13 +252,6 @@ class _GovernmentIdVerificationScreenState
   void _onBack() {
     if (_currentStep == GovIdStep.instructions) {
       ref.read(onboardingProvider.notifier).goToPreviousStep();
-    } else {
-      // In processing or verified, usually disable back or go to start
-      // For now, go back to instructions
-      setState(() {
-        _currentStep = GovIdStep.instructions;
-        _selectedImage = null;
-      });
     }
   }
 
@@ -95,37 +259,17 @@ class _GovernmentIdVerificationScreenState
 
   @override
   Widget build(BuildContext context) {
-    if (_currentStep == GovIdStep.processing) {
-      return _buildStatusView(
-        context,
-        icon: Icons.access_time_filled_rounded,
-        title: "We’re reviewing your Government ID proof",
-        subtitle:
-            "Your ID verification is in progress. This usually take a few hours. We’ll notify you once complete.",
-        buttonText: "Got it",
-        onPressed: _onVerifiedComplete,
-      );
-    }
-
-    if (_currentStep == GovIdStep.verified) {
-      return _buildStatusView(
-        context,
-        icon: Icons.check_circle_rounded,
-        title: "Verified Successfully!",
-        subtitle: "Government ID proof successfully verified",
-        buttonText: "Got it",
-        onPressed: _onVerifiedComplete,
-      );
-    }
+    // 1. DETERMINE IF VERIFIED
+    final bool isVerified = _currentStep == GovIdStep.verified;
 
     final colorScheme = Theme.of(context).colorScheme;
 
     return BaseOnboardingStepScreen(
       title: 'Verify Your Profile',
-      showBackButton: false, // Custom handling
+      showBackButton: false,
       onBack: _onBack,
       showNextButton: false,
-      showSkipButton: false, // Custom handling
+      showSkipButton: false,
       child: Column(
         children: [
           Expanded(
@@ -133,200 +277,206 @@ class _GovernmentIdVerificationScreenState
               child: Column(
                 children: [
                   const SizedBox(height: 16),
-                  // Shield Icon
                   Container(
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary, // Dark Olive Green from image
+                      color: isVerified
+                          ? Colors.green.shade100
+                          : colorScheme.primary,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      Icons.shield_outlined,
+                      isVerified
+                          ? Icons.check_circle_rounded
+                          : Icons.shield_outlined,
                       size: 40,
-                      color: Theme.of(context).colorScheme.onPrimary,
-                    ), // Gold color
+                      color: isVerified
+                          ? Colors.green.shade700
+                          : colorScheme.onPrimary,
+                    ),
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    "A quick check to keep you safe",
+                    isVerified
+                        ? "You are Verified!"
+                        : "A quick check to keep you safe",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSurface,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    "To confirm your identity and ensure community safety, Please upload a valid government issue ID.",
+                    isVerified
+                        ? "Your identity has been confirmed."
+                        : "To confirm your identity, we use Veriff for secure document scanning.",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      color: colorScheme.onSurfaceVariant,
                       height: 1.5,
                     ),
                   ),
                   const SizedBox(height: 32),
 
-                  // Document Type Selector
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(30), // More rounded
-                    ),
-                    padding: const EdgeInsets.all(4),
-                    child: Row(
-                      children: [
-                        _buildTabItem(
-                          DocumentType.drivers_license,
-                          "Driver's License",
+                  // Upload/Start Area
+                  GestureDetector(
+                    // Disabled if loading OR verified
+                    onTap: (_isLoading || isVerified) ? null : _startVeriffFlow,
+                    child: Container(
+                      height: 220,
+                      width: double.infinity,
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: isVerified
+                            ? Colors.green.shade50.withOpacity(0.5)
+                            : colorScheme.surfaceContainerHighest.withOpacity(
+                                0.3,
+                              ),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: isVerified
+                              ? Colors.green.shade300
+                              : (_isLoading
+                                    ? Colors.grey
+                                    : colorScheme.primary.withOpacity(0.5)),
+                          width: 2,
                         ),
-                        _buildTabItem(DocumentType.aadhar_card, "Aadhar Card"),
-                        _buildTabItem(DocumentType.pan_card, "PAN card"),
-                      ],
+                      ),
+                      child: Center(
+                        child: _isLoading
+                            ? Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  CircularProgressIndicator(),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    "Verifying Results...",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    isVerified
+                                        ? Icons.check_circle
+                                        : Icons.camera_alt_rounded,
+                                    size: 40,
+                                    color: isVerified
+                                        ? Colors.green.shade600
+                                        : colorScheme.primary,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    isVerified
+                                        ? "Verification Complete"
+                                        : "Tap to Scan Document",
+                                    style: TextStyle(
+                                      color: isVerified
+                                          ? Colors.green.shade800
+                                          : colorScheme.primary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  if (!isVerified) ...[
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      "Powered by Veriff",
+                                      style: TextStyle(
+                                        color: colorScheme.onSurfaceVariant
+                                            .withOpacity(0.5),
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                      ),
                     ),
                   ),
+
                   const SizedBox(height: 32),
 
-                  // Upload Area
-
-                  // Upload Area - Disabled
-                  Container(
-                    height: 220,
-                    width: double.infinity,
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest.withOpacity(
-                        0.5,
-                      ),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: colorScheme.outline.withOpacity(0.2),
-                      ),
-                    ),
-                    child: Center(
+                  if (!isVerified)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            Icons.cloud_off_rounded,
-                            size: 40,
-                            color: colorScheme.onSurfaceVariant.withOpacity(
-                              0.5,
-                            ),
+                          _buildGuidelineItem(
+                            context,
+                            Icons.circle,
+                            "Prepare your physical ID card",
                           ),
                           const SizedBox(height: 16),
-                          Text(
-                            "Upload currently disabled",
-                            style: TextStyle(
-                              color: colorScheme.onSurfaceVariant.withOpacity(
-                                0.5,
-                              ),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
+                          _buildGuidelineItem(
+                            context,
+                            Icons.circle,
+                            "Ensure good lighting",
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            "This feature will be available soon",
-                            style: TextStyle(
-                              color: colorScheme.onSurfaceVariant.withOpacity(
-                                0.5,
-                              ),
-                              fontSize: 12,
-                            ),
+                          const SizedBox(height: 16),
+                          _buildGuidelineItem(
+                            context,
+                            Icons.circle,
+                            "Be ready for a quick selfie",
                           ),
                         ],
                       ),
                     ),
-                  ),
-
                   const SizedBox(height: 32),
-
-                  // Guidelines
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildGuidelineItem(
-                          context,
-                          Icons
-                              .circle, // Placeholder, updated in _buildGuidelineItem
-                          "Place on a flat and dark surface",
-                        ),
-                        const SizedBox(height: 16),
-                        _buildGuidelineItem(
-                          context,
-                          Icons.circle,
-                          "Avoid glare from lights",
-                        ),
-                        const SizedBox(height: 16),
-                        _buildGuidelineItem(
-                          context,
-                          Icons.circle,
-                          "Ensure all 4 corners are visible",
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  Text(
-                    "Your ID is encrypted and will be deleted after verification.\nWe never share it with other users. Learn more",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Theme.of(context).colorScheme.onSurface,
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
                 ],
               ),
             ),
           ),
 
-          // Bottom Button
           Padding(
             padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _selectedImage != null ? _uploadAndVerify : null,
+                // Disabled if loading OR verified
+                onPressed: (_isLoading || isVerified) ? null : _startVeriffFlow,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 20),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  disabledBackgroundColor: Theme.of(context).colorScheme.primary
-                      .withOpacity(0.5), // Keep it green but dim
-                  disabledForegroundColor: colorScheme.onPrimary.withOpacity(
-                    0.7,
-                  ),
                 ),
-                child: const Text(
-                  "Upload & continue",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
+                child: _isLoading
+                    ? const Text(
+                        "Processing...",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                    : Text(
+                        isVerified ? "Verified ✅" : "Start Verification",
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
             ),
           ),
 
-          // Navigation Row: Back and Skip
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               TextButton.icon(
-                onPressed: _onBack,
+                // Disabled ONLY if loading. Enabled if verified.
+                onPressed: _isLoading ? null : _onBack,
                 icon: Icon(
                   Icons.arrow_back,
                   size: 20,
@@ -340,36 +490,29 @@ class _GovernmentIdVerificationScreenState
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 12,
-                    horizontal: 8,
-                  ),
-                ),
               ),
-              Directionality(
-                textDirection: TextDirection.rtl,
-                child: TextButton.icon(
-                  onPressed: _onSkip,
-                  icon: Icon(
-                    Icons.skip_next_rounded,
-                    size: 24,
-                    color: colorScheme.onSurface,
-                  ),
-                  label: Text(
-                    "Skip",
-                    style: TextStyle(
+              TextButton(
+                onPressed: _isLoading ? null : _onSkip,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      isVerified ? "Next" : "Skip",
+                      style: TextStyle(
+                        color: colorScheme.onSurface,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(
+                      isVerified
+                          ? Icons.arrow_forward_rounded
+                          : Icons.skip_next_rounded,
+                      size: 24,
                       color: colorScheme.onSurface,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
                     ),
-                  ),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 8,
-                    ),
-                  ),
+                  ],
                 ),
               ),
             ],
@@ -379,40 +522,9 @@ class _GovernmentIdVerificationScreenState
     );
   }
 
-  Widget _buildTabItem(DocumentType type, String label) {
-    final isSelected = _selectedDocType == type;
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedDocType = type;
-          });
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? colorScheme.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(30),
-          ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              fontSize: 12,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  // --- Helpers ---
 
   Widget _buildGuidelineItem(BuildContext context, IconData icon, String text) {
-    // Override icon with simple circle for this specific design
     final colorScheme = Theme.of(context).colorScheme;
     return Row(
       children: [
@@ -430,161 +542,5 @@ class _GovernmentIdVerificationScreenState
         ),
       ],
     );
-  }
-
-  Widget _buildStatusView(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required String buttonText,
-    VoidCallback? onPressed,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Scaffold(
-      backgroundColor: colorScheme.surface,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Back button only at the very bottom or top?
-              // Mockup shows "Back" at bottom for verified, but maybe top for processing?
-              // Standardize:
-              // Processing: No back.
-              // Verified: "Back" at bottom.
-              const Spacer(),
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: colorScheme.primary,
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  // Inner shield icon logic or just the icon
-                  child: Icon(icon, size: 50, color: colorScheme.onPrimary),
-                ), // Updated to match likely "Green Circle with Check" or "Green Loading"
-              ),
-              const SizedBox(height: 32),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                subtitle,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: onPressed,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: colorScheme.primary,
-                    foregroundColor: colorScheme.onPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: Text(
-                    buttonText,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              // Back Button
-              Padding(
-                padding: const EdgeInsets.only(top: 16.0),
-                child: TextButton.icon(
-                  onPressed: _onBack,
-                  icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
-                  label: Text(
-                    "Back",
-                    style: TextStyle(
-                      color: colorScheme.onSurface,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class DashedRectPainter extends CustomPainter {
-  final double strokeWidth;
-  final Color color;
-  final double gap;
-  final double borderRadius;
-
-  DashedRectPainter({
-    this.strokeWidth = 2.0,
-    this.color = Colors.black,
-    this.gap = 5.0,
-    this.borderRadius = 0,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    Paint dashedPaint = Paint()
-      ..color = color
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke;
-
-    final RRect rrect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      Radius.circular(borderRadius),
-    );
-
-    Path path = Path()..addRRect(rrect);
-
-    // Simple implementation of dashing a path
-    // For a perfect dashed RRect we can use path metrics, but for speed simplified approach:
-    // Just drawing the path with a dash effect is hard in vanilla flutter without path_drawing.
-    // I'll stick to manual if needed, OR use a simplified approach since importing path_drawing isn't allowed without pubspec check.
-    // Let's blindly try to use PathMetrics which IS in dart:ui (exported via material).
-
-    Path dashPath = Path();
-    double dashWidth = 10.0;
-    double dashSpace = gap;
-    double distance = 0.0;
-
-    for (var pathMetric in path.computeMetrics()) {
-      while (distance < pathMetric.length) {
-        dashPath.addPath(
-          pathMetric.extractPath(distance, distance + dashWidth),
-          Offset.zero,
-        );
-        distance += dashWidth;
-        distance += dashSpace;
-      }
-    }
-    canvas.drawPath(dashPath, dashedPaint);
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) {
-    return true;
   }
 }

@@ -9,7 +9,6 @@ class AuthRepository {
   final SupabaseClient _client;
 
   // List of phone numbers configured as "Test Phone Numbers" in Supabase Dashboard.
-  // NOTE: According to Supabase Dashboard, these should NOT have the '+' prefix.
   static const Map<String, String> testNumbers = {
     '919952213571': '123456', // User's number
     '919999999999': '123456', // Generic test number
@@ -49,10 +48,8 @@ class AuthRepository {
 
   /// Signs in with phone number by sending an OTP via Supabase.
   Future<void> signInWithPhone(String phone) async {
-    // Strip the '+' prefix if it exists to match Supabase Test Number configuration
     final formattedPhone = phone.startsWith('+') ? phone.substring(1) : phone;
 
-    // Check Rate Limit before calling API
     await _checkOtpRateLimit(formattedPhone);
 
     AppLogger.info(
@@ -87,11 +84,8 @@ class AuthRepository {
   }
 
   /// Signs in with email by sending an OTP (Magic Link or OTP).
-  /// Note: Blindly flow uses OTP according to UI.
   Future<void> signInWithEmail(String email) async {
-    // Check Rate Limit
     await _checkOtpRateLimit(email);
-
     await _client.auth.signInWithOtp(email: email, shouldCreateUser: true);
   }
 
@@ -121,40 +115,55 @@ class AuthRepository {
     return await _client.auth.signUp(email: email, password: password);
   }
 
-  /// Sign in with Google (OAuth flow).
+  /// Sign in with Google (OAuth flow) - UPDATED FOR V7.0.0+
+  // Sign in with Google (Fixed for version 7.0.0+)
   Future<void> signInWithGoogle() async {
     try {
-      // Web Client ID from Google Cloud Console (for Supabase to verify the token)
-      // This is required even for Android/iOS to verify the ID token on the backend.
+      // 1. Get the Web Client ID from your .env file
       final webClientId = dotenv.env['WEB_CLIENT_ID'];
       if (webClientId == null) {
         throw const AuthException('WEB_CLIENT_ID not found in .env');
       }
 
-      final GoogleSignIn googleSignIn = GoogleSignIn(
+      // 2. Use the Singleton Instance (Required in v7)
+      final GoogleSignIn googleSignIn = GoogleSignIn.instance;
+
+      // 3. Initialize Configuration (Required in v7)
+      // You MUST pass the serverClientId here now.
+      await googleSignIn.initialize(
         serverClientId: webClientId,
       );
 
       // Force account picker by signing out first
       await googleSignIn.signOut();
 
-      final googleUser = await googleSignIn.signIn();
-      if (googleUser == null) {
+      // 4. Authenticate
+      // 'signIn()' is now 'authenticate()'
+      final GoogleSignInAccount? googleUser;
+      try {
+        googleUser = await googleSignIn.authenticate();
+      } catch (e) {
+        // Handle user cancelling the popup
+        AppLogger.warning('AUTH_REPO: Google Sign-In cancelled: $e');
         throw const AuthException('Sign in cancelled', statusCode: 'CANCELLED');
       }
-      final googleAuth = await googleUser.authentication;
 
-      final accessToken = googleAuth.accessToken;
+      // 5. Get Tokens (No 'await' needed anymore)
+      final googleAuth = googleUser.authentication;
+
+      // 6. Fix: 'accessToken' DOES NOT EXIST in v7. We only need idToken.
       final idToken = googleAuth.idToken;
 
       if (idToken == null) {
         throw const AuthException('No ID Token found from Google Sign-In');
       }
 
+      // 7. Sign in to Supabase
+      // Pass 'null' for accessToken. Supabase will verify using the idToken.
       final response = await _client.auth.signInWithIdToken(
         provider: OAuthProvider.google,
         idToken: idToken,
-        accessToken: accessToken,
+        accessToken: null, // <--- Correct!
       );
 
       if (response.user != null) {
@@ -163,6 +172,7 @@ class AuthRepository {
 
       AppLogger.info('AUTH_REPO: Google Sign-In successful');
     } catch (e, stackTrace) {
+      if (e is AuthException) rethrow;
       AppLogger.error('AUTH_REPO: Google Sign-In failed', e, stackTrace);
       rethrow;
     }
@@ -177,12 +187,13 @@ class AuthRepository {
   /// Signs out the user.
   Future<void> signOut() async {
     await _client.auth.signOut();
+    // Optional: Also sign out of Google locally to ensure account picker appears next time
+    // await GoogleSignIn.instance.signOut(); 
   }
 
   /// Creates a profile for the user and initializes default 'date' mode.
   Future<void> createProfile(String userId) async {
     try {
-      // 1. Ensure Profile exists
       final profileResponse = await _client
           .from('profiles')
           .upsert({'user_id': userId}, onConflict: 'user_id')
@@ -191,7 +202,6 @@ class AuthRepository {
 
       final profileId = profileResponse['id'] as String;
 
-      // 2. Initialize default 'date' mode
       await _client.from('profile_modes').upsert({
         'profile_id': profileId,
         'mode': 'date',
@@ -213,7 +223,6 @@ class AuthRepository {
     if (session == null) {
       return true;
     }
-    // Basic expiry check
     final now = DateTime.now();
     if (session.expiresAt != null) {
       final expiresAt = DateTime.fromMillisecondsSinceEpoch(
@@ -222,7 +231,6 @@ class AuthRepository {
       return now.isAfter(expiresAt.subtract(const Duration(seconds: 60)));
     }
 
-    // Explicit JWT validation middleware
     if (!JwtValidator.validateToken(session.accessToken)) {
       AppLogger.warning('AUTH_REPO: Session token failed validation.');
       return true;
@@ -232,29 +240,18 @@ class AuthRepository {
   }
 
   /// Refreshes the session if needed.
-  /// This is usually handled automatically by the SDK, but can be called manually.
   Future<void> recoverSession() async {
     final session = _client.auth.currentSession;
     if (session != null) {
-      // Refreshing the session handled by the SDK when making calls,
-      // but explicitly we can just get the session which might trigger refresh logic internal to the SDK
-      // or we can use refreshSession() if available, but verifyOTP/signIn usually sets this up.
-      // For Supabase Flutter v2, refreshing is automatic.
-      // If we really need to force a refresh, there isn't a direct public method always exposed easily without a refresh token flow,
-      // but effectively checking state is enough.
-      // However, if we want to ensure we have a valid session to proceed:
       try {
         await _client.auth.refreshSession();
       } catch (e) {
         AppLogger.error('AUTH_REPO: Failed to refresh session', e);
-        // If refresh fails, it likely means the session is truly dead.
       }
     }
   }
 
   /// Deletes the current user's account.
-  /// Tries to call a Supabase RPC function 'delete_user_account'.
-  /// If that fails (e.g. function doesn't exist), it falls back to basic sign out.
   Future<void> deleteAccount() async {
     try {
       final user = currentUser;
