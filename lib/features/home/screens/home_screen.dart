@@ -144,38 +144,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // ✅ Helper to map API data to UI data
   List<UserProfile> _mapToUserProfiles(List<DiscoveryUser> discoveryUsers) {
     return discoveryUsers.map((user) {
-      final imgUrl = user.primaryImageUrl;
-      final genderStr = "Male";
+      
+      // 1. Get the list of images directly from the Model
+      // (The Repository has already signed them and put them in this list)
+      List<String> profileImages = List.from(user.imageUrls);
 
-      List<String> imageUrls = [];
-      if (imgUrl != null && imgUrl.isNotEmpty) {
-        imageUrls.add(imgUrl);
+      // 2. Safety Fallback: If the list is empty, show a text avatar
+      // This ensures the card doesn't look broken.
+      if (profileImages.isEmpty) {
+        profileImages.add(
+          'https://ui-avatars.com/api/?name=${Uri.encodeComponent(user.displayName)}&background=random&size=500&bold=true',
+        );
       }
 
-      final hash = user.profileId.hashCode;
-      if (genderStr == 'Male') {
-        final men = ['assets/defaults/men1.jpeg', 'assets/defaults/men2.jpeg'];
-        while (imageUrls.length < 3) {
-          final idx = (hash + imageUrls.length) % men.length;
-          imageUrls.add(men[idx]);
-        }
-      } else if (genderStr == 'Female') {
-        final women = [
-          'assets/defaults/women1.jpeg',
-          'assets/defaults/women2.jpeg',
-          'assets/defaults/women3.jpeg',
-        ];
-        while (imageUrls.length < 3) {
-          final idx = (hash + imageUrls.length) % women.length;
-          imageUrls.add(women[idx]);
-        }
-      } else {
-        while (imageUrls.length < 3) {
-          imageUrls.add(
-            'https://ui-avatars.com/api/?name=${Uri.encodeComponent(user.displayName)}&background=random&size=600&bold=true&font-size=0.5',
-          );
-        }
-      }
+      // 3. Determine Gender String (for UI display)
+      final genderStr = user.gender.isNotEmpty
+          ? (user.gender.startsWith('M')
+              ? 'Male'
+              : (user.gender.startsWith('F') ? 'Female' : 'Male'))
+          : 'Male';
 
       return UserProfile(
         id: user.profileId,
@@ -184,9 +171,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         distance: double.parse((user.distanceKm / 1000).toStringAsFixed(1)),
         location: 'Nearby',
         gender: genderStr,
-        imageUrls: imageUrls,
-        bio:
-            'Match Score: shared interests',
+        imageUrls: profileImages, // ✅ PASS THE LIST FROM DB
+        bio: 'Match Score: shared interests',
         height: 'Ask me',
         activityLevel: 'Active',
         education: '',
@@ -255,23 +241,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             onPressed: () {
               // 1. Safety Check
               if (historyDeck.isEmpty) return;
-              
+
               HapticFeedback.mediumImpact();
 
               // 2. Call Provider (Instant)
               ref.read(discoveryFeedProvider.notifier).undoLastSwipe();
 
               // 3. FORCE UI RESTORE (The Fix for "Not coming back")
-              // If the deck was finished or empty, we must manually tell the UI 
+              // If the deck was finished or empty, we must manually tell the UI
               // "Hey, we are not finished anymore, reset to the first card!"
               if (mounted) {
-                 // Check if we need to revive the stack
-                 if (_isDeckFinished || mainDeck.isEmpty) {
-                   setState(() {
-                     _isDeckFinished = false;
-                     _currentIndex = 0; 
-                   });
-                 }
+                // Check if we need to revive the stack
+                if (_isDeckFinished || mainDeck.isEmpty) {
+                  setState(() {
+                    _isDeckFinished = false;
+                    _currentIndex = 0;
+                  });
+                }
               }
             },
           ),
@@ -503,9 +489,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   ) {
     setState(() {
       _swipeProgress = 0.0;
-      // We don't strictly need _currentIndex for the logic anymore, 
+      // We don't strictly need _currentIndex for the logic anymore,
       // but keeping it 0 is safer.
-      _currentIndex = 0; 
+      _currentIndex = 0;
     });
 
     _triggerHapticFeedback(direction);
@@ -514,9 +500,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Since we always show the top card (Index 0), the swiped user is likely at 0.
     // However, the 'previousIndex' passed by the library might be 0.
     if (currentDeck.isEmpty) return true;
-    
+
     // We target the FIRST card because that's the one being swiped away.
-    final swipedUser = currentDeck.first; 
+    final swipedUser = currentDeck.first;
     final uiProfile = _mapToUserProfiles([swipedUser]).first;
 
     // 2. DB Record
@@ -536,11 +522,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return true;
   }
 
-
   // -----------------------------------------------------------------------
   // ✅ UPDATED UNDO LOGIC
   // -----------------------------------------------------------------------
-   bool _onUndo(
+  bool _onUndo(
     int? previousIndex,
     int currentIndex,
     CardSwiperDirection direction,
@@ -563,9 +548,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _isDeckFinished = false; // Ensure we exit empty state
     });
 
-    return true; 
+    return true;
   }
-
 
   void _triggerHapticFeedback(CardSwiperDirection direction) {
     HapticFeedback.selectionClick();
@@ -577,6 +561,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         .read(swipeProvider.notifier)
         .swipe(targetProfileId: profile.id, action: 'like');
   }
+
   void _handlePass(UserProfile profile) {
     debugPrint('Passed: ${profile.name}');
     ref
