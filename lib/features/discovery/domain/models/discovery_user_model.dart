@@ -5,7 +5,8 @@ class DiscoveryUser {
   final double distanceKm;
   final String bio;
   final String modeId;
-  final String? primaryImageUrl;
+  final List<String> imageUrls; // ✅ CHANGED: From String? to List<String>
+  final String gender;
 
   DiscoveryUser({
     required this.profileId,
@@ -14,7 +15,8 @@ class DiscoveryUser {
     required this.distanceKm,
     required this.bio,
     required this.modeId,
-    this.primaryImageUrl,
+    required this.imageUrls, // ✅ Required now (defaults to empty)
+    required this.gender,
   });
 
   factory DiscoveryUser.fromJson(Map<String, dynamic> json) {
@@ -26,7 +28,14 @@ class DiscoveryUser {
       distanceKm: (json['distance_km'] as num?)?.toDouble() ?? 0.0,
       bio: json['bio'] ?? '',
       modeId: json['mode_id'] ?? 'date',
-      primaryImageUrl: json['primary_image_url'],
+      
+      // ✅ CHANGED: Parse the list of strings from SQL
+      imageUrls: (json['image_urls'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [], 
+
+      gender: json['gender'] ?? 'Male',
     );
   }
 }
