@@ -63,7 +63,7 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   // Custom Header Action (if any)
-                  if (headerAction != null) headerAction!,
+                  ?headerAction,
                 ],
               ),
             ),

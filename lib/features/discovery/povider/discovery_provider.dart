@@ -68,17 +68,29 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
   Future<void> refreshFeed({String? mode}) async {
     if (mode != null) _currentMode = mode.toLowerCase();
 
-    state = state.copyWith(
-      isLoading: true,
-      mainDeck: [],
-      historyDeck: [],
-      seenIds: {}, // Clear cache on full refresh
-      isDeckExhausted: false,
-    );
+    try {
+      state = state.copyWith(
+        isLoading: true,
+        mainDeck: [],
+        historyDeck: [],
+        seenIds: {},
+        isDeckExhausted: false,
+      );
 
-    await _loadBatch();
+      // This takes time...
+      await _loadBatch();
 
-    state = state.copyWith(isLoading: false);
+      // 🛑 CRITICAL FIX: Check mounted again before turning off loading
+      if (!mounted) return;
+
+      state = state.copyWith(isLoading: false);
+    } catch (e) {
+      // 🛑 Safety check here too
+      if (mounted) {
+        state = state.copyWith(isLoading: false);
+      }
+      debugPrint("❌ Error refreshing feed: $e");
+    }
   }
 
   // --------------------------------------------------
@@ -156,9 +168,10 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
         radiusKm: 50,
       );
 
-      // 2. Deduplicate (Client-Side Safety Net)
-      // Even though SQL filters swipes, it might send the same person twice
-      // if paginating rapidly. We filter against `state.seenIds`.
+      // 🛑 OPTIMIZATION: Check if disposed IMMEDIATELY after async,
+      // before trying to access 'state' (which throws if disposed).
+      if (!mounted) return;
+
       final validUsers = <DiscoveryUser>[];
       final newSeenIds = Set<String>.from(state.seenIds);
 
@@ -186,7 +199,9 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
       }
     } catch (e) {
       debugPrint("❌ Discovery Fetch Error: $e");
-      state = state.copyWith(isFetchingMore: false);
+      if (mounted) {
+        state = state.copyWith(isFetchingMore: false);
+      }
       // Optional: Set an error state if you have one
     }
   }

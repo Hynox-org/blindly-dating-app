@@ -31,7 +31,7 @@ class DiscoveryRepository {
   static const int _devRadiusKm = 20000;
 
   // --------------------------------------------------
-  // 🔥 MAIN DISCOVERY FEED (OPTIMIZED)
+  // 🔥 MAIN DISCOVERY FEED (OPTIMIZED FOR LISTS)
   // --------------------------------------------------
   Future<List<DiscoveryUser>> getDiscoveryFeed({
     required String currentMode,
@@ -67,31 +67,49 @@ class DiscoveryRepository {
 
       debugPrint('🧪 DISCOVERY ROWS FOUND: ${response.length}');
 
-      // 2. PARALLEL PROCESSING (Production Speed ⚡)
+      // 2. PARALLEL PROCESSING (Iterate Users)
       final futureUsers = response.map((raw) async {
         final Map<String, dynamic> data = Map<String, dynamic>.from(raw);
-        final String? imagePath = data['primary_image_url'];
+        
+        // 🔍 EXTRACT LIST: Get the array of paths from DB (Column: image_urls)
+        final List<dynamic> rawPaths = data['image_urls'] ?? [];
+        final List<String> signedUrls = [];
 
-        // Handle Signing
-        if (imagePath != null &&
-            imagePath.isNotEmpty &&
-            !imagePath.startsWith('http')) {
-          try {
-            // ⚠️ VERIFY BUCKET NAME: 'user_photos'
-            final signedUrl = await _supabase.storage
-                .from('user_photos')
-                .createSignedUrl(imagePath, 60 * 60);
+        // 🔄 LOOP & SIGN: Process each image in the list
+        for (var item in rawPaths) {
+          String imagePath = item.toString();
 
-            data['primary_image_url'] = signedUrl;
-          } catch (e) {
-            debugPrint('⚠️ Image sign failed for ${data['profile_id']}: $e');
+          // Only sign if it looks like a path (not a full http URL)
+          if (imagePath.isNotEmpty && !imagePath.startsWith('http')) {
+            try {
+              // 🛠️ Remove leading slash if present
+              if (imagePath.startsWith('/')) {
+                imagePath = imagePath.substring(1);
+              }
+
+              // ⚠️ CRITICAL: Ensure bucket name is correct ('user_photos')
+              final signedUrl = await _supabase.storage
+                  .from('user_photos') 
+                  .createSignedUrl(imagePath, 60 * 60); // 1 Hour Expiry
+
+              signedUrls.add(signedUrl);
+            } catch (e) {
+              debugPrint('⚠️ Image sign failed for path: $imagePath');
+              // Optional: Add original path or skip? We skip to keep UI clean.
+            }
+          } else if (imagePath.isNotEmpty) {
+            // It's already a full URL (e.g. Google Auth photo), keep it.
+            signedUrls.add(imagePath);
           }
         }
+
+        // ✅ UPDATE DATA: Replace the raw paths with the signed URLs
+        data['image_urls'] = signedUrls;
 
         return DiscoveryUser.fromJson(data);
       });
 
-      // 3. Wait for all to finish instantly
+      // 3. Wait for all users to be processed
       final List<DiscoveryUser> users = await Future.wait(futureUsers);
 
       return users;
@@ -104,7 +122,7 @@ class DiscoveryRepository {
   }
 
   // --------------------------------------------------
-  // ⏪ UNDO LAST SWIPE (✅ ADDED THIS MISSING PART)
+  // ⏪ UNDO LAST SWIPE
   // --------------------------------------------------
   Future<bool> undoLastSwipe() async {
     try {
@@ -120,7 +138,6 @@ class DiscoveryRepository {
   // 🛠 ENSURE PROFILE MODE EXISTS
   // --------------------------------------------------
   Future<void> ensureProfileMode(String mode) async {
-    // 1. Validate Mode (Only Date/BFF supported in DB for now)
     final dbMode = mode.toLowerCase();
     if (dbMode != 'date' && dbMode != 'bff') return;
 
@@ -128,25 +145,16 @@ class DiscoveryRepository {
       final authUserId = _supabase.auth.currentUser?.id;
       if (authUserId == null) return;
 
-      // 2. Resolve Profile ID from Auth ID
-      // The 'profiles' table usually maps 1:1 with auth.users but has its own UUID PK or uses the same UUID.
-      // The FK error suggests we must be careful. Let's look it up.
       final profileData = await _supabase
           .from('profiles')
           .select('id')
           .eq('user_id', authUserId)
           .maybeSingle();
 
-      if (profileData == null) {
-        debugPrint(
-          '⚠️ ensureProfileMode: No profile found for auth user $authUserId',
-        );
-        return;
-      }
+      if (profileData == null) return;
 
       final String profileId = profileData['id'];
 
-      // 3. Check if mode exists
       final existing = await _supabase
           .from('profile_modes')
           .select('id')
@@ -155,27 +163,20 @@ class DiscoveryRepository {
           .maybeSingle();
 
       if (existing == null) {
-        debugPrint('🆕 Creating new profile mode: $dbMode');
-        // 4. Create if missing
         await _supabase.from('profile_modes').insert({
           'profile_id': profileId,
           'mode': dbMode,
-          'is_active': true, // Default to active
+          'is_active': true,
         });
-      } else {
-        debugPrint('✅ Profile mode exists: $dbMode');
       }
     } catch (e) {
       debugPrint('❌ Failed to ensure profile mode: $e');
-      // Don't rethrow, strictly background task
     }
   }
 
   // --------------------------------------------------
   // 🔄 SOURCE OF TRUTH: PROFILES TABLE
   // --------------------------------------------------
-  
-  /// Fetches the current mode from the profiles table. Defaults to 'date'.
   Future<String> fetchCurrentMode() async {
     try {
       final userId = _supabase.auth.currentUser?.id;
@@ -193,10 +194,9 @@ class DiscoveryRepository {
     } catch (e) {
       debugPrint('⚠️ Failed to fetch current mode from DB: $e');
     }
-    return 'date'; 
+    return 'date';
   }
 
-  /// Updates the current mode in the profiles table.
   Future<void> updateCurrentMode(String mode) async {
     try {
       final userId = _supabase.auth.currentUser?.id;
@@ -206,8 +206,6 @@ class DiscoveryRepository {
           .from('profiles')
           .update({'current_mode': mode})
           .eq('user_id', userId);
-          
-      debugPrint('✅ Synced current mode to DB: $mode');
     } catch (e) {
       debugPrint('❌ Failed to update current mode in DB: $e');
     }
