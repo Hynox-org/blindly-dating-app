@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/widgets/app_layout.dart';
 import '../widgets/discover_empty_state.dart';
+import '../../../home/screens/connection_type_screen.dart';
+import '../../../../core/utils/navigation_utils.dart';
 
 class DiscoverScreen extends StatelessWidget {
   const DiscoverScreen({super.key});
@@ -15,15 +17,21 @@ class DiscoverScreen extends StatelessWidget {
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(
+            Icons.more_vert,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
           onPressed: () {
-            Navigator.of(context).pop();
+            NavigationUtils.navigateToWithSlide(
+              context,
+              const ConnectionTypeScreen(),
+            );
           },
         ),
-        title: const Text(
+        title: Text(
           'Discover',
           style: TextStyle(
-            color: Colors.black,
+            color: Theme.of(context).colorScheme.onSurface,
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),

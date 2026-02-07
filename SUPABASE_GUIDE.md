@@ -39,7 +39,20 @@ Run this in PowerShell to install the CLI locally.
 
 ---
 
-## 3. Branches (`dev` vs `main`)
+## 3. Syncing Types (No Docker)
+If you don't have Docker installed, use the following automation script to pull the latest TypeScript types from both Dev and Prod:
+
+```powershell
+./scripts/sync_supabase.ps1
+```
+
+**Manual Commands (if script fails):**
+1. **Link Project**: `supabase link --project-ref <REF>`
+2. **Gen Types**: `supabase gen types typescript --linked > supabase/schema_dev.ts`
+
+---
+
+## 4. Branches (`dev` vs `main`)
 
 | Action | Command |
 | :--- | :--- |

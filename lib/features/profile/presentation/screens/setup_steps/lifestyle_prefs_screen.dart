@@ -8,6 +8,7 @@ import '../../../../auth/providers/auth_providers.dart';
 import '../../../../onboarding/presentation/widgets/selection_chip.dart';
 import '../../../../../core/utils/custom_popups.dart';
 import '../../../../../core/widgets/app_loader.dart';
+import '../../../../../core/providers/connection_mode_provider.dart';
 
 class LifestylePrefsScreen extends ConsumerStatefulWidget {
   const LifestylePrefsScreen({super.key});
@@ -40,7 +41,11 @@ class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
       final Map<int, String> loadedSelections = {};
 
       if (user != null) {
-        final userChipIds = await repo.getUserLifestyleChips(user.id);
+        final currentMode = ref.read(connectionModeProvider).toLowerCase();
+        final userChipIds = await repo.getUserLifestyleChips(
+          user.id,
+          mode: currentMode,
+        );
         // Map chip IDs back to selections map (CategoryId -> ChipId)
         // We need to find which category each chip belongs to
         for (var chipId in userChipIds) {
@@ -119,9 +124,14 @@ class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
       final user = ref.read(authRepositoryProvider).currentUser;
       if (user != null) {
         final allSelectedChipIds = _selections.values.toList();
+        final currentMode = ref.read(connectionModeProvider).toLowerCase();
         await ref
             .read(onboardingRepositoryProvider)
-            .saveLifestylePreferences(user.id, allSelectedChipIds);
+            .saveLifestylePreferences(
+              user.id,
+              allSelectedChipIds,
+              mode: currentMode,
+            );
 
         if (mounted) {
           ref.read(onboardingProvider.notifier).completeStep('lifestyle_prefs');

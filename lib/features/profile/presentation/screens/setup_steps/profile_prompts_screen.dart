@@ -9,6 +9,7 @@ import '../../../../auth/providers/auth_providers.dart';
 import '../../../../../core/utils/custom_popups.dart';
 import 'package:blindly_dating_app/features/onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
 import '../../../../../core/widgets/app_loader.dart';
+import '../../../../../core/providers/connection_mode_provider.dart';
 
 class ProfilePromptsScreen extends ConsumerStatefulWidget {
   const ProfilePromptsScreen({super.key});
@@ -57,11 +58,12 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
       if (userId == null) throw Exception('User not logged in');
 
       final repo = ref.read(onboardingRepositoryProvider);
+      final currentMode = ref.read(connectionModeProvider).toLowerCase();
 
       final results = await Future.wait([
         repo.getPromptCategories(),
         repo.getPromptTemplates(),
-        repo.getUserProfilePrompts(userId),
+        repo.getUserProfilePrompts(userId, mode: currentMode),
       ]);
 
       if (mounted) {
@@ -193,12 +195,14 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
         return entry.value.copyWith(promptDisplayOrder: entry.key + 1);
       }).toList();
 
+      final currentMode = ref.read(connectionModeProvider).toLowerCase();
+
       await ref
           .read(onboardingRepositoryProvider)
-          .saveProfilePrompts(userId, promptsToSave);
+          .saveProfilePrompts(userId, promptsToSave, mode: currentMode);
 
       if (mounted) {
-        ref.read(onboardingProvider.notifier).completeOnboarding();
+        ref.read(onboardingProvider.notifier).completeStep('profile_prompts');
       }
     } catch (e) {
       if (mounted) {
@@ -210,9 +214,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
   }
 
   void _handleSkip() {
-    // If skipping is allowed, we might need a separate flow or valid state
-    // Typically prompts are important, but user requested 'Skip' button in footer.
-    ref.read(onboardingProvider.notifier).completeOnboarding();
+    ref.read(onboardingProvider.notifier).skipStep('profile_prompts');
   }
 
   // --- Rendering ---

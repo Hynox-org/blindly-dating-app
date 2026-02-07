@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../features/discovery/povider/discovery_provider.dart';
 import '../../../core/widgets/app_loader.dart';
 import '../../events/screens/events_home_screen.dart';
 import 'home_screen.dart';
@@ -153,10 +152,7 @@ class _ConnectionTypeScreenState extends ConsumerState<ConnectionTypeScreen> {
           );
         }
       } else {
-        await ref
-            .read(discoveryFeedProvider.notifier)
-            .changeDiscoveryMode(_selectedMode);
-
+        // Mode is already updated via connectionModeProvider
         if (mounted) {
           Navigator.pushAndRemoveUntil(
             context,

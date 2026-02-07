@@ -8,6 +8,7 @@ import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_s
 import '../../../../onboarding/presentation/widgets/selection_chip.dart';
 import '../../../../../core/utils/custom_popups.dart';
 import '../../../../../core/widgets/app_loader.dart';
+import '../../../../../core/providers/connection_mode_provider.dart';
 
 class InterestsSelectScreen extends ConsumerStatefulWidget {
   const InterestsSelectScreen({super.key});
@@ -28,6 +29,7 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
   @override
   void initState() {
     super.initState();
+    debugPrint('➡️ INTEREST_SCREEN: initState');
     _fetchChips();
   }
 
@@ -38,26 +40,45 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
   }
 
   Future<void> _fetchChips() async {
+    debugPrint('➡️ INTEREST_SCREEN: _fetchChips started');
     try {
       final repo = ref.read(onboardingRepositoryProvider);
       final rawChips = await repo.getInterestChips();
+      debugPrint('➡️ INTEREST_SCREEN: Raw chips fetched: ${rawChips.length}');
+
+      if (!mounted) return;
 
       // Fetch user selections if logged in
       final user = ref.read(authRepositoryProvider).currentUser;
       final Set<String> loadedSelections = {};
       if (user != null) {
-        final userChips = await repo.getUserInterestChips(user.id);
+        final currentMode = ref.read(connectionModeProvider).toLowerCase();
+        final userChips = await repo.getUserInterestChips(
+          user.id,
+          mode: currentMode,
+        );
+        if (!mounted) return;
         loadedSelections.addAll(userChips);
       }
 
+      final List<InterestChip> validChips = [];
+      for (final data in rawChips) {
+        try {
+          validChips.add(InterestChip.fromJson(data));
+        } catch (e) {
+          debugPrint('⚠️ INTEREST_SCREEN: Invalid chip data: $e');
+          // Skip invalid chips silently or log if needed
+        }
+      }
+      debugPrint('➡️ INTEREST_SCREEN: Valid chips count: ${validChips.length}');
+
       setState(() {
-        _allChips = rawChips
-            .map((data) => InterestChip.fromJson(data))
-            .toList();
+        _allChips = validChips;
         _selectedChipIds.addAll(loadedSelections);
         _isLoading = false;
       });
     } catch (e) {
+      debugPrint('❌ INTEREST_SCREEN: Error fetching chips: $e');
       setState(() {
         _error = 'Failed to load interests. Please try again.';
         _isLoading = false;
@@ -91,9 +112,14 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
     try {
       final user = ref.read(authRepositoryProvider).currentUser;
       if (user != null) {
+        final currentMode = ref.read(connectionModeProvider).toLowerCase();
         await ref
             .read(onboardingRepositoryProvider)
-            .saveUserInterests(user.id, _selectedChipIds.toList());
+            .saveUserInterests(
+              user.id,
+              _selectedChipIds.toList(),
+              mode: currentMode,
+            );
 
         if (mounted) {
           ref
@@ -138,6 +164,9 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint(
+      '➡️ INTEREST_SCREEN: build calls. isLoading: $_isLoading, chips: ${_allChips.length}',
+    );
     final grouped = _groupedChips;
     final colorScheme = Theme.of(context).colorScheme;
 

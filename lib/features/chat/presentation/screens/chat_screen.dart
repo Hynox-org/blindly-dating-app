@@ -47,167 +47,117 @@ class ChatScreen extends ConsumerWidget {
             ),
           ],
         ),
-        body: profileIdAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('Profile Error: $error'),
-                ElevatedButton(
-                  onPressed: () => ref.invalidate(currentProfileIdProvider),
-                  child: const Text('Retry'),
+        body: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Recent Matches Header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                child: Text(
+                  'Recent matches',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
-              ],
-            ),
-          ),
-          data: (profileId) {
-            return RefreshIndicator(
-              onRefresh: () async {
-                ref.invalidate(recentMatchesProvider);
-                ref.invalidate(conversationsProvider);
-              },
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // ================= Recent Matches =================
-                    const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text(
-                        "Recent Matches",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+              ),
+
+              // Recent Matches Empty State (Placeholders)
+              SizedBox(
+                height: 60,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: 5, // Show 5 placeholders
+                  itemBuilder: (context, index) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 16.0),
+                      child: Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          // border: Border.all(
+                          //   color: Colors.grey[400]!,
+                          //   width: 1,
+                          //   style: BorderStyle.none, // Dotted simulation below
+                          // ),
+                        ),
+                        child: CustomPaint(
+                          painter: DottedBorderPainter(
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                            strokeWidth: 2,
+                            gap: 6,
+                          ),
+                          child: Center(
+                            child: Icon(
+                              Icons.person_add,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                              size: 24,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                    recentMatches.when(
-                      data: (matches) {
-                        if (matches.isEmpty) {
-                          return const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 16),
-                            child: Text("No new matches yet"),
-                          );
-                        }
+                    );
+                  },
+                ),
+              ),
 
-                        return SizedBox(
-                          height: 90,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: matches.length,
-                            itemBuilder: (context, index) {
-                              final match = matches[index];
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 16.0,
+                ),
+                child: Text(
+                  'Your new matches will appear here.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
 
-                              final profileA = Map<String, dynamic>.from(
-                                  match['profile_a'] ?? {});
-                              final profileB = Map<String, dynamic>.from(
-                                  match['profile_b'] ?? {});
+              Divider(
+                height: 32,
+                thickness: 1,
+                color: Theme.of(context).dividerColor,
+              ),
 
-                              Map<String, dynamic> otherProfile;
-                              String? otherProfileId;
+              // Conversations Header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                child: Text(
+                  'Conversations',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ),
 
-                              if (match['profile_a_id'] == profileId) {
-                                otherProfile = profileB;
-                                otherProfileId =
-                                    match['profile_b_id']?.toString();
-                              } else {
-                                otherProfile = profileA;
-                                otherProfileId =
-                                    match['profile_a_id']?.toString();
-                              }
-
-                              final otherName =
-                                  _getProfileName(otherProfile);
-                              final photoUrl =
-                                  otherProfile['photo_url']?.toString();
-                              final otherImage =
-                                  _getProfileImage(photoUrl, otherName);
-
-                              return GestureDetector(
-                                onTap: otherProfileId != null
-                                    ? () async {
-                                        final result =
-                                            await Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) =>
-                                                ChatDetailScreen(
-                                              matchId:
-                                                  match['id'].toString(),
-                                              name: otherName,
-                                              imageUrl: otherImage,
-                                              myProfileId: profileId,
-                                              otherProfileId:
-                                                  otherProfileId!, // ✅ FIXED
-                                            ),
-                                          ),
-                                        );
-
-                                        if (result == true &&
-                                            context.mounted) {
-                                          ref.invalidate(
-                                              recentMatchesProvider);
-                                          ref.invalidate(
-                                              conversationsProvider);
-                                        }
-                                      }
-                                    : null,
-                                child: Padding(
-                                  padding: const EdgeInsets.only(
-                                      left: 16, right: 8),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 30,
-                                        backgroundImage:
-                                            NetworkImage(otherImage),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      SizedBox(
-                                        width: 60,
-                                        child: Text(
-                                          otherName,
-                                          maxLines: 1,
-                                          overflow:
-                                              TextOverflow.ellipsis,
-                                          textAlign: TextAlign.center,
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            fontWeight:
-                                                FontWeight.w500,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        );
-                      },
-                      loading: () => const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Center(
-                            child: CircularProgressIndicator()),
+              // Conversations Empty State
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 20),
+                      Image.asset(
+                        'assets/static/chats_conversation_empty_state.png',
+                        height: 200,
+                        fit: BoxFit.contain,
                       ),
-                      error: (e, _) => Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text("Error loading matches: $e"),
-                      ),
-                    ),
-
-                    const Divider(height: 40),
-
-                    // ================= Conversations =================
-                    const Padding(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        "Conversations",
+                      const SizedBox(height: 32),
+                      Text(
+                        "Ready to make the first\nmove?",
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,

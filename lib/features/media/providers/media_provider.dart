@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/repositories/media_repository.dart';
 import 'photo_moderation_provider.dart';
@@ -251,29 +253,38 @@ class MediaNotifier extends StateNotifier<MediaState> {
         return;
       }
 
-      await _supabaseDeletePhotosMetadata(profileId);
+      // Resolve profile_mode_id for 'date' mode
+      final profileModeId = await _repository.getProfileModeId(
+        profileId,
+        'date',
+      );
+      if (profileModeId == null) {
+        state = state.copyWith(
+          isLoading: false,
+          error: 'Profile mode record not found',
+        );
+        return;
+      }
+
+      await _supabaseDeletePhotosMetadata(profileModeId);
 
       final List<Map<String, dynamic>> mediaDataToSave = [];
 
       for (int i = 0; i < validPhotos.length; i++) {
         final content = validPhotos[i];
         String url;
-        int size = 0;
-
         if (content.isLocal) {
           url = await _repository.uploadImage(content.file!, userId);
-          size = await content.file!.length();
         } else {
           url = _repository.extractPathFromUrl(content.url!, 'user_photos');
         }
 
         mediaDataToSave.add({
-          'profile_id': profileId,
+          'profile_mode_id': profileModeId, // Updated from profile_id
           'media_url': url,
           'media_type': 'photo',
           'display_order': i,
           'is_primary': i == 0,
-          'file_size_bytes': size,
           'moderation_status': 'pending',
         });
       }
@@ -286,7 +297,17 @@ class MediaNotifier extends StateNotifier<MediaState> {
     }
   }
 
-  Future<void> _supabaseDeletePhotosMetadata(String profileId) async {
-    // Logic to clear old photos should be implemented here or in repo
+  Future<void> _supabaseDeletePhotosMetadata(String profileModeId) async {
+    // UPDATED: Logic to clear old photos in specific mode
+    try {
+      final client = Supabase.instance.client;
+      await client
+          .from('profile_mode_media')
+          .delete()
+          .eq('profile_mode_id', profileModeId)
+          .eq('media_type', 'photo');
+    } catch (e) {
+      debugPrint('Failed to delete old photos: $e');
+    }
   }
 }

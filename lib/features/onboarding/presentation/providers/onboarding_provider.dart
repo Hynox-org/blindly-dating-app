@@ -80,6 +80,9 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
 
       // 1. Get ordered list of ALL steps (including optional ones)
       final allSteps = await _repo.getAllSteps();
+      AppLogger.info(
+        'DEBUG: Fetched ${allSteps.length} steps from DB: ${allSteps.map((s) => s.stepKey).toList()}',
+      );
 
       // 2. Get user's progress map
       // Map<String, dynamic> stepsProgress = {};
@@ -87,6 +90,8 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
       final Map<String, dynamic> stepsProgress = (rawProgress != null)
           ? Map<String, dynamic>.from(rawProgress)
           : {};
+
+      AppLogger.info('DEBUG: User steps_progress map: $stepsProgress');
 
       // Check if fresh user (empty progress) AND hasn't dismissed welcome yet
       bool isFreshUser = stepsProgress.isEmpty;
@@ -111,8 +116,12 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
       // (Optionally: also skip 'skipped' steps so they don't block progress)
       OnboardingStep? nextStep;
 
+      AppLogger.info(
+        'DEBUG: Evaluating ${allSteps.length} steps for next step...',
+      );
       for (final step in allSteps) {
         final status = stepsProgress[step.stepKey];
+        AppLogger.info('DEBUG: Step "${step.stepKey}" has status: "$status"');
         // If status is NOT completed and NOT skipped, this is our next step.
         // Or if we want to FORCE users to revisit skipped steps before finishing?
         // Requirement: "user can access app because all mandatory fields completed... skipped steps... in home page"
@@ -125,10 +134,13 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
       }
 
       // High-level check
-      final status = profile['onboarding_status'] as String? ?? 'in_progress';
+      // final status = profile['onboarding_status'] as String? ?? 'in_progress';
 
-      if (status == 'complete' || nextStep == null) {
-        // If no incomplete steps found, or explicitly marked complete
+      // STRICT VERIFICATION:
+      // Even if DB says "complete", if we found a 'nextStep' (meaning a step is NOT completed/skipped),
+      // we force the user to that step.
+      if (nextStep == null) {
+        // No incomplete steps found -> Truly complete
         state = state.copyWith(isLoading: false, currentStepKey: 'complete');
       } else {
         AppLogger.info(

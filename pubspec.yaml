@@ -24,29 +24,29 @@ dependencies:
 
   # Backend & Auth
   supabase_flutter: ^2.12.0
-  firebase_core: ^3.8.0
-  firebase_messaging: ^15.0.0
-  firebase_app_check: ^0.3.1
+  firebase_core: ^4.4.0
+  firebase_messaging: ^16.1.1
+  firebase_app_check: ^0.4.1+4
   http: ^1.1.0
 
   # Utils
   fpdart: ^1.1.0
   freezed_annotation: ^2.4.1
   json_annotation: ^4.8.1
-  intl: ^0.19.0
+  intl: ^0.20.2
   uuid: ^4.3.3
 
   # UI/Icons
   cupertino_icons: ^1.0.8
-  sentry_flutter: ^8.14.2
+  sentry_flutter: ^9.10.0
   flutter_secure_storage: ^10.0.0
-  google_fonts: ^6.1.0
+  google_fonts: ^8.0.0
   flutter_dotenv: ^6.0.0
   url_launcher: ^6.3.2
   safe_device: ^1.1.4
   dart_jsonwebtoken: ^3.3.1
   shared_preferences: ^2.5.4
-  google_sign_in: ^6.2.1
+  google_sign_in: ^7.2.0
   font_awesome_flutter: ^10.12.0
   geolocator: ^14.0.1
   permission_handler: ^12.0.1
@@ -67,8 +67,9 @@ dependencies:
   path_provider: ^2.1.2
 
   # Camera & ML Kit (Kept from your original file)
-  camera: ^0.10.5+9
-  google_mlkit_pose_detection: ^0.12.0
+  camera: ^0.11.3
+  google_mlkit_pose_detection: ^0.14.0
+  veriff_flutter: ^5.4.0
 
   # intl: ^0.19.0
   swipe_to: ^1.0.6
@@ -115,6 +116,7 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/static/
+    - assets/defaults/
 
   fonts:
     - family: Inter

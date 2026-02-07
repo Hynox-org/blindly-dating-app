@@ -261,7 +261,7 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
           children: [
             Image.asset(
               'assets/static/liked_you_empty_state.png',
-              height: 200,
+              height: 250,
               fit: BoxFit.contain,
             ),
             const SizedBox(height: 24),
@@ -271,7 +271,7 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
                   TextSpan(
                     text: "No likes yet, but don't\n",
                     style: TextStyle(
-                      fontSize: 22,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.onSurface,
                       height: 1.2,
@@ -284,7 +284,7 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
                   TextSpan(
                     text: "buzz off!",
                     style: TextStyle(
-                      fontSize: 22,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.onSurface,
                       height: 1.5,

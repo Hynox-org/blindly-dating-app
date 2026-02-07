@@ -60,17 +60,14 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
   Future<void> _fetchExistingData() async {
     final user = ref.read(authRepositoryProvider).currentUser;
     if (user != null) {
-      final profile = await ref
+      final loaded = await ref
           .read(onboardingRepositoryProvider)
-          .getProfileRaw(user.id);
-      if (profile != null && profile['languages_known'] != null) {
-        final List<dynamic> loaded = profile['languages_known'];
-        if (loaded.isNotEmpty) {
-          setState(() {
-            _selectedLanguageCodes.clear();
-            _selectedLanguageCodes.addAll(loaded.cast<String>());
-          });
-        }
+          .getUserLanguages(user.id);
+      if (loaded.isNotEmpty) {
+        setState(() {
+          _selectedLanguageCodes.clear();
+          _selectedLanguageCodes.addAll(loaded);
+        });
       }
     }
   }
@@ -90,10 +87,9 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
       final user = ref.read(authRepositoryProvider).currentUser;
       if (user != null) {
         // Save languages known to profile
-        await ref.read(onboardingRepositoryProvider).updateProfileData(
-          user.id,
-          {'languages_known': _selectedLanguageCodes.toList()},
-        );
+        await ref
+            .read(onboardingRepositoryProvider)
+            .saveUserLanguages(user.id, _selectedLanguageCodes.toList());
       }
 
       await ref

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+// Make sure this path points to your actual model file
 import '../../../features/discovery/domain/models/discovery_user_model.dart';
 
 // ======================================================
@@ -26,39 +27,16 @@ class DiscoveryRepository {
   /// Dev mode ignores distance limits
   static const bool kDevMode = true;
 
-  /// Huge radius when dev mode is ON (≈ entire world)
-  static const int _devRadiusMeters = 20000000;
+  /// Huge radius when dev mode is ON (20,000 KM to cover the world)
+  static const int _devRadiusKm = 20000;
 
   // --------------------------------------------------
-  // 🔁 UPDATE DISCOVERY MODE (dating / bff)
+  // 🔥 MAIN DISCOVERY FEED (OPTIMIZED FOR LISTS)
   // --------------------------------------------------
-  Future<void> updateDiscoveryMode(String mode) async {
-    final user = _supabase.auth.currentUser;
-    if (user == null) {
-      throw Exception('User not logged in');
-    }
-
-    final response = await _supabase
-        .from('profiles')
-        .update({'discovery_mode': mode})
-        .eq('user_id', user.id)
-        .select(); // 👈 FORCE RESPONSE
-
-    debugPrint('✅ discovery_mode update response: $response');
-  }
-
-  // --------------------------------------------------
-  // 🔥 MAIN DISCOVERY FEED
-  // --------------------------------------------------
-  ///
-  /// Supabase is the source of truth.
-  /// - discovery_mode is read from profiles table
-  /// - gender logic is handled inside SQL
-  /// - swipe filtering is handled inside SQL
-  ///
   Future<List<DiscoveryUser>> getDiscoveryFeed({
-    int radius = 5000, // meters
-    int limit = 20,
+    required String currentMode,
+    int radiusKm = 50,
+    int limit = 10,
     int offset = 0,
   }) async {
     try {
@@ -67,113 +45,72 @@ class DiscoveryRepository {
         throw Exception('User not logged in');
       }
 
-      // --------------------------------------------------
-      // 🧪 DEBUG LOGS
-      // --------------------------------------------------
-      debugPrint('🚀 DISCOVERY RPC CALL');
-      debugPrint('USER ID : ${authUser.id}');
-      debugPrint('LIMIT   : $limit');
+      final int effectiveRadius = kDevMode ? _devRadiusKm : radiusKm;
+
+      debugPrint('🚀 DISCOVERY RPC CALL: get_discovery_prospects');
+      debugPrint('MODE    : $currentMode');
+      debugPrint('RADIUS  : $effectiveRadius KM');
       debugPrint('OFFSET  : $offset');
-      debugPrint('RADIUS  : ${kDevMode ? _devRadiusMeters : radius}');
 
-      final int effectiveRadius = kDevMode ? _devRadiusMeters : radius;
+      // 1. Call DB
+      final List<dynamic>? response = await _supabase.rpc(
+        'get_discovery_prospects',
+        params: {
+          'search_mode': currentMode,
+          'radius_km': effectiveRadius,
+          'limit_count': limit,
+          'offset_count': offset,
+        },
+      );
 
-      // --------------------------------------------------
-      // 📡 RPC CALL
-      // --------------------------------------------------
-      final List<dynamic> response =
-          (await _supabase.rpc(
-            'get_discovery_feed_final',
-            params: {
-              'p_radius_meters': effectiveRadius,
-              'p_limit': limit,
-              'p_offset': offset,
-            },
-          )) ??
-          [];
+      if (response == null || response.isEmpty) return [];
 
-      debugPrint('🧪 DISCOVERY ROWS: ${response.length}');
+      debugPrint('🧪 DISCOVERY ROWS FOUND: ${response.length}');
 
-      // --------------------------------------------------
-      // 🛠️ FALLBACK: MANUALLY FETCH IMAGES
-      // --------------------------------------------------
-      // If RPC fails to join images, we fetch them manually here.
-      Map<String, String> manualMediaMap = {};
-
-      if (response.isNotEmpty) {
-        try {
-          final List<dynamic> profileIds = response
-              .map((r) => r['profile_id'])
-              .toList();
-
-          // Workaround for undefined 'in_' method: Fetch in parallel
-          final futures = profileIds.map(
-            (pid) => _supabase
-                .from('user_media')
-                .select('profile_id, media_url')
-                .eq('profile_id', pid)
-                .eq('is_primary', true)
-                .maybeSingle(),
-          );
-
-          final List<dynamic> results = await Future.wait(futures);
-
-          for (final item in results) {
-            if (item != null) {
-              final pid = item['profile_id'] as String;
-              final url = item['media_url'] as String?;
-              if (url != null && url.isNotEmpty) {
-                manualMediaMap[pid] = url;
-              }
-            }
-          }
-          debugPrint(
-            '📸 Manually fetched ${manualMediaMap.length} images from user_media',
-          );
-        } catch (e) {
-          debugPrint('⚠️ Failed to fetch manual images: $e');
-        }
-      }
-
-      // --------------------------------------------------
-      // 🔁 MAP RESPONSE
-      // --------------------------------------------------
-      final List<DiscoveryUser> users = [];
-
-      for (final raw in response) {
+      // 2. PARALLEL PROCESSING (Iterate Users)
+      final futureUsers = response.map((raw) async {
         final Map<String, dynamic> data = Map<String, dynamic>.from(raw);
+        
+        // 🔍 EXTRACT LIST: Get the array of paths from DB (Column: image_urls)
+        final List<dynamic> rawPaths = data['image_urls'] ?? [];
+        final List<String> signedUrls = [];
 
-        final String pid = data['profile_id'];
+        // 🔄 LOOP & SIGN: Process each image in the list
+        for (var item in rawPaths) {
+          String imagePath = item.toString();
 
-        // Check potential keys for the image (RPC keys OR Manual Fetch)
-        final String? imagePath =
-            data['media_url'] ??
-            data['avatar_url'] ??
-            data['photo_url'] ??
-            data['image_url'] ??
-            manualMediaMap[pid];
+          // Only sign if it looks like a path (not a full http URL)
+          if (imagePath.isNotEmpty && !imagePath.startsWith('http')) {
+            try {
+              // 🛠️ Remove leading slash if present
+              if (imagePath.startsWith('/')) {
+                imagePath = imagePath.substring(1);
+              }
 
-        // --------------------------------------------------
-        // 🖼️ HANDLE MEDIA URLS (FIXED)
-        // --------------------------------------------------
-        if (imagePath != null && imagePath.isNotEmpty) {
-          if (!imagePath.startsWith('http')) {
-            final signedUrl = await _supabase.storage
-                .from('user_photos')
-                .createSignedUrl(imagePath, 15 * 60);
+              // ⚠️ CRITICAL: Ensure bucket name is correct ('user_photos')
+              final signedUrl = await _supabase.storage
+                  .from('user_photos') 
+                  .createSignedUrl(imagePath, 60 * 60); // 1 Hour Expiry
 
-            // ✅ IMPORTANT: write back to SAME key model reads
-            data['media_url'] = signedUrl;
-          } else {
-            // ✅ Ensure media_url is populated even if from avatar_url/photo_url
-            data['media_url'] = imagePath;
+              signedUrls.add(signedUrl);
+            } catch (e) {
+              debugPrint('⚠️ Image sign failed for path: $imagePath');
+              // Optional: Add original path or skip? We skip to keep UI clean.
+            }
+          } else if (imagePath.isNotEmpty) {
+            // It's already a full URL (e.g. Google Auth photo), keep it.
+            signedUrls.add(imagePath);
           }
-        } else {
-          data['media_url'] = null;
         }
 
-        users.add(DiscoveryUser.fromJson(data));
-      }
+        // ✅ UPDATE DATA: Replace the raw paths with the signed URLs
+        data['image_urls'] = signedUrls;
+
+        return DiscoveryUser.fromJson(data);
+      });
+
+      // 3. Wait for all users to be processed
+      final List<DiscoveryUser> users = await Future.wait(futureUsers);
 
       return users;
     } catch (e, stackTrace) {
@@ -181,6 +118,96 @@ class DiscoveryRepository {
       debugPrint(e.toString());
       debugPrint(stackTrace.toString());
       rethrow;
+    }
+  }
+
+  // --------------------------------------------------
+  // ⏪ UNDO LAST SWIPE
+  // --------------------------------------------------
+  Future<bool> undoLastSwipe() async {
+    try {
+      final response = await _supabase.rpc('undo_last_swipe');
+      return response as bool;
+    } catch (e) {
+      debugPrint('❌ Undo RPC failed: $e');
+      return false;
+    }
+  }
+
+  // --------------------------------------------------
+  // 🛠 ENSURE PROFILE MODE EXISTS
+  // --------------------------------------------------
+  Future<void> ensureProfileMode(String mode) async {
+    final dbMode = mode.toLowerCase();
+    if (dbMode != 'date' && dbMode != 'bff') return;
+
+    try {
+      final authUserId = _supabase.auth.currentUser?.id;
+      if (authUserId == null) return;
+
+      final profileData = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', authUserId)
+          .maybeSingle();
+
+      if (profileData == null) return;
+
+      final String profileId = profileData['id'];
+
+      final existing = await _supabase
+          .from('profile_modes')
+          .select('id')
+          .eq('profile_id', profileId)
+          .eq('mode', dbMode)
+          .maybeSingle();
+
+      if (existing == null) {
+        await _supabase.from('profile_modes').insert({
+          'profile_id': profileId,
+          'mode': dbMode,
+          'is_active': true,
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ Failed to ensure profile mode: $e');
+    }
+  }
+
+  // --------------------------------------------------
+  // 🔄 SOURCE OF TRUTH: PROFILES TABLE
+  // --------------------------------------------------
+  Future<String> fetchCurrentMode() async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return 'date';
+
+      final response = await _supabase
+          .from('profiles')
+          .select('current_mode')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+      if (response != null && response['current_mode'] != null) {
+        return response['current_mode'] as String;
+      }
+    } catch (e) {
+      debugPrint('⚠️ Failed to fetch current mode from DB: $e');
+    }
+    return 'date';
+  }
+
+  Future<void> updateCurrentMode(String mode) async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return;
+
+      await _supabase
+          .from('profiles')
+          .update({'current_mode': mode})
+          .eq('user_id', userId);
+    } catch (e) {
+      debugPrint('❌ Failed to update current mode in DB: $e');
     }
   }
 }

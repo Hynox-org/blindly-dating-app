@@ -42,10 +42,10 @@ class SwipeRepository {
       debugPrint('ACTION: $action');
 
       await _supabase.rpc(
-        'record_swipe_action',
+        'record_swipe',
         params: {
           'p_target_profile_id': targetProfileId,
-          'p_action': action,
+          'p_action_type': action,
         },
       );
 

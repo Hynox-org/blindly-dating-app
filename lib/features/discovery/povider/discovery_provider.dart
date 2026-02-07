@@ -3,28 +3,32 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../features/discovery/repository/discovery_repository.dart';
 import '../domain/models/discovery_user_model.dart';
 
+import '../../../core/providers/connection_mode_provider.dart';
+
 // ======================================================
 // 1. THE STATE
 // ======================================================
 class DiscoveryState {
-  final List<DiscoveryUser> mainDeck;     // All fetched profiles (Cumulative)
-  final List<DiscoveryUser> historyDeck;  // Track swiped profiles for DB Undo
-  final bool isLoading;                   
-  final bool isFetchingMore;
-  // ✅ NEW: Tracks if the DB has run out of profiles completely
-  final bool isDeckExhausted; 
+  final List<DiscoveryUser> mainDeck; // The cards currently in the stack
+  final List<DiscoveryUser> historyDeck; // The cards swiped (for undo)
+  final Set<String> seenIds; // Deduplication Set (Memory Cache)
+  final bool isLoading; // Initial load state
+  final bool isFetchingMore; // Pagination background load state
+  final bool isDeckExhausted; // True when server returns 0 items
 
   DiscoveryState({
     required this.mainDeck,
     this.historyDeck = const [],
+    this.seenIds = const {},
     this.isLoading = false,
     this.isFetchingMore = false,
-    this.isDeckExhausted = false, // Default false
+    this.isDeckExhausted = false,
   });
 
   DiscoveryState copyWith({
     List<DiscoveryUser>? mainDeck,
     List<DiscoveryUser>? historyDeck,
+    Set<String>? seenIds,
     bool? isLoading,
     bool? isFetchingMore,
     bool? isDeckExhausted,
@@ -32,6 +36,7 @@ class DiscoveryState {
     return DiscoveryState(
       mainDeck: mainDeck ?? this.mainDeck,
       historyDeck: historyDeck ?? this.historyDeck,
+      seenIds: seenIds ?? this.seenIds,
       isLoading: isLoading ?? this.isLoading,
       isFetchingMore: isFetchingMore ?? this.isFetchingMore,
       isDeckExhausted: isDeckExhausted ?? this.isDeckExhausted,
@@ -45,129 +50,169 @@ class DiscoveryState {
 class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
   final DiscoveryRepository _repository;
 
-  static const int _pageSize = 20;
-  static const int _prefetchThreshold = 5; 
+  // ⚙️ CONFIG
+  static const int _batchSize = 10; // Fetch 10 at a time
+  static const int _prefetchThreshold = 3; // Fetch more when 3 cards left
+  String _currentMode; // Current mode (e.g. 'date', 'bff')
 
-  DiscoveryFeedNotifier(this._repository)
-      : super(DiscoveryState(mainDeck: [])) {
+  DiscoveryFeedNotifier(this._repository, String mode)
+    : _currentMode = mode.toLowerCase(),
+      super(DiscoveryState(mainDeck: [])) {
+    // Initial Load
     refreshFeed();
   }
 
   // --------------------------------------------------
-  // 🔄 REFRESH (Start Fresh)
+  // 🔄 REFRESH (Start Fresh / Pull-to-Refresh)
   // --------------------------------------------------
-  Future<void> refreshFeed() async {
-    // Reset exhaustion flag on refresh
-    state = state.copyWith(
-      isLoading: true, 
-      mainDeck: [], 
-      historyDeck: [],
-      isDeckExhausted: false, 
-    );
-    
-    await _loadBatch();
-    state = state.copyWith(isLoading: false);
-  }
+  Future<void> refreshFeed({String? mode}) async {
+    if (mode != null) _currentMode = mode.toLowerCase();
 
-  // --------------------------------------------------
-  // ⏩ ACTION: CONSUME CARD (Swipe Right/Left)
-  // --------------------------------------------------
-  void consumeCard(DiscoveryUser user, int currentIndex) {
-    final newHistoryDeck = List<DiscoveryUser>.from(state.historyDeck);
-    newHistoryDeck.add(user); 
-    if (newHistoryDeck.length > 50) newHistoryDeck.removeAt(0);
+    try {
+      state = state.copyWith(
+        isLoading: true,
+        mainDeck: [],
+        historyDeck: [],
+        seenIds: {},
+        isDeckExhausted: false,
+      );
 
-    // Check Threshold & Fetch
-    final itemsRemaining = state.mainDeck.length - currentIndex;
-    if (itemsRemaining <= _prefetchThreshold && !state.isDeckExhausted) {
-      _loadBatch();
+      // This takes time...
+      await _loadBatch();
+
+      // 🛑 CRITICAL FIX: Check mounted again before turning off loading
+      if (!mounted) return;
+
+      state = state.copyWith(isLoading: false);
+    } catch (e) {
+      // 🛑 Safety check here too
+      if (mounted) {
+        state = state.copyWith(isLoading: false);
+      }
+      debugPrint("❌ Error refreshing feed: $e");
     }
-
-    state = state.copyWith(historyDeck: newHistoryDeck);
   }
 
   // --------------------------------------------------
-  // ⏩ ACTION: ADD TO HISTORY ONLY (For Undo Support)
+  // ⏩ ACTION: SWIPE (Remove from Deck -> Add to History)
   // --------------------------------------------------
-  // This helper function is cleaner for the UI to call
-  void addToHistory(DiscoveryUser user) {
-     final newHistoryDeck = List<DiscoveryUser>.from(state.historyDeck);
-     newHistoryDeck.add(user);
-     if (newHistoryDeck.length > 50) newHistoryDeck.removeAt(0);
-     state = state.copyWith(historyDeck: newHistoryDeck);
+  /// [currentIndex] is the index of the card *being swiped* in the UI stack.
+  /// Usually, in libraries like AppinioSwiper, this is effectively consuming the top card.
+  void onSwipe(DiscoveryUser user) {
+    // 1. Add to History (Limit to last 50 to save memory)
+    final newHistory = List<DiscoveryUser>.from(state.historyDeck)..add(user);
+    if (newHistory.length > 50) newHistory.removeAt(0);
+
+    // 2. Remove from Main Deck (So it doesn't reappear if we redraw)
+    // Note: Some UI libraries handle the "visual" removal, but our state must reflect reality.
+    final newMainDeck = List<DiscoveryUser>.from(state.mainDeck)
+      ..removeWhere((u) => u.profileId == user.profileId);
+
+    // 3. Update State
+    state = state.copyWith(historyDeck: newHistory, mainDeck: newMainDeck);
+
+    // 4. Check if we need more cards
+    if (newMainDeck.length <= _prefetchThreshold) {
+      _loadBatch(); // Background fetch
+    }
   }
 
   // --------------------------------------------------
-  // ⏪ ACTION: UNDO
+  // ⏪ ACTION: UNDO (Remove from History -> Add to Deck)
   // --------------------------------------------------
-  void undoSwipe() {
+
+  // --------------------------------------------------
+  // ⏪ ACTION: UNDO (OPTIMISTIC & INSTANT)
+  // --------------------------------------------------
+  void undoLastSwipe() {
+    // 1. Safety Check: Do we have history?
     if (state.historyDeck.isEmpty) return;
 
-    final newHistoryDeck = List<DiscoveryUser>.from(state.historyDeck);
-    newHistoryDeck.removeLast();
+    // 2. LOGIC: Pop from History -> Push to Main Deck
+    // We do this purely in memory first.
+    final newHistory = List<DiscoveryUser>.from(state.historyDeck);
+    final lastUser = newHistory.removeLast(); // Take the last swiped person
 
-    state = state.copyWith(historyDeck: newHistoryDeck);
+    final newMainDeck = List<DiscoveryUser>.from(state.mainDeck)
+      ..insert(0, lastUser); // Put them back at the VERY TOP
+
+    // 3. UPDATE STATE INSTANTLY
+    state = state.copyWith(
+      historyDeck: newHistory,
+      mainDeck: newMainDeck,
+      isDeckExhausted: false, // Important: We have cards again!
+    );
+
+    // 4. SYNC DB (Fire & Forget)
+    // We call the repo to clean up the DB, but we don't wait for it
+    // to update the UI. This makes it feel instant.
+    _repository.undoLastSwipe();
   }
 
   // --------------------------------------------------
-  // 🔄 MODE CHANGE
+  // 📥 INTERNAL: FETCH BATCH
   // --------------------------------------------------
-  Future<void> changeDiscoveryMode(String uiMode) async {
-    final String dbMode = uiMode.toLowerCase() == 'date' ? 'dating' : 'bff';
-    await _repository.updateDiscoveryMode(dbMode);
-    await refreshFeed();
-  }
-
-  // --------------------------------------------------
-  // 📥 INTERNAL: FETCH & DEDUPLICATE
-  // --------------------------------------------------
-  Future<bool> _loadBatch() async {
-    if (state.isFetchingMore || state.isDeckExhausted) return false;
+  Future<void> _loadBatch() async {
+    // Guard: Don't fetch if already loading or if server said "Empty"
+    if (state.isFetchingMore || state.isDeckExhausted) return;
 
     state = state.copyWith(isFetchingMore: true);
 
     try {
+      // 1. Fetch from Repo
+      // We pass 'offset' as 0 because the SQL function intelligently filters
+      // out users we've already swiped. So we always ask for the "Next 10".
       final newCandidates = await _repository.getDiscoveryFeed(
-        limit: _pageSize, 
-        offset: 0 
+        currentMode: _currentMode,
+        limit: _batchSize,
+        radiusKm: 50,
       );
 
-      // Deduplicate against existing decks
-      final currentIds = {
-        ...state.mainDeck.map((u) => u.profileId),
-        ...state.historyDeck.map((u) => u.profileId)
-      };
+      // 🛑 OPTIMIZATION: Check if disposed IMMEDIATELY after async,
+      // before trying to access 'state' (which throws if disposed).
+      if (!mounted) return;
 
-      final uniqueUsers = newCandidates
-          .where((u) => !currentIds.contains(u.profileId))
-          .toList();
+      final validUsers = <DiscoveryUser>[];
+      final newSeenIds = Set<String>.from(state.seenIds);
 
-      if (uniqueUsers.isNotEmpty) {
+      for (var user in newCandidates) {
+        if (!newSeenIds.contains(user.profileId)) {
+          validUsers.add(user);
+          newSeenIds.add(user.profileId);
+        }
+      }
+
+      // 3. Update State
+      if (validUsers.isEmpty) {
+        // Server returned nothing (or duplicates only) -> Stop Fetching
         state = state.copyWith(
-          mainDeck: [...state.mainDeck, ...uniqueUsers],
           isFetchingMore: false,
+          isDeckExhausted: true, // Show "No More Profiles" UI
         );
-        debugPrint("✅ Added ${uniqueUsers.length} profiles. Total: ${state.mainDeck.length}");
-        return true;
       } else {
-        // ✅ EMPTY BATCH: Mark deck as exhausted so UI knows to show "No More Profiles"
-        debugPrint("🏁 No more profiles found in DB.");
         state = state.copyWith(
           isFetchingMore: false,
-          isDeckExhausted: true, 
+          mainDeck: [...state.mainDeck, ...validUsers],
+          seenIds: newSeenIds,
+          isDeckExhausted: false,
         );
-        return false;
       }
     } catch (e) {
-      debugPrint("❌ Fetch Error: $e");
-      state = state.copyWith(isFetchingMore: false);
-      return false;
+      debugPrint("❌ Discovery Fetch Error: $e");
+      if (mounted) {
+        state = state.copyWith(isFetchingMore: false);
+      }
+      // Optional: Set an error state if you have one
     }
   }
 }
 
+// ======================================================
+// 3. THE PROVIDER
+// ======================================================
 final discoveryFeedProvider =
     StateNotifierProvider<DiscoveryFeedNotifier, DiscoveryState>((ref) {
-  final repository = ref.watch(discoveryRepositoryProvider);
-  return DiscoveryFeedNotifier(repository);
-});
+      final repository = ref.watch(discoveryRepositoryProvider);
+      final mode = ref.watch(connectionModeProvider);
+      return DiscoveryFeedNotifier(repository, mode);
+    });

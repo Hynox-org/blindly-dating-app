@@ -26,6 +26,22 @@ class MediaRepository {
     }
   }
 
+  /// Get Mode ID from Profile ID and Mode
+  Future<String?> getProfileModeId(String profileId, String mode) async {
+    try {
+      final response = await _supabase
+          .from('profile_modes')
+          .select('id')
+          .eq('profile_id', profileId)
+          .eq('mode', mode)
+          .maybeSingle();
+
+      return response?['id'] as String?;
+    } catch (e) {
+      throw Exception('Failed to get profile mode ID: $e');
+    }
+  }
+
   /// Picks multiple images from the gallery
   Future<List<XFile>> pickImagesFromGallery({int maxImages = 6}) async {
     try {
@@ -177,23 +193,23 @@ class MediaRepository {
     }
   }
 
-  /// Saves media metadata to the user_media table
+  /// Saves media metadata to the profile_mode_media table
   Future<void> saveMedia(List<Map<String, dynamic>> mediaData) async {
     try {
       if (mediaData.isEmpty) return;
-      await _supabase.from('user_media').insert(mediaData);
+      await _supabase.from('profile_mode_media').insert(mediaData);
     } catch (e) {
       throw Exception('Failed to save media metadata: $e');
     }
   }
 
   /// Deletes existing voice intro entries for a user from DB.
-  Future<void> deleteUserVoiceIntro(String profileId) async {
+  Future<void> deleteUserVoiceIntro(String profileModeId) async {
     try {
       await _supabase
-          .from('user_media')
+          .from('profile_mode_media')
           .delete()
-          .eq('profile_id', profileId)
+          .eq('profile_mode_id', profileModeId)
           .eq('media_type', 'voice_intro');
     } catch (e) {
       throw Exception('Failed to delete old voice intro: $e');
@@ -210,15 +226,21 @@ class MediaRepository {
   }
 
   /// Fetch user photos metadata and convert paths to Signed URLs
-  Future<List<Map<String, dynamic>>> getUserMedia(String userId) async {
+  Future<List<Map<String, dynamic>>> getUserMedia(
+    String userId, {
+    String mode = 'date',
+  }) async {
     try {
       final profileId = await getProfileId(userId);
       if (profileId == null) return [];
 
+      final profileModeId = await getProfileModeId(profileId, mode);
+      if (profileModeId == null) return [];
+
       final response = await _supabase
-          .from('user_media')
+          .from('profile_mode_media')
           .select()
-          .eq('profile_id', profileId)
+          .eq('profile_mode_id', profileModeId)
           .eq('media_type', 'photo')
           .order('display_order');
 
@@ -253,15 +275,21 @@ class MediaRepository {
   }
 
   /// Fetch user voice intro metadata and convert path to Signed URL
-  Future<Map<String, dynamic>?> getUserVoiceIntro(String userId) async {
+  Future<Map<String, dynamic>?> getUserVoiceIntro(
+    String userId, {
+    String mode = 'date',
+  }) async {
     try {
       final profileId = await getProfileId(userId);
       if (profileId == null) return null;
 
+      final profileModeId = await getProfileModeId(profileId, mode);
+      if (profileModeId == null) return null;
+
       final response = await _supabase
-          .from('user_media')
+          .from('profile_mode_media')
           .select()
-          .eq('profile_id', profileId)
+          .eq('profile_mode_id', profileModeId)
           .eq('media_type', 'voice_intro')
           .maybeSingle();
 
