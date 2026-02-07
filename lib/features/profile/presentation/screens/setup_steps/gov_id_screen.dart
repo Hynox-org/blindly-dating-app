@@ -22,7 +22,7 @@ class GovernmentIdVerificationScreen extends ConsumerStatefulWidget {
 class _GovernmentIdVerificationScreenState
     extends ConsumerState<GovernmentIdVerificationScreen> {
   GovIdStep _currentStep = GovIdStep.instructions;
-  DocumentType _selectedDocType = DocumentType.drivers_license;
+  final DocumentType _selectedDocType = DocumentType.drivers_license;
   bool _isLoading = false;
 
   // Track the last handled status to prevent duplicate popups
