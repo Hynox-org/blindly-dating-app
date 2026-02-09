@@ -4,6 +4,7 @@ import '../../../features/discovery/repository/discovery_repository.dart';
 import '../domain/models/discovery_user_model.dart';
 
 import '../../../core/providers/connection_mode_provider.dart';
+import 'filter_provider.dart';
 
 // ======================================================
 // 1. THE STATE
@@ -55,9 +56,13 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
   static const int _prefetchThreshold = 3; // Fetch more when 3 cards left
   String _currentMode; // Current mode (e.g. 'date', 'bff')
 
-  DiscoveryFeedNotifier(this._repository, String mode)
-    : _currentMode = mode.toLowerCase(),
-      super(DiscoveryState(mainDeck: [])) {
+  DiscoveryFeedNotifier({
+    required DiscoveryRepository repository,
+    required String mode,
+    required FilterState filters,
+  }) : _repository = repository,
+       _currentMode = mode.toLowerCase(),
+       super(DiscoveryState(mainDeck: [])) {
     // Initial Load
     refreshFeed();
   }
@@ -214,5 +219,10 @@ final discoveryFeedProvider =
     StateNotifierProvider<DiscoveryFeedNotifier, DiscoveryState>((ref) {
       final repository = ref.watch(discoveryRepositoryProvider);
       final mode = ref.watch(connectionModeProvider);
-      return DiscoveryFeedNotifier(repository, mode);
+      final filters = ref.watch(filterProvider);
+      return DiscoveryFeedNotifier(
+        repository: repository,
+        mode: mode,
+        filters: filters,
+      );
     });
