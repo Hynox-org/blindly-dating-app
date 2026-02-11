@@ -1,102 +1,60 @@
 import 'package:flutter/material.dart';
-import './../onboarding/presentation/screens/steps/photo_upload_screen.dart';
-import './../profile/presentation/screens/setup_steps/profile_prompts_screen.dart';
-import './../onboarding/presentation/screens/steps/name_birth_entry_screen.dart';
-import './../onboarding/presentation/screens/steps/gender_select_screen.dart';
-import './../profile/presentation/screens/setup_steps/language_select_screen.dart';
-import './../profile/presentation/screens/setup_steps/location_set_screen.dart';
-import './../profile/presentation/screens/setup_steps/lifestyle_prefs_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'domain/models/profile_user_model.dart';
+import 'provider/profile_provider.dart';
+import '../onboarding/presentation/screens/steps/photo_upload_screen.dart';
+import 'presentation/screens/setup_steps/profile_prompts_screen.dart';
+import 'presentation/screens/causes_communities_screen.dart';
+import 'presentation/screens/qualities_selection_screen.dart';
+import '../onboarding/presentation/screens/steps/name_birth_entry_screen.dart';
+import '../onboarding/presentation/screens/steps/gender_select_screen.dart';
+
+import 'presentation/screens/setup_steps/interests_select_screen.dart';
+import 'presentation/screens/setup_steps/bio_entry_screen.dart';
+// import 'presentation/screens/setup_steps/lifestyle_prefs_screen.dart'; // Removed or commented out
+import 'presentation/screens/educated_at_screen.dart';
+import 'presentation/screens/hometown_screen.dart';
+import '../onboarding/domain/models/profile_prompt_model.dart';
+import 'presentation/screens/pronouns_screen.dart';
+import 'presentation/screens/profession_screen.dart';
+import 'presentation/screens/height_screen.dart';
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'presentation/screens/exercise_screen.dart';
+import 'presentation/screens/education_level_screen.dart';
+import 'presentation/screens/drinking_screen.dart';
+import 'presentation/screens/smoking_screen.dart';
+import 'presentation/screens/kids_preference_screen.dart';
+import 'presentation/screens/have_kids_screen.dart';
+import 'presentation/screens/political_view_screen.dart';
+import 'presentation/screens/relationship_type_screen.dart';
+import 'presentation/screens/sexual_orientation_screen.dart';
+import 'presentation/screens/language_selection_screen.dart';
+import 'presentation/screens/religion_screen.dart';
+import 'presentation/screens/zodiac_screen.dart';
+import '../../core/widgets/app_loader.dart';
+
 // ============================================================
 // PROFILE EDIT SCREEN (Complete Redesign)
 // ============================================================
 
-class ProfileEditScreen extends StatefulWidget {
+class ProfileEditScreen extends ConsumerStatefulWidget {
   const ProfileEditScreen({super.key});
 
   @override
-  State<ProfileEditScreen> createState() => _ProfileEditScreenState();
+  ConsumerState<ProfileEditScreen> createState() => _ProfileEditScreenState();
 }
 
-class _ProfileEditScreenState extends State<ProfileEditScreen> {
-  // Profile data
-  final int _age = 27;
-  final String _work = 'Designer';
-  final String _education = 'PG graduate';
-  final String _gender = 'Male';
-  final String _location = 'Coimbatore';
-  final String _hometown = 'Coimbatore';
-
-  // More about you
-  final String _height = '5.8';
-  final String _exercise = 'Daily';
-  final String _drinking = 'Yes';
-  final String _smoking = 'Yes';
-  final String _kids = 'No';
-  final String _haveKids = 'No';
-  final String _zodiac = 'Taurus';
-  final String _politics = 'Not interested';
-  final String _religion = 'Hindu';
-
-  // Interests
-  final List<String> _selectedInterests = [
-    'Dance',
-    'Cricket',
-    'Whiskey',
-    'Bar',
-    'KFC',
-    'Football',
-    'Beaches',
-    'Arabic',
-    'Fish',
-  ];
-
-  final List<String> _allInterests = [
-    'Dance',
-    'Cricket',
-    'Whiskey',
-    'Bar',
-    'KFC',
-    'Football',
-    'Beaches',
-    'Arabic',
-    'Fish',
-    'Music',
-    'Reading',
-    'Gaming',
-  ];
-
-  // Qualities
-  final List<String> _selectedQualities = [
-    'Empathy',
-    'Emotional intelligence',
-    'Gratitude',
-    'Ambition',
-  ];
-
-  final List<String> _allQualities = [
-    'Empathy',
-    'Emotional intelligence',
-    'Gratitude',
-    'Ambition',
-    'Honesty',
-    'Kindness',
-  ];
-
-  // Languages
-  final List<String> _selectedLanguages = ['Tamil', 'English'];
-  final List<String> _allLanguages = [
-    'Tamil',
-    'English',
-    'Malayalam',
-    'Hindi',
-    'Telugu',
-    'Kannada',
-  ];
-
+class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
+  final Set<int> _expandedPromptIndices = {};
   @override
   Widget build(BuildContext context) {
+    final profileAsync = ref.watch(currentUserProfileProvider);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -119,42 +77,536 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildProfileStrength(),
-            const SizedBox(height: 16),
-            _buildPhotosSection(),
-            const SizedBox(height: 16),
-            _buildInterestsSection(),
-            const SizedBox(height: 16),
-            _buildCausesSection(),
-            const SizedBox(height: 16),
-            _buildQualitiesSection(),
-            const SizedBox(height: 16),
-            _buildPromptsSection(),
-            const SizedBox(height: 16),
-            _buildOpeningMovesSection(),
-            const SizedBox(height: 16),
-            _buildBioSection(),
-            const SizedBox(height: 16),
-            _buildAboutYouSection(),
-            const SizedBox(height: 16),
-            _buildMoreAboutYouSection(),
-            const SizedBox(height: 16),
-            _buildPronounsSection(),
-            const SizedBox(height: 16),
-            _buildLanguagesSection(),
-            const SizedBox(height: 16),
-            _buildConnectedAccountsSection(),
-            const SizedBox(height: 40),
-          ],
-        ),
+      body: profileAsync.when(
+        data: (profile) => _buildBody(profile),
+        loading: () => const Center(child: AppLoader()),
+        error: (err, stack) => Center(child: Text('Error: $err')),
       ),
     );
   }
 
-  Widget _buildProfileStrength() {
+  Widget _buildBody(ProfileUser profile) {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          _buildProfileStrength(profile),
+          const SizedBox(height: 16),
+          _buildPhotosSection(profile),
+          const SizedBox(height: 16),
+          _buildInterestsSection(profile),
+          const SizedBox(height: 16),
+          _buildCausesAndCommunitiesSection(profile),
+          const SizedBox(height: 16),
+          _buildQualitiesSection(profile),
+          const SizedBox(height: 16),
+          _buildPromptsSection(profile),
+          const SizedBox(height: 16),
+          _buildBioSection(profile),
+          const SizedBox(height: 16),
+          _buildAboutYouSection(profile),
+          const SizedBox(height: 16),
+          _buildMoreAboutYouSection(profile),
+          const SizedBox(height: 16),
+          _buildPronounsSection(profile),
+          const SizedBox(height: 16),
+          _buildLanguagesSection(profile),
+          const SizedBox(height: 16),
+          _buildConnectedAccountsSection(profile),
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCausesAndCommunitiesSection(ProfileUser profile) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'My causes and communities',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Add up to 3 causes close to your heart.',
+            style: TextStyle(fontSize: 12, color: Colors.black),
+          ),
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const CausesCommunitiesScreen(isEditMode: true),
+                ),
+              );
+            },
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: profile.causesCommunities.isEmpty
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: const [
+                        Text(
+                          'Add your causes and communities',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          size: 16,
+                          color: Colors.black,
+                        ),
+                      ],
+                    )
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: profile.causesCommunities.map((cause) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.grey[300]!),
+                                ),
+                                child: Text(
+                                  cause,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(
+                          Icons.arrow_forward_ios,
+                          size: 16,
+                          color: Colors.black,
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQualitiesSection(ProfileUser profile) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Qualities i value',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Choose up to 3 qualities you value in a person',
+            style: TextStyle(fontSize: 12, color: Colors.black),
+          ),
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const QualitiesSelectionScreen(isEditMode: true),
+                ),
+              );
+            },
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F5), // Light grey bg as per design
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: profile.qualities.isEmpty
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: const [
+                        Text(
+                          'Add qualities you value',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          size: 16,
+                          color: Colors.black,
+                        ),
+                      ],
+                    )
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: profile.qualities.map((quality) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE8D595), // Gold/Yellow
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  quality,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(
+                          Icons.arrow_forward_ios,
+                          size: 16,
+                          color: Colors.black,
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPromptsSection(ProfileUser profile) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Prompts',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Let people know what it\'s like to date you.',
+            style: TextStyle(fontSize: 12, color: Colors.black),
+          ),
+          const SizedBox(height: 16),
+          // List of Prompt Cards
+          if (profile.prompts.isNotEmpty)
+            ...profile.prompts.asMap().entries.map((entry) {
+              return _buildSinglePromptCard(entry.value, entry.key);
+            }),
+
+          // Placeholder "Add Prompt" card if < 3
+          if (profile.prompts.length < 3)
+            GestureDetector(
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        const ProfilePromptsScreen(isEditMode: true),
+                  ),
+                );
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 16,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: const [
+                    Text(
+                      'Add a prompt',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                      color: Colors.black,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSinglePromptCard(ProfilePrompt prompt, int index) {
+    final response = prompt.userResponse;
+    final isLong = response.length > 100; // Heuristic for "Big" prompt
+    final isExpanded = _expandedPromptIndices.contains(index);
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F5F5),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GestureDetector(
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ProfilePromptsScreen(
+                    isEditMode: true,
+                    initialTemplateId: prompt.promptTemplateId,
+                  ),
+                ),
+              );
+            },
+            behavior: HitTestBehavior.opaque,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    prompt.promptQuestion ?? 'Prompt',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: Colors.black,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ProfilePromptsScreen(
+                    isEditMode: true,
+                    initialTemplateId: prompt.promptTemplateId,
+                  ),
+                ),
+              );
+            },
+            child: Text(
+              '"$response"',
+              style: const TextStyle(fontSize: 13, color: Colors.black),
+              maxLines: isExpanded ? null : 3,
+              overflow: isExpanded
+                  ? TextOverflow.visible
+                  : TextOverflow.ellipsis,
+            ),
+          ),
+          if (isLong) ...[
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  if (isExpanded) {
+                    _expandedPromptIndices.remove(index);
+                  } else {
+                    _expandedPromptIndices.add(index);
+                  }
+                });
+              },
+              child: Center(
+                child: Icon(
+                  isExpanded
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
+                  color: Colors.black54,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPronounsSection(ProfileUser profile) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Pronouns',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Pick your pronouns',
+            style: TextStyle(fontSize: 12, color: Colors.black),
+          ),
+          const SizedBox(height: 16),
+          _buildGenericAddRow(
+            title: profile.pronouns != null && profile.pronouns!.isNotEmpty
+                ? _formatPronouns(profile.pronouns!)
+                : 'Add your pronouns',
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PronounsScreen(isEditMode: true),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConnectedAccountsSection(ProfileUser profile) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Connected accounts',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Show your favorite music',
+            style: TextStyle(fontSize: 12, color: Colors.black),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F5F5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.music_note,
+                      color: Colors.green,
+                      size: 24,
+                    ), // Placeholder for Spotify Icon
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Connect my spotify',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Show your top spotify artists on your profile and allow blindly to highlight who have in common with others.',
+                  style: TextStyle(fontSize: 12, color: Colors.black87),
+                ),
+                const SizedBox(height: 16),
+                // Placeholder circles for artists
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: List.generate(
+                    5,
+                    (index) => Container(
+                      width: 40,
+                      height: 40,
+                      decoration: const BoxDecoration(
+                        color: Colors.grey,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileStrength(ProfileUser profile) {
+    final percent = (profile.completionPercentage * 100).toInt();
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -172,21 +624,25 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: const Color(0xFFF5F5F5),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
+              children: [
                 Text(
-                  '40% complete',
-                  style: TextStyle(
+                  '$percent% complete',
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
                   ),
                 ),
-                Icon(Icons.arrow_forward_ios, size: 16, color: Colors.black),
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: Colors.black,
+                ),
               ],
             ),
           ),
@@ -195,7 +651,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     );
   }
 
-  Widget _buildPhotosSection() {
+  Widget _buildPhotosSection(ProfileUser profile) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -212,10 +668,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           const SizedBox(height: 4),
           const Text(
             'Pick some that show the true you.',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.black,
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.black),
           ),
           const SizedBox(height: 16),
           GridView.count(
@@ -225,17 +678,39 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             mainAxisSpacing: 8,
             crossAxisSpacing: 8,
             children: List.generate(6, (index) {
+              if (index < profile.imageUrls.length) {
+                return GestureDetector(
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            const PhotoUploadScreen(isEditMode: true),
+                      ),
+                    );
+                    ref.refresh(currentUserProfileProvider);
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      image: DecorationImage(
+                        image: NetworkImage(profile.imageUrls[index]),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                );
+              }
               return GestureDetector(
                 onTap: () async {
-                  // Navigate to PhotoUploadScreen
                   await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const PhotoUploadScreen(),
+                      builder: (context) =>
+                          const PhotoUploadScreen(isEditMode: true),
                     ),
                   );
-                  // Refresh UI after returning
-                  setState(() {});
+                  ref.refresh(currentUserProfileProvider);
                 },
                 child: Container(
                   decoration: BoxDecoration(
@@ -250,17 +725,14 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           const SizedBox(height: 12),
           const Text(
             'Hold and drag media to reorder',
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.black,
-            ),
+            style: TextStyle(fontSize: 11, color: Colors.black),
           ),
           const SizedBox(height: 16),
           // Best photo row in white bg
           Container(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: const Color(0xFFF5F5F5),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -281,13 +753,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                     ),
                   ),
                 ),
-                Text(
-                  'On',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.black,
-                  ),
-                ),
+                Text('On', style: TextStyle(fontSize: 13, color: Colors.black)),
                 SizedBox(width: 8),
                 Icon(Icons.arrow_forward_ios, size: 16, color: Colors.black),
               ],
@@ -298,7 +764,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           Container(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: const Color(0xFFF5F5F5),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -317,10 +783,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                 ),
                 Text(
                   'Not Verified',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.black,
-                  ),
+                  style: TextStyle(fontSize: 13, color: Colors.black),
                 ),
                 SizedBox(width: 8),
                 Icon(Icons.arrow_forward_ios, size: 16, color: Colors.black),
@@ -332,7 +795,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     );
   }
 
-  Widget _buildInterestsSection() {
+  Widget _buildInterestsSection(ProfileUser profile) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -349,343 +812,100 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           const SizedBox(height: 4),
           const Text(
             'Get specific about the things you love.',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.black,
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.black),
           ),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              color: const Color(0xFFF5F5F5), // Light grey background
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                GestureDetector(
-                  onTap: _showInterestsDialog,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
-                      Text(
-                        'Add your favorite interests',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
+            child: profile.interests.isEmpty
+                ? GestureDetector(
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const InterestsSelectScreen(isEditMode: true),
                         ),
-                      ),
-                      Icon(Icons.add, color: Colors.black, size: 20),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Divider(color: Colors.black, thickness: 1, height: 1),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _selectedInterests.map((interest) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(10), // less curve
-                        border: Border.all(color: Colors.grey[300]!),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(_getInterestEmoji(interest)),
-                          const SizedBox(width: 6),
-                          Text(
-                            interest,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _getInterestEmoji(String interest) {
-    final Map<String, String> emojis = {
-      'Dance': '💃',
-      'Cricket': '🏏',
-      'Whiskey': '🥃',
-      'Bar': '🍻',
-      'KFC': '🍗',
-      'Football': '⚽',
-      'Beaches': '🏖️',
-      'Arabic': '🎵',
-      'Fish': '🐟',
-    };
-    return emojis[interest] ?? '🎯';
-  }
-
-  Widget _buildCausesSection() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'My causes and communities',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Add up to 3 causes close to your heart.',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: GestureDetector(
-              onTap: () {},
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Expanded(
-                    child: Text(
-                      'Add your causes and communities',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                  Icon(Icons.arrow_forward_ios, size: 16, color: Colors.black),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQualitiesSection() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Qualities I value',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Choose up to 3 qualities you value in a person',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _selectedQualities.map((quality) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey[300]!),
-                        ),
-                        child: Text(
-                          quality,
-                          style: const TextStyle(
-                            fontSize: 13,
+                      );
+                      ref.refresh(currentUserProfileProvider);
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: const [
+                        Text(
+                          'Add your favorite interests',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
                             color: Colors.black,
                           ),
                         ),
+                        Icon(Icons.add, color: Colors.black, size: 20),
+                      ],
+                    ),
+                  )
+                : GestureDetector(
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const InterestsSelectScreen(isEditMode: true),
+                        ),
                       );
-                    }).toList(),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                GestureDetector(
-                  onTap: () {},
-                  child: const Icon(
-                    Icons.arrow_forward_ios,
-                    size: 16,
-                    color: Colors.black,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPromptsSection() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Prompts',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Let people know what it\'s like to date you.',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: GestureDetector(
-              onTap: () async {
-                // Navigate to ProfilePromptsScreen
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ProfilePromptsScreen(),
-                  ),
-                );
-                // Refresh UI after returning
-                setState(() {});
-              },
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Expanded(
-                    child: Text(
-                      'Add a prompt',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
+                      ref.refresh(currentUserProfileProvider);
+                    },
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Wrap(
+                            spacing: 8, // Reduced spacing
+                            runSpacing: 8,
+                            children: profile.interests.map((interest) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8, // Slightly more vertical padding
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(
+                                    8,
+                                  ), // Rectangular with slight round
+                                ),
+                                child: Text(
+                                  interest,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(
+                          Icons.arrow_forward_ios,
+                          size: 16,
+                          color: Colors.black,
+                        ),
+                      ],
                     ),
                   ),
-                  Icon(Icons.arrow_forward_ios, size: 16, color: Colors.black),
-                ],
-              ),
-            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildOpeningMovesSection() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Opening moves',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Add 3 first messages your new matches can reply to.',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: GestureDetector(
-              onTap: () {},
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Expanded(
-                    child: Text(
-                      'Whats your ideal first date?',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                  Icon(Icons.arrow_forward_ios, size: 16, color: Colors.black),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBioSection() {
+  Widget _buildBioSection(ProfileUser profile) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -702,32 +922,36 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           const SizedBox(height: 4),
           const Text(
             'Write a fun intro.',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.black,
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.black),
           ),
           const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: TextField(
-              maxLines: 3,
-              decoration: InputDecoration(
-                hintText: 'About you..',
-                hintStyle: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
+          GestureDetector(
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => BioEntryScreen(
+                    isEditMode: true,
+                    initialBio: profile.bio, // Pass existing bio
+                  ),
                 ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+              );
+              ref.refresh(currentUserProfileProvider);
+            },
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              width: double.infinity,
+              height: 100, // Fixed height to match "box" look
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(16),
               ),
-              style: const TextStyle(
-                color: Colors.black,
+              child: Text(
+                profile.bio.isNotEmpty ? profile.bio : 'About you...',
+                style: TextStyle(
+                  color: profile.bio.isNotEmpty ? Colors.black : Colors.black87,
+                  fontSize: 14,
+                ),
               ),
             ),
           ),
@@ -736,7 +960,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     );
   }
 
-  Widget _buildAboutYouSection() {
+  Widget _buildAboutYouSection(ProfileUser profile) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -752,91 +976,130 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           ),
           const SizedBox(height: 16),
           _buildListTile(
-            Icons.cake,
+            Icons.cake_outlined,
             'Age',
-            '$_age',
+            '${profile.age}',
             true,
             onTap: () async {
               await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const NameBirthEntryScreen(),
+                  builder: (context) =>
+                      const NameBirthEntryScreen(isEditMode: true),
                 ),
               );
-              setState(() {});
+              ref.refresh(currentUserProfileProvider);
             },
           ),
           _buildListTile(
-            Icons.work,
+            Icons.work_outline,
             'Work',
-            _work,
+            profile.workTitle ?? 'Designer', // Placeholder default as per image
             true,
-            onTap: () {},
-            // async {
-            // await Navigator.push(
-            //   context
-            // MaterialPageRoute(builder: (context) => const WorkEditScreen()),
-            // );
-            // setState(() {});
-            // },
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const ProfessionScreen(isEditMode: true),
+                ),
+              );
+              ref.refresh(currentUserProfileProvider);
+            },
           ),
           _buildListTile(
-            Icons.school,
-            'Education',
-            _education,
+            Icons.school_outlined,
+            'Educated at',
+            [
+                  if (profile.educatedAt != null &&
+                      profile.educatedAt!.isNotEmpty)
+                    profile.educatedAt!,
+                  if (profile.graduationYear != null)
+                    profile.graduationYear!.toString(),
+                ].join(', ').isEmpty
+                ? 'Add'
+                : [
+                    if (profile.educatedAt != null &&
+                        profile.educatedAt!.isNotEmpty)
+                      profile.educatedAt!,
+                    if (profile.graduationYear != null)
+                      profile.graduationYear!.toString(),
+                  ].join(', '),
             true,
-            onTap: () {},
-            // async {
-            //   await Navigator.push(
-            //     context,
-            //     MaterialPageRoute(builder: (context) => const EducationEditScreen()),
-            //   );
-            //   setState(() {});
-            // },
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const EducatedAtScreen(isEditMode: true),
+                ),
+              );
+              // ignore: unused_result
+              ref.refresh(currentUserProfileProvider);
+            },
           ),
           _buildListTile(
-            Icons.person,
+            Icons.person_outline,
             'Gender',
-            _gender,
+            profile.gender,
             true,
             onTap: () async {
               await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const GenderSelectScreen(),
+                  builder: (context) =>
+                      const GenderSelectScreen(isEditMode: true),
                 ),
               );
-              setState(() {});
+              ref.refresh(currentUserProfileProvider);
             },
           ),
+          // Location Tile with Reverse Geocoding
+          if (profile.passportLocationGeom != null)
+            FutureBuilder<String>(
+              future: _resolveDistrictFromGeom(profile.passportLocationGeom!),
+              builder: (context, snapshot) {
+                final locationText = snapshot.hasData
+                    ? snapshot.data!
+                    : (profile.city.isNotEmpty ? profile.city : 'Loading...');
+
+                return _buildListTile(
+                  Icons.location_on_outlined,
+                  'Location',
+                  locationText, // Display resolved District
+                  false, // Disable arrow if we don't want them editing this manually?
+                  // User said "current location will check latitude and longitude".
+                  // Usually this implies READ ONLY or "Refresh".
+                  // For now, I'll keep it read-only or just show it.
+                  // If user wants to EDIT, they might expect to pick a city manually.
+                  // But the requirement says "display he is at which district".
+                  // I'll disable the arrow for now as it's auto-detected.
+                  onTap: () {
+                    // specific tap action if needed, e.g. refresh
+                  },
+                );
+              },
+            )
+          else
+            _buildListTile(
+              Icons.location_on_outlined,
+              'Location',
+              profile.city.isNotEmpty ? profile.city : 'Unknown',
+              false,
+              onTap: () {},
+            ),
           _buildListTile(
-            Icons.location_on,
-            'Location',
-            _location,
-            true,
-            onTap: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const LocationSetScreen(),
-                ),
-              );
-              setState(() {});
-            },
-          ),
-          _buildListTile(
-            Icons.home,
+            Icons.home_outlined,
             'Hometown',
-            _hometown,
+            profile.hometown ?? 'Add',
             true,
             onTap: () async {
               await Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const LocationSetScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const HometownScreen()),
               );
-              setState(() {});
+              // ignore: unused_result
+              ref.refresh(currentUserProfileProvider);
             },
           ),
         ],
@@ -844,7 +1107,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     );
   }
 
-  Widget _buildMoreAboutYouSection() {
+  Widget _buildMoreAboutYouSection(ProfileUser profile) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -862,384 +1125,384 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           _buildListTile(
             Icons.height,
             'Height',
-            _height,
-            true,
-            onTap: () {} 
-            //async {
-            //   await Navigator.push(
-            //     context,
-            //     MaterialPageRoute(
-            //       builder: (context) => const HeightEditScreen(),
-            //     ),
-            //   );
-            //   setState(() {});
-            // },
-          ),
-          _buildListTile(
-            Icons.fitness_center,
-            'Exercise',
-            _exercise,
-            true,
-            onTap: () {}
-            // async {
-            //   await Navigator.push(
-            //     context,
-            //     MaterialPageRoute(
-            //       builder: (context) => const ExerciseEditScreen(),
-            //     ),
-            //   );
-            //   setState(() {});
-            // },
-          ),
-          _buildListTile(
-            Icons.school,
-            'Education level',
-            _education,
-            true,
-            onTap: () {}
-            // async {
-            //   await Navigator.push(
-            //     context,
-            //     MaterialPageRoute(
-            //       builder: (context) => const EducationLevelEditScreen(),
-            //     ),
-            //   );
-            //   setState(() {});
-            // },
-          ),
-          _buildListTile(
-            Icons.local_drink,
-            'Drinking',
-            _drinking,
+            profile.height != null ? '${profile.height} cm' : 'Add',
             true,
             onTap: () async {
               await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const LifestylePrefsScreen(),
+                  builder: (context) => const HeightScreen(isEditMode: true),
                 ),
               );
-              setState(() {});
+              ref.refresh(currentUserProfileProvider);
+            },
+          ),
+          _buildListTile(
+            Icons.fitness_center,
+            'Exercise',
+            profile.exercise ?? 'Add',
+            true,
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ExerciseScreen(isEditMode: true),
+                ),
+              );
+              ref.refresh(currentUserProfileProvider);
+            },
+          ),
+          _buildListTile(
+            Icons.school_outlined,
+            'Education level',
+            profile.educationLevel ?? 'Add',
+            true,
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const EducationLevelScreen(isEditMode: true),
+                ),
+              );
+              ref.refresh(currentUserProfileProvider);
+            },
+          ),
+          _buildListTile(
+            Icons.local_bar,
+            'Drinking',
+            profile.drinking ?? 'Add',
+            true,
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const DrinkingScreen(isEditMode: true),
+                ),
+              );
+              ref.refresh(currentUserProfileProvider);
             },
           ),
           _buildListTile(
             Icons.smoking_rooms,
             'Smoking',
-            _smoking,
+            profile.smoking ?? 'Add',
             true,
             onTap: () async {
               await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const LifestylePrefsScreen(),
+                  builder: (context) => const SmokingScreen(isEditMode: true),
                 ),
               );
-              setState(() {});
+              ref.refresh(currentUserProfileProvider);
+            },
+          ),
+          _buildListTile(
+            Icons.baby_changing_station,
+            'Have kids',
+            profile.haveKids == null
+                ? 'Add'
+                : (profile.haveKids! ? 'Yes' : 'No'),
+            true,
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const HaveKidsScreen(isEditMode: true),
+                ),
+              );
+              ref.refresh(currentUserProfileProvider);
             },
           ),
           _buildListTile(
             Icons.child_care,
-            'Kids',
-            _kids,
+            'Kids', // Keep label simple or 'Kids Preference' as per design
+            profile.kidsPreference ?? 'Add',
             true,
-            onTap: () {}
-            // async {
-            //   await Navigator.push(
-            //     context,
-            //     MaterialPageRoute(builder: (context) => const KidsEditScreen()),
-            //   );
-            //   setState(() {});
-            // },
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const KidsPreferenceScreen(isEditMode: true),
+                ),
+              );
+              ref.refresh(currentUserProfileProvider);
+            },
           ),
+
           _buildListTile(
-            Icons.family_restroom,
-            'Have kids',
-            _haveKids,
-            true,
-            onTap: () {}
-            // async {
-            //   await Navigator.push(
-            //     context,
-            //     MaterialPageRoute(
-            //       builder: (context) => const HaveKidsEditScreen(),
-            //     ),
-            //   );
-            //   setState(() {});
-            // },
-          ),
-          _buildListTile(
-            Icons.stars,
+            Icons.nightlight_round,
             'Zodiac',
-            _zodiac,
+            profile.zodiac ?? 'Taurus',
             true,
-            onTap: () {}
-            // async {
-            //   await Navigator.push(
-            //     context,
-            //     MaterialPageRoute(
-            //       builder: (context) => const ZodiacEditScreen(),
-            //     ),
-            //   );
-            //   setState(() {});
-            // },
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ZodiacScreen(isEditMode: true),
+                ),
+              );
+              ref.refresh(currentUserProfileProvider);
+            },
           ),
           _buildListTile(
-            Icons.how_to_vote,
+            Icons.account_balance,
             'Politics',
-            _politics,
+            profile.politics ?? 'Add',
             true,
-            onTap: () {}
-            // async {
-            //   await Navigator.push(
-            //     context,
-            //     MaterialPageRoute(
-            //       builder: (context) => const PoliticsEditScreen(),
-            //     ),
-            //   );
-            //   setState(() {});
-            // },
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const PoliticalViewScreen(isEditMode: true),
+                ),
+              );
+              ref.refresh(currentUserProfileProvider);
+            },
           ),
           _buildListTile(
-            Icons.temple_hindu,
-            'Religion',
-            _religion,
+            Icons.favorite_border,
+            'Relationship Type',
+            profile.relationshipType ?? 'Add',
             true,
-            onTap: () {}
-            // async {
-            //   await Navigator.push(
-            //     context,
-            //     MaterialPageRoute(
-            //       builder: (context) => const ReligionEditScreen(),
-            //     ),
-            //   );
-            //   setState(() {});
-            // },
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const RelationshipTypeScreen(isEditMode: true),
+                ),
+              );
+              ref.refresh(currentUserProfileProvider);
+            },
+          ),
+          _buildListTile(
+            Icons.transgender, // Or another suitable icon
+            'Sexual Orientation',
+            profile.sexualOrientation ?? 'Add',
+            true,
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const SexualOrientationScreen(isEditMode: true),
+                ),
+              );
+              ref.refresh(currentUserProfileProvider);
+            },
+          ),
+          _buildListTile(
+            Icons.self_improvement, // Updated icon to match
+            'Religion',
+            profile.religion ?? 'Hindu',
+            true,
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ReligionScreen(isEditMode: true),
+                ),
+              );
+              ref.refresh(currentUserProfileProvider);
+            },
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPronounsSection() {
+  Widget _buildLanguagesSection(ProfileUser profile) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Pronouns',
+            'Languages',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
           ),
-          const SizedBox(height: 4),
-          const Text(
-            'Pick your pronouns',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.black,
-            ),
-          ),
           const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: GestureDetector(
-              onTap: () {},
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Expanded(
-                    child: Text(
-                      'Add your pronouns',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                  Icon(Icons.arrow_forward_ios, size: 16, color: Colors.black),
-                ],
+          GestureDetector(
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const LanguageSelectionScreen(isEditMode: true),
+                ),
+              );
+              ref.refresh(currentUserProfileProvider);
+            },
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(16),
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-Widget _buildLanguagesSection() {
-  return Container(
-    margin: const EdgeInsets.symmetric(horizontal: 16),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Languages',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        const SizedBox(height: 16),
-        GestureDetector(
-          onTap: () async {
-            // Navigate to LanguageSelectScreen
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const LanguageSelectScreen(),
-              ),
-            );
-            // Refresh UI after returning
-            setState(() {});
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                ..._selectedLanguages.map((lang) {
-                  return Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.blue[50],
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.language,
-                          size: 14,
-                          color: Colors.blue,
-                        ),
-                        const SizedBox(width: 4),
+              child: profile.languages.isEmpty
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: const [
                         Text(
-                          lang,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.black,
+                          'Add Languages you know', // Updated text
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color:
+                                Colors.black, // Or Colors.grey if placeholder
                           ),
+                        ),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          size: 16,
+                          color: Colors.black,
+                        ),
+                      ],
+                    )
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: profile.languages.map((lang) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.05),
+                                      offset: const Offset(0, 2),
+                                      blurRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.translate,
+                                      size: 14,
+                                      color: Colors.blue,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      lang,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(
+                          Icons.arrow_forward_ios,
+                          size: 16,
+                          color: Colors.black,
                         ),
                       ],
                     ),
-                  );
-                }),
-                const Spacer(),
-                const Icon(
-                  Icons.arrow_forward_ios,
-                  size: 16,
-                  color: Colors.black,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-  Widget _buildConnectedAccountsSection() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Connected accounts',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Show your favorite music',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: const [
-                    Icon(Icons.music_note, color: Colors.green, size: 20),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Connect my spotify',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ),
-                    Icon(
-                      Icons.arrow_forward_ios,
-                      size: 16,
-                      color: Colors.black,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Show your top spotify artists on your profile and allow blindly to highlight who have in common with others',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  height: 60,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: 6,
-                    itemBuilder: (context, index) {
-                      return Container(
-                        margin: const EdgeInsets.only(right: 8),
-                        width: 60,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          shape: BoxShape.circle,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildGenericAddRow({
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF5F5F5),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.black),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<String> _resolveDistrictFromGeom(String ewkbHex) async {
+    try {
+      if (ewkbHex.length < 50) return "Invalid Location";
+      final hex = ewkbHex;
+      double hexToDouble(String hexString) {
+        var bytes = <int>[];
+        for (var i = 0; i < hexString.length; i += 2) {
+          var byte = int.parse(hexString.substring(i, i + 2), radix: 16);
+          bytes.add(byte);
+        }
+        var byteData = ByteData.sublistView(Uint8List.fromList(bytes));
+        return byteData.getFloat64(0, Endian.little);
+      }
+
+      final xHex = hex.substring(18, 34);
+      final yHex = hex.substring(34, 50);
+      final lng = hexToDouble(xHex);
+      final lat = hexToDouble(yHex);
+
+      final mapboxToken = dotenv.env['MAPBOX_ACCESS_TOKEN'];
+      if (mapboxToken == null) return "Location Found";
+
+      final url = Uri.parse(
+        'https://api.mapbox.com/geocoding/v5/mapbox.places/$lng,$lat.json?access_token=$mapboxToken&types=district,place&limit=1',
+      );
+
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final features = data['features'] as List;
+        if (features.isNotEmpty) {
+          return features[0]['text'] as String;
+        }
+      }
+      return "Unknown District";
+    } catch (e) {
+      return "Error";
+    }
   }
 
   Widget _buildListTile(
@@ -1247,30 +1510,36 @@ Widget _buildLanguagesSection() {
     String title,
     String trailing,
     bool showArrow, {
-    VoidCallback? onTap, // Add optional onTap parameter
+    VoidCallback? onTap,
   }) {
     return GestureDetector(
-      onTap: onTap, // Trigger navigation when tapped
-      child: Padding(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        color: Colors.transparent,
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Row(
           children: [
             Icon(icon, size: 20, color: Colors.black),
             const SizedBox(width: 12),
-            Expanded(
+            SizedBox(
+              width: 100,
               child: Text(
                 title,
                 style: const TextStyle(
                   fontSize: 14,
+                  fontWeight: FontWeight.w500,
                   color: Colors.black,
                 ),
               ),
             ),
-            Text(
-              trailing,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.black,
+            Expanded(
+              child: Text(
+                trailing,
+                textAlign: TextAlign.end,
+                style: const TextStyle(fontSize: 14, color: Colors.black),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             if (showArrow) ...[
@@ -1287,93 +1556,14 @@ Widget _buildLanguagesSection() {
     );
   }
 
-  void _showInterestsDialog() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Container(
-              padding: const EdgeInsets.all(16),
-              height: MediaQuery.of(context).size.height * 0.7,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Select Interests',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.black),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: _allInterests.map((interest) {
-                        final isSelected = _selectedInterests.contains(
-                          interest,
-                        );
-                        return GestureDetector(
-                          onTap: () {
-                            setModalState(() {
-                              if (isSelected) {
-                                _selectedInterests.remove(interest);
-                              } else {
-                                _selectedInterests.add(interest);
-                              }
-                            });
-                            setState(() {});
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? const Color.fromRGBO(65, 72, 51, 1)
-                                  : Colors.grey[100],
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: isSelected
-                                    ? const Color.fromRGBO(65, 72, 51, 1)
-                                    : Colors.grey[300]!,
-                              ),
-                            ),
-                            child: Text(
-                              interest,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: isSelected ? Colors.white : Colors.black,
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
+  String _formatPronouns(String pronouns) {
+    if (pronouns.isEmpty) return '';
+    // Replace underscores with slashes
+    final formatted = pronouns.replaceAll('_', '/');
+    // Capitalize first letter (optional, but good for UI)
+    if (formatted.isNotEmpty) {
+      return formatted[0].toUpperCase() + formatted.substring(1);
+    }
+    return formatted;
   }
 }

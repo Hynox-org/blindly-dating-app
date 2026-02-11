@@ -6,9 +6,12 @@ import '../../../../auth/providers/auth_providers.dart';
 import '../../../data/repositories/onboarding_repository.dart';
 import 'base_onboarding_step_screen.dart';
 import '../../../../../core/utils/custom_popups.dart';
+import '../../../../profile/provider/profile_provider.dart';
 
 class GenderSelectScreen extends ConsumerStatefulWidget {
-  const GenderSelectScreen({super.key});
+  final bool isEditMode;
+
+  const GenderSelectScreen({super.key, this.isEditMode = false});
 
   @override
   ConsumerState<GenderSelectScreen> createState() => _GenderSelectScreenState();
@@ -88,9 +91,25 @@ class _GenderSelectScreenState extends ConsumerState<GenderSelectScreen> {
         await ref
             .read(onboardingRepositoryProvider)
             .updateProfileData(user.id, updates);
+        if (widget.isEditMode) {
+          if (mounted) {
+            final currentProfile = ref.read(currentUserProfileProvider).value;
+            if (currentProfile != null) {
+              final updatedProfile = currentProfile.copyWith(gender: dbGender);
+              ref
+                  .read(currentUserProfileProvider.notifier)
+                  .updateProfile(updatedProfile);
+            }
+            Navigator.pop(context);
+          }
+        }
       }
 
-      await ref.read(onboardingProvider.notifier).completeStep('gender_select');
+      if (!widget.isEditMode) {
+        await ref
+            .read(onboardingProvider.notifier)
+            .completeStep('gender_select');
+      }
     } catch (e) {
       debugPrint('Error saving gender: $e');
       if (mounted) {
@@ -106,7 +125,7 @@ class _GenderSelectScreenState extends ConsumerState<GenderSelectScreen> {
     return BaseOnboardingStepScreen(
       title: "What's your Gender?",
       showBackButton: true,
-      nextLabel: 'Continue',
+      nextLabel: widget.isEditMode ? 'Update' : 'Continue',
       isNextEnabled: _selectedGender != null && !_isSaving,
       isLoading: _isSaving,
       onNext: _handleNext,

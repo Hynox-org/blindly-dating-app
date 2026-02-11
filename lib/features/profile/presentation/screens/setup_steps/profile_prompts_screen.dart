@@ -10,9 +10,17 @@ import '../../../../../core/utils/custom_popups.dart';
 import 'package:blindly_dating_app/features/onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
 import '../../../../../core/widgets/app_loader.dart';
 import '../../../../../core/providers/connection_mode_provider.dart';
+import 'package:blindly_dating_app/features/profile/provider/profile_provider.dart';
 
 class ProfilePromptsScreen extends ConsumerStatefulWidget {
-  const ProfilePromptsScreen({super.key});
+  final bool isEditMode;
+  final String? initialTemplateId;
+
+  const ProfilePromptsScreen({
+    super.key,
+    this.isEditMode = false,
+    this.initialTemplateId,
+  });
 
   @override
   ConsumerState<ProfilePromptsScreen> createState() =>
@@ -73,6 +81,37 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
           final userPrompts = results[2] as List<ProfilePrompt>;
           _selectedPrompts.clear();
           _selectedPrompts.addAll(userPrompts);
+
+          // Handle initial template expansion for editing
+          if (widget.initialTemplateId != null) {
+            final existingPrompt = userPrompts.firstWhere(
+              (p) => p.promptTemplateId == widget.initialTemplateId,
+              orElse: () => ProfilePrompt(
+                profileId: '',
+                promptTemplateId: '',
+                userResponse: '',
+                promptDisplayOrder: 0,
+              ), // Dummy
+            );
+
+            if (existingPrompt.promptTemplateId.isNotEmpty) {
+              _expandedTemplateId = widget.initialTemplateId;
+              _answerController.text = existingPrompt.userResponse;
+
+              // Also switch to the category containing this template
+              final template = _templates.firstWhere(
+                (t) => t.id == widget.initialTemplateId,
+                orElse: () => _templates.first,
+              );
+              final catIndex = _categories.indexWhere(
+                (c) => c.id == template.categoryId,
+              );
+              if (catIndex != -1) {
+                _selectedCategoryIndex = catIndex;
+              }
+            }
+          }
+
           _isLoading = false;
         });
       }
@@ -88,8 +127,6 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
 
   // --- Logic ---
 
-  // --- Logic ---
-
   void _onCategorySelected(int index) {
     setState(() {
       _selectedCategoryIndex = index;
@@ -99,19 +136,29 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
   }
 
   void _onTemplateTap(PromptTemplate template) {
-    if (_isTemplateSelected(template.id)) return; // Already selected
+    // Logic update: Allow tapping a selected template to edit it (expand it)
+    // if (_isTemplateSelected(template.id)) return; // REMOVED to allow re-editing
 
     setState(() {
       if (_expandedTemplateId == template.id) {
         _expandedTemplateId = null;
       } else {
-        // Can only expand if < 3 selected
-        if (_selectedPrompts.length >= 3) {
+        // Can only expand if < 3 selected OR if we are editing the one already selected
+        final isAlreadySelected = _isTemplateSelected(template.id);
+        if (_selectedPrompts.length >= 3 && !isAlreadySelected) {
           showErrorPopup(context, 'You can only select up to 3 prompts.');
           return;
         }
+
         _expandedTemplateId = template.id;
-        _answerController.clear();
+
+        // Pre-fill if editing existing
+        if (isAlreadySelected) {
+          final prompt = _getSelectedPrompt(template.id);
+          _answerController.text = prompt?.userResponse ?? '';
+        } else {
+          _answerController.clear();
+        }
       }
     });
   }
@@ -121,15 +168,28 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
     if (text.isEmpty) return;
 
     setState(() {
-      _selectedPrompts.add(
-        ProfilePrompt(
-          profileId: '',
-          promptTemplateId: template.id,
-          userResponse: text,
-          promptDisplayOrder: _selectedPrompts.length + 1,
-          promptQuestion: template.promptText,
-        ),
+      // Check if updating existing
+      final existingIndex = _selectedPrompts.indexWhere(
+        (p) => p.promptTemplateId == template.id,
       );
+
+      if (existingIndex != -1) {
+        // Update existing
+        final old = _selectedPrompts[existingIndex];
+        _selectedPrompts[existingIndex] = old.copyWith(userResponse: text);
+      } else {
+        // Add new
+        _selectedPrompts.add(
+          ProfilePrompt(
+            profileId: '',
+            promptTemplateId: template.id,
+            userResponse: text,
+            promptDisplayOrder: _selectedPrompts.length + 1,
+            promptQuestion: template.promptText,
+          ),
+        );
+      }
+
       _expandedTemplateId = null;
       _answerController.clear();
     });
@@ -179,8 +239,12 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
   }
 
   Future<void> _handleNext() async {
-    if (_selectedPrompts.length < 3) {
+    if (!widget.isEditMode && _selectedPrompts.length < 3) {
       showErrorPopup(context, 'Please select 3 prompts to continue.');
+      return;
+    }
+    if (widget.isEditMode && _selectedPrompts.isEmpty) {
+      showErrorPopup(context, 'Please select at least 1 prompt.');
       return;
     }
 
@@ -201,8 +265,23 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
           .read(onboardingRepositoryProvider)
           .saveProfilePrompts(userId, promptsToSave, mode: currentMode);
 
-      if (mounted) {
-        ref.read(onboardingProvider.notifier).completeStep('profile_prompts');
+      if (widget.isEditMode) {
+        if (mounted) {
+          final currentProfile = ref.read(currentUserProfileProvider).value;
+          if (currentProfile != null) {
+            final updatedProfile = currentProfile.copyWith(
+              prompts: promptsToSave,
+            );
+            ref
+                .read(currentUserProfileProvider.notifier)
+                .updateProfile(updatedProfile);
+          }
+          Navigator.pop(context);
+        }
+      } else {
+        if (mounted) {
+          ref.read(onboardingProvider.notifier).completeStep('profile_prompts');
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -227,9 +306,11 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
 
     return BaseOnboardingStepScreen(
       title: 'Choose Your Prompt',
-      showBackButton: false, // Custom footer used
+      showBackButton: widget.isEditMode, // Allow back if edit mode
+      onBack: widget.isEditMode ? () => Navigator.pop(context) : null,
       showNextButton: false, // Custom footer used
       showSkipButton: false, // Custom footer used
+      isEditMode: widget.isEditMode,
       child: Column(
         children: [
           // Subtitle
@@ -304,7 +385,10 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: _selectedPrompts.length == 3
+                    onPressed:
+                        (widget.isEditMode
+                            ? _selectedPrompts.isNotEmpty
+                            : _selectedPrompts.length == 3)
                         ? _handleNext
                         : null,
                     style: ElevatedButton.styleFrom(
@@ -322,7 +406,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
                             strokeWidth: 2.5,
                           )
                         : Text(
-                            'Continue',
+                            widget.isEditMode ? 'Update' : 'Continue',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -331,7 +415,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                if (_selectedPrompts.length < 3)
+                if (_selectedPrompts.length < 3 && !widget.isEditMode)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8.0),
                     child: Text(
@@ -342,39 +426,22 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
                     ),
                   ),
 
-                // Back / Skip Row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    TextButton.icon(
-                      onPressed: () => ref
-                          .read(onboardingProvider.notifier)
-                          .goToPreviousStep(),
-                      icon: Icon(
-                        Icons.arrow_back,
-                        size: 20,
-                        color: colorScheme.onSurface,
-                      ),
-                      label: Text(
-                        "Back",
-                        style: TextStyle(
-                          color: colorScheme.onSurface,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    Directionality(
-                      textDirection: TextDirection.rtl,
-                      child: TextButton.icon(
-                        onPressed: _handleSkip,
+                // Back / Skip Row - only if NOT edit mode
+                if (!widget.isEditMode)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton.icon(
+                        onPressed: () => ref
+                            .read(onboardingProvider.notifier)
+                            .goToPreviousStep(),
                         icon: Icon(
-                          Icons.skip_next_rounded,
-                          size: 24,
+                          Icons.arrow_back,
+                          size: 20,
                           color: colorScheme.onSurface,
                         ),
                         label: Text(
-                          "Skip",
+                          "Back",
                           style: TextStyle(
                             color: colorScheme.onSurface,
                             fontSize: 16,
@@ -382,9 +449,27 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                      Directionality(
+                        textDirection: TextDirection.rtl,
+                        child: TextButton.icon(
+                          onPressed: _handleSkip,
+                          icon: Icon(
+                            Icons.skip_next_rounded,
+                            size: 24,
+                            color: colorScheme.onSurface,
+                          ),
+                          label: Text(
+                            "Skip",
+                            style: TextStyle(
+                              color: colorScheme.onSurface,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),
@@ -419,10 +504,10 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
         final isExpanded = _expandedTemplateId == template.id;
 
         // Render based on state
-        if (isSelected) {
-          return _buildSelectedCard(template, theme);
-        } else if (isExpanded) {
+        if (isExpanded) {
           return _buildExpandedCard(template, theme);
+        } else if (isSelected) {
+          return _buildSelectedCard(template, theme);
         } else {
           return _buildNormalCard(template, theme);
         }
@@ -436,10 +521,8 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          // Subtle shadow/border
-          border: Border.all(color: theme.colorScheme.outline.withOpacity(0.1)),
+          color: const Color(0xFFF5F5F5), // Light Grey
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
           children: [
@@ -449,6 +532,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
                 style: const TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
+                  color: Colors.black,
                 ),
               ),
             ),
@@ -456,7 +540,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
             Icon(
               Icons.arrow_forward_ios,
               size: 14,
-              color: theme.colorScheme.onSurface.withOpacity(0.4),
+              color: Colors.black.withOpacity(0.5),
             ),
           ],
         ),
@@ -468,16 +552,8 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        // Active border or shadow
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: const Color(0xFFF5F5F5),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -493,13 +569,14 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
+                      color: Colors.black,
                     ),
                   ),
                 ),
                 Icon(
-                  Icons.keyboard_arrow_up, // Change to Up arrow when expanded
+                  Icons.keyboard_arrow_up,
                   size: 20,
-                  color: theme.colorScheme.onSurface.withOpacity(0.5),
+                  color: Colors.black.withOpacity(0.5),
                 ),
               ],
             ),
@@ -512,41 +589,39 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
             decoration: InputDecoration(
               hintText: 'Type your answer...',
               hintStyle: TextStyle(
-                color: theme.colorScheme.onSurface.withOpacity(0.4),
+                color: Colors.black.withOpacity(0.4),
                 fontSize: 14,
               ),
               filled: true,
-              fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(
-                0.3,
-              ), // Very light grey
+              fillColor: Colors.white, // White input area
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
               ),
               contentPadding: const EdgeInsets.all(12),
             ),
-            style: const TextStyle(fontSize: 14),
+            style: const TextStyle(fontSize: 14, color: Colors.black),
           ),
           const SizedBox(height: 12),
           Center(
             child: SizedBox(
-              height: 36,
+              height: 40,
               child: ElevatedButton(
                 onPressed: () => _onAddPrompt(template),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary, // Dark olive
+                  backgroundColor: const Color(0xFF4A503D), // Dark olive
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   elevation: 0,
                 ),
-                child: Text(
+                child: const Text(
                   'Add Prompt',
                   style: TextStyle(
-                    color: theme.colorScheme.onPrimary,
+                    color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: 13,
+                    fontSize: 14,
                   ),
                 ),
               ),
@@ -559,71 +634,61 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
 
   Widget _buildSelectedCard(PromptTemplate template, ThemeData theme) {
     final prompt = _getSelectedPrompt(template.id);
-    // Gold color
-    final goldColor = theme.colorScheme.secondary;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: goldColor,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: goldColor.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(right: 24.0),
-                child: Text(
-                  template.promptText,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14,
-                    color: theme.colorScheme.onSecondary,
+    return GestureDetector(
+      onTap: () => _onTemplateTap(template),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF5F5F5),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 24.0),
+                  child: Text(
+                    template.promptText,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Colors.black,
+                    ),
                   ),
                 ),
-              ),
-              if (prompt != null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  prompt.userResponse,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: theme.colorScheme.onSecondary.withOpacity(0.9),
-                    height: 1.3,
+                if (prompt != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    '"${prompt.userResponse}"',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.black87,
+                      height: 1.3,
+                    ),
                   ),
-                ),
+                ],
               ],
-            ],
-          ),
-          Positioned(
-            right: 0,
-            top: 0,
-            child: GestureDetector(
-              onTap: () => _onRemovePrompt(template.id),
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.8), // Dark circle
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.close,
-                  size: 12, // Small X
-                  color: Colors.white,
+            ),
+            Positioned(
+              right: 0,
+              top: 0,
+              child: GestureDetector(
+                onTap: () => _onRemovePrompt(template.id),
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.1), // Light grey circle
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.close, size: 16, color: Colors.black),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

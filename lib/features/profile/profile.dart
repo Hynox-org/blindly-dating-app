@@ -10,7 +10,7 @@ import '../home/component/ProfileSwipeCard.dart';
 import './profile_edit_screen.dart';
 
 // ✅ Import Provider & Model
-import '../profile/domain/models/profile_user_model.dart.dart';
+import 'domain/models/profile_user_model.dart';
 import '../profile/provider/profile_provider.dart';
 import './settings_screen.dart';
 

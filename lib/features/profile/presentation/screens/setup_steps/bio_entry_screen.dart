@@ -1,41 +1,53 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../core/providers/connection_mode_provider.dart';
 import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
 import '../../../../auth/providers/auth_providers.dart';
 import '../../../../onboarding/data/repositories/onboarding_repository.dart';
 import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
 import '../../../../../core/utils/custom_popups.dart';
 import '../../../../../core/widgets/app_loader.dart';
+import '../../../provider/profile_provider.dart';
 
 class BioEntryScreen extends ConsumerStatefulWidget {
-  const BioEntryScreen({super.key});
+  final bool isEditMode;
+  final String? initialBio;
+
+  const BioEntryScreen({super.key, this.isEditMode = false, this.initialBio});
 
   @override
   ConsumerState<BioEntryScreen> createState() => _BioEntryScreenState();
 }
 
 class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
-  final _controller = TextEditingController();
+  late final TextEditingController _controller;
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
+    _controller = TextEditingController(text: widget.initialBio ?? '');
     _controller.addListener(() {
       setState(() {});
     });
-    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchExistingData());
+    // Only fetch if initialBio is not provided (or we want to force refresh, but usually passing is better)
+    if (widget.initialBio == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _fetchExistingData());
+    }
   }
 
   Future<void> _fetchExistingData() async {
     final user = ref.read(authRepositoryProvider).currentUser;
+    final currentMode = ref.read(connectionModeProvider).toLowerCase();
+
     if (user != null) {
       final bio = await ref
           .read(onboardingRepositoryProvider)
-          .getUserBio(user.id);
-      if (bio != null) {
+          .getUserBio(user.id, mode: currentMode);
+
+      if (mounted) {
         setState(() {
-          _controller.text = bio;
+          _controller.text = bio ?? ''; // Handle null safely
         });
       }
     }
@@ -49,6 +61,7 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
 
   Future<void> _handleNext() async {
     final bio = _controller.text.trim();
+
     if (bio.isEmpty) {
       return; // Should be handled by button state, but safety check
     }
@@ -57,9 +70,28 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
 
     try {
       final user = ref.read(authRepositoryProvider).currentUser;
+      final currentMode = ref.read(connectionModeProvider).toLowerCase();
+
       if (user != null) {
-        await ref.read(onboardingRepositoryProvider).saveBio(user.id, bio);
+        await ref
+            .read(onboardingRepositoryProvider)
+            .saveBio(user.id, bio, mode: currentMode);
       }
+
+      if (widget.isEditMode) {
+        if (mounted) {
+          final currentProfile = ref.read(currentUserProfileProvider).value;
+          if (currentProfile != null) {
+            final updatedProfile = currentProfile.copyWith(bio: bio);
+            ref
+                .read(currentUserProfileProvider.notifier)
+                .updateProfile(updatedProfile);
+          }
+          Navigator.pop(context);
+        }
+        return;
+      }
+
       if (mounted) {
         ref.read(onboardingProvider.notifier).completeStep('bio_entry');
       }
@@ -73,11 +105,16 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
   }
 
   void _handleSkip() {
+    if (widget.isEditMode) return;
     ref.read(onboardingProvider.notifier).skipStep('bio_entry');
   }
 
   void _handleBack() {
-    ref.read(onboardingProvider.notifier).goToPreviousStep();
+    if (widget.isEditMode) {
+      Navigator.pop(context);
+    } else {
+      ref.read(onboardingProvider.notifier).goToPreviousStep();
+    }
   }
 
   @override
@@ -90,6 +127,7 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
       showBackButton: false,
       showNextButton: false,
       showSkipButton: false,
+      isEditMode: widget.isEditMode,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -182,9 +220,9 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
                           size: 24,
                         ),
                       )
-                    : const Text(
-                        "Continue",
-                        style: TextStyle(
+                    : Text(
+                        widget.isEditMode ? "Update" : "Continue",
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -219,31 +257,32 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
                   ),
                 ),
               ),
-              Directionality(
-                textDirection: TextDirection.rtl,
-                child: TextButton.icon(
-                  onPressed: _handleSkip,
-                  icon: Icon(
-                    Icons.skip_next_rounded,
-                    size: 24,
-                    color: colorScheme.onSurface,
-                  ),
-                  label: Text(
-                    "Skip",
-                    style: TextStyle(
+              if (!widget.isEditMode)
+                Directionality(
+                  textDirection: TextDirection.rtl,
+                  child: TextButton.icon(
+                    onPressed: _handleSkip,
+                    icon: Icon(
+                      Icons.skip_next_rounded,
+                      size: 24,
                       color: colorScheme.onSurface,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
                     ),
-                  ),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 8,
+                    label: Text(
+                      "Skip",
+                      style: TextStyle(
+                        color: colorScheme.onSurface,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 8,
+                      ),
                     ),
                   ),
                 ),
-              ),
             ],
           ),
         ],

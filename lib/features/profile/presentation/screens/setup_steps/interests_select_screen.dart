@@ -9,9 +9,12 @@ import '../../../../onboarding/presentation/widgets/selection_chip.dart';
 import '../../../../../core/utils/custom_popups.dart';
 import '../../../../../core/widgets/app_loader.dart';
 import '../../../../../core/providers/connection_mode_provider.dart';
+import 'package:blindly_dating_app/features/profile/provider/profile_provider.dart';
 
 class InterestsSelectScreen extends ConsumerStatefulWidget {
-  const InterestsSelectScreen({super.key});
+  final bool isEditMode;
+
+  const InterestsSelectScreen({super.key, this.isEditMode = false});
 
   @override
   ConsumerState<InterestsSelectScreen> createState() =>
@@ -121,6 +124,22 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
               mode: currentMode,
             );
 
+        if (widget.isEditMode) {
+          if (mounted) {
+            final currentProfile = ref.read(currentUserProfileProvider).value;
+            if (currentProfile != null) {
+              final updatedProfile = currentProfile.copyWith(
+                interests: _selectedChipIds.toList(),
+              );
+              ref
+                  .read(currentUserProfileProvider.notifier)
+                  .updateProfile(updatedProfile);
+            }
+            Navigator.pop(context);
+          }
+          return;
+        }
+
         if (mounted) {
           ref
               .read(onboardingProvider.notifier)
@@ -138,11 +157,16 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
   }
 
   void _onSkip() {
+    if (widget.isEditMode) return;
     ref.read(onboardingProvider.notifier).skipStep('interests_select');
   }
 
   void _onBack() {
-    ref.read(onboardingProvider.notifier).goToPreviousStep();
+    if (widget.isEditMode) {
+      Navigator.pop(context);
+    } else {
+      ref.read(onboardingProvider.notifier).goToPreviousStep();
+    }
   }
 
   Map<String, List<InterestChip>> get _groupedChips {
@@ -174,13 +198,14 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
     // User Requirement: "disable the continue btn when no interests are selected."
     // Logic: Enabled ONLY if selected > 0.
     final hasSelection = _selectedChipIds.isNotEmpty;
-    final isNextEnabled = !_isLoading && hasSelection;
+    final isNextEnabled = !_isLoading;
 
     return BaseOnboardingStepScreen(
       title: 'Select Your Interests',
       showBackButton: false,
       showNextButton: false,
       showSkipButton: false,
+      isEditMode: widget.isEditMode, // Pass edit mode to base
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -315,9 +340,9 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
                               size: 24,
                             ),
                           )
-                        : const Text(
-                            "Continue",
-                            style: TextStyle(
+                        : Text(
+                            widget.isEditMode ? "Update" : "Continue",
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
@@ -350,31 +375,33 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
                         ),
                       ),
                     ),
-                    Directionality(
-                      textDirection: TextDirection.rtl,
-                      child: TextButton.icon(
-                        onPressed: _onSkip,
-                        icon: Icon(
-                          Icons.skip_next_rounded,
-                          size: 24,
-                          color: colorScheme.onSurface,
-                        ),
-                        label: Text(
-                          "Skip",
-                          style: TextStyle(
+                    // Hide SKIP button in Edit Mode
+                    if (!widget.isEditMode)
+                      Directionality(
+                        textDirection: TextDirection.rtl,
+                        child: TextButton.icon(
+                          onPressed: _onSkip,
+                          icon: Icon(
+                            Icons.skip_next_rounded,
+                            size: 24,
                             color: colorScheme.onSurface,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
                           ),
-                        ),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 12,
-                            horizontal: 8,
+                          label: Text(
+                            "Skip",
+                            style: TextStyle(
+                              color: colorScheme.onSurface,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                              horizontal: 8,
+                            ),
                           ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ],

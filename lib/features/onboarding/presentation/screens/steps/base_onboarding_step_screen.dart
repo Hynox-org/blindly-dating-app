@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../core/widgets/primary_button.dart';
 import '../../providers/onboarding_provider.dart';
 
 class BaseOnboardingStepScreen extends ConsumerWidget {
@@ -17,6 +16,7 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
   final bool showBackButton;
   final bool isNextEnabled;
   final bool isLoading;
+  final bool isEditMode;
   final Widget? fab;
   final Widget? headerAction;
   final Widget? footer;
@@ -35,6 +35,7 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
     this.showBackButton = false,
     this.isNextEnabled = true,
     this.isLoading = false,
+    this.isEditMode = false,
     this.fab,
     this.headerAction,
     this.footer,
@@ -44,6 +45,7 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final onboardingState = ref.watch(onboardingProvider);
     final currentConfig = onboardingState.currentStepConfig;
+    final theme = Theme.of(context);
 
     // Determine validity of skipping
     // If we have config, use isMandatory. If not, fallback to passed param or default true (mandatory).
@@ -62,8 +64,22 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
+                  if (showBackButton)
+                    IconButton(
+                      onPressed: onBack ?? () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.arrow_back),
+                    ),
+                  const Spacer(),
                   // Custom Header Action (if any)
                   ?headerAction,
+                  if (canSkip && !isEditMode)
+                    TextButton(
+                      onPressed: onSkip,
+                      child: Text(
+                        skipLabel,
+                        style: TextStyle(color: theme.colorScheme.onSurface),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -81,11 +97,10 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
                       child: Text(
                         title,
                         textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
+                        ),
                       ),
                     ),
 
@@ -101,94 +116,46 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   // Footer Widget (Fixed Content)
                   if (footer != null) ...[footer!, const SizedBox(height: 16)],
 
                   // Continue Button
-                  if (showNextButton && onNext != null)
-                    if (showNextButton && onNext != null)
-                      PrimaryButton(
-                        text: nextLabel,
-                        onPressed: onNext,
-                        isLoading: isLoading,
-                        isEnabled: isNextEnabled,
-                      ),
-
-                  const SizedBox(height: 16),
-
-                  // Navigation Row (Back & Skip)
-                  if (showBackButton || canSkip)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: Row(
-                        mainAxisAlignment: (showBackButton && canSkip)
-                            ? MainAxisAlignment.spaceBetween
-                            : MainAxisAlignment.center,
-                        children: [
-                          if (showBackButton)
-                            TextButton.icon(
-                              onPressed: () {
-                                if (onBack != null) {
-                                  onBack!();
-                                } else {
-                                  ref
-                                      .read(onboardingProvider.notifier)
-                                      .goToPreviousStep();
-                                }
-                              },
-                              style: TextButton.styleFrom(
-                                foregroundColor: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withOpacity(0.7),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                  horizontal: 16,
+                  if (showNextButton)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: (isNextEnabled && !isLoading)
+                            ? onNext
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: theme.primaryColor,
+                          foregroundColor: theme.colorScheme.onPrimary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: isLoading
+                            ? SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: theme.colorScheme.onPrimary,
                                 ),
-                              ),
-                              icon: const Icon(Icons.arrow_back, size: 20),
-                              label: const Text(
-                                "Back",
-                                style: TextStyle(
+                              )
+                            : Text(
+                                isEditMode ? 'Update' : nextLabel,
+                                style: const TextStyle(
                                   fontSize: 16,
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                            ),
-
-                          if (canSkip)
-                            Directionality(
-                              textDirection: TextDirection.rtl,
-                              child: TextButton.icon(
-                                onPressed: onSkip,
-                                style: TextButton.styleFrom(
-                                  foregroundColor: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface.withOpacity(0.7),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 12,
-                                    horizontal: 16,
-                                  ),
-                                ),
-                                icon: const Icon(
-                                  Icons.skip_next_rounded,
-                                  size: 24,
-                                ),
-                                label: Text(
-                                  skipLabel,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
                       ),
                     ),
-
-                  // If neither, add spacing
-                  if (!showBackButton && !canSkip) const SizedBox(height: 8),
                 ],
               ),
             ),

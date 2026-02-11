@@ -8,7 +8,9 @@ import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_s
 import '../../../../../core/utils/custom_popups.dart';
 
 class LanguageSelectScreen extends ConsumerStatefulWidget {
-  const LanguageSelectScreen({super.key});
+  final bool isEditMode;
+
+  const LanguageSelectScreen({super.key, this.isEditMode = false});
 
   @override
   ConsumerState<LanguageSelectScreen> createState() =>
@@ -92,6 +94,11 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
             .saveUserLanguages(user.id, _selectedLanguageCodes.toList());
       }
 
+      if (widget.isEditMode) {
+        if (mounted) Navigator.pop(context);
+        return;
+      }
+
       await ref
           .read(onboardingProvider.notifier)
           .completeStep('language_select');
@@ -105,6 +112,10 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
   }
 
   Future<void> _handleSkip() async {
+    if (widget.isEditMode) {
+      Navigator.pop(context);
+      return;
+    }
     setState(() => _isSaving = true);
     try {
       await ref.read(onboardingProvider.notifier).skipStep('language_select');
@@ -134,12 +145,18 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
     return BaseOnboardingStepScreen(
       title: 'Languages I know',
       showBackButton: true, // As seen in UI reference
-      nextLabel:
-          'Save changes', // Matches UI reference button text style roughly
+      nextLabel: widget.isEditMode
+          ? 'Save'
+          : 'Save changes', // Matches UI reference button text style roughly
       isNextEnabled: _selectedLanguageCodes.isNotEmpty && !_isSaving,
       isLoading: _isSaving,
+      isEditMode: widget.isEditMode,
       onNext: _handleNext,
-      onSkip: _handleSkip,
+      onSkip: widget.isEditMode
+          ? null
+          : _handleSkip, // Hide skip in edit mode? OR act as cancel?
+
+      // Actually BaseOnboardingStepScreen handles showSkipButton based on onSkip being null.
       child: Column(
         children: [
           // Search Bar

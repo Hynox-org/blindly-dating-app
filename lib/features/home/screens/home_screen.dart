@@ -128,7 +128,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
         // ✅ 3. SET FLAG TO TRUE
         // Next time you come here, it will skip this block.
-        ref.read(locationUpdateSessionProvider.notifier).state = true;
+        if (mounted) {
+          ref.read(locationUpdateSessionProvider.notifier).state = true;
+        }
       } catch (e) {
         debugPrint('❌ HOMESCREEN: Location update failed: $e');
       } finally {
@@ -144,7 +146,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // ✅ Helper to map API data to UI data
   List<UserProfile> _mapToUserProfiles(List<DiscoveryUser> discoveryUsers) {
     return discoveryUsers.map((user) {
-      
       // 1. Get the list of images directly from the Model
       // (The Repository has already signed them and put them in this list)
       List<String> profileImages = List.from(user.imageUrls);
@@ -160,8 +161,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       // 3. Determine Gender String (for UI display)
       final genderStr = user.gender.isNotEmpty
           ? (user.gender.startsWith('M')
-              ? 'Male'
-              : (user.gender.startsWith('F') ? 'Female' : 'Male'))
+                ? 'Male'
+                : (user.gender.startsWith('F') ? 'Female' : 'Male'))
           : 'Male';
 
       return UserProfile(

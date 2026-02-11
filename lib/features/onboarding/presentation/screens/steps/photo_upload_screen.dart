@@ -8,10 +8,13 @@ import '../../../../auth/providers/auth_providers.dart';
 import '../../../../media/providers/media_provider.dart';
 import '../../providers/onboarding_provider.dart';
 import '../../../../../core/widgets/app_loader.dart';
+import '../../../../profile/provider/profile_provider.dart';
 import 'base_onboarding_step_screen.dart';
 
 class PhotoUploadScreen extends ConsumerStatefulWidget {
-  const PhotoUploadScreen({super.key});
+  final bool isEditMode;
+
+  const PhotoUploadScreen({super.key, this.isEditMode = false});
 
   @override
   ConsumerState<PhotoUploadScreen> createState() => _PhotoUploadScreenState();
@@ -228,6 +231,7 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
           showBackButton: true,
           nextLabel: 'Continue',
           isNextEnabled: canProceed,
+          isEditMode: widget.isEditMode, // Pass edit mode
           onNext: () {
             final user = ref.read(authRepositoryProvider).currentUser;
             if (user != null) {
@@ -349,7 +353,24 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
     await ref.read(mediaProvider.notifier).submitMedia(userId);
     if (mounted) {
       if (ref.read(mediaProvider).error == null) {
-        ref.read(onboardingProvider.notifier).completeStep('photo_upload');
+        if (widget.isEditMode) {
+          final currentProfile = ref.read(currentUserProfileProvider).value;
+          if (currentProfile != null) {
+            final mediaState = ref.read(mediaProvider);
+            final newUrls = mediaState.selectedPhotos
+                .where((m) => m != null && !m.isLocal)
+                .map((m) => m!.url!)
+                .toList();
+
+            final updatedProfile = currentProfile.copyWith(imageUrls: newUrls);
+            ref
+                .read(currentUserProfileProvider.notifier)
+                .updateProfile(updatedProfile);
+          }
+          Navigator.pop(context);
+        } else {
+          ref.read(onboardingProvider.notifier).completeStep('photo_upload');
+        }
       }
     }
   }

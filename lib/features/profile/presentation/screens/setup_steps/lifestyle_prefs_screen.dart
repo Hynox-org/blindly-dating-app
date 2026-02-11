@@ -11,7 +11,9 @@ import '../../../../../core/widgets/app_loader.dart';
 import '../../../../../core/providers/connection_mode_provider.dart';
 
 class LifestylePrefsScreen extends ConsumerStatefulWidget {
-  const LifestylePrefsScreen({super.key});
+  final bool isEditMode;
+
+  const LifestylePrefsScreen({super.key, this.isEditMode = false});
 
   @override
   ConsumerState<LifestylePrefsScreen> createState() =>
@@ -133,8 +135,14 @@ class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
               mode: currentMode,
             );
 
-        if (mounted) {
-          ref.read(onboardingProvider.notifier).completeStep('lifestyle_prefs');
+        if (widget.isEditMode) {
+          if (mounted) Navigator.pop(context);
+        } else {
+          if (mounted) {
+            ref
+                .read(onboardingProvider.notifier)
+                .completeStep('lifestyle_prefs');
+          }
         }
       }
     } catch (e) {
@@ -164,9 +172,16 @@ class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
 
     return BaseOnboardingStepScreen(
       title: 'Life Style',
-      showBackButton: false,
+      showBackButton: widget.isEditMode, // Show back button in edit mode
+      isEditMode: widget.isEditMode,
+      // In edit mode we rely on BaseOnboardingStepScreen's button or custom one?
+      // BaseOnboardingStepScreen has a bottom button. We are overriding Child and providing our own footer in original code.
+      // Let's use BaseOnboardingStepScreen's footer functionality if possible, or keep custom.
+      // The original code passed `showNextButton: false` and built its own footer.
+      // To keep it consistent, let's keep the custom footer but adapt it.
       showNextButton: false,
       showSkipButton: false,
+      onBack: widget.isEditMode ? () => Navigator.pop(context) : _onBack,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -274,9 +289,9 @@ class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
                               size: 24,
                             ),
                           )
-                        : const Text(
-                            "Continue",
-                            style: TextStyle(
+                        : Text(
+                            widget.isEditMode ? "Update" : "Continue",
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
@@ -284,42 +299,22 @@ class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    TextButton.icon(
-                      onPressed: _onBack,
-                      icon: Icon(
-                        Icons.arrow_back,
-                        size: 20,
-                        color: colorScheme.onSurface,
-                      ),
-                      label: Text(
-                        "Back",
-                        style: TextStyle(
-                          color: colorScheme.onSurface,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 12,
-                          horizontal: 8,
-                        ),
-                      ),
-                    ),
-                    Directionality(
-                      textDirection: TextDirection.rtl,
-                      child: TextButton.icon(
-                        onPressed: _onSkip,
+
+                // Navigation Row (Back & Skip) - Only show if NOT in Edit Mode or if we want Back in Edit Mode but we have AppBar back usually?
+                // BaseOnboardingStepScreen handles AppBar back if showBackButton is true.
+                if (!widget.isEditMode)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton.icon(
+                        onPressed: _onBack,
                         icon: Icon(
-                          Icons.skip_next_rounded,
-                          size: 24,
+                          Icons.arrow_back,
+                          size: 20,
                           color: colorScheme.onSurface,
                         ),
                         label: Text(
-                          "Skip",
+                          "Back",
                           style: TextStyle(
                             color: colorScheme.onSurface,
                             fontSize: 16,
@@ -333,9 +328,33 @@ class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                      Directionality(
+                        textDirection: TextDirection.rtl,
+                        child: TextButton.icon(
+                          onPressed: _onSkip,
+                          icon: Icon(
+                            Icons.skip_next_rounded,
+                            size: 24,
+                            color: colorScheme.onSurface,
+                          ),
+                          label: Text(
+                            "Skip",
+                            style: TextStyle(
+                              color: colorScheme.onSurface,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                              horizontal: 8,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),

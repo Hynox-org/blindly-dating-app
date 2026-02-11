@@ -6,9 +6,12 @@ import '../../../../auth/providers/auth_providers.dart';
 import '../../../data/repositories/onboarding_repository.dart';
 import 'base_onboarding_step_screen.dart';
 import '../../../../../core/utils/custom_popups.dart';
+import 'package:blindly_dating_app/features/profile/provider/profile_provider.dart';
 
 class NameBirthEntryScreen extends ConsumerStatefulWidget {
-  const NameBirthEntryScreen({super.key});
+  final bool isEditMode;
+
+  const NameBirthEntryScreen({super.key, this.isEditMode = false});
 
   @override
   ConsumerState<NameBirthEntryScreen> createState() =>
@@ -90,7 +93,6 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
     if (day == null || month == null || year == null) return null;
     if (month < 1 || month > 12) return null;
     if (day < 1 || day > 31) return null;
-    // Simple check for days in month could be added, but basic 1-31 is often sufficient for initial valid check
 
     try {
       final date = DateTime(year, month, day);
@@ -134,9 +136,33 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
         );
       }
 
-      await ref
-          .read(onboardingProvider.notifier)
-          .completeStep('name_birth_entry');
+      if (widget.isEditMode) {
+        if (mounted) {
+          final currentProfile = ref.read(currentUserProfileProvider).value;
+          if (currentProfile != null) {
+            // Calculate age for local state update
+            final now = DateTime.now();
+            int age = now.year - validDate.year;
+            if (now.month < validDate.month ||
+                (now.month == validDate.month && now.day < validDate.day)) {
+              age--;
+            }
+
+            final updatedProfile = currentProfile.copyWith(
+              name: name,
+              age: age,
+            );
+            ref
+                .read(currentUserProfileProvider.notifier)
+                .updateProfile(updatedProfile);
+          }
+          Navigator.pop(context);
+        }
+      } else {
+        await ref
+            .read(onboardingProvider.notifier)
+            .completeStep('name_birth_entry');
+      }
     } catch (e) {
       if (mounted) {
         showErrorPopup(context, 'Failed to save data: $e');
@@ -159,7 +185,7 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
     return BaseOnboardingStepScreen(
       title: "Let's introduce you!",
       showBackButton: true,
-      nextLabel: 'Continue',
+      nextLabel: widget.isEditMode ? 'Update' : 'Continue',
       isNextEnabled: isNextEnabled,
       isLoading: _isSaving,
       onNext: _handleNext,
