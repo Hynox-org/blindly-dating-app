@@ -23,4 +23,4 @@ flutter run --dart-define=ENV=prod
 ## Flutter build command
 
 flutter build apk --release --dart-define=ENV=dev
-flutter build apk --release --dart-define=ENV=prod
+flutter build apk --release --dart-define=ENV=prod  

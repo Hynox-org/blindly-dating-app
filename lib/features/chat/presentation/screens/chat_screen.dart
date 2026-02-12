@@ -1,17 +1,72 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:convert'; // For Uri.encodeComponent
 
 import '../../providers/chat_providers.dart';
 import '../../../../core/widgets/app_layout.dart';
-import 'chat_detail_screen.dart';
-import 'chat_conversation_screen.dart';
+import './chat_conversation_screen.dart';
+import './chat_detail_screen.dart';
+// Custom painter for dotted border effect (KEEP THIS)
+class DottedBorderPainter extends CustomPainter {
+  final Color color;
+  final double strokeWidth;
+  final double gap;
+
+  DottedBorderPainter({
+    required this.color,
+    required this.strokeWidth,
+    required this.gap,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke;
+
+    final path = Path()
+      ..addOval(Rect.fromLTWH(0, 0, size.width, size.height));
+
+    canvas.drawPath(
+      _dashPath(path, strokeWidth * 2, gap),
+      paint,
+    );
+  }
+
+  Path _dashPath(Path source, double dashWidth, double dashSpace) {
+    final dest = Path();
+    for (final metric in source.computeMetrics()) {
+      double dist = 0.0;
+      while (dist < metric.length) {
+        final len = (dist + dashWidth > metric.length)
+            ? metric.length - dist
+            : dashWidth;
+        dest.addPath(metric.extractPath(dist, dist + len), Offset.zero);
+        dist += dashWidth + dashSpace;
+      }
+    }
+    return dest;
+  }
+
+  @override
+  bool shouldRepaint(DottedBorderPainter oldDelegate) =>
+      oldDelegate.color != color ||
+      oldDelegate.strokeWidth != strokeWidth ||
+      oldDelegate.gap != gap;
+}
 
 class ChatScreen extends ConsumerWidget {
   const ChatScreen({super.key});
 
-  String _getProfileName(Map<String, dynamic>? profile) {
-    if (profile == null || profile.isEmpty) return 'Unknown User';
-    return profile['display_name']?.toString() ?? 'Unknown User';
+  String _getProfileName(dynamic profileData) {
+    if (profileData == null) return 'Unknown User';
+    
+    // Handle both Map and RecentMatch
+    if (profileData is Map<String, dynamic>) {
+      return profileData['display_name']?.toString() ?? 'Unknown User';
+    }
+    return 'Unknown User';
   }
 
   String _getProfileImage(String? photoUrl, String fallbackName) {
@@ -23,7 +78,7 @@ class ChatScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileIdAsync = ref.watch(currentProfileIdProvider);
-    final recentMatches = ref.watch(recentMatchesProvider);
+    final recentMatches = ref.watch(recentMatchesProvider); // ✅ StateNotifier
     final conversations = ref.watch(conversationsProvider);
 
     return AppLayout(
@@ -47,199 +102,272 @@ class ChatScreen extends ConsumerWidget {
             ),
           ],
         ),
-        body: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Recent Matches Header
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                child: Text(
-                  'Recent matches',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
+        body: profileIdAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('Profile Error: $error'),
+                ElevatedButton(
+                  onPressed: () => ref.invalidate(currentProfileIdProvider),
+                  child: const Text('Retry'),
                 ),
-              ),
-
-              // Recent Matches Empty State (Placeholders)
-              SizedBox(
-                height: 60,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: 5, // Show 5 placeholders
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 16.0),
-                      child: Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          // border: Border.all(
-                          //   color: Colors.grey[400]!,
-                          //   width: 1,
-                          //   style: BorderStyle.none, // Dotted simulation below
-                          // ),
-                        ),
-                        child: CustomPaint(
-                          painter: DottedBorderPainter(
-                            color: Theme.of(context).colorScheme.outlineVariant,
-                            strokeWidth: 2,
-                            gap: 6,
-                          ),
-                          child: Center(
-                            child: Icon(
-                              Icons.person_add,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                              size: 24,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 16.0,
-                ),
-                child: Text(
-                  'Your new matches will appear here.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-
-              Divider(
-                height: 32,
-                thickness: 1,
-                color: Theme.of(context).dividerColor,
-              ),
-
-              // Conversations Header
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                child: Text(
-                  'Conversations',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-              ),
-
-              // Conversations Empty State
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const SizedBox(height: 20),
-                      Image.asset(
-                        'assets/static/chats_conversation_empty_state.png',
-                        height: 200,
-                        fit: BoxFit.contain,
-                      ),
-                      const SizedBox(height: 32),
-                      Text(
-                        "Ready to make the first\nmove?",
-                        textAlign: TextAlign.center,
+              ],
+            ),
+          ),
+          data: (profileId) {
+            return RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(recentMatchesProvider);
+                ref.invalidate(conversationsProvider);
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ================= Recent Matches ✅ =================
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                      child: Text(
+                        'Recent matches',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ),
+
+                    recentMatches.when(
+                      data: (matches) {
+                        if (matches.isEmpty) {
+                          return Column(
+                            children: [
+                              SizedBox(
+                                height: 80,
+                                child: ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  itemCount: 5,
+                                  itemBuilder: (context, index) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(right: 16.0),
+                                      child: Container(
+                                        width: 60,
+                                        height: 60,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: Colors.grey.shade100,
+                                        ),
+                                        child: CustomPaint(
+                                          painter: DottedBorderPainter(
+                                            color: Theme.of(context).colorScheme.outlineVariant,
+                                            strokeWidth: 2,
+                                            gap: 6,
+                                          ),
+                                          child: Center(
+                                            child: Icon(
+                                              Icons.person_add,
+                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                              size: 24,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+                                child: Text(
+                                  'Your new matches will appear here.',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+
+                        return SizedBox(
+                          height: 100,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: matches.length,
+                            itemBuilder: (context, index) {
+                              final match = matches[index];
+                              
+                              // ✅ Handle RecentMatch model data structure
+                              final otherProfileId = match.profileId;
+                              final otherName = match.displayName;
+                              final photoUrl = match.imageUrl ?? '';
+
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 16.0),
+                                child: GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => ChatDetailScreen(
+                                          name: otherName,
+                                          imageUrl: _getProfileImage(photoUrl, otherName),
+                                          matchId: match.matchId,
+                                          myProfileId: profileId,
+                                          otherProfileId: otherProfileId,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Column(
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 30,
+                                        backgroundImage: photoUrl.isNotEmpty
+                                            ? NetworkImage(photoUrl)
+                                            : null,
+                                        child: photoUrl.isEmpty
+                                            ? Text(
+                                                otherName.substring(0, 1).toUpperCase(),
+                                                style: const TextStyle(
+                                                  fontSize: 24,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                              )
+                                            : null,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      SizedBox(
+                                        width: 60,
+                                        child: Text(
+                                          otherName,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 12,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        );
+                      },
+                      loading: () => const Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                      error: (e, st) => Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          children: [
+                            Text("Error loading matches: $e"),
+                            ElevatedButton(
+                              onPressed: () => ref.invalidate(recentMatchesProvider),
+                              child: const Text('Retry'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // ================= Conversations =================
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                      child: Text(
+                        'Conversations',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+
                     conversations.when(
                       data: (matches) {
                         if (matches.isEmpty) {
-                          return const Padding(
-                            padding: EdgeInsets.all(24),
-                            child: Center(
-                                child: Text("No conversations yet")),
+                          return Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              children: [
+                                Image.asset(
+                                  'assets/static/chats_conversation_empty_state.png',
+                                  height: 200,
+                                  fit: BoxFit.contain,
+                                ),
+                                const SizedBox(height: 32),
+                                Text(
+                                  "Ready to make the first\nmove?",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
                           );
                         }
 
                         return ListView.builder(
                           shrinkWrap: true,
-                          physics:
-                              const NeverScrollableScrollPhysics(),
+                          physics: const NeverScrollableScrollPhysics(),
                           itemCount: matches.length,
                           itemBuilder: (context, index) {
                             final match = matches[index];
 
-                            final profileA =
-                                Map<String, dynamic>.from(
-                                    match['profile_a'] ?? {});
-                            final profileB =
-                                Map<String, dynamic>.from(
-                                    match['profile_b'] ?? {});
+                            final profileA = Map<String, dynamic>.from(
+                                match['user_a'] ?? {});
+                            final profileB = Map<String, dynamic>.from(
+                                match['user_b'] ?? {});
 
-                            final otherProfile =
-                                match['profile_a_id'] ==
-                                        profileId
-                                    ? profileB
-                                    : profileA;
+                            final otherProfile = match['user_a_id'] == profileId
+                                ? profileB
+                                : profileA;
 
-                            final otherName =
-                                _getProfileName(otherProfile);
-                            final photoUrl =
-                                otherProfile['photo_url']
-                                    ?.toString();
-                            final otherImage =
-                                _getProfileImage(
-                                    photoUrl, otherName);
+                            final otherName = _getProfileName(otherProfile);
+                            final photoUrl = otherProfile['photo_url']?.toString();
+                            final otherImage = _getProfileImage(photoUrl, otherName);
 
                             return ListTile(
                               leading: CircleAvatar(
-                                backgroundImage:
-                                    NetworkImage(otherImage),
+                                backgroundImage: NetworkImage(otherImage),
                               ),
                               title: Text(
                                 otherName,
-                                style: const TextStyle(
-                                    fontWeight:
-                                        FontWeight.w600),
+                                style: const TextStyle(fontWeight: FontWeight.w600),
                               ),
-                              subtitle: const Text(
-                                  "Tap to continue chatting"),
-                              trailing:
-                                  match['chat_started'] == true
-                                      ? const Icon(
-                                          Icons.chat_bubble_outline,
-                                          color: Colors.green)
-                                      : null,
+                              subtitle: const Text("Tap to continue chatting"),
+                              trailing: match['chat_started'] == true
+                                  ? const Icon(
+                                      Icons.chat_bubble_outline,
+                                      color: Colors.green,
+                                    )
+                                  : null,
                               onTap: () {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) =>
-                                        ChatConversationScreen(
-                                      matchId:
-                                          match['id'].toString(),
-                                      otherUserName:
-                                          otherName,
-                                      otherUserImage:
-                                          otherImage,
-                                      myProfileId:
-                                          profileId,
-                                      otherProfileId:
-                                          otherProfile['id']
-                                              .toString(),
+                                    builder: (_) => ChatConversationScreen(
+                                      matchId: match['id'].toString(),
+                                      otherUserName: otherName,
+                                      otherUserImage: otherImage,
+                                      myProfileId: profileId,
+                                      otherProfileId: otherProfile['id'].toString(),
                                     ),
                                   ),
                                 );
@@ -250,13 +378,19 @@ class ChatScreen extends ConsumerWidget {
                       },
                       loading: () => const Padding(
                         padding: EdgeInsets.all(16),
-                        child: Center(
-                            child: CircularProgressIndicator()),
+                        child: Center(child: CircularProgressIndicator()),
                       ),
                       error: (e, _) => Padding(
                         padding: const EdgeInsets.all(16),
-                        child: Text(
-                            "Error loading conversations: $e"),
+                        child: Column(
+                          children: [
+                            Text("Error loading conversations: $e"),
+                            ElevatedButton(
+                              onPressed: () => ref.invalidate(conversationsProvider),
+                              child: const Text('Retry'),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
 

@@ -17,7 +17,7 @@ class MatchRepository {
 
       if (response != null) {
         final profile = Map<String, dynamic>.from(response);
-        final photoUrl = await _getFirstPhotoUrl(profile['user_id']);
+        final photoUrl = await getFirstPhotoUrl(profile['user_id']);
         profile['photo_url'] = photoUrl;
 
         print('✅ FALLBACK profile loaded: ${profile['display_name']}');
@@ -42,17 +42,17 @@ class MatchRepository {
         .from('matches')
         .select('''
           *,
-          profile_a:profiles!matches_profile_a_fkey(
+          user_a:profiles!matches_user_a_id_fkey(
             id, display_name, user_id
           ),
-          profile_b:profiles!matches_profile_b_fkey(
+          user_b:profiles!matches_user_b_id_fkey(
             id, display_name, user_id
           )
         ''')
         .eq('chat_started', false)
         .eq('status', 'active')
         .gt('expires_at', now)
-        .or('profile_a_id.eq.$profileId,profile_b_id.eq.$profileId')
+        .or('user_a_id.eq.$profileId,user_b_id.eq.$profileId')
         .order('matched_at', ascending: false);
 
     final matchesWithPhotos = <Map<String, dynamic>>[];
@@ -61,24 +61,24 @@ class MatchRepository {
       final matchWithPhotos = Map<String, dynamic>.from(match);
 
       // 🔥 Profile A
-      if (match['profile_a']?['user_id'] != null) {
-        final profileA = Map<String, dynamic>.from(match['profile_a']);
+      if (match['user_a']?['user_id'] != null) {
+        final profileA = Map<String, dynamic>.from(match['user_a']);
         profileA['photo_url'] =
-            await _getFirstPhotoUrl(profileA['user_id']);
-        matchWithPhotos['profile_a'] = profileA;
+            await getFirstPhotoUrl(profileA['user_id']);
+        matchWithPhotos['user_a'] = profileA;
       }
 
       // 🔥 Profile B
-      if (match['profile_b']?['user_id'] != null) {
-        final profileB = Map<String, dynamic>.from(match['profile_b']);
+      if (match['user_b']?['user_id'] != null) {
+        final profileB = Map<String, dynamic>.from(match['user_b']);
         profileB['photo_url'] =
-            await _getFirstPhotoUrl(profileB['user_id']);
-        matchWithPhotos['profile_b'] = profileB;
-      } else if (match['profile_b_id'] != null) {
-        print('🔍 profile_b JOIN failed, fallback...');
-        final profileB = await _fetchProfileById(match['profile_b_id']);
+            await getFirstPhotoUrl(profileB['user_id']);
+        matchWithPhotos['user_b'] = profileB;
+      } else if (match['user_b_id'] != null) {
+        print('🔍 user_b JOIN failed, fallback...');
+        final profileB = await _fetchProfileById(match['user_b_id']);
         if (profileB != null) {
-          matchWithPhotos['profile_b'] = profileB;
+          matchWithPhotos['user_b'] = profileB;
         }
       }
 
@@ -96,15 +96,15 @@ class MatchRepository {
         .from('matches')
         .select('''
           *,
-          profile_a:profiles!matches_profile_a_fkey(
+          user_a:profiles!matches_user_a_id_fkey(
             id, display_name, user_id
           ),
-          profile_b:profiles!matches_profile_b_fkey(
+          user_b:profiles!matches_user_b_id_fkey(
             id, display_name, user_id
           )
         ''')
         .eq('chat_started', true)
-        .or('profile_a_id.eq.$profileId,profile_b_id.eq.$profileId')
+        .or('user_a_id.eq.$profileId,user_b_id.eq.$profileId')
         .order('matched_at', ascending: false);
 
     final matchesWithPhotos = <Map<String, dynamic>>[];
@@ -113,23 +113,23 @@ class MatchRepository {
       final matchWithPhotos = Map<String, dynamic>.from(match);
 
       // Profile A
-      if (match['profile_a']?['user_id'] != null) {
-        final profileA = Map<String, dynamic>.from(match['profile_a']);
+      if (match['user_a']?['user_id'] != null) {
+        final profileA = Map<String, dynamic>.from(match['user_a']);
         profileA['photo_url'] =
-            await _getFirstPhotoUrl(profileA['user_id']);
-        matchWithPhotos['profile_a'] = profileA;
+            await getFirstPhotoUrl(profileA['user_id']);
+        matchWithPhotos['user_a'] = profileA;
       }
 
       // Profile B
-      if (match['profile_b']?['user_id'] != null) {
-        final profileB = Map<String, dynamic>.from(match['profile_b']);
+      if (match['user_b']?['user_id'] != null) {
+        final profileB = Map<String, dynamic>.from(match['user_b']);
         profileB['photo_url'] =
-            await _getFirstPhotoUrl(profileB['user_id']);
-        matchWithPhotos['profile_b'] = profileB;
-      } else if (match['profile_b_id'] != null) {
-        final profileB = await _fetchProfileById(match['profile_b_id']);
+            await getFirstPhotoUrl(profileB['user_id']);
+        matchWithPhotos['user_b'] = profileB;
+      } else if (match['user_b_id'] != null) {
+        final profileB = await _fetchProfileById(match['user_b_id']);
         if (profileB != null) {
-          matchWithPhotos['profile_b'] = profileB;
+          matchWithPhotos['user_b'] = profileB;
         }
       }
 
@@ -142,8 +142,9 @@ class MatchRepository {
   // =============================================================
   // 📸 STORAGE — FIXED VERSION
   // =============================================================
-  Future<String?> _getFirstPhotoUrl(String? userId) async {
+  Future<String?> getFirstPhotoUrl(String? userId) async {
     if (userId == null) return null;
+    print('🔍 Fetching photos for user: $userId');
 
     try {
       final files = await client.storage
@@ -187,7 +188,7 @@ class MatchRepository {
           .select('expires_at, status, chat_started')
           .eq('id', matchId)
           .single();
-
+print('🔍 Match data for starting chat: $match');
       if (match['chat_started'] == true) {
         await _sendMessage(
           matchId: matchId,
@@ -198,16 +199,32 @@ class MatchRepository {
         return true;
       }
 
+      // final expiresAtRaw = match['expires_at'];
+      // if (expiresAtRaw != null) {
+      //   final expiresAt = DateTime.parse(expiresAtRaw).toUtc();
+      //   final nowUtc = DateTime.now().toUtc();
+      //   print('⏳ Expiry check: now=$nowUtc expires=$expiresAt');
+      //   if (nowUtc.isAfter(expiresAt)) {
+      //     print('❌ Match expired');
+      //     return false;
+      //   }
+      // }
       final expiresAtRaw = match['expires_at'];
-      if (expiresAtRaw != null) {
-        final expiresAt = DateTime.parse(expiresAtRaw).toUtc();
-        final nowUtc = DateTime.now().toUtc();
-        print('⏳ Expiry check: now=$nowUtc expires=$expiresAt');
-        if (nowUtc.isAfter(expiresAt)) {
-          print('❌ Match expired');
-          return false;
-        }
-      }
+
+if (expiresAtRaw != null) {
+  final expiresAtStr = expiresAtRaw.toString();
+
+  final expiresAt = DateTime.parse(expiresAtStr).toUtc();
+  final now = DateTime.now().toUtc();
+
+  print('⏳ Expiry check: now=$now expires=$expiresAt raw=$expiresAtStr');
+
+  if (now.isAfter(expiresAt)) {
+    print('❌ Match expired');
+    return false;
+  }
+}
+
 
       await client.from('matches').update({
         'chat_started': true,

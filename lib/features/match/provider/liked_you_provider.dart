@@ -77,7 +77,7 @@ class LikedYouNotifier extends StateNotifier<AsyncValue<List<LikedYouUser>>> {
             // ✅ FILTER: Only notify if I am the target
             filter: PostgresChangeFilter(
               type: PostgresChangeFilterType.eq,
-              column: 'target_profile_id',
+              column: 'target_id',
               value: myProfileId,
             ),
             callback: (payload) {

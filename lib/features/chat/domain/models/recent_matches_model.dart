@@ -7,6 +7,7 @@ class RecentMatch {
   final String displayName;
   final String? imageUrl;
   final DateTime matchedAt;
+  final String? photoUrl;
 
   const RecentMatch({
     required this.matchId,
@@ -14,17 +15,22 @@ class RecentMatch {
     required this.displayName,
     required this.imageUrl,
     required this.matchedAt,
+    this.photoUrl,
   });
 
   factory RecentMatch.fromJson(Map<String, dynamic> json) {
+    final rawMatchedAt = json['matched_at'];
+
     return RecentMatch(
-      matchId: json['match_id'] as String,
-      profileId: json['other_profile_id'] as String,
-      displayName: (json['display_name'] as String?) ?? '',
-      imageUrl: json['image_path'] as String?,
-      matchedAt: DateTime.parse(json['matched_at']),
+      matchId: json['id']?.toString() ?? '',
+      profileId: json['other_profile_id']?.toString() ?? '',
+      displayName: json['display_name']?.toString() ?? '',
+      imageUrl: json['photo_url']?.toString(), // ✅ FIXED
+      matchedAt: rawMatchedAt != null
+          ? DateTime.parse(rawMatchedAt.toString())
+          : DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
 
-  bool get hasImage => imageUrl != null && imageUrl!.isNotEmpty;
+  bool get hasImage => imageUrl != null && imageUrl!.trim().isNotEmpty;
 }

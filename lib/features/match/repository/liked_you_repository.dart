@@ -47,11 +47,15 @@ class LikedYouRepository {
       // --------------------------------------------------
       final List<dynamic> response =
           await _supabase.rpc('get_likes_received');
+print('response: $response');
 
+      debugPrint('📡 RPC response length: ${response.length}');
       if (response.isEmpty) {
         debugPrint('ℹ️ No likes found');
         return [];
       }
+      // ✅ SAFE: Now response is guaranteed non-empty
+      debugPrint('📡 RPC result sample: ${response.first}');
 
       final List<LikedYouUser> result = [];
 
@@ -75,14 +79,18 @@ class LikedYouRepository {
                     60 * 15, // 15 minutes
                   );
 
-              data['image_path'] = signedUrl;
+                // ✅ FIXED: Use 'image_url' to match model
+              data['image_url'] = signedUrl;
+            } else {
+              // Already a URL, pass through
+              data['image_url'] = imagePath;
             }
           } catch (e) {
             debugPrint('⚠️ Image signing failed: $e');
-            data['image_path'] = null;
+            data['image_url'] = null;
           }
         } else {
-          data['image_path'] = null;
+          data['image_url'] = null;   
         }
 
         // 👇 total_likes flows directly into model

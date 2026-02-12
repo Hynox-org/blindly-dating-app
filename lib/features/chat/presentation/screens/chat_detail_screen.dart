@@ -27,12 +27,10 @@ class ChatDetailScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<ChatDetailScreen> createState() =>
-      _ChatDetailScreenState();
+  ConsumerState<ChatDetailScreen> createState() => _ChatDetailScreenState();
 }
 
-class _ChatDetailScreenState
-    extends ConsumerState<ChatDetailScreen> {
+class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   bool _isLoading = false;
 
   /// -------------------------------------------------------------
@@ -69,16 +67,28 @@ class _ChatDetailScreenState
     setState(() {
       _isLoading = true;
     });
-
+ if (widget.matchId.isEmpty || widget.myProfileId.isEmpty || widget.otherProfileId.isEmpty) {
+    print('❌ INVALID IDs: matchId="${widget.matchId}", my=${widget.myProfileId}, other=${widget.otherProfileId}');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Invalid match data. Please try again."), backgroundColor: Colors.red),
+      );
+    }
+    setState(() => _isLoading = false);
+    return;
+  }
     final repo = ref.read(matchRepositoryProvider);
-
+    print('🚀 Starting chat with message: $messageText');
+    print('📊 Match ID: ${widget.matchId}');
+    print('👤 Sender Profile ID: ${widget.myProfileId}');
+    print('👤 Receiver Profile ID: ${widget.otherProfileId}');
     final success = await repo.startChatAndSendMessage(
       matchId: widget.matchId,
       senderProfileId: widget.myProfileId,
       receiverProfileId: widget.otherProfileId,
       messageContent: messageText,
     );
-
+    print('🔍 Start chat result: $success');
     if (!mounted) return;
 
     setState(() {
@@ -124,8 +134,11 @@ class _ChatDetailScreenState
           backgroundColor: Colors.white,
           elevation: 0.5,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios,
-                color: Colors.black, size: 20),
+            icon: const Icon(
+              Icons.arrow_back_ios,
+              color: Colors.black,
+              size: 20,
+            ),
             onPressed: () => Navigator.pop(context, true),
           ),
           title: Row(
@@ -138,10 +151,13 @@ class _ChatDetailScreenState
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(widget.name,
-                      style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600)),
+                  Text(
+                    widget.name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const Text(
                     'Online now',
                     style: TextStyle(fontSize: 12, color: Colors.grey),
@@ -178,7 +194,9 @@ class _ChatDetailScreenState
                     child: Text(
                       'Choose an option',
                       style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w600),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
 
@@ -190,15 +208,11 @@ class _ChatDetailScreenState
 
                   const SizedBox(height: 10),
 
-                  _buildOptionButton(
-                    'I bet you can\'t beat my 90s look',
-                  ),
+                  _buildOptionButton('I bet you can\'t beat my 90s look'),
 
                   const SizedBox(height: 10),
 
-                  _buildOptionButton(
-                    'Guess my pet\'s name?',
-                  ),
+                  _buildOptionButton('Guess my pet\'s name?'),
 
                   const SizedBox(height: 25),
 
@@ -207,7 +221,9 @@ class _ChatDetailScreenState
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color.fromRGBO(65, 72, 51, 1),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 30, vertical: 14),
+                        horizontal: 30,
+                        vertical: 14,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
@@ -229,8 +245,7 @@ class _ChatDetailScreenState
                 color: Colors.black.withValues(alpha: 0.3),
                 child: const Center(
                   child: CircularProgressIndicator(
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 ),
               ),
@@ -276,10 +291,7 @@ class _ChatDetailScreenState
 class OpenMovePopup extends StatefulWidget {
   final String name;
 
-  const OpenMovePopup({
-    super.key,
-    required this.name,
-  });
+  const OpenMovePopup({super.key, required this.name});
 
   @override
   State<OpenMovePopup> createState() => _OpenMovePopupState();
@@ -305,9 +317,7 @@ class _OpenMovePopupState extends State<OpenMovePopup> {
           padding: const EdgeInsets.all(20),
           decoration: const BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(25),
-            ),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
           ),
           child: SingleChildScrollView(
             controller: scrollController,
