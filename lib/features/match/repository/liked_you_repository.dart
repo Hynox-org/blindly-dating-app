@@ -67,7 +67,7 @@ print('response: $response');
             Map<String, dynamic>.from(raw);
 
         String? imagePath = data['image_path'];
-
+print(imagePath);
         // Convert storage path → signed URL
         if (imagePath != null && imagePath.isNotEmpty) {
           try {
@@ -78,9 +78,10 @@ print('response: $response');
                     imagePath,
                     60 * 15, // 15 minutes
                   );
-
+                print('signedUrl: $signedUrl');
                 // ✅ FIXED: Use 'image_url' to match model
               data['image_url'] = signedUrl;
+              print('Signed URL created for $data[image_url]');
             } else {
               // Already a URL, pass through
               data['image_url'] = imagePath;
@@ -91,16 +92,17 @@ print('response: $response');
           }
         } else {
           data['image_url'] = null;   
+          print('No image path for profile ${data['profile_id']}');
         }
 
         // 👇 total_likes flows directly into model
         result.add(LikedYouUser.fromJson(data));
       }
-
+      debugPrint('imafgeUrl: ${result.first.imageUrl}');
       debugPrint(
         '✅ LikedYou fetched: ${result.length} | Total Likes: ${result.first.totalLikes}',
       );
-
+   
       return result;
     } catch (e, stack) {
       debugPrint('🛑 Failed to fetch liked users');

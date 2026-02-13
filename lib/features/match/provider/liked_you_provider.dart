@@ -84,7 +84,7 @@ class LikedYouNotifier extends StateNotifier<AsyncValue<List<LikedYouUser>>> {
               final newRecord = payload.newRecord;
               
               // ✅ CHECK: Is it a Like?
-              if (newRecord['action'] == 'like' || newRecord['action'] == 'superlike') {
+              if (newRecord['action_type'] == 'like' || newRecord['action_type'] == 'superlike') {
                  debugPrint('🔔 New Like Detected! Updating list silently...');
                  // Refresh list without loading spinner
                  _loadLikedYou(forceLoading: false); 
