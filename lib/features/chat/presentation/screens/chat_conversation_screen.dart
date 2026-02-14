@@ -34,7 +34,8 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
   final ImagePicker _imagePicker = ImagePicker();
-
+  String? _editingMessageId;
+  bool get _isEditing => _editingMessageId != null;
   RealtimeChannel? _channel;
 
   final List<Message> _messages = [];
@@ -176,31 +177,95 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   // ==============================
 
   Future<void> _send(String text) async {
-    if (text.trim().isEmpty) return;
+  if (text.trim().isEmpty) return;
 
-    try {
+  final trimmedText = text.trim();
+
+  try {
+    if (_isEditing) {
+      /// ✅ UPDATE EXISTING MESSAGE
+      await _supabase
+        .from('messages')
+        .update({
+          'content': trimmedText,
+          'edited_at': DateTime.now().toIso8601String(),
+        })
+      .eq('id', _editingMessageId!);
+
+      setState(() {
+        _editingMessageId = null;
+      });
+
+    } else {
+      /// ✅ INSERT NEW MESSAGE
       await _supabase.from('messages').insert({
         'match_id': widget.matchId,
         'sender_profile_id': _myProfileId,
         'receiver_profile_id': widget.otherProfileId,
-        'content': text.trim(),
+        'content': trimmedText,
         'message_type': 'text',
         'reply_to_id': _replyingTo?.id,
         'reaction': null,
       });
 
       setState(() => _replyingTo = null);
-      _controller.clear();
-    } catch (e) {
-      print('Error sending message: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to send message: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+    }
+
+    _controller.clear();
+  } catch (e) {
+    print('Error sending message: $e');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to send message: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+}
+  
+  // ==============================
+  // MULTI SELECT
+  // ==============================
+
+  final Set<String> _selectedMessageIds = {};
+  bool _isSelectionMode = false;
+
+  void _toggleSelection(Message message) {
+    setState(() {
+      if (_selectedMessageIds.contains(message.id)) {
+        _selectedMessageIds.remove(message.id);
+        if (_selectedMessageIds.isEmpty) {
+          _isSelectionMode = false;
+        }
+      } else {
+        _selectedMessageIds.add(message.id);
+        _isSelectionMode = true;
       }
+    });
+  }
+
+  void _clearSelection() {
+    setState(() {
+      _selectedMessageIds.clear();
+      _isSelectionMode = false;
+    });
+  }
+
+  Future<void> _deleteSelectedMessages() async {
+    try {
+      await _supabase
+        .from('messages')
+        .delete()
+        .inFilter('id', _selectedMessageIds.toList());
+
+      setState(() {
+        _messages.removeWhere((m) => _selectedMessageIds.contains(m.id));
+        _clearSelection();
+      });
+    } catch (e) {
+      print("Delete error: $e");
     }
   }
 
@@ -495,6 +560,50 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       print('Error reacting to message: $e');
     }
   }
+  //===============================
+  // EDIT MESSAGE
+  //===============================
+  void _editSelectedMessage() {
+  if (_selectedMessageIds.length != 1) return;
+
+  final messageId = _selectedMessageIds.first;
+  final message =
+      _messages.firstWhere((m) => m.id == messageId);
+
+  // Allow only sender to edit
+  if (message.senderProfileId != _myProfileId) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("You can only edit your own messages"),
+      ),
+    );
+    return;
+  }
+
+  setState(() {
+    _editingMessageId = message.id;
+    _controller.text = message.text;
+    _clearSelection();
+  });
+
+  // Show keyboard automatically
+  FocusScope.of(context).requestFocus(_focusNode);
+}
+
+  // ==============================
+  // FORWARD MESSAGES
+  // ==============================
+  void _forwardSelectedMessages() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          "${_selectedMessageIds.length} message(s) selected to forward",
+        ),
+      ),
+    );
+
+    _clearSelection();
+  }
 
   // ==============================
   // MESSAGE STATUS BUILDER
@@ -591,44 +700,164 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
+      appBar: _isSelectionMode
+    ? AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0.5,
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: Colors.black),
+          onPressed: _clearSelection,
+        ),
+        title: Text(
+          "${_selectedMessageIds.length} selected",
+          style: const TextStyle(color: Colors.black),
+        ),
+        actions: [
+
+          /// Edit (only if single message selected)
+          if (_selectedMessageIds.length == 1)
+            IconButton(
+              icon: const Icon(Icons.edit, color: Colors.blue),
+              onPressed: _editSelectedMessage,
+            ),
+
+          /// Forward
+          IconButton(
+            icon: const Icon(Icons.forward, color: Colors.black),
+            onPressed: _forwardSelectedMessages,
+          ),
+
+          /// Delete
+          IconButton(
+            icon: const Icon(Icons.delete, color: Colors.red),
+            onPressed: _deleteSelectedMessages,
+          ),
+        ],
+      )
+    : AppBar(
         elevation: 0.5,
         backgroundColor: Colors.white,
         leading: const BackButton(color: Colors.black),
+        titleSpacing: 0,
         title: Row(
           children: [
-            CircleAvatar(backgroundImage: NetworkImage(widget.otherUserImage)),
+            CircleAvatar(
+              radius: 20,
+              backgroundImage:
+                  NetworkImage(widget.otherUserImage),
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     widget.otherUserName,
-                    style: const TextStyle(fontSize: 16, color: Colors.black),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.black,
+                      fontWeight: FontWeight.w600,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                   const Text(
                     "Online",
-                    style: TextStyle(fontSize: 12, color: Colors.green),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.green,
+                    ),
                   ),
                 ],
               ),
             ),
           ],
         ),
+        actions: [
+
+          /// Phone icon
+          IconButton(
+            icon: const Icon(Icons.call, color: Colors.black),
+            onPressed: () {
+              // TODO: Implement call logic
+            },
+          ),
+
+          /// Video icon
+          IconButton(
+            icon: const Icon(Icons.videocam, color: Colors.black),
+            onPressed: () {
+              // TODO: Implement video call logic
+            },
+          ),
+
+          /// 3-dot menu
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: Colors.black),
+            onSelected: (value) {
+              if (value == "view_profile") {
+                // TODO: Open profile
+              } else if (value == "clear_chat") {
+                // TODO: Clear chat
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: "view_profile",
+                child: Text("View Profile"),
+              ),
+              PopupMenuItem(
+                value: "clear_chat",
+                child: Text("Clear Chat"),
+              ),
+            ],
+          ),
+        ],
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(child: _messageList()),
+  child: Column(
+    children: [
+      Expanded(child: _messageList()),
 
-            if (_replyingTo != null) _buildReplyPreview(),
+      /// 🔹 Reply preview (existing)
+      if (_replyingTo != null) _buildReplyPreview(),
 
-            _inputBar(),
-          ],
+      /// 🔹 Editing preview (ADD HERE)
+      if (_isEditing)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          color: Colors.grey[200],
+          child: Row(
+            children: [
+              const Icon(Icons.edit, size: 18, color: Colors.blue),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  "Editing message",
+                  style: TextStyle(
+                    color: Colors.blue,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, size: 18),
+                onPressed: () {
+                  setState(() {
+                    _editingMessageId = null;
+                  });
+                  _controller.clear();
+                },
+              ),
+            ],
+          ),
         ),
-      ),
+
+      /// 🔹 Input bar (existing)
+      _inputBar(),
+    ],
+  ),
+),
     );
   }
 
@@ -678,16 +907,35 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                 }
               }
 
-              return SwipeableMessage(
-                key: ValueKey(msg.id),
-                message: msg,
-                replyMessage: repliedMessage,
-                isMe: msg.senderProfileId == _myProfileId,
-                onReply: () => _replyTo(msg),
-                onReact: (emoji) => _reactToMessage(msg, emoji),
-                formatTime: _formatTime,
-                buildStatus: _buildMessageStatus,
-              );
+              final isSelected =
+    _selectedMessageIds.contains(msg.id);
+
+return GestureDetector(
+  onLongPress: () {
+    _toggleSelection(msg);
+  },
+  onTap: () {
+    if (_isSelectionMode) {
+      _toggleSelection(msg);
+    }
+  },
+  child: Container(
+    color: isSelected
+        ? Colors.grey.shade300
+        : Colors.transparent,
+    child: SwipeableMessage(
+      key: ValueKey(msg.id),
+      message: msg,
+      replyMessage: repliedMessage,
+      isMe: msg.senderProfileId == _myProfileId,
+      onReply: () => _replyTo(msg),
+      onReact: (emoji) => _reactToMessage(msg, emoji),
+      formatTime: _formatTime,
+      buildStatus: _buildMessageStatus,
+    ),
+  ),
+);
+
             }).toList(),
           ],
         );
