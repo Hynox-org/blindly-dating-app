@@ -51,7 +51,7 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
   final DiscoveryRepository _repository;
 
   // ⚙️ CONFIG
-  static const int _batchSize = 10; // Fetch 10 at a time
+  static const int _batchSize = 20; // ✅ Production Grade: Fetch 20 at a time
   static const int _prefetchThreshold = 3; // Fetch more when 3 cards left
   String _currentMode; // Current mode (e.g. 'date', 'bff')
 
@@ -184,11 +184,18 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
 
       // 3. Update State
       if (validUsers.isEmpty) {
-        // Server returned nothing (or duplicates only) -> Stop Fetching
-        state = state.copyWith(
-          isFetchingMore: false,
-          isDeckExhausted: true, // Show "No More Profiles" UI
-        );
+        // If we got users from DB but they were all duplicates, we might need to fetch MORE immediately
+        // BUT, if the DB returned 0 items, then we are truly exhausted.
+        if (newCandidates.isEmpty) {
+          state = state.copyWith(
+            isFetchingMore: false,
+            isDeckExhausted: true, // Show "No More Profiles" UI
+          );
+        } else {
+          // Recursive fetch? Or just stop for now to avoid infinite loops?
+          // For safety, we stop, but you could trigger another load here.
+          state = state.copyWith(isFetchingMore: false);
+        }
       } else {
         state = state.copyWith(
           isFetchingMore: false,

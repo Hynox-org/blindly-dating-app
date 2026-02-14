@@ -229,14 +229,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       bio: user.bio.isNotEmpty ? user.bio : 'No bio added yet.',
       // ✅ IMAGE LOGIC: This list will have 2 or 3 images based on provider fetch
       imageUrls: user.imageUrls,
-      height: 'Ask me', // Default (Not in DB)
-      activityLevel: 'Active', // Default
-      education: 'Add Education', // Default (Not in DB)
+      height: user.height != null ? '${user.height} cm' : 'Ask me',
+      activityLevel: user.exercise ?? 'Active',
+      education: user.educationLevel ?? user.education,
+      school: user.educatedAt ?? '',
       gender: user.gender,
-      religion: 'Add Religion', // Default
-      zodiac: 'Add Zodiac', // Default
-      drinking: 'Socially', // Default
-      smoking: 'Never', // Default
+      religion: user.religion ?? 'Add Religion',
+      zodiac: user.zodiac ?? 'Add Zodiac',
+      drinking: user.drinking ?? 'Socially',
+      smoking: user.smoking ?? 'Never',
+      politics: user.politics ?? '',
+      kids: user.kids ?? '',
+      hometown: user.hometown ?? '',
+      workCompany: user.workCompany ?? '',
       hobbies: user.interests.isNotEmpty ? user.interests : ['Add Interests'],
       summary: user.bio,
       lookingFor: 'Connection', // Default
@@ -244,7 +249,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       quickestWay: 'Ask me',
       causes: [],
       simplePleasure: 'Ask me',
-      languages: ['English'], // Default
+      languages: user.languages.isNotEmpty ? user.languages : ['English'],
       location: user.city.isNotEmpty ? user.city : 'Unknown',
       spotifyArtists: [],
     );

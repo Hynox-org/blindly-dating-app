@@ -198,15 +198,21 @@ Future<List<LifestyleChip>> _fetchLifestyle(
   String profileModeId,
 ) async {
   try {
-    // Join query: profile_mode_lifestylechips -> lifestyle_chips
+    // Join query: profile_mode_lifestylechips -> lifestyle_chips -> lifestyle_categories
     final List<dynamic> data = await client
         .from('profile_mode_lifestylechips')
-        .select('lifestyle_chips(id, category_id, label, is_active)')
+        .select(
+          'lifestyle_chips(id, category_id, label, is_active, lifestyle_categories(key))',
+        )
         .eq('profile_mode_id', profileModeId);
 
-    return data
-        .map((item) => LifestyleChip.fromJson(item['lifestyle_chips']))
-        .toList();
+    return data.map((item) {
+      // Create a map that includes the category info at the top level for correct parsing if needed,
+      // or rely on the nested structure if fromJson handles it.
+      // My updated fromJson expects 'lifestyle_categories' inside the json passed to it.
+      // item['lifestyle_chips'] contains the chip data AND the nested 'lifestyle_categories' map.
+      return LifestyleChip.fromJson(item['lifestyle_chips']);
+    }).toList();
   } catch (e) {
     debugPrint('⚠️ Lifestyle Fetch Error: $e');
     return [];

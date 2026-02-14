@@ -4,13 +4,12 @@ import '../repository/swipe_repository.dart';
 // ======================================================
 // Swipe Provider
 // ======================================================
-final swipeProvider =
-    StateNotifierProvider<SwipeNotifier, AsyncValue<void>>(
-  (ref) {
-    final repository = ref.read(swipeRepositoryProvider);
-    return SwipeNotifier(repository);
-  },
-);
+final swipeProvider = StateNotifierProvider<SwipeNotifier, AsyncValue<void>>((
+  ref,
+) {
+  final repository = ref.read(swipeRepositoryProvider);
+  return SwipeNotifier(repository);
+});
 
 // ======================================================
 // Swipe Notifier
@@ -32,7 +31,7 @@ class SwipeNotifier extends StateNotifier<AsyncValue<void>> {
 
       await _repository.recordSwipe(
         targetProfileId: targetProfileId,
-        action: action, // ✅ fixed param
+        action: action,
       );
 
       state = const AsyncData(null);

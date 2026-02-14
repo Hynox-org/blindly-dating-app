@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/app_loader.dart';
 import '../../../auth/providers/auth_providers.dart';
 import '../../../onboarding/data/repositories/onboarding_repository.dart';

@@ -170,26 +170,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         name: user.displayName,
         age: user.age,
         distance: double.parse((user.distanceKm / 1000).toStringAsFixed(1)),
-        location: 'Nearby',
+        location:
+            user.hometown ?? user.hometown ?? 'Nearby', // Dynamic Location
         gender: genderStr,
         imageUrls: profileImages, // ✅ PASS THE LIST FROM DB
-        bio: 'Match Score: shared interests',
-        height: 'Ask me',
-        activityLevel: 'Active',
-        education: '',
-        religion: '',
-        zodiac: '',
-        drinking: '',
-        smoking: '',
+        bio: user.bio, // Use actual bio or empty
+        subTitle: user.workTitle ?? '', // Fallback to empty if null
+        height: user.height != null ? '${user.height} cm' : '',
+        activityLevel: user.exercise ?? '',
+        education: user.education ?? '',
+        school: user.school ?? '',
+        religion: user.religion ?? '',
+        zodiac: user.zodiac ?? '',
+        drinking: user.drinking ?? '',
+        smoking: user.smoking ?? '',
+        politics: user.politics ?? '',
+        kids: user.kids ?? '',
+        hometown: user.hometown ?? '',
+        workCompany: user.workCompany ?? '',
         summary: user.bio.isNotEmpty ? user.bio : 'Swipe right to know more!',
-        lookingFor: 'Connection',
-        lookingForTags: [],
-        quickestWay: '',
-        hobbies: [],
-        causes: [],
+        lookingFor: user.relationshipType ?? 'Connection',
+        lookingForTags: [], // Add if available in DiscoveryUser
+        quickestWay: '', // Add if available
+        hobbies: user.interests,
+        causes: user.causes, // ✅ Dynamic Causes
         simplePleasure: '',
-        languages: [],
-        spotifyArtists: [],
+        languages: user.languages, // ✅ Dynamic Languages
+        spotifyArtists: user.spotifyArtists, // ✅ Dynamic Spotify
       );
     }).toList();
   }

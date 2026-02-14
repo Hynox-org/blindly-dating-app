@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:cached_network_image/cached_network_image.dart'; // ✅ Added
 import 'dart:ui';
 
 class UserProfile {
@@ -8,17 +9,23 @@ class UserProfile {
   final int age;
   final double distance;
   final String bio;
+  final String? subTitle;
   final List<String> imageUrls;
 
   // Basic Info
   final String height;
   final String activityLevel;
   final String education;
+  final String school;
   final String gender;
   final String religion;
   final String zodiac;
   final String drinking;
   final String smoking;
+  final String politics;
+  final String kids;
+  final String hometown;
+  final String workCompany;
 
   // Interests & Values
   final List<String> hobbies;
@@ -40,15 +47,21 @@ class UserProfile {
     required this.age,
     required this.distance,
     required this.bio,
+    this.subTitle,
     required this.imageUrls,
     required this.height,
     required this.activityLevel,
     required this.education,
+    required this.school,
     required this.gender,
     required this.religion,
     required this.zodiac,
     required this.drinking,
     required this.smoking,
+    required this.politics,
+    required this.kids,
+    required this.hometown,
+    required this.workCompany,
     required this.hobbies,
     required this.summary,
     required this.lookingFor,
@@ -126,70 +139,70 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                     // ============ IMAGE 1 ============
                     _buildImageSection(0, cardHeight: constraints.maxHeight),
                     const SizedBox(height: 12),
-                    // ============ STATIC ABOUT ME SECTION ============
+                    // ============ ABOUT ME SECTION ============
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _buildHardcodedAboutMeSection(),
+                      child: _buildAboutMeSection(),
                     ),
                     const SizedBox(height: 16),
-                    // ============ STATIC BIO SECTION ============
+                    // ============ BIO SECTION ============
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _buildHardcodedBioSection(),
+                      child: _buildBioSection(),
                     ),
                     const SizedBox(height: 16),
                     // ============ IMAGE 2 ============
                     _buildImageSection(1),
                     const SizedBox(height: 16),
-                    // ============ STATIC RELATIONSHIP SECTION ============
+                    // ============ RELATIONSHIP SECTION ============
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _buildHardcodedRelationshipSection(),
+                      child: _buildRelationshipSection(),
                     ),
                     const SizedBox(height: 16),
-                    // ============ STATIC LOOKING FOR SECTION ============
+                    // ============ LOOKING FOR SECTION ============
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _buildHardcodedLookingForSection(),
+                      child: _buildLookingForSection(),
                     ),
                     const SizedBox(height: 16),
-                    // ============ STATIC HEART SECTION ============
+                    // ============ HEART SECTION ============
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _buildHardcodedHeartSection(),
+                      child: _buildHeartSection(),
                     ),
                     const SizedBox(height: 16),
-                    // ============ STATIC INTERESTS SECTION ============
+                    // ============ INTERESTS SECTION ============
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _buildHardcodedInterestsSection(),
+                      child: _buildInterestsSection(),
                     ),
                     const SizedBox(height: 16),
                     // ============ IMAGE 3 ============
                     _buildImageSection(2),
                     const SizedBox(height: 16),
-                    // ============ STATIC CAUSES SECTION ============
+                    // ============ CAUSES SECTION ============
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _buildHardcodedCausesSection(),
+                      child: _buildCausesSection(),
                     ),
                     const SizedBox(height: 16),
-                    // ============ STATIC LANGUAGES SECTION ============
+                    // ============ LANGUAGES SECTION ============
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _buildHardcodedLanguagesSection(),
+                      child: _buildLanguagesSection(),
                     ),
                     const SizedBox(height: 16),
-                    // ============ STATIC LOCATION SECTION ============
+                    // ============ LOCATION SECTION ============
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _buildHardcodedLocationSection(),
+                      child: _buildLocationSection(),
                     ),
                     const SizedBox(height: 16),
-                    // ============ STATIC SPOTIFY SECTION ============
+                    // ============ SPOTIFY SECTION ============
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _buildHardcodedSpotifySection(),
+                      child: _buildSpotifySection(),
                     ),
                     const SizedBox(height: 32),
                     // ============ ACTION BUTTONS ============
@@ -208,8 +221,9 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
     );
   }
 
-  Widget _buildHardcodedBioSection() {
+  Widget _buildBioSection() {
     final colorScheme = Theme.of(context).colorScheme;
+    if (widget.profile.bio.isEmpty) return const SizedBox.shrink();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 2), // Small shim for shadow
@@ -238,7 +252,9 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
           ),
           const SizedBox(height: 12),
           Text(
-            "Need Netflix recommendations? I'm looking for someone who's down for deep conversations, spontaneous weekend plans, and cozy nights in.",
+            widget.profile.bio.isNotEmpty
+                ? widget.profile.bio
+                : "Ask me about my bio!", // ✅ Dynamic Bio
             style: TextStyle(
               fontSize: 14,
               color: colorScheme.onSurfaceVariant,
@@ -283,8 +299,11 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
     );
   }
 
-  Widget _buildHardcodedRelationshipSection() {
+  Widget _buildRelationshipSection() {
     final colorScheme = Theme.of(context).colorScheme;
+    // TODO: Add dynamic field check if needed, currently hardcoded text in fallback
+    // For now we assume if lookingFor is empty we might strictly hide it?
+    // But design seemed to have a quote. We'll leave it unless explicitly empty.
 
     return Container(
       margin: const EdgeInsets.only(bottom: 2), // Small shim for shadow
@@ -313,7 +332,9 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
           ),
           const SizedBox(height: 12),
           Text(
-            "“Mutual respect, peace and the feeling that you can be your true self”",
+            widget.profile.lookingFor.isNotEmpty
+                ? widget.profile.lookingFor
+                : "Mutual respect, peace and the feeling that you can be your true self", // Verification fallback or hide?
             style: TextStyle(
               fontSize: 14,
               color: colorScheme.onSurfaceVariant,
@@ -417,19 +438,24 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
               height: double.infinity,
               fit: BoxFit.cover,
             )
-          : Image.network(
-              imageUrl,
+          : CachedNetworkImage(
+              // ✅ Optimized Image Loading
+              imageUrl: imageUrl,
               width: double.infinity,
               height: double.infinity,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Image.asset(
-                  fallbackAsset,
-                  width: double.infinity,
-                  height: double.infinity,
-                  fit: BoxFit.cover,
-                );
-              },
+              placeholder: (context, url) => Container(
+                color: Colors.grey[200],
+                child: const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+              errorWidget: (context, url, error) => Image.asset(
+                fallbackAsset,
+                width: double.infinity,
+                height: double.infinity,
+                fit: BoxFit.cover,
+              ),
             ),
       if (isFirstImage) ...[
         // Share arrow (top right)
@@ -509,7 +535,8 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                         ),
                         SizedBox(width: 6 * scaleFactor),
                         Text(
-                          "UI/UX Designer",
+                          widget.profile.subTitle ??
+                              "UI/UX Designer", // ✅ Use passed subtitle or fallback
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 13 * scaleFactor,
@@ -675,8 +702,51 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
     );
   }
 
-  Widget _buildHardcodedAboutMeSection() {
+  Widget _buildAboutMeSection() {
     final colorScheme = Theme.of(context).colorScheme;
+    final profile = widget.profile;
+
+    List<Widget> tags = [];
+
+    // Helper to add tag if value exists
+    void addTag(String? value, IconData icon) {
+      if (value != null && value.isNotEmpty && value != 'Ask me') {
+        tags.add(_buildTag(icon, value));
+      }
+    }
+
+    addTag(profile.height, Icons.height);
+    addTag(profile.activityLevel, FontAwesomeIcons.dumbbell);
+    addTag(profile.education, Icons.school_outlined);
+    addTag(profile.school, Icons.school);
+
+    // Work
+    if (profile.subTitle != null && profile.subTitle!.isNotEmpty) {
+      addTag(profile.subTitle, Icons.work_outline);
+    } else if (profile.workCompany.isNotEmpty) {
+      addTag(profile.workCompany, Icons.work_outline);
+    }
+
+    addTag(profile.gender, Icons.face);
+    addTag(profile.religion, FontAwesomeIcons.handsPraying);
+    addTag(profile.zodiac, FontAwesomeIcons.solidSun);
+    addTag(profile.smoking, Icons.smoking_rooms_outlined);
+    addTag(profile.drinking, Icons.local_bar_outlined);
+    addTag(profile.politics, Icons.account_balance);
+    addTag(profile.kids, Icons.child_care);
+    addTag(profile.hometown, Icons.home_outlined);
+
+    // Languages
+    if (profile.languages.isNotEmpty) {
+      for (var lang in profile.languages) {
+        if (lang != 'English') {
+          // Optional filter
+          addTag(lang, Icons.translate);
+        }
+      }
+    }
+
+    if (tags.isEmpty) return const SizedBox.shrink();
 
     return Container(
       width: double.infinity,
@@ -704,20 +774,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
             ),
           ),
           const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            runSpacing: 12,
-            children: [
-              _buildTag(Icons.height, "170 cm"),
-              _buildTag(FontAwesomeIcons.dumbbell, "Active"),
-              _buildTag(Icons.school_outlined, "Post graduate"),
-              _buildTag(Icons.face, "Men"),
-              _buildTag(FontAwesomeIcons.om, "Hindu"),
-              _buildTag(FontAwesomeIcons.solidSun, "Taurus"),
-              _buildTag(Icons.smoking_rooms_outlined, "Yes"),
-              _buildTag(Icons.local_bar_outlined, "Yes"),
-            ],
-          ),
+          Wrap(spacing: 8, runSpacing: 12, children: tags),
         ],
       ),
     );
@@ -760,8 +817,21 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
     );
   }
 
-  Widget _buildHardcodedLookingForSection() {
+  Widget _buildLookingForSection() {
     final colorScheme = Theme.of(context).colorScheme;
+    final profile = widget.profile;
+
+    if (profile.lookingFor.isEmpty && profile.lookingForTags.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    List<Widget> tags = [];
+    if (profile.lookingFor.isNotEmpty) {
+      tags.add(_buildTag(null, profile.lookingFor));
+    }
+    for (var tag in profile.lookingForTags) {
+      tags.add(_buildTag(null, tag));
+    }
 
     return Container(
       width: double.infinity,
@@ -789,27 +859,17 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
             ),
           ),
           const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            runSpacing: 12,
-            children: [
-              _buildTag(null, "Fun, casual dates"),
-              _buildTag(null, "Ambition"),
-              _buildTag(null, "Confidence"),
-              _buildTag(null, "Emotional intelligence"),
-              _buildTag(null, "Long term relationship"),
-              _buildTag(null, "Loyalty"),
-              _buildTag(null, "Humility"),
-              _buildTag(null, "Humor"),
-            ],
-          ),
+          Wrap(spacing: 8, runSpacing: 12, children: tags),
         ],
       ),
     );
   }
 
-  Widget _buildHardcodedHeartSection() {
+  Widget _buildHeartSection() {
     final colorScheme = Theme.of(context).colorScheme;
+    final profile = widget.profile;
+
+    if (profile.quickestWay.isEmpty) return const SizedBox.shrink();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 2), // Small shim for shadow
@@ -838,7 +898,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
           ),
           const SizedBox(height: 12),
           Text(
-            "“Showing up with pure intentions - not just pretty words”",
+            '“${profile.quickestWay}”',
             style: TextStyle(
               fontSize: 14,
               color: colorScheme.onSurfaceVariant,
@@ -851,40 +911,16 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
             thickness: 1,
             height: 1,
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Image.asset(
-                'assets/icons/speech-bubble-icon.png',
-                width: 24,
-                height: 24,
-                color: colorScheme.onSurface,
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(
-                    Icons.chat_bubble_outline,
-                    size: 24,
-                    color: colorScheme.onSurface,
-                  );
-                },
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Kudos',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildHardcodedInterestsSection() {
+  Widget _buildInterestsSection() {
     final colorScheme = Theme.of(context).colorScheme;
+    final profile = widget.profile;
+
+    if (profile.hobbies.isEmpty) return const SizedBox.shrink();
 
     return Container(
       width: double.infinity,
@@ -915,25 +951,19 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
           Wrap(
             spacing: 8,
             runSpacing: 12,
-            children: [
-              _buildTag(Icons.accessibility_new, "Dance"),
-              _buildTag(Icons.sports_cricket, "Cricket"),
-              _buildTag(Icons.local_bar, "Whiskey"),
-              _buildTag(Icons.restaurant_menu, "Bar"),
-              _buildTag(Icons.fastfood, "KFC"),
-              _buildTag(Icons.sports_soccer, "Football"),
-              _buildTag(Icons.beach_access, "Beaches"),
-              _buildTag(Icons.music_note, "Arabic"),
-              _buildTag(Icons.set_meal, "Fish"),
-            ],
+            children: profile.hobbies.map((interest) {
+              // Map interest to icon if possible, else default
+              return _buildTag(Icons.star_outline, interest);
+            }).toList(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildHardcodedCausesSection() {
+  Widget _buildCausesSection() {
     final colorScheme = Theme.of(context).colorScheme;
+    if (widget.profile.causes.isEmpty) return const SizedBox.shrink();
 
     return Container(
       width: double.infinity,
@@ -964,23 +994,18 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
           Wrap(
             spacing: 8,
             runSpacing: 12,
-            children: [
-              _buildTag(null, "Reproductive rights"),
-              _buildTag(null, "LGBTQ"),
-              _buildTag(null, "Feminism"),
-              _buildTag(null, "Neurodiversity"),
-              _buildTag(null, "End religious hate"),
-              _buildTag(null, "Human rights"),
-              _buildTag(null, "Environmentalism"),
-            ],
+            children: widget.profile.causes.map((cause) {
+              return _buildTag(null, cause);
+            }).toList(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildHardcodedLanguagesSection() {
+  Widget _buildLanguagesSection() {
     final colorScheme = Theme.of(context).colorScheme;
+    if (widget.profile.languages.isEmpty) return const SizedBox.shrink();
 
     return Container(
       width: double.infinity,
@@ -1011,18 +1036,16 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
           Wrap(
             spacing: 8,
             runSpacing: 12,
-            children: [
-              _buildTag(Icons.translate, "Tamil"),
-              _buildTag(Icons.translate, "English"),
-              _buildTag(Icons.translate, "Malayalam"),
-            ],
+            children: widget.profile.languages.map((lang) {
+              return _buildTag(Icons.translate, lang);
+            }).toList(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildHardcodedLocationSection() {
+  Widget _buildLocationSection() {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
@@ -1060,7 +1083,9 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
               ),
               const SizedBox(width: 12),
               Text(
-                'Coimbatore',
+                widget.profile.location.isNotEmpty
+                    ? widget.profile.location
+                    : 'Nearby',
                 style: TextStyle(
                   fontSize: 16,
                   color: colorScheme.onSurface,
@@ -1074,8 +1099,9 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
     );
   }
 
-  Widget _buildHardcodedSpotifySection() {
+  Widget _buildSpotifySection() {
     final colorScheme = Theme.of(context).colorScheme;
+    if (widget.profile.spotifyArtists.isEmpty) return const SizedBox.shrink();
 
     return Container(
       width: double.infinity,
@@ -1106,17 +1132,9 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
           Wrap(
             spacing: 8,
             runSpacing: 12,
-            children: [
-              _buildTag(null, "Wiz kalifha"),
-              _buildTag(null, "Harris jayaraj"),
-              _buildTag(null, "AR Rahman"),
-              _buildTag(null, "Benny dayal"),
-              _buildTag(null, "XXX tentaction"),
-              _buildTag(null, "Vedan"),
-              _buildTag(null, "Arijit singh"),
-              _buildTag(null, "Snoop dog"),
-              _buildTag(null, "Benny"),
-            ],
+            children: widget.profile.spotifyArtists.map((artist) {
+              return _buildTag(null, artist);
+            }).toList(),
           ),
         ],
       ),

@@ -6,12 +6,13 @@ import '../onboarding/presentation/screens/steps/photo_upload_screen.dart';
 import 'presentation/screens/setup_steps/profile_prompts_screen.dart';
 import 'presentation/screens/causes_communities_screen.dart';
 import 'presentation/screens/qualities_selection_screen.dart';
-import '../onboarding/presentation/screens/steps/name_birth_entry_screen.dart';
+// import '../onboarding/presentation/screens/steps/name_birth_entry_screen.dart';
 import '../onboarding/presentation/screens/steps/gender_select_screen.dart';
 
 import 'presentation/screens/setup_steps/interests_select_screen.dart';
 import 'presentation/screens/setup_steps/bio_entry_screen.dart';
-// import 'presentation/screens/setup_steps/lifestyle_prefs_screen.dart'; // Removed or commented out
+import 'presentation/screens/setup_steps/lifestyle_prefs_screen.dart';
+import '../onboarding/domain/models/lifestyle_chip_model.dart';
 import 'presentation/screens/educated_at_screen.dart';
 import 'presentation/screens/hometown_screen.dart';
 import '../onboarding/domain/models/profile_prompt_model.dart';
@@ -94,6 +95,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           _buildPhotosSection(profile),
           const SizedBox(height: 16),
           _buildInterestsSection(profile),
+          const SizedBox(height: 16),
+          _buildLifestyleSection(profile),
           const SizedBox(height: 16),
           _buildCausesAndCommunitiesSection(profile),
           const SizedBox(height: 16),
@@ -795,6 +798,131 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     );
   }
 
+  Widget _buildLifestyleSection(ProfileUser profile) {
+    // Group chips by category
+    final Map<String, List<LifestyleChip>> groupedItems = {};
+    for (var item in profile.lifestyleItems) {
+      final key = item.categoryKey ?? item.categoryName ?? 'Other';
+      if (!groupedItems.containsKey(key)) {
+        groupedItems[key] = [];
+      }
+      groupedItems[key]!.add(item);
+    }
+
+    // Icon map
+    IconData getIconForCategory(String? key) {
+      if (key == null) return Icons.star_outline;
+      switch (key.toLowerCase()) {
+        case 'drinking':
+          return Icons.local_bar;
+        case 'smoking':
+          return Icons.smoking_rooms;
+        case 'workout':
+        case 'exercise':
+          return Icons.fitness_center;
+        case 'food':
+        case 'diet':
+          return Icons.restaurant;
+        case 'social':
+        case 'social_media':
+          return Icons.alternate_email;
+        case 'sleep':
+        case 'sleeping_habits':
+          return Icons.bedtime;
+        case 'pets':
+          return Icons.pets;
+        case 'zodiac':
+          return Icons.nightlight_round;
+        case 'education':
+          return Icons.school_outlined;
+        case 'kids':
+          return Icons.child_care;
+        case 'religion':
+          return Icons.church;
+        case 'politics':
+          return Icons.account_balance;
+        default:
+          return Icons.star_outline;
+      }
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Lifestyle',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Your habits and preferences.',
+            style: TextStyle(fontSize: 12, color: Colors.black),
+          ),
+          const SizedBox(height: 16),
+          if (profile.lifestyleItems.isEmpty)
+            _buildGenericAddRow(
+              title: 'Add your lifestyle preferences',
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        const LifestylePrefsScreen(isEditMode: true),
+                  ),
+                );
+                // Removed immediate refresh to allow optimistic update to persist
+              },
+            )
+          else
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                children: [
+                  ...groupedItems.entries.map((entry) {
+                    final key = entry.key;
+                    final items = entry.value;
+                    final categoryName = items.first.categoryName ?? key;
+                    final icon = getIconForCategory(
+                      items.first.categoryKey ?? key,
+                    );
+                    final valueText = items.map((e) => e.label).join(', ');
+
+                    return _buildListTile(
+                      icon,
+                      categoryName,
+                      valueText,
+                      true,
+                      onTap: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const LifestylePrefsScreen(isEditMode: true),
+                          ),
+                        );
+                        // Removed immediate refresh
+                      },
+                    );
+                  }).toList(),
+                  // Add generic "Edit" row at bottom or allow tapping any row to edit all?
+                  // Tapping any row goes to the full screen.
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildInterestsSection(ProfileUser profile) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -975,22 +1103,22 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          _buildListTile(
-            Icons.cake_outlined,
-            'Age',
-            '${profile.age}',
-            true,
-            onTap: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      const NameBirthEntryScreen(isEditMode: true),
-                ),
-              );
-              ref.refresh(currentUserProfileProvider);
-            },
-          ),
+          // _buildListTile(
+          //   Icons.cake_outlined,
+          //   'Age',
+          //   '${profile.age}',
+          //   true,
+          //   onTap: () async {
+          //     await Navigator.push(
+          //       context,
+          //       MaterialPageRoute(
+          //         builder: (context) =>
+          //             const NameBirthEntryScreen(isEditMode: true),
+          //       ),
+          //     );
+          //     ref.refresh(currentUserProfileProvider);
+          //   },
+          // ),
           _buildListTile(
             Icons.work_outline,
             'Work',

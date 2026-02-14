@@ -36,7 +36,7 @@ class DiscoveryRepository {
   Future<List<DiscoveryUser>> getDiscoveryFeed({
     required String currentMode,
     int radiusKm = 50,
-    int limit = 10,
+    int limit = 20, // ✅ Production Grade: Batch size increased
     int offset = 0,
   }) async {
     try {
@@ -50,6 +50,7 @@ class DiscoveryRepository {
       debugPrint('🚀 DISCOVERY RPC CALL: get_discovery_prospects');
       debugPrint('MODE    : $currentMode');
       debugPrint('RADIUS  : $effectiveRadius KM');
+      debugPrint('LIMIT   : $limit');
       debugPrint('OFFSET  : $offset');
 
       // 1. Call DB
@@ -70,8 +71,9 @@ class DiscoveryRepository {
       // 2. PARALLEL PROCESSING (Iterate Users)
       final futureUsers = response.map((raw) async {
         final Map<String, dynamic> data = Map<String, dynamic>.from(raw);
-        
+
         // 🔍 EXTRACT LIST: Get the array of paths from DB (Column: image_urls)
+        // Note: Postgres arrays often come as List<dynamic> in Supabase Flutter
         final List<dynamic> rawPaths = data['image_urls'] ?? [];
         final List<String> signedUrls = [];
 
@@ -89,7 +91,7 @@ class DiscoveryRepository {
 
               // ⚠️ CRITICAL: Ensure bucket name is correct ('user_photos')
               final signedUrl = await _supabase.storage
-                  .from('user_photos') 
+                  .from('user_photos')
                   .createSignedUrl(imagePath, 60 * 60); // 1 Hour Expiry
 
               signedUrls.add(signedUrl);
@@ -105,6 +107,10 @@ class DiscoveryRepository {
 
         // ✅ UPDATE DATA: Replace the raw paths with the signed URLs
         data['image_urls'] = signedUrls;
+
+        // ✅ Ensure numeric types are handled safely
+        if (data['age'] == null) data['age'] = 0;
+        if (data['distance_km'] == null) data['distance_km'] = 0.0;
 
         return DiscoveryUser.fromJson(data);
       });

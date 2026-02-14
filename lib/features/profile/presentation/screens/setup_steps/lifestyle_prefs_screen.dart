@@ -9,6 +9,9 @@ import '../../../../onboarding/presentation/widgets/selection_chip.dart';
 import '../../../../../core/utils/custom_popups.dart';
 import '../../../../../core/widgets/app_loader.dart';
 import '../../../../../core/providers/connection_mode_provider.dart';
+import '../../../provider/profile_provider.dart';
+import '../../../domain/models/profile_user_model.dart';
+import '../../../../onboarding/domain/models/lifestyle_chip_model.dart';
 
 class LifestylePrefsScreen extends ConsumerStatefulWidget {
   final bool isEditMode;
@@ -136,7 +139,34 @@ class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
             );
 
         if (widget.isEditMode) {
-          if (mounted) Navigator.pop(context);
+          if (mounted) {
+            final ProfileUser? currentProfile = ref
+                .read(currentUserProfileProvider)
+                .value;
+            if (currentProfile != null) {
+              // Construct new list of LifestyleChip objects
+              final List<LifestyleChip> newLifestyleItems = [];
+              for (var cat in _categories) {
+                final catKey = cat.key;
+                final catName = _formatCategoryKey(cat.key);
+                for (var chip in cat.chips) {
+                  if (allSelectedChipIds.contains(chip.id)) {
+                    newLifestyleItems.add(
+                      chip.copyWith(categoryKey: catKey, categoryName: catName),
+                    );
+                  }
+                }
+              }
+
+              final updatedProfile = currentProfile.copyWith(
+                lifestyleItems: newLifestyleItems,
+              );
+              ref
+                  .read(currentUserProfileProvider.notifier)
+                  .updateProfile(updatedProfile);
+            }
+            Navigator.pop(context);
+          }
         } else {
           if (mounted) {
             ref
