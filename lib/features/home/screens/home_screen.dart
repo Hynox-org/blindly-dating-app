@@ -21,6 +21,7 @@ import '../../../../core/utils/custom_popups.dart';
 import '../../discovery/presentation/widgets/no_more_profiles_widget.dart';
 import '../../../../core/utils/navigation_utils.dart';
 import 'connection_type_screen.dart';
+import '../../discovery/presentation/screens/filter_screen.dart';
 
 // ✅ 4. Layout
 import '../../../../core/widgets/app_layout.dart';
@@ -145,7 +146,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // ✅ Helper to map API data to UI data
   List<UserProfile> _mapToUserProfiles(List<DiscoveryUser> discoveryUsers) {
     return discoveryUsers.map((user) {
-      
       // 1. Get the list of images directly from the Model
       // (The Repository has already signed them and put them in this list)
       List<String> profileImages = List.from(user.imageUrls);
@@ -161,8 +161,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       // 3. Determine Gender String (for UI display)
       final genderStr = user.gender.isNotEmpty
           ? (user.gender.startsWith('M')
-              ? 'Male'
-              : (user.gender.startsWith('F') ? 'Female' : 'Male'))
+                ? 'Male'
+                : (user.gender.startsWith('F') ? 'Female' : 'Male'))
           : 'Male';
 
       return UserProfile(
@@ -269,7 +269,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               size: 28,
             ),
             onPressed: () {
-              debugPrint("Filter button pressed");
+              NavigationUtils.navigateToWithSlide(
+                context,
+                const FilterScreen(),
+              );
             },
           ),
           const SizedBox(width: 8),
@@ -589,10 +592,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildEmptyState() {
     return NoMoreProfilesWidget(
       onAdjustFilters: () {
-        debugPrint("Adjust Filters clicked from No Feed Screen");
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Filter capability coming soon!")),
-        );
+        NavigationUtils.navigateToWithSlide(context, const FilterScreen());
       },
       onNotifyMe: () {
         debugPrint("Notify Me clicked");

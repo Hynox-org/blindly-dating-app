@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/widgets/marquee_text.dart';
 import '../../../core/widgets/app_loader.dart';
 import '../../../core/widgets/app_layout.dart';
 import '../../../core/utils/navigation_utils.dart';
@@ -60,6 +61,7 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
             fontSize: 20,
           ),
         ),
+        surfaceTintColor: Colors.transparent, // Fix grey color on scroll
         centerTitle: true,
       ),
       child: Container(
@@ -116,37 +118,25 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
-      color: Theme.of(context).cardColor,
+      color: Colors.white,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             "See Who's Interested",
             style: TextStyle(
-              fontSize: 24,
+              fontSize: 24, // Reduced from 32
               fontWeight: FontWeight.bold,
               color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
-          RichText(
-            text: TextSpan(
-              style: TextStyle(
-                fontSize: 14,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                height: 1.4,
-              ),
-              children: [
-                const TextSpan(text: 'You have '),
-                TextSpan(
-                  text: '$likeCount likes',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-                const TextSpan(text: ' waiting for you.'),
-              ],
+          Text(
+            "Match instantly without the wait. You have $likeCount+ likes waiting you",
+            style: TextStyle(
+              fontSize: 16,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              height: 1.4,
             ),
           ),
         ],
@@ -154,10 +144,10 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
     );
   }
 
-  // --------------------------------------------------
-  // PROFILE CARD WITH MATCH / PASS BUTTONS
-  // --------------------------------------------------
   Widget _buildProfileCard(LikedYouUser user) {
+    debugPrint(
+      '🖼️ Rendering card for ${user.displayName} | Image: ${user.imageUrl}',
+    );
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: Stack(
@@ -168,7 +158,12 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
               ? Image.network(
                   user.imageUrl!,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _imageFallback(),
+                  errorBuilder: (context, error, stackTrace) {
+                    debugPrint(
+                      '🛑 Image Error for ${user.displayName}: $error',
+                    );
+                    return _imageFallback();
+                  },
                 )
               : _imageFallback(),
 
@@ -178,7 +173,7 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Colors.transparent, Colors.black.withOpacity(0.65)],
+                colors: [Colors.transparent, Colors.black.withOpacity(0.9)],
               ),
             ),
           ),
@@ -187,16 +182,14 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
           Positioned(
             left: 12,
             right: 12,
-            bottom: 64,
-            child: Text(
-              '${user.displayName}, ${user.age}',
+            bottom: 48,
+            child: MarqueeText(
+              text: '${user.displayName}, ${user.age}',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 16,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.bold,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
           ),
 
@@ -219,7 +212,7 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
                 ),
 
                 _overlayActionButton(
-                  label: 'Pause',
+                  label: 'Pass',
                   // icon: Icons.pause,
                   onTap: () async {
                     await ref
@@ -382,8 +375,8 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
             ),
           ),
           child: const Text(
-            'Unlock all likes',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            'View more likes',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),
       ),
@@ -404,20 +397,20 @@ Widget _overlayActionButton({
       return GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
             children: [
               // Icon(icon, size: 16, color: Colors.Black),
-              const SizedBox(width: 4),
+              const SizedBox(width: 2),
               Text(
                 label,
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurface,
-                  fontSize: 14,
+                  fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
               ),
