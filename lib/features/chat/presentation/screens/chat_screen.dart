@@ -90,6 +90,11 @@ class ChatScreen extends ConsumerWidget {
           title: const Text("Chats"),
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
+          titleTextStyle: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontWeight: FontWeight.w600,
+            fontSize: 20,
+          ),
           elevation: 0.5,
           actions: [
             IconButton(
