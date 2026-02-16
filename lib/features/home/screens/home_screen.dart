@@ -21,6 +21,7 @@ import '../../../../core/utils/custom_popups.dart';
 import '../../discovery/presentation/widgets/no_more_profiles_widget.dart';
 import '../../../../core/utils/navigation_utils.dart';
 import 'connection_type_screen.dart';
+import '../../discovery/presentation/screens/filter_screen.dart';
 
 // ✅ 4. Layout
 import '../../../../core/widgets/app_layout.dart';
@@ -276,7 +277,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               size: 28,
             ),
             onPressed: () {
-              debugPrint("Filter button pressed");
+              NavigationUtils.navigateToWithSlide(
+                context,
+                const FilterScreen(),
+              );
             },
           ),
           const SizedBox(width: 8),
@@ -596,10 +600,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildEmptyState() {
     return NoMoreProfilesWidget(
       onAdjustFilters: () {
-        debugPrint("Adjust Filters clicked from No Feed Screen");
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Filter capability coming soon!")),
-        );
+        NavigationUtils.navigateToWithSlide(context, const FilterScreen());
       },
       onNotifyMe: () {
         debugPrint("Notify Me clicked");
