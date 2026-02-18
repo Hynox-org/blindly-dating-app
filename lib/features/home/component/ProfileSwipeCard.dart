@@ -1166,16 +1166,19 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
             icon: Icons.close,
             color: const Color(0xFF414833),
             iconColor: const Color(0xFFD4AF37),
+            onTap: widget.onBlock,
           ),
           _buildCircleButton(
             icon: Icons.star,
             color: const Color(0xFF414833),
             iconColor: const Color(0xFFD4AF37),
+            onTap: () {}, // Super like not implemented yet
           ),
           _buildCircleButton(
             icon: Icons.favorite,
             color: const Color(0xFF414833),
             iconColor: const Color(0xFFD4AF37),
+            onTap: widget.onLike,
           ),
         ],
       ),
@@ -1186,12 +1189,16 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
     required IconData icon,
     required Color color,
     required Color iconColor,
+    VoidCallback? onTap,
   }) {
-    return Container(
-      width: 50,
-      height: 50,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      child: Icon(icon, color: iconColor, size: 28),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 50,
+        height: 50,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        child: Icon(icon, color: iconColor, size: 28),
+      ),
     );
   }
 

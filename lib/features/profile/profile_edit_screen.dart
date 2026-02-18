@@ -912,7 +912,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                         // Removed immediate refresh
                       },
                     );
-                  }).toList(),
+                  }),
                   // Add generic "Edit" row at bottom or allow tapping any row to edit all?
                   // Tapping any row goes to the full screen.
                 ],
