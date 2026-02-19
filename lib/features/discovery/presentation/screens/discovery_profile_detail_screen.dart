@@ -67,7 +67,10 @@ class DiscoveryProfileDetailScreen extends ConsumerWidget {
 
     Future<void> handleAction(String action) async {
       // 1. Close Screen Immediately
-      Navigator.pop(context);
+      // This ensures no "suck" animation; we just close the window.
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
 
       // 2. Remove from Feed (Optimistic Update)
       // We use profileId as the key
