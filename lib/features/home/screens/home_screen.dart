@@ -447,7 +447,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               profile: uiProfile,
                               horizontalThreshold: horiz.toDouble(),
                               verticalThreshold: vert.toDouble(),
-                              isHomeScreen: true,
+                              mode: ProfileCardMode.swipe, // ✅ Swipe Mode
                               onLike: () {
                                 _handleLike(uiProfile);
                                 _controller.swipe(CardSwiperDirection.right);

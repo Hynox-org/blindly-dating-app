@@ -2,16 +2,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/discovery_user_model.dart';
 import '../../../home/component/ProfileSwipeCard.dart';
-import '../../povider/discovery_landing_provider.dart';
 import '../../povider/swipe_provider.dart';
-// Reuse the mapper logic (Should ideally be in a shared helper, but duplicating for now to be safe)
-// Or better: import from home screen if it was static? No it's private.
-// I'll implement a local mapper here to keep it independent.
 
-class DiscoveryProfileDetailScreen extends ConsumerWidget {
+class DiscoveryProfileDetailScreen extends ConsumerStatefulWidget {
   final DiscoveryUser user;
+  final String initialState; // 'none', 'liked', or 'passed'
 
-  const DiscoveryProfileDetailScreen({super.key, required this.user});
+  const DiscoveryProfileDetailScreen({
+    super.key,
+    required this.user,
+    this.initialState = 'none',
+  });
+
+  @override
+  ConsumerState<DiscoveryProfileDetailScreen> createState() =>
+      _DiscoveryProfileDetailScreenState();
+}
+
+class _DiscoveryProfileDetailScreenState
+    extends ConsumerState<DiscoveryProfileDetailScreen> {
+  // Local state to track the interaction on this specific card
+  late String _swipeState;
+
+  @override
+  void initState() {
+    super.initState();
+    _swipeState = widget.initialState;
+  }
 
   UserProfile _mapToUserProfile(DiscoveryUser user) {
     List<String> profileImages = List.from(user.imageUrls);
@@ -61,31 +78,36 @@ class DiscoveryProfileDetailScreen extends ConsumerWidget {
     );
   }
 
+  void _handleAction(String action) {
+    // 1. Trigger the backend API call asynchronously
+    ref
+        .read(swipeProvider.notifier)
+        .swipe(targetProfileId: widget.user.profileId, action: action)
+        .then((_) => debugPrint('✅ Action $action successful'))
+        .catchError((e) => debugPrint('❌ Swipe action $action failed: $e'));
+
+    // 2. Optimistic UI update - return state back to grid immediately
+    Navigator.pop(context, action == 'like' ? 'liked' : 'passed');
+  }
+
+  void _handleUndo() {
+    // 1. Trigger the backend undo API
+    ref
+        .read(swipeProvider.notifier)
+        .undo()
+        .then(
+          (success) =>
+              debugPrint(success ? '✅ Undo complete' : '❌ Undo failed'),
+        )
+        .catchError((e) => debugPrint('❌ Undo err: $e'));
+
+    // 2. Return state back to grid
+    Navigator.pop(context, 'none');
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final uiProfile = _mapToUserProfile(user);
-
-    Future<void> handleAction(String action) async {
-      // 1. Close Screen Immediately
-      // This ensures no "suck" animation; we just close the window.
-      if (context.mounted) {
-        Navigator.pop(context);
-      }
-
-      // 2. Remove from Feed (Optimistic Update)
-      // We use profileId as the key
-      ref.read(discoveryLandingProvider.notifier).removeUser(user.profileId);
-
-      // 3. Trigger Backend Call
-      try {
-        await ref
-            .read(swipeProvider.notifier)
-            .swipe(targetProfileId: user.profileId, action: action);
-      } catch (e) {
-        // Silently fail or minimal feedback, action is already "done" for user
-        debugPrint('Swipe action $action failed: $e');
-      }
-    }
+  Widget build(BuildContext context) {
+    final uiProfile = _mapToUserProfile(widget.user);
 
     return Scaffold(
       backgroundColor: Colors.black, // Dark background for focus
@@ -95,11 +117,13 @@ class DiscoveryProfileDetailScreen extends ConsumerWidget {
           Positioned.fill(
             child: ProfileSwipeCard(
               profile: uiProfile,
-              isHomeScreen: false,
+              mode: ProfileCardMode.discovery,
+              swipeState: _swipeState, // ✅ Pass down the state
               horizontalThreshold: 0,
               verticalThreshold: 0,
-              onLike: () => handleAction('like'),
-              onBlock: () => handleAction('pass'),
+              onLike: () => _handleAction('like'),
+              onBlock: () => _handleAction('pass'),
+              onUndo: _handleUndo, // ✅ Pass down the undo handler
               onReport: () {
                 // Report Logic (Placeholder)
                 Navigator.pop(context);
@@ -107,12 +131,15 @@ class DiscoveryProfileDetailScreen extends ConsumerWidget {
             ),
           ),
 
-          // Close Button (Top LEFT now)
+          // Close Button (Top RIGHT now)
           Positioned(
             top: 50,
-            left: 20,
+            right: 20,
             child: GestureDetector(
-              onTap: () => Navigator.pop(context),
+              onTap: () => Navigator.pop(
+                context,
+                null,
+              ), // Return whatever the state was initially basically without change
               child: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(

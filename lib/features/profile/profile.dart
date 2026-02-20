@@ -279,8 +279,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       profile: realProfile, // ✅ Passing the real data
                       horizontalThreshold: 0,
                       verticalThreshold: 0,
-                      isHomeScreen: false,
-                      // isProfileScreen: true, // Uncomment if your card supports this flag
+                      mode: ProfileCardMode.preview, // ✅ Preview Mode
+                      onEdit: () {
+                        Navigator.pop(context); // Close popup first
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ProfileEditScreen(),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -306,44 +314,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   bottom: 10,
                   left: 0,
                   right: 0,
-                  child: Center(
-                    child: SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.6,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(context); // Close popup first
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ProfileEditScreen(),
-                            ),
-                          );
-                        },
-                        icon: Icon(
-                          Icons.edit,
-                          color: Theme.of(context).colorScheme.onPrimary,
-                        ),
-                        label: Text(
-                          'Edit Profile',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onPrimary,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.primary,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          elevation: 5,
-                        ),
-                      ),
-                    ),
-                  ),
+                  child: SizedBox.shrink(), // Button moved inside card
                 ),
               ],
             ),

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
 class NavigationUtils {
-  static void navigateToWithSlide(BuildContext context, Widget screen) {
-    Navigator.of(context).push(
+  static Future<T?> navigateToWithSlide<T>(
+    BuildContext context,
+    Widget screen,
+  ) {
+    return Navigator.of(context).push<T>(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) => screen,
         transitionsBuilder: (context, animation, secondaryAnimation, child) {

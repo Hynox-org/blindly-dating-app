@@ -75,32 +75,38 @@ class UserProfile {
   });
 }
 
+enum ProfileCardMode { swipe, discovery, preview }
+
 class ProfileSwipeCard extends StatefulWidget {
   final UserProfile profile;
   final double horizontalThreshold;
   final double verticalThreshold;
 
-  // Screen identification flags
-  final bool isHomeScreen;
-  final bool isProfileScreen;
+  // ✅ Mode determines button layout & interactions
+  final ProfileCardMode mode;
 
   // Callbacks
-  final VoidCallback? onBlock;
+  final VoidCallback? onBlock; // Used for "Pass" or "Not for me"
   final VoidCallback? onReport;
   final VoidCallback? onLike;
   final VoidCallback? onEdit;
+  final VoidCallback? onUndo;
+
+  // Track the result of an action ('none', 'liked', 'passed')
+  final String swipeState;
 
   const ProfileSwipeCard({
     super.key,
     required this.profile,
     required this.horizontalThreshold,
     required this.verticalThreshold,
-    this.isHomeScreen = false,
-    this.isProfileScreen = false,
+    this.mode = ProfileCardMode.swipe, // Default to Swipe
+    this.swipeState = 'none',
     this.onBlock,
     this.onReport,
     this.onLike,
     this.onEdit,
+    this.onUndo,
   });
 
   @override
@@ -209,8 +215,12 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                     _buildActionButtons(),
                     const SizedBox(height: 32),
                     // ============ BLOCK / REPORT ============
-                    _buildBlockReportButtons(),
-                    const SizedBox(height: 48),
+                    // Only show block/report in Swipe or Discovery modes, not Preview
+                    if (widget.mode != ProfileCardMode.preview) ...[
+                      _buildBlockReportButtons(),
+                      const SizedBox(height: 48),
+                    ] else
+                      const SizedBox(height: 48),
                   ],
                 ),
               ),
@@ -220,6 +230,26 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
       ),
     );
   }
+
+  // ... (Other build methods remain unchanged: _buildBioSection, _buildRelationshipSection, etc.)
+
+  // ... (Keep existing helper methods like _buildImageSection, _buildTag, etc. UNCHANGED until _buildActionButtons)
+
+  // ... (Re-inserting unmodified methods to maintain context if needed, but I will skip to _buildActionButtons for the replacement)
+
+  // NOTE: I am relying on the tool to replace the block correctly.
+  // I will just replace the build method and the _buildActionButtons method.
+  // Wait, the tool requires me to replace a contiguous block.
+  // The provided StartLine 78 covers the class definition.
+  // I need to be careful not to delete the methods in between.
+  // The 'replacement content' must match the target content logic.
+  // Actually, rewriting the WHOLE class is safer given the StartLine/EndLine constraint if I want to change the constructor AND the build method AND the action buttons.
+  // But that is huge.
+  // Let's try to do it in chunks? No, tool says "Use this tool ONLY when you are making a SINGLE CONTIGUOUS block of edits".
+  // The class fields + constructor are at the top.
+  // The _buildActionButtons is at the bottom.
+  // I'll use `multi_replace_file_content` instead to change multiple parts safely.
+  // Changing tool to multi_replace_file_content.
 
   Widget _buildBioSection() {
     final colorScheme = Theme.of(context).colorScheme;
@@ -459,39 +489,43 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
             ),
       if (isFirstImage) ...[
         // Share arrow (top right)
-        Positioned(
-          top: 16 * scaleFactor,
-          right: 16 * scaleFactor,
-          child: ClipOval(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(
-                width: 48 * scaleFactor,
-                height: 48 * scaleFactor,
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.25),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.15),
-                    width: 1,
+        if (widget.mode == ProfileCardMode.swipe)
+          Positioned(
+            top: 16 * scaleFactor,
+            right: 16 * scaleFactor,
+            child: ClipOval(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  width: 48 * scaleFactor,
+                  height: 48 * scaleFactor,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.25),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.15),
+                      width: 1,
+                    ),
                   ),
-                ),
-                child: Icon(
-                  Icons.share,
-                  color: Colors.white,
-                  size: 24 * scaleFactor,
+                  child: Icon(
+                    Icons.share,
+                    color: Colors.white,
+                    size: 24 * scaleFactor,
+                  ),
                 ),
               ),
             ),
           ),
-        ),
         // Bottom overlay
         Positioned(
           bottom: 0,
           left: 0,
           right: 0,
           child: Container(
-            padding: EdgeInsets.all(20 * scaleFactor),
+            padding: EdgeInsets.symmetric(
+              horizontal: 16 * scaleFactor,
+              vertical: 12 * scaleFactor,
+            ),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
@@ -507,21 +541,21 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     verifiedTag("Profile Verified", Colors.blue, scaleFactor),
-                    SizedBox(height: 6 * scaleFactor),
+                    SizedBox(height: 4 * scaleFactor),
                     verifiedTag("Photo Verified", Colors.black, scaleFactor),
                   ],
                 ),
-                SizedBox(height: 12 * scaleFactor),
+                SizedBox(height: 8 * scaleFactor),
                 // Name
                 Text(
                   "${widget.profile.name}, ${widget.profile.age}",
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 28 * scaleFactor,
+                    fontSize: 22 * scaleFactor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 10 * scaleFactor),
+                SizedBox(height: 6 * scaleFactor),
                 // Job + Distance
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -531,40 +565,40 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                         Icon(
                           Icons.work_outline,
                           color: Colors.white,
-                          size: 16 * scaleFactor,
+                          size: 12 * scaleFactor,
                         ),
-                        SizedBox(width: 6 * scaleFactor),
+                        SizedBox(width: 4 * scaleFactor),
                         Text(
                           widget.profile.subTitle ??
                               "UI/UX Designer", // ✅ Use passed subtitle or fallback
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 13 * scaleFactor,
+                            fontSize: 11 * scaleFactor,
                           ),
                         ),
                       ],
                     ),
-                    SizedBox(height: 6 * scaleFactor),
+                    SizedBox(height: 4 * scaleFactor),
                     Row(
                       children: [
                         Icon(
                           Icons.location_on,
                           color: Colors.white,
-                          size: 16 * scaleFactor,
+                          size: 12 * scaleFactor,
                         ),
-                        SizedBox(width: 6 * scaleFactor),
+                        SizedBox(width: 4 * scaleFactor),
                         Text(
                           "${widget.profile.distance.toStringAsFixed(1)} miles away",
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 13 * scaleFactor,
+                            fontSize: 11 * scaleFactor,
                           ),
                         ),
                       ],
                     ),
                   ],
                 ),
-                SizedBox(height: 22 * scaleFactor),
+                SizedBox(height: 16 * scaleFactor),
                 // Gold buttons + scores
                 Row(
                   children: [
@@ -576,7 +610,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                       Icon(
                         Icons.star,
                         color: const Color(0xFFD4AF37),
-                        size: 28 * scaleFactor,
+                        size: 20 * scaleFactor,
                       ),
                       scaleFactor,
                     ),
@@ -593,27 +627,27 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
   Widget verifiedTag(String text, Color bg, double scaleFactor) {
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: 12 * scaleFactor,
-        vertical: 6 * scaleFactor,
+        horizontal: 8 * scaleFactor,
+        vertical: 4 * scaleFactor,
       ),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(20 * scaleFactor),
+        borderRadius: BorderRadius.circular(16 * scaleFactor),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             Icons.verified_user,
-            size: 18 * scaleFactor,
+            size: 14 * scaleFactor,
             color: Colors.white,
           ),
-          SizedBox(width: 6 * scaleFactor),
+          SizedBox(width: 4 * scaleFactor),
           Text(
             text,
             style: TextStyle(
               color: Colors.white,
-              fontSize: 12 * scaleFactor,
+              fontSize: 10 * scaleFactor,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -624,16 +658,16 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
 
   Widget goldButton(Widget icon, double scaleFactor) {
     return Container(
-      height: 58 * scaleFactor,
-      width: 58 * scaleFactor,
+      height: 44 * scaleFactor,
+      width: 44 * scaleFactor,
       decoration: BoxDecoration(
         color: const Color(0xFF414833),
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.4),
-            blurRadius: 8 * scaleFactor,
-            offset: Offset(0, 4 * scaleFactor),
+            blurRadius: 6 * scaleFactor,
+            offset: Offset(0, 2 * scaleFactor),
           ),
         ],
       ),
@@ -644,27 +678,27 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
   Widget scoreBox(double scaleFactor) {
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: 18 * scaleFactor,
-        vertical: 10 * scaleFactor,
+        horizontal: 12 * scaleFactor,
+        vertical: 6 * scaleFactor,
       ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22 * scaleFactor),
+        borderRadius: BorderRadius.circular(16 * scaleFactor),
       ),
       child: Column(
         children: [
           Text(
             "Compatibility Score: 70%",
             style: TextStyle(
-              fontSize: 12 * scaleFactor,
+              fontSize: 10 * scaleFactor,
               fontWeight: FontWeight.w600,
             ),
           ),
-          SizedBox(height: 4 * scaleFactor),
+          SizedBox(height: 2 * scaleFactor),
           Text(
             "Trust Score: 70%",
             style: TextStyle(
-              fontSize: 12 * scaleFactor,
+              fontSize: 10 * scaleFactor,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -675,8 +709,8 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
 
   Widget loveChatIcon(double scaleFactor) {
     return Container(
-      width: 52 * scaleFactor,
-      height: 52 * scaleFactor,
+      width: 38 * scaleFactor,
+      height: 38 * scaleFactor,
       decoration: const BoxDecoration(
         shape: BoxShape.circle,
         color: Color.fromRGBO(65, 72, 51, 1),
@@ -687,14 +721,14 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
           Icon(
             Icons.circle_outlined,
             color: const Color(0xFFD4AF37),
-            size: 44 * scaleFactor,
+            size: 32 * scaleFactor,
           ),
           Positioned(
-            top: 18 * scaleFactor,
+            top: 13 * scaleFactor,
             child: Icon(
               Icons.favorite,
               color: const Color(0xFFD4AF37),
-              size: 14 * scaleFactor,
+              size: 10 * scaleFactor,
             ),
           ),
         ],
@@ -1142,6 +1176,138 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
   }
 
   Widget _buildActionButtons() {
+    // 1. PREVIEW MODE (Profile Screen) - Only "Edit" button
+    if (widget.mode == ProfileCardMode.preview) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 40),
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: widget.onEdit,
+            icon: Icon(
+              Icons.edit,
+              color: Theme.of(context).colorScheme.onPrimary,
+            ),
+            label: Text(
+              'Edit Profile',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onPrimary,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
+              ),
+              elevation: 5,
+            ),
+          ),
+        ),
+      );
+    }
+
+    // 2. DISCOVERY MODE - "Not for me" and "Like" OR State Overrides
+    if (widget.mode == ProfileCardMode.discovery) {
+      if (widget.swipeState == 'liked') {
+        // State A: Liked - Render a large heart emoji badge in place of the buttons
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          height: 56, // Keep the same height as the buttons
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: Theme.of(context).colorScheme.primary),
+            boxShadow: [
+              BoxShadow(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('❤️', style: TextStyle(fontSize: 24)),
+              const SizedBox(width: 8),
+              Text(
+                "You liked them!",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                ),
+              ),
+            ],
+          ),
+        );
+      } else if (widget.swipeState == 'passed') {
+        // State B: Passed - Render a backtrack (undo) button
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          height: 56,
+          child: ElevatedButton.icon(
+            onPressed: widget.onUndo,
+            icon: Icon(
+              Icons.undo,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+            label: Text(
+              "Undo 'Not for me'",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              side: BorderSide(color: Theme.of(context).colorScheme.outline),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
+              ),
+              elevation: 0,
+            ),
+          ),
+        );
+      } else {
+        // State C: None - Render normal buttons
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // NOT FOR ME (Pass)
+              Expanded(
+                child: _buildDiscoveryButton(
+                  text: "Not for me",
+                  textColor: Colors.black87,
+                  backgroundColor: Colors.white,
+                  borderColor: Colors.grey.shade300,
+                  onTap: widget.onBlock, // "Pass" action
+                ),
+              ),
+              const SizedBox(width: 16),
+              // LIKE
+              Expanded(
+                child: _buildDiscoveryButton(
+                  text: "Like",
+                  textColor: Theme.of(context).colorScheme.onPrimary,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  borderColor: Colors.transparent,
+                  onTap: widget.onLike,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+
+    // 3. SWIPE MODE (Home Screen) - Standard 3 Buttons (Cross, Star, Heart)
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 40),
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
@@ -1181,6 +1347,45 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
             onTap: widget.onLike,
           ),
         ],
+      ),
+    );
+  }
+
+  // Helper for Discovery Buttons
+  Widget _buildDiscoveryButton({
+    required String text,
+    required Color textColor,
+    required Color backgroundColor,
+    required Color borderColor,
+    required VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 56,
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(color: borderColor),
+          boxShadow: [
+            if (backgroundColor != Colors.white)
+              BoxShadow(
+                color: backgroundColor.withOpacity(0.4),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+          ],
+        ),
+        child: Center(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
+          ),
+        ),
       ),
     );
   }

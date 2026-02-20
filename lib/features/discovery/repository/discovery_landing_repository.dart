@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../domain/models/discovery_user_model.dart';
+import '../domain/models/discovery_landing_data.dart';
 
 final discoveryLandingRepositoryProvider = Provider<DiscoveryLandingRepository>(
   (ref) {
@@ -14,7 +15,7 @@ class DiscoveryLandingRepository {
 
   DiscoveryLandingRepository(this._supabase);
 
-  Future<Map<String, List<DiscoveryUser>>> getDiscoveryLandingFeed({
+  Future<DiscoveryLandingData> getDiscoveryLandingFeed({
     required double lat,
     required double long,
     int radiusKm = 100,
@@ -34,6 +35,13 @@ class DiscoveryLandingRepository {
 
       final Map<String, dynamic> data = Map<String, dynamic>.from(response);
       final Map<String, List<DiscoveryUser>> result = {};
+
+      DateTime? lastRefreshedAt;
+      if (data['last_refreshed_at'] != null) {
+        lastRefreshedAt = DateTime.tryParse(
+          data['last_refreshed_at'].toString(),
+        );
+      }
 
       // Helper to sign a list of paths
       Future<List<String>> signImages(List<dynamic> rawPaths) async {
@@ -79,10 +87,13 @@ class DiscoveryLandingRepository {
 
       // Proccess categories in parallel or sequence
       for (var category in data.keys) {
+        if (category == 'last_refreshed_at') continue; // Skip metadata key
+
         final List<dynamic> rawUsers = data[category] ?? [];
         final List<DiscoveryUser> processedUsers = [];
 
         for (var u in rawUsers) {
+          if (u == null) continue; // Safety check
           final userData = Map<String, dynamic>.from(u);
 
           // Sign images
@@ -95,7 +106,10 @@ class DiscoveryLandingRepository {
         result[category] = processedUsers;
       }
 
-      return result;
+      return DiscoveryLandingData(
+        feeds: result,
+        lastRefreshedAt: lastRefreshedAt,
+      );
     } catch (e) {
       debugPrint('Error fetching discovery landing feed: $e');
       rethrow;

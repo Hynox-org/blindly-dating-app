@@ -6,6 +6,7 @@
 --  2. Profile Image Selection (Context-aware)
 --  3. Exclusion Logic (Swiped users + Users who liked me)
 --  4. Randomization
+--  5. 12-Hour Refresh Cycle Logic (Bumble-style fixed batching)
 -- ==============================================================================
 
 CREATE OR REPLACE FUNCTION get_discovery_landing_feed(
@@ -33,6 +34,15 @@ DECLARE
   
   -- We'll use arrays to track IDs to avoid duplicates across categories
   excluded_ids uuid[];
+
+  -- For tracking the 12 hour refresh cycle
+  my_profile_mode_id uuid;
+  v_last_refreshed_at timestamp with time zone;
+  v_seen_profiles uuid[];
+  is_new_batch boolean;
+  
+  -- Track the new profiles fetched in this run to add them to the seen list
+  new_fetched_profile_ids uuid[] := '{}'::uuid[];
 BEGIN
 
   -- 1. Get My Context (Profile ID, Location, Gender, Current Mode)
@@ -70,6 +80,33 @@ BEGIN
     my_gender_enum := 'M'::public.gender_enum; 
   END;
 
+  -- 1b. Fetch Active Mode Details for 12 Hour Refresh Logic
+  SELECT 
+    id, 
+    discovery_last_refreshed_at, 
+    discovery_seen_profiles
+  INTO 
+    my_profile_mode_id, 
+    v_last_refreshed_at, 
+    v_seen_profiles
+  FROM public.profile_modes m
+  WHERE m.profile_id = my_profile_id 
+    AND m.mode = my_mode_enum 
+    AND m.is_active = true
+  LIMIT 1;
+
+  -- Ensure v_seen_profiles is an array
+  IF v_seen_profiles IS NULL THEN
+    v_seen_profiles := '{}'::uuid[];
+  END IF;
+
+  -- Handle 12-hour refresh logic flag
+  IF v_last_refreshed_at IS NULL OR v_last_refreshed_at < (NOW() - INTERVAL '12 hours') THEN
+      is_new_batch := true;
+  ELSE
+      is_new_batch := false;
+  END IF;
+
   -- 2. Determine Target Genders
   IF my_mode_enum = 'date'::public.profile_mode_enum THEN
       IF my_gender_enum = 'M'::public.gender_enum THEN 
@@ -91,12 +128,8 @@ BEGIN
 
 
   -- 3. BUILD EXCLUSION LIST
-  -- Exclude:
-  --  a) Me (always)
-  --  b) Users I have swiped on (pass OR like)
-  --  c) Users who have LIKED me (as per requirement: "ignore the profiles that they liked me")
-  --     (Note: If they passed me, I can still see them to potentially like them)
-  
+  -- ONLY EXCLUDE THE ACTUAL SWIPES!
+  -- DO NOT EXCLUDE v_seen_profiles so that they stay in the batch for 12 hours!
   SELECT ARRAY_AGG(DISTINCT target_uuid)
   INTO excluded_ids
   FROM (
@@ -113,7 +146,7 @@ BEGIN
       
       UNION ALL
       
-      -- Users who LIKED me (I am target, Action is LIKE)
+      -- Users who LIKED me
       SELECT p.user_id
       FROM swipes s
       JOIN profiles p ON s.actor_id = p.id
@@ -121,6 +154,7 @@ BEGIN
   ) all_exclusions;
   
   -- Ensure not null for array operations
+  -- If we swiped out all previous profiles in the batch, they are excluded naturally here.
   IF excluded_ids IS NULL THEN
       excluded_ids := ARRAY[my_user_id];
   END IF;
@@ -152,10 +186,9 @@ BEGIN
       p.gender,
       p.work_title,
       p.hometown_city as hometown,
-      p.height_cm as height
+      p.height_cm as height,
+      (SELECT s.action_type FROM swipes s WHERE s.actor_id = my_profile_id AND s.target_id = p.id ORDER BY s.created_at DESC LIMIT 1) as swipe_action
     FROM profiles p
-    -- Fetch the BEST active profile mode for display
-    -- Priority: 1. Matching Mode (e.g. they align with my Date/BFF intent), 2. Default Date, 3. Any
     LEFT JOIN LATERAL (
       SELECT id, bio, mode
       FROM profile_modes m
@@ -166,23 +199,28 @@ BEGIN
     ) pm ON true
     WHERE
       (ST_Distance(p.passport_location_geom, current_point) / 1000) <= radius_km
-      AND p.user_id != ALL(excluded_ids)
+      AND (is_new_batch = false OR p.user_id != ALL(excluded_ids))
       AND p.is_active = true
       AND p.is_deleted = false
       AND pm.id IS NOT NULL 
       AND p.gender = ANY(target_genders)
-    ORDER BY RANDOM() -- Randomize results
+      -- ✅ CORE BATCH LOGIC HERE: If it's not a new batch, lock it only to profiles already selected 12 hours ago!
+      AND (is_new_batch = true OR p.id = ANY(v_seen_profiles))
+    ORDER BY RANDOM()
     LIMIT limit_per_category
   )
   SELECT 
     json_agg(t), 
-    array_agg(t.user_id) 
-  INTO nearby_users, excluded_ids
+    array_agg(t.user_id),
+    array_agg(t.profile_id)
+  INTO nearby_users, excluded_ids, new_fetched_profile_ids
   FROM nearby_cte t;
-  
-  -- Update excluded IDs manually since SELECT INTO replaced it
+
+  -- Repair arrays
+  IF new_fetched_profile_ids IS NULL THEN new_fetched_profile_ids := '{}'::uuid[]; END IF;
+
   IF excluded_ids IS NULL THEN
-     -- Recover base context if no nearby users found
+      -- Recover base exclusions
       SELECT ARRAY_AGG(DISTINCT target_uuid)
       INTO excluded_ids
       FROM (
@@ -193,7 +231,7 @@ BEGIN
           SELECT p.user_id FROM swipes s JOIN profiles p ON s.actor_id = p.id WHERE s.target_id = my_profile_id AND s.action_type = 'like'
       ) all_exclusions;
   ELSE
-      -- Append base context back to the nearby results
+      -- Append base context back to the nearby results so we prevent duplicates across categories
       SELECT ARRAY_AGG(DISTINCT id) INTO excluded_ids FROM (
           SELECT unnest(excluded_ids) as id
           UNION ALL
@@ -207,7 +245,6 @@ BEGIN
 
 
   -- 5. NEW FACES (Priority 2)
-  -- Logic: Created recently -> then Random among those
   WITH new_faces_cte AS (
     SELECT
       p.id as profile_id,
@@ -227,7 +264,8 @@ BEGIN
         '[]'::json
       ) as image_urls,
       p.gender,
-      p.work_title
+      p.work_title,
+      (SELECT s.action_type FROM swipes s WHERE s.actor_id = my_profile_id AND s.target_id = p.id ORDER BY s.created_at DESC LIMIT 1) as swipe_action
     FROM profiles p
     LEFT JOIN LATERAL (
       SELECT id, bio, mode
@@ -240,22 +278,29 @@ BEGIN
     WHERE
       p.created_at > (NOW() - INTERVAL '30 days')
       AND (ST_Distance(p.passport_location_geom, current_point) / 1000) <= (radius_km * 2)
-      AND p.user_id != ALL(excluded_ids)
+      AND (is_new_batch = false OR p.user_id != ALL(excluded_ids))
       AND p.is_active = true
       AND p.is_deleted = false
       AND pm.id IS NOT NULL
       AND p.gender = ANY(target_genders)
-    ORDER BY p.created_at DESC, RANDOM() -- Newest first, but randomize ties/close calls
+      -- ✅ CORE BATCH LOGIC
+      AND (is_new_batch = true OR p.id = ANY(v_seen_profiles))
+    ORDER BY p.created_at DESC, RANDOM()
     LIMIT limit_per_category
   )
   SELECT 
     json_agg(t),
-    (SELECT array_agg(id) FROM (SELECT unnest(excluded_ids) as id UNION ALL SELECT user_id FROM new_faces_cte) as sub)
-  INTO new_faces_users, excluded_ids
+    (SELECT array_agg(id) FROM (SELECT unnest(excluded_ids) as id UNION ALL SELECT user_id FROM new_faces_cte) as sub),
+    (SELECT array_agg(id) FROM (SELECT unnest(new_fetched_profile_ids) as id UNION ALL SELECT profile_id FROM new_faces_cte) as sub)
+  INTO new_faces_users, excluded_ids, new_fetched_profile_ids
   FROM new_faces_cte t;
+  
+  -- Repair arrays
+  IF new_fetched_profile_ids IS NULL THEN new_fetched_profile_ids := '{}'::uuid[]; END IF;
+  IF excluded_ids IS NULL THEN excluded_ids := ARRAY[my_user_id]; END IF; -- Basic safeguard
+
 
   -- 6. RECENTLY ACTIVE (Priority 3)
-  -- Logic: Actually active -> Random
   WITH active_cte AS (
     SELECT
       p.id as profile_id,
@@ -272,7 +317,8 @@ BEGIN
              AND pmm.is_deleted = false
         ),
         '[]'::json
-      ) as image_urls
+      ) as image_urls,
+      (SELECT s.action_type FROM swipes s WHERE s.actor_id = my_profile_id AND s.target_id = p.id ORDER BY s.created_at DESC LIMIT 1) as swipe_action
     FROM profiles p
     LEFT JOIN LATERAL (
       SELECT id, bio, mode
@@ -283,25 +329,47 @@ BEGIN
       LIMIT 1
     ) pm ON true
     WHERE
-      p.user_id != ALL(excluded_ids)
+      (is_new_batch = false OR p.user_id != ALL(excluded_ids))
       AND p.is_active = true
       AND p.is_deleted = false
       AND pm.id IS NOT NULL
-      AND p.gender = ANY(target_genders) -- GENDER FILTER ONLY
+      AND p.gender = ANY(target_genders)
       AND (ST_Distance(p.passport_location_geom, current_point) / 1000) <= radius_km
+      -- ✅ CORE BATCH LOGIC
+      AND (is_new_batch = true OR p.id = ANY(v_seen_profiles))
     ORDER BY p.last_active DESC, RANDOM()
     LIMIT limit_per_category
   )
-  SELECT json_agg(t) INTO active_users FROM active_cte t;
+  SELECT 
+    json_agg(t),
+    (SELECT array_agg(id) FROM (SELECT unnest(new_fetched_profile_ids) as id UNION ALL SELECT profile_id FROM active_cte) as sub)
+  INTO active_users, new_fetched_profile_ids
+  FROM active_cte t;
+  
+  IF new_fetched_profile_ids IS NULL THEN new_fetched_profile_ids := '{}'::uuid[]; END IF;
 
   -- 7. WANDERLUST (Placeholder)
   wanderlust_users := '[]'::json;
+
+  -- 8. Finalize Batch Logic
+  IF is_new_batch = true THEN
+    -- It was a new 12 hour cycle! We took a fresh batch from the system.
+    -- Save this new batch EXACTLY AS IS as the current locked daily batch.
+    UPDATE public.profile_modes
+    SET 
+      discovery_last_refreshed_at = NOW(),
+      discovery_seen_profiles = new_fetched_profile_ids
+    WHERE id = my_profile_mode_id;
+    
+    v_last_refreshed_at := NOW();
+  END IF;
 
   RETURN json_build_object(
     'nearby', COALESCE(nearby_users, '[]'::json),
     'new_faces', COALESCE(new_faces_users, '[]'::json),
     'recently_active', COALESCE(active_users, '[]'::json),
-    'wanderlust', wanderlust_users
+    'wanderlust', wanderlust_users,
+    'last_refreshed_at', v_last_refreshed_at
   );
 
 END;
