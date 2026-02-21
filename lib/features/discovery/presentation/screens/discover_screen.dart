@@ -21,7 +21,7 @@ class DiscoverScreen extends ConsumerStatefulWidget {
 
 class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   Timer? _countdownTimer;
-  Map<String, String> _userInteractions = {}; // Track grid actions locally
+  final Map<String, String> _userInteractions = {}; // Track grid actions locally
 
   @override
   void initState() {
