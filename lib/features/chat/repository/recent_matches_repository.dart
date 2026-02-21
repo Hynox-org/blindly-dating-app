@@ -3,75 +3,124 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../chat/domain/models/recent_matches_model.dart';
-
+import '../../chat/data/match_repository.dart';
 
 // ======================================================
-// Provider
+// PROVIDERS
 // ======================================================
-final recentMatchesRepositoryProvider =
-    Provider<RecentMatchesRepository>((ref) {
-  return RecentMatchesRepository(Supabase.instance.client);
+
+final matchRepositoryProvider = Provider<MatchRepository>((ref) {
+  return MatchRepository(Supabase.instance.client);
 });
 
+final recentMatchesRepositoryProvider =
+    Provider<RecentMatchesRepository>((ref) {
+  final matchRepo = ref.read(matchRepositoryProvider);
+
+  return RecentMatchesRepository(
+    Supabase.instance.client,
+    matchRepo,
+  );
+});
 
 // ======================================================
-// Repository
+// REPOSITORY
 // ======================================================
+
 class RecentMatchesRepository {
   final SupabaseClient _supabase;
+  final MatchRepository _matchRepository;
 
-  RecentMatchesRepository(this._supabase);
+  RecentMatchesRepository(
+    this._supabase,
+    this._matchRepository,
+  );
 
   // --------------------------------------------------
   // 🔥 GET RECENT MATCHES
   // --------------------------------------------------
-  /// Uses RPC: get_recent_matches
-  /// - Resolves opposite profile automatically
-  /// - Returns profile_id, display_name, image_path, matched_at
-  ///
-  /// Flutter:
-  /// - Converts storage image path → signed URL
-  ///
-  Future<List<RecentMatch>> getRecentMatches() async {
+
+  Future<List<Map<String, dynamic>>> getRecentMatches(
+    String profileId,
+  ) async {
     try {
-      debugPrint('💬 Fetching recent matches');
+      debugPrint('🔍 === DEBUG getRecentMatches($profileId) ===');
 
-      final List<dynamic> response =
-          await _supabase.rpc('get_recent_matches');
+      // -------------------------------------------
+      // STEP 1 — RAW MATCHES
+      // -------------------------------------------
+      final rawMatches = await _supabase
+          .from('matches')
+          .select(
+              'id, user_a_id, user_b_id, status, created_at, chat_started')
+          .eq('status', 'active')
+          .eq('chat_started', false)  // ✅ FIXED: Only unstarted chats
+          .or('user_a_id.eq.$profileId,user_b_id.eq.$profileId')
+          .order('created_at', ascending: false);
 
-      if (response.isEmpty) {
-        return [];
-      }
+      if (rawMatches.isEmpty) return [];
+      print('✅ Raw matches loaded: ${rawMatches.length}');
+      
+      final List<Map<String, dynamic>> matches = [];
+      final Set<String> processedMatchIds = {};  // ✅ DEDUPLICATION
 
-      final List<RecentMatch> matches = [];
+      // -------------------------------------------
+      // STEP 2 — PROCESS EACH MATCH
+      // -------------------------------------------
+      for (final rawMatch in rawMatches) {
+        final data = Map<String, dynamic>.from(rawMatch);
+        final matchId = data['id'].toString();
 
-      for (final raw in response) {
-        final data = Map<String, dynamic>.from(raw);
-
-        String? imagePath = data['image_path'];
-
-        if (imagePath != null && imagePath.isNotEmpty) {
-          if (!imagePath.startsWith('http')) {
-            try {
-              final signedUrl = await _supabase.storage
-                  .from('user_photos')
-                  .createSignedUrl(imagePath, 60 * 15);
-
-              data['image_path'] = signedUrl;
-            } catch (_) {
-              data['image_path'] = null;
-            }
-          }
+        // ✅ SKIP if already processed (defensive against query duplicates)
+        if (processedMatchIds.contains(matchId)) {
+          print('⏭️ Skipping duplicate match: $matchId');
+          continue;
         }
+        processedMatchIds.add(matchId);
 
-        matches.add(RecentMatch.fromJson(data));
+        final otherProfileId =
+            data['user_a_id'] == profileId
+                ? data['user_b_id']
+                : data['user_a_id'];
+        
+        print('🔍 Processing match $matchId - Other Profile ID: $otherProfileId');
+        
+        // -------------------------------------------
+        // FETCH PROFILE
+        // -------------------------------------------
+        final profileRes = await _supabase
+            .from('profiles')
+            .select('id, display_name, user_id')
+            .eq('id', otherProfileId)
+            .maybeSingle();
+        print('🔍 Profile query result for $otherProfileId: $profileRes');
+        
+        if (profileRes == null) continue;
+
+        debugPrint('✅ Profile loaded: ${profileRes['display_name']}');
+
+        final profile = Map<String, dynamic>.from(profileRes);
+
+        // -------------------------------------------
+        // FETCH PHOTO VIA MatchRepository
+        // -------------------------------------------
+        final photoUrl = await _matchRepository
+            .getFirstPhotoUrl(profile['user_id']);
+
+        // ✅ ENHANCED DATA
+        data['display_name'] = profile['display_name'];
+        data['photo_url'] = photoUrl;
+        data['other_profile_id'] = otherProfileId;
+        
+        print('✅ photo URLs loaded for matches: $photoUrl');
+
+        matches.add(data);  // ✅ SINGLE ADD (removed duplicate)
       }
 
-      debugPrint('✅ Recent matches fetched: ${matches.length}');
+      debugPrint('✅ FINAL matches: ${matches.length}');
       return matches;
     } catch (e, st) {
-      debugPrint('🛑 Failed to fetch recent matches');
-      debugPrint(e.toString());
+      debugPrint('🛑 CRASH: $e');
       debugPrint(st.toString());
       return [];
     }

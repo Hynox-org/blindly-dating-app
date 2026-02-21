@@ -26,6 +26,7 @@ import '../../discovery/presentation/screens/filter_screen.dart';
 // ✅ 4. Layout
 import '../../../../core/widgets/app_layout.dart';
 
+import './../component/out_of_swipe_screen.dart';
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 

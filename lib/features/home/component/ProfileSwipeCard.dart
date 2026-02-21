@@ -110,6 +110,28 @@ class ProfileSwipeCard extends StatefulWidget {
 class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
   final ScrollController _scrollController = ScrollController();
 
+  /// Check if section data is empty
+  bool _isSectionEmpty(String data) => data.trim().isEmpty;
+  bool _isListEmpty(List<String> items) => 
+      items.isEmpty || items.every((item) => item.trim().isEmpty);
+  
+  bool _isAboutMeEmpty() => 
+      _isSectionEmpty(widget.profile.height) &&
+      _isSectionEmpty(widget.profile.activityLevel) &&
+      _isSectionEmpty(widget.profile.education) &&
+      _isSectionEmpty(widget.profile.gender) &&
+      _isSectionEmpty(widget.profile.religion) &&
+      _isSectionEmpty(widget.profile.zodiac) &&
+      _isSectionEmpty(widget.profile.drinking) &&
+      _isSectionEmpty(widget.profile.smoking);
+
+  bool _isLookingForEmpty() => _isListEmpty(widget.profile.lookingForTags);
+  bool _isInterestsEmpty() => _isListEmpty(widget.profile.hobbies);
+  bool _isCausesEmpty() => _isListEmpty(widget.profile.causes);
+  bool _isLanguagesEmpty() => _isListEmpty(widget.profile.languages);
+  bool _isSpotifyEmpty() => _isListEmpty(widget.profile.spotifyArtists);
+  bool _isLocationEmpty() => _isSectionEmpty(widget.profile.location);
+
   @override
   void dispose() {
     _scrollController.dispose();

@@ -44,7 +44,7 @@ class LikedYouUser {
       profileId: json['profile_id'] as String,
       displayName: (json['display_name'] as String?) ?? '',
       age: (json['age'] as int?) ?? 0,
-      imageUrl: json['image_path'] as String?,
+      imageUrl: json['image_url'] as String?,
       likedAt: DateTime.parse(json['liked_at'] as String),
 
       // ✅ SAFE DEFAULT (important)

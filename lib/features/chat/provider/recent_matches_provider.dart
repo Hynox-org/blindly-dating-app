@@ -6,40 +6,82 @@ import '../../chat/domain/models/recent_matches_model.dart';
 import '../repository/recent_matches_repository.dart';
 
 // ======================================================
-// Recent Matches Notifier
+// Recent Matches Notifier - FIXED ✅
 // ======================================================
 class RecentMatchesNotifier extends StateNotifier<AsyncValue<List<RecentMatch>>> {
   final RecentMatchesRepository _repository;
   
   // Keep track of the realtime channel to close it later
   RealtimeChannel? _matchesChannel;
+  String? _myProfileId; // Cache profile ID
 
   RecentMatchesNotifier(this._repository) : super(const AsyncLoading()) {
-    // Initial load (show spinner)
-    _load(forceLoading: true);
-    // Start listening for new matches in the background
+    _init();
+  }
+
+  Future<void> _init() async {
+    await _load(forceLoading: true);
     _subscribeToMatches();
   }
 
   // --------------------------------------------------
   // 🔄 LOAD MATCHES
   // --------------------------------------------------
-  // ✅ UPDATED: Added 'forceLoading' to support silent background updates
   Future<void> _load({bool forceLoading = true}) async {
     try {
-      // Only set loading state if forced (e.g., initial screen load)
-      // We skip this for realtime updates to avoid UI flickering
+      final client = Supabase.instance.client;
+      final myUserId = client.auth.currentUser?.id;
+      
+      if (myUserId == null) {
+        if (mounted) {
+          state = const AsyncData([]);
+        }
+        return;
+      }
+
+      // ✅ Get PROFILE ID from USER ID
+      final profileRes = await client
+          .from('profiles')
+          .select('id')
+          .eq('user_id', myUserId)
+          .maybeSingle();
+
+      final profileId = profileRes?['id'] as String?;
+      
+      if (profileId == null) {
+        debugPrint('❌ No profile found for user: $myUserId');
+        if (mounted) {
+          state = const AsyncData([]);
+        }
+        return;
+      }
+
+      _myProfileId = profileId; // Cache it
+
+      // Only set loading state if forced
       if (forceLoading) {
         state = const AsyncLoading();
       }
 
-      final matches = await _repository.getRecentMatches();
-      
-      // Update state with new data
+      debugPrint('💬 Loading matches for profile: $profileId');
+      final matchMaps = await _repository.getRecentMatches(profileId);
+      // final matches = matchMaps.map((map) => RecentMatch.fromJson(map)).toList();
+      final matches = matchMaps
+        .map(
+          (map) => RecentMatch.fromJson({
+            ...map,
+            'current_profile_id': profileId,
+          }),
+        )
+        .toList();
       if (mounted) {
         state = AsyncData(matches);
       }
+      
+      debugPrint('✅ Loaded ${matches.length} matches for profile: $profileId');
     } catch (e, st) {
+      debugPrint('🛑 Failed to load matches: $e');
+      debugPrint(st.toString());
       if (mounted) {
         state = AsyncError(e, st);
       }
@@ -47,38 +89,46 @@ class RecentMatchesNotifier extends StateNotifier<AsyncValue<List<RecentMatch>>>
   }
 
   // --------------------------------------------------
-  // 📡 REALTIME SUBSCRIPTION (The Background Fix)
+  // 📡 REALTIME SUBSCRIPTION - FIXED ✅
   // --------------------------------------------------
   void _subscribeToMatches() {
+    if (_myProfileId == null) {
+      debugPrint('⚠️ No profile ID for subscription - will retry after load');
+      return;
+    }
+
     final client = Supabase.instance.client;
-    final myUserId = client.auth.currentUser?.id;
+    
+    // ✅ FIXED: Use safe generic channel name + filter in callback
+    final safeChannelName = 'public:matches';
+    
+    debugPrint('📡 Subscribing to matches for profile: $_myProfileId on channel: $safeChannelName');
 
-    if (myUserId == null) return;
-
-    debugPrint('📡 Subscribing to matches realtime channel...');
-
-    _matchesChannel = client.channel('public:matches')
-      .onPostgresChanges(
-        event: PostgresChangeEvent.insert,
-        schema: 'public',
-        table: 'matches',
-        callback: (payload) {
-          final newRecord = payload.newRecord;
-          
-          // ✅ CHECK: Only update if the new match involves ME
-          if (newRecord['user1_id'] == myUserId || newRecord['user2_id'] == myUserId) {
-             debugPrint('🔔 New Match Detected! Updating list silently...');
-             
-             // ✅ Call load with forceLoading: false (No Spinner)
-             _load(forceLoading: false); 
-          }
-        },
-      )
-      .subscribe();
+    _matchesChannel = client
+        .channel(safeChannelName)
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'matches',
+          callback: (payload) {
+            final newRecord = payload.newRecord;
+            debugPrint('🔔 New match payload: ${newRecord['id']} - A: ${newRecord['user_a_id']} B: ${newRecord['user_b_id']}');
+            
+            // ✅ FIXED: Use correct column names from schema (profile_a_id, profile_b_id)
+            if (newRecord['user_a_id'] == _myProfileId || 
+                newRecord['user_b_id'] == _myProfileId) {
+              debugPrint('🔔 🎉 New Match for ME! ID: ${newRecord['id']} - Reloading...');
+              _load(forceLoading: false); // Refresh without spinner
+            }
+          },
+        )
+        .subscribe((status, [error]) {
+          debugPrint('📡 Matches subscription: $status${error != null ? ' | Error: $error' : ''}');
+        });
   }
 
   // --------------------------------------------------
-  // 🔁 REFRESH (SCREEN OPEN / PULL)
+  // 🔁 REFRESH
   // --------------------------------------------------
   Future<void> refresh() async {
     await _load(forceLoading: true);
@@ -89,20 +139,21 @@ class RecentMatchesNotifier extends StateNotifier<AsyncValue<List<RecentMatch>>>
   // --------------------------------------------------
   @override
   void dispose() {
-    // Clean up the channel to prevent memory leaks
     if (_matchesChannel != null) {
       Supabase.instance.client.removeChannel(_matchesChannel!);
+      debugPrint('🗑️ Matches subscription channel closed');
     }
     super.dispose();
   }
 }
 
 // ======================================================
-// Provider
+// Provider - REMOVE DUPLICATE FROM HERE (use chat_providers.dart)
 // ======================================================
-final recentMatchesProvider = StateNotifierProvider.autoDispose<RecentMatchesNotifier, AsyncValue<List<RecentMatch>>>(
-  (ref) {
-    final repo = ref.watch(recentMatchesRepositoryProvider);
-    return RecentMatchesNotifier(repo);
-  },
-);
+// This provider definition should ONLY be in chat_providers.dart
+// final recentMatchesProvider = StateNotifierProvider.autoDispose<RecentMatchesNotifier, AsyncValue<List<RecentMatch>>>(
+//   (ref) {
+//     final repo = ref.watch(recentMatchesRepositoryProvider);
+//     return RecentMatchesNotifier(repo);
+//   },
+// );

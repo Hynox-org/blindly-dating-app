@@ -77,14 +77,14 @@ class LikedYouNotifier extends StateNotifier<AsyncValue<List<LikedYouUser>>> {
             // ✅ FILTER: Only notify if I am the target
             filter: PostgresChangeFilter(
               type: PostgresChangeFilterType.eq,
-              column: 'target_profile_id',
+              column: 'target_id',
               value: myProfileId,
             ),
             callback: (payload) {
               final newRecord = payload.newRecord;
               
               // ✅ CHECK: Is it a Like?
-              if (newRecord['action'] == 'like' || newRecord['action'] == 'superlike') {
+              if (newRecord['action_type'] == 'like' || newRecord['action_type'] == 'superlike') {
                  debugPrint('🔔 New Like Detected! Updating list silently...');
                  // Refresh list without loading spinner
                  _loadLikedYou(forceLoading: false); 
