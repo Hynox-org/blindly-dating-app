@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:convert'; // For Uri.encodeComponent
+// For Uri.encodeComponent
 
 import '../../providers/chat_providers.dart';
 import '../../../../core/widgets/app_layout.dart';

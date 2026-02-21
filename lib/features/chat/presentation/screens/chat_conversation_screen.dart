@@ -1244,7 +1244,7 @@ return GestureDetector(
   ),
 );
 
-            }).toList(),
+            }),
           ],
         );
       },
