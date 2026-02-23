@@ -21,7 +21,8 @@ class DiscoverScreen extends ConsumerStatefulWidget {
 
 class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   Timer? _countdownTimer;
-  final Map<String, String> _userInteractions = {}; // Track grid actions locally
+  final Map<String, String> _userInteractions =
+      {}; // Track grid actions locally
 
   @override
   void initState() {
@@ -143,14 +144,19 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         padding: const EdgeInsets.only(bottom: 20),
         children: [
           _buildRefreshBanner(data.lastRefreshedAt),
+          if (data.feeds['top_picks']?.isNotEmpty == true)
+            _buildSection('🔥 Top Picks For You', data.feeds['top_picks']!),
           if (data.feeds['nearby']?.isNotEmpty == true)
-            _buildSection('Nearby', data.feeds['nearby']!),
+            _buildSection('📍 Nearby', data.feeds['nearby']!),
+          if (data.feeds['shared_interests']?.isNotEmpty == true)
+            _buildSection(
+              '🤝 Shared Interests',
+              data.feeds['shared_interests']!,
+            ),
           if (data.feeds['new_faces']?.isNotEmpty == true)
-            _buildSection('New Faces', data.feeds['new_faces']!),
+            _buildSection('👋 New Faces', data.feeds['new_faces']!),
           if (data.feeds['recently_active']?.isNotEmpty == true)
-            _buildSection('Recently Active', data.feeds['recently_active']!),
-          if (data.feeds['wanderlust']?.isNotEmpty == true)
-            _buildSection('Wanderlust', data.feeds['wanderlust']!),
+            _buildSection('⏱️ Recently Active', data.feeds['recently_active']!),
         ],
       ),
     );

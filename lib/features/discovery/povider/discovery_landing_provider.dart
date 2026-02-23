@@ -1,20 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/models/discovery_user_model.dart';
 import '../domain/models/discovery_landing_data.dart';
-import '../repository/discovery_landing_repository.dart';
+import '../repository/smart_discovery_repository.dart';
 
 final discoveryLandingProvider =
     StateNotifierProvider<
       DiscoveryLandingNotifier,
       AsyncValue<DiscoveryLandingData>
     >((ref) {
-      final repository = ref.watch(discoveryLandingRepositoryProvider);
+      final repository = ref.watch(smartDiscoveryRepositoryProvider);
       return DiscoveryLandingNotifier(repository);
     });
 
 class DiscoveryLandingNotifier
     extends StateNotifier<AsyncValue<DiscoveryLandingData>> {
-  final DiscoveryLandingRepository _repository;
+  final SmartDiscoveryRepository _repository;
   String? _lastFetchedMode;
   DateTime? _lastFetchTime;
 
@@ -50,10 +50,8 @@ class DiscoveryLandingNotifier
     }
 
     try {
-      final data = await _repository.getDiscoveryLandingFeed(
-        lat: lat,
-        long: long,
-        mode: mode,
+      final data = await _repository.getSmartDiscoveryFeed(
+        mode: mode ?? 'date',
       );
       _lastFetchedMode = mode;
       _lastFetchTime = DateTime.now();
