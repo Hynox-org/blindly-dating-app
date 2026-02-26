@@ -57,7 +57,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     });
   }
 
-
   // --------------------------------------------------
   // ONBOARDING FLOW
   // --------------------------------------------------
@@ -70,11 +69,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       if (!mounted) return;
 
       if (isComplete) {
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/home',
-          (route) => false,
-        );
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
       } else {
         Navigator.pushReplacement(
           context,
@@ -109,15 +104,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       ),
     );
 
-    _backgroundColor = ColorTween(
-      begin: Theme.of(context).colorScheme.onPrimary,
-      end: Theme.of(context).colorScheme.surface,
-    ).animate(
-      CurvedAnimation(
-        parent: _mainController,
-        curve: const Interval(0.33, 0.55),
-      ),
-    );
+    _backgroundColor =
+        ColorTween(
+          begin: Theme.of(context).colorScheme.onPrimary,
+          end: Theme.of(context).colorScheme.surface,
+        ).animate(
+          CurvedAnimation(
+            parent: _mainController,
+            curve: const Interval(0.33, 0.55),
+          ),
+        );
 
     _textBlur = Tween<double>(begin: 20, end: 0).animate(
       CurvedAnimation(
@@ -207,9 +203,10 @@ class _BokehBackgroundState extends State<_BokehBackground>
   @override
   void initState() {
     super.initState();
-    _controller =
-        AnimationController(vsync: this, duration: const Duration(seconds: 10))
-          ..repeat(reverse: true);
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 10),
+    )..repeat(reverse: true);
   }
 
   @override
@@ -231,8 +228,7 @@ class _BokehBackgroundState extends State<_BokehBackground>
               150,
             ),
             _blob(
-              Alignment(-0.3,
-                  math.cos(_controller.value * 2 * math.pi) * 0.5),
+              Alignment(-0.3, math.cos(_controller.value * 2 * math.pi) * 0.5),
               Theme.of(context).colorScheme.secondary.withOpacity(0.3),
               200,
             ),

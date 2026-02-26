@@ -120,38 +120,121 @@ serve(async (req) => {
             }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
         }
 
-        // 6. Send Payload to AWS (Mock URL for now since AWS is not yet configured)
-        const AWS_API_URL = Deno.env.get('AWS_ML_ENDPOINT_URL') || 'https://mock.your-aws.com/api/discovery';
+        // ---------------------------------------------------------
+        // --- 6. NATIVE ML SCORING & CATEGORIZATION ---
+        // ---------------------------------------------------------
 
-        let awsResponse;
-        try {
-            if (AWS_API_URL.includes('mock')) {
-                const candidates = mlPayload.candidate_pool;
-                awsResponse = {
-                    categories: {
-                        top_picks: candidates.slice(0, Math.min(5, candidates.length)).map((c: any) => c.profile_id),
-                        nearby: candidates.slice(5, Math.min(10, candidates.length)).map((c: any) => c.profile_id),
-                        shared_interests: candidates.slice(10, Math.min(15, candidates.length)).map((c: any) => c.profile_id),
-                        recently_active: candidates.slice(15, Math.min(20, candidates.length)).map((c: any) => c.profile_id),
-                        new_faces: candidates.slice(20, Math.min(25, candidates.length)).map((c: any) => c.profile_id)
-                    }
-                };
-            } else {
-                const response = await fetch(AWS_API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(mlPayload)
-                });
+        const currentUser = mlPayload.current_user;
+        const candidates = mlPayload.candidate_pool;
 
-                if (!response.ok) {
-                    throw new Error(`AWS ML Error: ${response.status} ${response.statusText}`);
-                }
-                awsResponse = await response.json();
+        // Helper: Extract Lat/Lon from POINT(lon lat)
+        const extractCoords = (geomStr: string | null) => {
+            if (geomStr && geomStr.startsWith('POINT(')) {
+                const parts = geomStr.slice(6, -1).split(' ');
+                return { lon: parseFloat(parts[0]), lat: parseFloat(parts[1]) };
             }
-        } catch (awsError) {
-            console.error("Failed contacting AWS", awsError);
-            throw new Error("Machine Learning service temporarily unavailable.");
-        }
+            return null;
+        };
+
+        // Helper: Haversine Distance (km)
+        const haversine = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        };
+
+        // Helper: Jaccard Similarity for Arrays
+        const jaccardSimilarity = (arr1: string[], arr2: string[]) => {
+            if (!arr1 || !arr2 || arr1.length === 0 || arr2.length === 0) return 0;
+            const set1 = new Set(arr1);
+            const set2 = new Set(arr2);
+            const intersection = new Set([...set1].filter(x => set2.has(x)));
+            const union = new Set([...set1, ...set2]);
+            return intersection.size / union.size;
+        };
+
+        // Helper: Recency Score (Decays over hours)
+        const calculateRecencyScore = (lastActiveStr: string | null) => {
+            if (!lastActiveStr) return 0;
+            const lastActive = new Date(lastActiveStr).getTime();
+            const now = new Date().getTime();
+            const hoursDiff = (now - lastActive) / (1000 * 60 * 60);
+            const score = Math.exp(-0.014 * hoursDiff); // Approx 48hr half-life
+            return Math.max(0, Math.min(1, score));
+        };
+
+        const cuCoords = extractCoords(currentUser?.location_geom);
+        const cuInterests = currentUser?.interests || [];
+        const cuLifestyle = currentUser?.lifestyle || [];
+
+        // Score all candidates
+        const scoredCandidates = candidates.map((c: any) => {
+            const cCoords = extractCoords(c.location_geom);
+            let distanceKm = Infinity;
+            let distScore = 0;
+
+            if (cuCoords && cCoords) {
+                distanceKm = haversine(cuCoords.lat, cuCoords.lon, cCoords.lat, cCoords.lon);
+                distScore = Math.max(0, 1 - (distanceKm / 100)); // Max 1.0 at 0km, 0.0 at >100km
+            }
+
+            const intScore = jaccardSimilarity(cuInterests, c.interests || []);
+            const lifeScore = jaccardSimilarity(cuLifestyle, c.lifestyle || []);
+            const recScore = calculateRecencyScore(c.last_active_at);
+
+            // Weights: 40% Interests, 25% Distance, 20% Lifestyle, 15% Recency
+            const compositeScore = (0.4 * intScore) + (0.25 * distScore) + (0.2 * lifeScore) + (0.15 * recScore);
+
+            return {
+                id: c.profile_id,
+                compositeScore,
+                distanceKm,
+                intScore,
+                recScore
+            };
+        });
+
+        // Smart Categorization Waterfall (Max 5 per category)
+        const categories: Record<string, string[]> = {
+            top_picks: [],
+            nearby: [],
+            shared_interests: [],
+            recently_active: [],
+            new_faces: []
+        };
+        const assignedIds = new Set<string>();
+        const MAX_PER_CATEGORY = 5;
+
+        // Helper to assign and deduplicate
+        const assignCategory = (catKey: string, sortFn: (a: any, b: any) => number) => {
+            const unassigned = scoredCandidates.filter((c: any) => !assignedIds.has(c.id));
+            unassigned.sort(sortFn);
+            const selected = unassigned.slice(0, MAX_PER_CATEGORY);
+            selected.forEach((c: any) => {
+                categories[catKey].push(c.id);
+                assignedIds.add(c.id);
+            });
+        };
+
+        assignCategory('top_picks', (a: any, b: any) => b.compositeScore - a.compositeScore);
+        assignCategory('nearby', (a: any, b: any) => a.distanceKm - b.distanceKm);
+        assignCategory('shared_interests', (a: any, b: any) => b.intScore - a.intScore);
+        assignCategory('recently_active', (a: any, b: any) => b.recScore - a.recScore);
+
+        // New Faces: Randomize remainder
+        const unassigned = scoredCandidates.filter((c: any) => !assignedIds.has(c.id));
+        const shuffled = unassigned.sort(() => 0.5 - Math.random());
+        shuffled.slice(0, MAX_PER_CATEGORY).forEach((c: any) => {
+            categories['new_faces'].push(c.id);
+            assignedIds.add(c.id);
+        });
+
+        const awsResponse = { categories };
 
         // ---------------------------------------------------------
         // --- 7. SAVE TO CACHE & APPEND SEEN PROFILES ---

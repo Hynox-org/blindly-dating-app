@@ -231,7 +231,7 @@ class DottedBorderPainter extends CustomPainter {
 
   DottedBorderPainter({
     required this.color,
-    this.strokeWidth = 1.0,
+    this.strokeWidth = 1.0, 
     this.gap = 5.0,
   });
 
