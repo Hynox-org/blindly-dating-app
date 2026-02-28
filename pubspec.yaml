@@ -54,6 +54,7 @@ dependencies:
   flutter_image_compress: ^2.4.0
   image_cropper: ^11.0.0
   reorderable_grid_view: ^2.2.8
+  agora_rtc_engine: ^6.3.0
 
   # ✅ ADDED: UI Component for Swipe Deck (Moved from dev_dependencies to here)
   flutter_card_swiper: ^7.2.0
