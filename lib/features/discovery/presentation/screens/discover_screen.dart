@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:async';
 import '../../../../core/widgets/app_layout.dart';
+import '../../../../core/widgets/app_loader.dart';
 import '../../../home/screens/connection_type_screen.dart';
 import '../../../../core/utils/navigation_utils.dart';
 import '../../povider/discovery_landing_provider.dart';
@@ -106,7 +107,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         color: Colors.white,
         child: state.when(
           data: (data) => _buildContent(data),
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const Center(child: AppLoader()),
           error: (err, stack) => Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,

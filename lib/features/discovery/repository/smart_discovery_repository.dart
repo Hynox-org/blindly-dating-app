@@ -118,6 +118,36 @@ class SmartDiscoveryRepository {
         return signedUrls;
       }
 
+      // 4.5 Fetch Swipe State for these UUIDs
+      final authUserId = _supabase.auth.currentUser?.id;
+      final Map<String, String> swipeInteractions = {};
+
+      if (authUserId != null && allUuids.isNotEmpty) {
+        // We need the user's profile ID to query the swipes table
+        final myProfileResponse = await _supabase
+            .from('profiles')
+            .select('id')
+            .eq('user_id', authUserId)
+            .maybeSingle();
+
+        if (myProfileResponse != null) {
+          final myProfileId = myProfileResponse['id'] as String;
+
+          // Fetch all swipes from me to these users (typically within the batch, or all-time)
+          final swipesResponse = await _supabase
+              .from('swipes')
+              .select('target_id, action_type')
+              .eq('actor_id', myProfileId)
+              .inFilter('target_id', allUuids.toList());
+
+          for (var row in swipesResponse) {
+            final targetId = row['target_id'] as String;
+            final action = row['action_type'] as String;
+            swipeInteractions[targetId] = action;
+          }
+        }
+      }
+
       // Quick dictionary lookup for fetched profiles
       final Map<String, DiscoveryUser> profileLookup = {};
 
@@ -156,11 +186,27 @@ class SmartDiscoveryRepository {
             }
           }
 
+          // Inject swipe action if exists
+          final pId = profileData['id'] as String;
+          if (swipeInteractions.containsKey(pId)) {
+            final dbAction = swipeInteractions[pId]!;
+            String uiAction = dbAction; // default
+
+            // Map DB enums to UI states
+            if (dbAction == 'like') {
+              uiAction = 'liked';
+            } else if (dbAction == 'pass') {
+              uiAction = 'passed';
+            } else if (dbAction == 'super_like') {
+              uiAction = 'super_liked';
+            }
+
+            profileData['swipe_action'] = uiAction;
+          }
+
           // Format JSON for model
-          profileData['profile_id'] = profileData['id'];
-          profileLookup[profileData['id']] = DiscoveryUser.fromJson(
-            profileData,
-          );
+          profileData['profile_id'] = pId;
+          profileLookup[pId] = DiscoveryUser.fromJson(profileData);
         }
       }
 
