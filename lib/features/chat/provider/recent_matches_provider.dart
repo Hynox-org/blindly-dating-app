@@ -4,7 +4,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../chat/domain/models/recent_matches_model.dart';
 import '../repository/recent_matches_repository.dart';
-import '../../../../main.dart'; // Import customRealtimeClient
 
 // ======================================================
 // Recent Matches Notifier - FIXED ✅
@@ -106,8 +105,7 @@ class RecentMatchesNotifier
       '📡 Subscribing to matches for profile: $_myProfileId on channel: $safeChannelName',
     );
 
-    // ✅ FIXED: Use the custom RealtimeClient (bypassing Jiobase) if available, otherwise fallback
-    final realtimeTarget = customRealtimeClient ?? client.realtime;
+    final realtimeTarget = client.realtime;
 
     _matchesChannel = realtimeTarget
         .channel(safeChannelName)
@@ -151,11 +149,7 @@ class RecentMatchesNotifier
   @override
   void dispose() {
     if (_matchesChannel != null) {
-      if (customRealtimeClient != null) {
-        customRealtimeClient!.removeChannel(_matchesChannel!);
-      } else {
-        Supabase.instance.client.removeChannel(_matchesChannel!);
-      }
+      Supabase.instance.client.removeChannel(_matchesChannel!);
       debugPrint('🗑️ Matches subscription channel closed');
     }
     super.dispose();

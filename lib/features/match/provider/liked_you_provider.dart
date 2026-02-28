@@ -4,7 +4,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/models/liked_you_user_model.dart';
 import '../repository/liked_you_repository.dart';
-import '../../../../main.dart'; // Import customRealtimeClient
 
 // ======================================================
 // ❤️ Liked You Notifier (With Realtime Support)
@@ -69,8 +68,7 @@ class LikedYouNotifier extends StateNotifier<AsyncValue<List<LikedYouUser>>> {
 
       debugPrint('📡 Subscribing to likes for profile: $myProfileId');
 
-      // ✅ FIXED: Use the custom RealtimeClient (bypassing Jiobase) if available, otherwise fallback
-      final realtimeTarget = customRealtimeClient ?? client.realtime;
+      final realtimeTarget = client.realtime;
 
       // B. Listen to INSERT events on the 'swipes' table
       _likesChannel = realtimeTarget
@@ -142,11 +140,7 @@ class LikedYouNotifier extends StateNotifier<AsyncValue<List<LikedYouUser>>> {
   @override
   void dispose() {
     if (_likesChannel != null) {
-      if (customRealtimeClient != null) {
-        customRealtimeClient!.removeChannel(_likesChannel!);
-      } else {
-        Supabase.instance.client.removeChannel(_likesChannel!);
-      }
+      Supabase.instance.client.removeChannel(_likesChannel!);
     }
     super.dispose();
   }
