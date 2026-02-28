@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/splash/screens/splash_screen.dart';
 import '../../features/onboarding/screens/welcome_screen.dart';
+import '../../features/onboarding/screens/location_access_screen.dart';
 import '../../features/auth/screens/authentication_screen.dart';
 import '../../features/home/screens/home_screen.dart';
 
@@ -17,6 +18,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/welcome',
         builder: (context, state) => const WelcomeScreen(),
+      ),
+      GoRoute(
+        path: '/location_access',
+        builder: (context, state) => const LocationAccessScreen(),
       ),
       GoRoute(
         path: '/auth',

@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../auth/providers/auth_providers.dart';
 import '../../onboarding/data/repositories/onboarding_repository.dart';
@@ -52,6 +53,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   }
 
   Future<void> _proceedToNextScreen() async {
+    final permission = await Permission.locationWhenInUse.status;
+    if (!permission.isGranted) {
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/location_access');
+      }
+      return;
+    }
+
     final user = ref.read(authRepositoryProvider).currentUser;
 
     if (user != null) {
