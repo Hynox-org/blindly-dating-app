@@ -27,6 +27,7 @@ class DiscoveryUser {
   final List<String> causes;
   final List<String>
   spotifyArtists; // Assuming strings for now, or just placeholders
+  final String? swipeAction; // ✅ New: Track initial hit from backend
 
   DiscoveryUser({
     required this.profileId,
@@ -56,6 +57,7 @@ class DiscoveryUser {
     this.qualities = const [],
     this.causes = const [],
     this.spotifyArtists = const [],
+    this.swipeAction,
   });
 
   factory DiscoveryUser.fromJson(Map<String, dynamic> json) {
@@ -114,6 +116,7 @@ class DiscoveryUser {
       // If spotify artists are stored in JSON (or skipped for now), we parse them
       // Assuming table has 'spotify_artists' or similar if implemented
       spotifyArtists: [],
+      swipeAction: json['swipe_action'], // ✅ Map from SQL
     );
   }
 }

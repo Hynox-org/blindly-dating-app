@@ -410,3 +410,51 @@ class ChatScreen extends ConsumerWidget {
     );
   }
 }
+
+// Custom Painter for Dotted Border
+class DottedBorderPainter extends CustomPainter {
+  final Color color;
+  final double strokeWidth;
+  final double gap;
+
+  DottedBorderPainter({
+    required this.color,
+    this.strokeWidth = 1.0, 
+    this.gap = 5.0,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap
+          .round // Rounded caps
+      ..style = PaintingStyle.stroke;
+
+    // Approximate perimeter of an ellipse
+    // p ≈ 2π * sqrt((a^2 + b^2) / 2)
+    final double a = size.width / 2;
+    final double b = size.height / 2;
+    final double circumference = 2 * pi * sqrt((a * a + b * b) / 2);
+
+    final double dashWidth =
+        1.0; // Very short dash for "dot" look with round caps
+    final int dashCount = (circumference / (dashWidth + gap)).floor();
+    final double step = (pi * 2) / dashCount;
+
+    for (int i = 0; i < dashCount; i++) {
+      // Calculate arc for dash
+      canvas.drawArc(
+        Rect.fromLTWH(0, 0, size.width, size.height),
+        step * i,
+        step * 0.1, // Short arc
+        false,
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
+}
