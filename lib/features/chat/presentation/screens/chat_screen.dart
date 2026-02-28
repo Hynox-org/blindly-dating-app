@@ -6,6 +6,7 @@ import '../../providers/chat_providers.dart';
 import '../../../../core/widgets/app_layout.dart';
 import './chat_conversation_screen.dart';
 import './chat_detail_screen.dart';
+
 // Custom painter for dotted border effect (KEEP THIS)
 class DottedBorderPainter extends CustomPainter {
   final Color color;
@@ -25,13 +26,9 @@ class DottedBorderPainter extends CustomPainter {
       ..strokeWidth = strokeWidth
       ..style = PaintingStyle.stroke;
 
-    final path = Path()
-      ..addOval(Rect.fromLTWH(0, 0, size.width, size.height));
+    final path = Path()..addOval(Rect.fromLTWH(0, 0, size.width, size.height));
 
-    canvas.drawPath(
-      _dashPath(path, strokeWidth * 2, gap),
-      paint,
-    );
+    canvas.drawPath(_dashPath(path, strokeWidth * 2, gap), paint);
   }
 
   Path _dashPath(Path source, double dashWidth, double dashSpace) {
@@ -61,7 +58,7 @@ class ChatScreen extends ConsumerWidget {
 
   String _getProfileName(dynamic profileData) {
     if (profileData == null) return 'Unknown User';
-    
+
     // Handle both Map and RecentMatch
     if (profileData is Map<String, dynamic>) {
       return profileData['display_name']?.toString() ?? 'Unknown User';
@@ -154,11 +151,15 @@ class ChatScreen extends ConsumerWidget {
                                 height: 80,
                                 child: ListView.builder(
                                   scrollDirection: Axis.horizontal,
-                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
                                   itemCount: 5,
                                   itemBuilder: (context, index) {
                                     return Padding(
-                                      padding: const EdgeInsets.only(right: 16.0),
+                                      padding: const EdgeInsets.only(
+                                        right: 16.0,
+                                      ),
                                       child: Container(
                                         width: 60,
                                         height: 60,
@@ -168,14 +169,18 @@ class ChatScreen extends ConsumerWidget {
                                         ),
                                         child: CustomPaint(
                                           painter: DottedBorderPainter(
-                                            color: Theme.of(context).colorScheme.outlineVariant,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.outlineVariant,
                                             strokeWidth: 2,
                                             gap: 6,
                                           ),
                                           child: Center(
                                             child: Icon(
                                               Icons.person_add,
-                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.onSurfaceVariant,
                                               size: 24,
                                             ),
                                           ),
@@ -186,12 +191,17 @@ class ChatScreen extends ConsumerWidget {
                                 ),
                               ),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16.0,
+                                  vertical: 16.0,
+                                ),
                                 child: Text(
                                   'Your new matches will appear here.',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: Theme.of(context).colorScheme.onSurface,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -208,7 +218,7 @@ class ChatScreen extends ConsumerWidget {
                             itemCount: matches.length,
                             itemBuilder: (context, index) {
                               final match = matches[index];
-                              
+
                               // ✅ Handle RecentMatch model data structure
                               final otherProfileId = match.profileId;
                               final otherName = match.displayName;
@@ -223,7 +233,10 @@ class ChatScreen extends ConsumerWidget {
                                       MaterialPageRoute(
                                         builder: (_) => ChatDetailScreen(
                                           name: otherName,
-                                          imageUrl: _getProfileImage(photoUrl, otherName),
+                                          imageUrl: _getProfileImage(
+                                            photoUrl,
+                                            otherName,
+                                          ),
                                           matchId: match.matchId,
                                           myProfileId: profileId,
                                           otherProfileId: otherProfileId,
@@ -240,7 +253,9 @@ class ChatScreen extends ConsumerWidget {
                                             : null,
                                         child: photoUrl.isEmpty
                                             ? Text(
-                                                otherName.substring(0, 1).toUpperCase(),
+                                                otherName
+                                                    .substring(0, 1)
+                                                    .toUpperCase(),
                                                 style: const TextStyle(
                                                   fontSize: 24,
                                                   fontWeight: FontWeight.bold,
@@ -281,7 +296,8 @@ class ChatScreen extends ConsumerWidget {
                           children: [
                             Text("Error loading matches: $e"),
                             ElevatedButton(
-                              onPressed: () => ref.invalidate(recentMatchesProvider),
+                              onPressed: () =>
+                                  ref.invalidate(recentMatchesProvider),
                               child: const Text('Retry'),
                             ),
                           ],
@@ -336,17 +352,23 @@ class ChatScreen extends ConsumerWidget {
                             final match = matches[index];
 
                             final profileA = Map<String, dynamic>.from(
-                                match['user_a'] ?? {});
+                              match['user_a'] ?? {},
+                            );
                             final profileB = Map<String, dynamic>.from(
-                                match['user_b'] ?? {});
+                              match['user_b'] ?? {},
+                            );
 
                             final otherProfile = match['user_a_id'] == profileId
                                 ? profileB
                                 : profileA;
 
                             final otherName = _getProfileName(otherProfile);
-                            final photoUrl = otherProfile['photo_url']?.toString();
-                            final otherImage = _getProfileImage(photoUrl, otherName);
+                            final photoUrl = otherProfile['photo_url']
+                                ?.toString();
+                            final otherImage = _getProfileImage(
+                              photoUrl,
+                              otherName,
+                            );
 
                             return ListTile(
                               leading: CircleAvatar(
@@ -354,7 +376,9 @@ class ChatScreen extends ConsumerWidget {
                               ),
                               title: Text(
                                 otherName,
-                                style: const TextStyle(fontWeight: FontWeight.w600),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                               subtitle: const Text("Tap to continue chatting"),
                               trailing: match['chat_started'] == true
@@ -372,7 +396,8 @@ class ChatScreen extends ConsumerWidget {
                                       otherUserName: otherName,
                                       otherUserImage: otherImage,
                                       myProfileId: profileId,
-                                      otherProfileId: otherProfile['id'].toString(),
+                                      otherProfileId: otherProfile['id']
+                                          .toString(),
                                     ),
                                   ),
                                 );
@@ -391,7 +416,8 @@ class ChatScreen extends ConsumerWidget {
                           children: [
                             Text("Error loading conversations: $e"),
                             ElevatedButton(
-                              onPressed: () => ref.invalidate(conversationsProvider),
+                              onPressed: () =>
+                                  ref.invalidate(conversationsProvider),
                               child: const Text('Retry'),
                             ),
                           ],
@@ -409,52 +435,4 @@ class ChatScreen extends ConsumerWidget {
       ),
     );
   }
-}
-
-// Custom Painter for Dotted Border
-class DottedBorderPainter extends CustomPainter {
-  final Color color;
-  final double strokeWidth;
-  final double gap;
-
-  DottedBorderPainter({
-    required this.color,
-    this.strokeWidth = 1.0, 
-    this.gap = 5.0,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint paint = Paint()
-      ..color = color
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap
-          .round // Rounded caps
-      ..style = PaintingStyle.stroke;
-
-    // Approximate perimeter of an ellipse
-    // p ≈ 2π * sqrt((a^2 + b^2) / 2)
-    final double a = size.width / 2;
-    final double b = size.height / 2;
-    final double circumference = 2 * pi * sqrt((a * a + b * b) / 2);
-
-    final double dashWidth =
-        1.0; // Very short dash for "dot" look with round caps
-    final int dashCount = (circumference / (dashWidth + gap)).floor();
-    final double step = (pi * 2) / dashCount;
-
-    for (int i = 0; i < dashCount; i++) {
-      // Calculate arc for dash
-      canvas.drawArc(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-        step * i,
-        step * 0.1, // Short arc
-        false,
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

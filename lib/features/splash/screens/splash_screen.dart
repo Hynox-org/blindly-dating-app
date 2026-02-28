@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -15,14 +18,16 @@ class SplashScreen extends ConsumerStatefulWidget {
 class _SplashScreenState extends ConsumerState<SplashScreen>
     with TickerProviderStateMixin {
   late AnimationController _mainController;
-  late AnimationController _pulseController;
 
   // Animations
-  late Animation<double> _logoOpacity;
-  late Animation<double> _logoScale;
-  late Animation<double> _logoPulse;
+  late Animation<double> _bokehOpacity;
+  late Animation<Color?> _backgroundColor;
+  late Animation<double> _textBlur;
+  late Animation<double> _textOpacity;
+  late Animation<double> _textScale;
 
   bool _isNavigating = false;
+  bool _isInitialized = false;
 
   // --------------------------------------------------
   // INIT
@@ -37,16 +42,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       duration: const Duration(milliseconds: 2000),
     );
 
-    // Controls a continuous subtle breathing/pulse effect
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2500),
-    )..repeat(reverse: true);
-
-    _initAnimations();
-
-    _mainController.forward();
-
     // Wait for the entrance animation to finish, hold on screen for a moment, then navigate
     Future.delayed(const Duration(milliseconds: 3500), () {
       if (mounted && !_isNavigating) {
@@ -54,26 +49,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         _proceedToNextScreen();
       }
     });
-  }
-
-  void _initAnimations() {
-    _logoOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _mainController,
-        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
-      ),
-    );
-
-    _logoScale = Tween<double>(begin: 0.85, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _mainController,
-        curve: const Interval(0.0, 0.8, curve: Curves.easeOutCubic),
-      ),
-    );
-
-    _logoPulse = Tween<double>(begin: 1.0, end: 1.03).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOutSine),
-    );
   }
 
   Future<void> _proceedToNextScreen() async {
@@ -171,7 +146,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   void dispose() {
     _mainController.dispose();
-    _pulseController.dispose();
     super.dispose();
   }
 
@@ -182,7 +156,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _mainController,
-      builder: (_, __) {
+      builder: (context, child) {
         return Scaffold(
           backgroundColor: _backgroundColor.value,
           body: Stack(
@@ -251,22 +225,22 @@ class _BokehBackgroundState extends State<_BokehBackground>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _controller,
-      builder: (_, __) {
+      builder: (context, child) {
         return Stack(
           children: [
             _blob(
               Alignment(math.sin(_controller.value * 2 * math.pi) * 0.5, -0.2),
-              Theme.of(context).colorScheme.primary.withOpacity(0.2),
+              Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
               150,
             ),
             _blob(
               Alignment(-0.3, math.cos(_controller.value * 2 * math.pi) * 0.5),
-              Theme.of(context).colorScheme.secondary.withOpacity(0.3),
+              Theme.of(context).colorScheme.secondary.withValues(alpha: 0.3),
               200,
             ),
             _blob(
               const Alignment(0.4, 0.4),
-              Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
               180,
             ),
           ],
