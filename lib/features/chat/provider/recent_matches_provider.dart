@@ -4,13 +4,15 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../chat/domain/models/recent_matches_model.dart';
 import '../repository/recent_matches_repository.dart';
+import '../../../../main.dart'; // Import customRealtimeClient
 
 // ======================================================
 // Recent Matches Notifier - FIXED ✅
 // ======================================================
-class RecentMatchesNotifier extends StateNotifier<AsyncValue<List<RecentMatch>>> {
+class RecentMatchesNotifier
+    extends StateNotifier<AsyncValue<List<RecentMatch>>> {
   final RecentMatchesRepository _repository;
-  
+
   // Keep track of the realtime channel to close it later
   RealtimeChannel? _matchesChannel;
   String? _myProfileId; // Cache profile ID
@@ -31,7 +33,7 @@ class RecentMatchesNotifier extends StateNotifier<AsyncValue<List<RecentMatch>>>
     try {
       final client = Supabase.instance.client;
       final myUserId = client.auth.currentUser?.id;
-      
+
       if (myUserId == null) {
         if (mounted) {
           state = const AsyncData([]);
@@ -47,7 +49,7 @@ class RecentMatchesNotifier extends StateNotifier<AsyncValue<List<RecentMatch>>>
           .maybeSingle();
 
       final profileId = profileRes?['id'] as String?;
-      
+
       if (profileId == null) {
         debugPrint('❌ No profile found for user: $myUserId');
         if (mounted) {
@@ -67,17 +69,15 @@ class RecentMatchesNotifier extends StateNotifier<AsyncValue<List<RecentMatch>>>
       final matchMaps = await _repository.getRecentMatches(profileId);
       // final matches = matchMaps.map((map) => RecentMatch.fromJson(map)).toList();
       final matches = matchMaps
-        .map(
-          (map) => RecentMatch.fromJson({
-            ...map,
-            'current_profile_id': profileId,
-          }),
-        )
-        .toList();
+          .map(
+            (map) =>
+                RecentMatch.fromJson({...map, 'current_profile_id': profileId}),
+          )
+          .toList();
       if (mounted) {
         state = AsyncData(matches);
       }
-      
+
       debugPrint('✅ Loaded ${matches.length} matches for profile: $profileId');
     } catch (e, st) {
       debugPrint('🛑 Failed to load matches: $e');
@@ -98,13 +98,18 @@ class RecentMatchesNotifier extends StateNotifier<AsyncValue<List<RecentMatch>>>
     }
 
     final client = Supabase.instance.client;
-    
+
     // ✅ FIXED: Use safe generic channel name + filter in callback
     final safeChannelName = 'public:matches';
-    
-    debugPrint('📡 Subscribing to matches for profile: $_myProfileId on channel: $safeChannelName');
 
-    _matchesChannel = client
+    debugPrint(
+      '📡 Subscribing to matches for profile: $_myProfileId on channel: $safeChannelName',
+    );
+
+    // ✅ FIXED: Use the custom RealtimeClient (bypassing Jiobase) if available, otherwise fallback
+    final realtimeTarget = customRealtimeClient ?? client.realtime;
+
+    _matchesChannel = realtimeTarget
         .channel(safeChannelName)
         .onPostgresChanges(
           event: PostgresChangeEvent.insert,
@@ -112,18 +117,24 @@ class RecentMatchesNotifier extends StateNotifier<AsyncValue<List<RecentMatch>>>
           table: 'matches',
           callback: (payload) {
             final newRecord = payload.newRecord;
-            debugPrint('🔔 New match payload: ${newRecord['id']} - A: ${newRecord['user_a_id']} B: ${newRecord['user_b_id']}');
-            
+            debugPrint(
+              '🔔 New match payload: ${newRecord['id']} - A: ${newRecord['user_a_id']} B: ${newRecord['user_b_id']}',
+            );
+
             // ✅ FIXED: Use correct column names from schema (profile_a_id, profile_b_id)
-            if (newRecord['user_a_id'] == _myProfileId || 
+            if (newRecord['user_a_id'] == _myProfileId ||
                 newRecord['user_b_id'] == _myProfileId) {
-              debugPrint('🔔 🎉 New Match for ME! ID: ${newRecord['id']} - Reloading...');
+              debugPrint(
+                '🔔 🎉 New Match for ME! ID: ${newRecord['id']} - Reloading...',
+              );
               _load(forceLoading: false); // Refresh without spinner
             }
           },
         )
         .subscribe((status, [error]) {
-          debugPrint('📡 Matches subscription: $status${error != null ? ' | Error: $error' : ''}');
+          debugPrint(
+            '📡 Matches subscription: $status${error != null ? ' | Error: $error' : ''}',
+          );
         });
   }
 
@@ -140,7 +151,11 @@ class RecentMatchesNotifier extends StateNotifier<AsyncValue<List<RecentMatch>>>
   @override
   void dispose() {
     if (_matchesChannel != null) {
-      Supabase.instance.client.removeChannel(_matchesChannel!);
+      if (customRealtimeClient != null) {
+        customRealtimeClient!.removeChannel(_matchesChannel!);
+      } else {
+        Supabase.instance.client.removeChannel(_matchesChannel!);
+      }
       debugPrint('🗑️ Matches subscription channel closed');
     }
     super.dispose();

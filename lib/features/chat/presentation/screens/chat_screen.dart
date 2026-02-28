@@ -4,54 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/chat_providers.dart';
 import '../../../../core/widgets/app_layout.dart';
+import '../../../../core/widgets/app_loader.dart';
+import '../../../home/screens/home_screen.dart';
 import './chat_conversation_screen.dart';
 import './chat_detail_screen.dart';
-
-// Custom painter for dotted border effect (KEEP THIS)
-class DottedBorderPainter extends CustomPainter {
-  final Color color;
-  final double strokeWidth;
-  final double gap;
-
-  DottedBorderPainter({
-    required this.color,
-    required this.strokeWidth,
-    required this.gap,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke;
-
-    final path = Path()..addOval(Rect.fromLTWH(0, 0, size.width, size.height));
-
-    canvas.drawPath(_dashPath(path, strokeWidth * 2, gap), paint);
-  }
-
-  Path _dashPath(Path source, double dashWidth, double dashSpace) {
-    final dest = Path();
-    for (final metric in source.computeMetrics()) {
-      double dist = 0.0;
-      while (dist < metric.length) {
-        final len = (dist + dashWidth > metric.length)
-            ? metric.length - dist
-            : dashWidth;
-        dest.addPath(metric.extractPath(dist, dist + len), Offset.zero);
-        dist += dashWidth + dashSpace;
-      }
-    }
-    return dest;
-  }
-
-  @override
-  bool shouldRepaint(DottedBorderPainter oldDelegate) =>
-      oldDelegate.color != color ||
-      oldDelegate.strokeWidth != strokeWidth ||
-      oldDelegate.gap != gap;
-}
 
 class ChatScreen extends ConsumerWidget {
   const ChatScreen({super.key});
@@ -119,6 +75,11 @@ class ChatScreen extends ConsumerWidget {
             ),
           ),
           data: (profileId) {
+            // Global Loading Check
+            if (recentMatches.isLoading || conversations.isLoading) {
+              return const Center(child: AppLoader());
+            }
+
             return RefreshIndicator(
               onRefresh: () async {
                 ref.invalidate(recentMatchesProvider);
@@ -160,20 +121,30 @@ class ChatScreen extends ConsumerWidget {
                                       padding: const EdgeInsets.only(
                                         right: 16.0,
                                       ),
-                                      child: Container(
-                                        width: 60,
-                                        height: 60,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: Colors.grey.shade100,
-                                        ),
-                                        child: CustomPaint(
-                                          painter: DottedBorderPainter(
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.outlineVariant,
-                                            strokeWidth: 2,
-                                            gap: 6,
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          Navigator.pushAndRemoveUntil(
+                                            context,
+                                            PageRouteBuilder(
+                                              pageBuilder:
+                                                  (
+                                                    context,
+                                                    animation,
+                                                    secondaryAnimation,
+                                                  ) => const HomeScreen(),
+                                              transitionDuration: Duration.zero,
+                                              reverseTransitionDuration:
+                                                  Duration.zero,
+                                            ),
+                                            (route) => false,
+                                          );
+                                        },
+                                        child: Container(
+                                          width: 60,
+                                          height: 60,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: Colors.grey.shade100,
                                           ),
                                           child: Center(
                                             child: Icon(
@@ -286,10 +257,7 @@ class ChatScreen extends ConsumerWidget {
                           ),
                         );
                       },
-                      loading: () => const Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Center(child: CircularProgressIndicator()),
-                      ),
+                      loading: () => const SizedBox.shrink(),
                       error: (e, st) => Padding(
                         padding: const EdgeInsets.all(24),
                         child: Column(
@@ -406,10 +374,7 @@ class ChatScreen extends ConsumerWidget {
                           },
                         );
                       },
-                      loading: () => const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Center(child: CircularProgressIndicator()),
-                      ),
+                      loading: () => const SizedBox.shrink(),
                       error: (e, _) => Padding(
                         padding: const EdgeInsets.all(16),
                         child: Column(

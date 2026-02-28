@@ -4,20 +4,21 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/models/liked_you_user_model.dart';
 import '../repository/liked_you_repository.dart';
+import '../../../../main.dart'; // Import customRealtimeClient
 
 // ======================================================
 // ❤️ Liked You Notifier (With Realtime Support)
 // ======================================================
 class LikedYouNotifier extends StateNotifier<AsyncValue<List<LikedYouUser>>> {
   final LikedYouRepository _repository;
-  
+
   // Keep track of the realtime subscription
   RealtimeChannel? _likesChannel;
 
   LikedYouNotifier(this._repository) : super(const AsyncLoading()) {
     // 1. Initial Load (Show Spinner)
     _loadLikedYou(forceLoading: true);
-    
+
     // 2. Start Listening for new Likes
     _subscribeToNewLikes();
   }
@@ -68,8 +69,12 @@ class LikedYouNotifier extends StateNotifier<AsyncValue<List<LikedYouUser>>> {
 
       debugPrint('📡 Subscribing to likes for profile: $myProfileId');
 
+      // ✅ FIXED: Use the custom RealtimeClient (bypassing Jiobase) if available, otherwise fallback
+      final realtimeTarget = customRealtimeClient ?? client.realtime;
+
       // B. Listen to INSERT events on the 'swipes' table
-      _likesChannel = client.channel('public:swipes:$myProfileId')
+      _likesChannel = realtimeTarget
+          .channel('public:swipes:$myProfileId')
           .onPostgresChanges(
             event: PostgresChangeEvent.insert,
             schema: 'public',
@@ -82,17 +87,17 @@ class LikedYouNotifier extends StateNotifier<AsyncValue<List<LikedYouUser>>> {
             ),
             callback: (payload) {
               final newRecord = payload.newRecord;
-              
+
               // ✅ CHECK: Is it a Like?
-              if (newRecord['action_type'] == 'like' || newRecord['action_type'] == 'superlike') {
-                 debugPrint('🔔 New Like Detected! Updating list silently...');
-                 // Refresh list without loading spinner
-                 _loadLikedYou(forceLoading: false); 
+              if (newRecord['action_type'] == 'like' ||
+                  newRecord['action_type'] == 'superlike') {
+                debugPrint('🔔 New Like Detected! Updating list silently...');
+                // Refresh list without loading spinner
+                _loadLikedYou(forceLoading: false);
               }
             },
           )
           .subscribe();
-
     } catch (e) {
       debugPrint('⚠️ Error subscribing to likes: $e');
     }
@@ -137,7 +142,11 @@ class LikedYouNotifier extends StateNotifier<AsyncValue<List<LikedYouUser>>> {
   @override
   void dispose() {
     if (_likesChannel != null) {
-      Supabase.instance.client.removeChannel(_likesChannel!);
+      if (customRealtimeClient != null) {
+        customRealtimeClient!.removeChannel(_likesChannel!);
+      } else {
+        Supabase.instance.client.removeChannel(_likesChannel!);
+      }
     }
     super.dispose();
   }
@@ -147,9 +156,10 @@ class LikedYouNotifier extends StateNotifier<AsyncValue<List<LikedYouUser>>> {
 // Provider
 // ======================================================
 final likedYouProvider =
-    StateNotifierProvider.autoDispose<LikedYouNotifier, AsyncValue<List<LikedYouUser>>>((
-  ref,
-) {
-  final repository = ref.watch(likedYouRepositoryProvider);
-  return LikedYouNotifier(repository);
-});
+    StateNotifierProvider.autoDispose<
+      LikedYouNotifier,
+      AsyncValue<List<LikedYouUser>>
+    >((ref) {
+      final repository = ref.watch(likedYouRepositoryProvider);
+      return LikedYouNotifier(repository);
+    });

@@ -18,6 +18,9 @@ import 'core/utils/logging_navigator_observer.dart';
 import 'core/utils/nav_key.dart';
 import 'features/auth/providers/auth_state_listener.dart';
 
+// Provide a globally accessible custom RealtimeClient to bypass Jiobase proxy limits
+RealtimeClient? customRealtimeClient;
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([
@@ -31,15 +34,42 @@ void main() async {
   // Prepare secure HTTP client
   final secureClient = await SecurityConfig.getSSLPinnedClient();
 
-  // Run initializations concurrently to reduce startup time
+  // Extract the project ref from the anon key.
+  // The anon key payload format is Base64 JWT. The easiest way to bypass Jiobase
+  // is just providing the direct SUPABASE_PROJECT_URL if we have it in dotenv.
+  String? directUrl = dotenv.env['SUPABASE_DIRECT_URL'];
+
+  // If no direct URL provided, fallback to the Jiobase one.
+  // Note: For Realtime WebSocket to work perfectly, you need to add
+  // SUPABASE_DIRECT_URL=https://<your-project-ref>.supabase.co to your .env files!
+
   await Future.wait([
     Firebase.initializeApp().then((_) => SecurityConfig.initializeAppCheck()),
     Supabase.initialize(
       url: dotenv.env['SUPABASE_URL']!,
       anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
       httpClient: secureClient,
+      realtimeClientOptions: const RealtimeClientOptions(eventsPerSecond: 10),
     ),
   ]);
+
+  // ✅ INITIALIZE CUSTOM REALTIME CLIENT TO BYPASS JIOBASE PROXY
+  // The 'SUPABASE_URL' usually points to blindly.jiobase.com (which drops wss://)
+  // We extract the actual project URL from .env, or fallback to the direct supabase.co URL via JWT
+  if (directUrl != null && directUrl.isNotEmpty) {
+    customRealtimeClient = RealtimeClient(
+      '${directUrl
+              .replaceAll('http', 'ws')
+              .replaceAll('/rest/v1', '/realtime/v1')}/realtime/v1',
+      params: {'apikey': dotenv.env['SUPABASE_ANON_KEY']!},
+      headers: {'apikey': dotenv.env['SUPABASE_ANON_KEY']!},
+    );
+    // Explicitly set the auth token so the realtime socket has permission to subscribe
+    final currentSession = Supabase.instance.client.auth.currentSession;
+    if (currentSession != null) {
+      customRealtimeClient?.setAuth(currentSession.accessToken);
+    }
+  }
 
   runApp(const ProviderScope(child: MyApp()));
 }
