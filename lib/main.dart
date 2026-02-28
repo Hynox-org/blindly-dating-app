@@ -27,19 +27,18 @@ void main() async {
   // Load connection strings and credentials based on environment
   await EnvironmentConfig.load();
 
-  // Initialize Firebase (requires google-services.json on Android)
-  await Firebase.initializeApp();
-
-  // Initialize App Check and Security
-  await SecurityConfig.initializeAppCheck();
-
-  // Initialize Supabase with SSL Pinning
+  // Prepare secure HTTP client
   final secureClient = await SecurityConfig.getSSLPinnedClient();
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
-    httpClient: secureClient,
-  );
+
+  // Run initializations concurrently to reduce startup time
+  await Future.wait([
+    Firebase.initializeApp().then((_) => SecurityConfig.initializeAppCheck()),
+    Supabase.initialize(
+      url: dotenv.env['SUPABASE_URL']!,
+      anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+      httpClient: secureClient,
+    ),
+  ]);
 
   runApp(const ProviderScope(child: MyApp()));
 }

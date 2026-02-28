@@ -1,6 +1,3 @@
-import 'dart:ui' as ui;
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,17 +15,14 @@ class SplashScreen extends ConsumerStatefulWidget {
 class _SplashScreenState extends ConsumerState<SplashScreen>
     with TickerProviderStateMixin {
   late AnimationController _mainController;
+  late AnimationController _pulseController;
 
-  // Scene 1: Background
-  late Animation<double> _bokehOpacity;
-  late Animation<Color?> _backgroundColor;
+  // Animations
+  late Animation<double> _logoOpacity;
+  late Animation<double> _logoScale;
+  late Animation<double> _logoPulse;
 
-  // Scene 3: Text
-  late Animation<double> _textBlur;
-  late Animation<double> _textOpacity;
-  late Animation<double> _textScale;
-
-  bool _isInitialized = false;
+  bool _isNavigating = false;
 
   // --------------------------------------------------
   // INIT
@@ -37,26 +31,62 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   void initState() {
     super.initState();
 
+    // Controls the initial entrance animation
     _mainController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 4500),
+      duration: const Duration(milliseconds: 2000),
     );
 
-    _mainController.addStatusListener((status) async {
-      if (status != AnimationStatus.completed) return;
+    // Controls a continuous subtle breathing/pulse effect
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2500),
+    )..repeat(reverse: true);
 
-      final user = ref.read(authRepositoryProvider).currentUser;
+    _initAnimations();
 
-      if (user != null) {
-        await _checkOnboardingAndNavigate(user.id);
-      } else {
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, '/welcome');
-        }
+    _mainController.forward();
+
+    // Wait for the entrance animation to finish, hold on screen for a moment, then navigate
+    Future.delayed(const Duration(milliseconds: 3500), () {
+      if (mounted && !_isNavigating) {
+        _isNavigating = true;
+        _proceedToNextScreen();
       }
     });
   }
 
+  void _initAnimations() {
+    _logoOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _mainController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+      ),
+    );
+
+    _logoScale = Tween<double>(begin: 0.85, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _mainController,
+        curve: const Interval(0.0, 0.8, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    _logoPulse = Tween<double>(begin: 1.0, end: 1.03).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOutSine),
+    );
+  }
+
+  Future<void> _proceedToNextScreen() async {
+    final user = ref.read(authRepositoryProvider).currentUser;
+
+    if (user != null) {
+      await _checkOnboardingAndNavigate(user.id);
+    } else {
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/welcome');
+      }
+    }
+  }
 
   // --------------------------------------------------
   // ONBOARDING FLOW
@@ -70,11 +100,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       if (!mounted) return;
 
       if (isComplete) {
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/home',
-          (route) => false,
-        );
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
       } else {
         Navigator.pushReplacement(
           context,
@@ -88,62 +114,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     }
   }
 
-  // --------------------------------------------------
-  // ANIMATIONS
-  // --------------------------------------------------
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_isInitialized) return;
-
-    _initAnimations();
-    _mainController.forward();
-    _isInitialized = true;
-  }
-
-  void _initAnimations() {
-    _bokehOpacity = Tween<double>(begin: 1, end: 0).animate(
-      CurvedAnimation(
-        parent: _mainController,
-        curve: const Interval(0.33, 0.55, curve: Curves.easeOut),
-      ),
-    );
-
-    _backgroundColor = ColorTween(
-      begin: Theme.of(context).colorScheme.onPrimary,
-      end: Theme.of(context).colorScheme.surface,
-    ).animate(
-      CurvedAnimation(
-        parent: _mainController,
-        curve: const Interval(0.33, 0.55),
-      ),
-    );
-
-    _textBlur = Tween<double>(begin: 20, end: 0).animate(
-      CurvedAnimation(
-        parent: _mainController,
-        curve: const Interval(0.55, 0.90, curve: Curves.easeOut),
-      ),
-    );
-
-    _textOpacity = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(
-        parent: _mainController,
-        curve: const Interval(0.55, 0.80),
-      ),
-    );
-
-    _textScale = Tween<double>(begin: 0.95, end: 1).animate(
-      CurvedAnimation(
-        parent: _mainController,
-        curve: const Interval(0.55, 0.90, curve: Curves.easeOutQuad),
-      ),
-    );
-  }
-
   @override
   void dispose() {
     _mainController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -152,111 +126,21 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   // --------------------------------------------------
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _mainController,
-      builder: (_, __) {
-        return Scaffold(
-          backgroundColor: _backgroundColor.value,
-          body: Stack(
-            fit: StackFit.expand,
-            children: [
-              Opacity(
-                opacity: _bokehOpacity.value,
-                child: const _BokehBackground(),
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: Center(
+        child: AnimatedBuilder(
+          animation: Listenable.merge([_mainController, _pulseController]),
+          builder: (context, child) {
+            return Opacity(
+              opacity: _logoOpacity.value,
+              child: Transform.scale(
+                scale: _logoScale.value * _logoPulse.value,
+                child: child,
               ),
-              Center(
-                child: Opacity(
-                  opacity: _textOpacity.value,
-                  child: Transform.scale(
-                    scale: _textScale.value,
-                    child: ImageFiltered(
-                      imageFilter: ui.ImageFilter.blur(
-                        sigmaX: _textBlur.value,
-                        sigmaY: _textBlur.value,
-                      ),
-                      child: Image.asset(
-                        'assets/images/blindly-text-logo.png',
-                        width: 280,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-// --------------------------------------------------
-// BACKGROUND
-// --------------------------------------------------
-class _BokehBackground extends StatefulWidget {
-  const _BokehBackground();
-
-  @override
-  State<_BokehBackground> createState() => _BokehBackgroundState();
-}
-
-class _BokehBackgroundState extends State<_BokehBackground>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller =
-        AnimationController(vsync: this, duration: const Duration(seconds: 10))
-          ..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (_, __) {
-        return Stack(
-          children: [
-            _blob(
-              Alignment(math.sin(_controller.value * 2 * math.pi) * 0.5, -0.2),
-              Theme.of(context).colorScheme.primary.withOpacity(0.2),
-              150,
-            ),
-            _blob(
-              Alignment(-0.3,
-                  math.cos(_controller.value * 2 * math.pi) * 0.5),
-              Theme.of(context).colorScheme.secondary.withOpacity(0.3),
-              200,
-            ),
-            _blob(
-              const Alignment(0.4, 0.4),
-              Theme.of(context).colorScheme.primary.withOpacity(0.1),
-              180,
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _blob(Alignment alignment, Color color, double size) {
-    return Align(
-      alignment: alignment,
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-          child: const SizedBox(),
+            );
+          },
+          child: Image.asset('assets/images/blindly-text-logo.png', width: 250),
         ),
       ),
     );
