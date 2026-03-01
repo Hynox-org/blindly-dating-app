@@ -130,10 +130,62 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       return RefreshIndicator(
         onRefresh: () => _fetchData(forceRefresh: true),
         child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
           children: [
-            _buildRefreshBanner(data.lastRefreshedAt),
-            SizedBox(height: MediaQuery.of(context).size.height * 0.3),
-            const Center(child: Text("No users found nearby.")),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.05),
+            Image.asset(
+              'assets/static/discover_empty_state.png',
+              width: double.infinity,
+              height: 250,
+            ),
+            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Text(
+                "You've reached the end\nof the line!",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  height: 1.2,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32.0),
+              child: Text(
+                "Check back soon for more people or try adjusting your filters to see more profiles.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.4,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.8),
+                ),
+              ),
+            ),
+            const SizedBox(height: 48),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: FilledButton(
+                onPressed: () => _fetchData(forceRefresh: true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  minimumSize: const Size(double.infinity, 56),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: const Text(
+                  "See More Peoples",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            const SizedBox(height: 40),
           ],
         ),
       );
@@ -144,7 +196,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       child: ListView(
         padding: const EdgeInsets.only(bottom: 20),
         children: [
-          _buildRefreshBanner(data.lastRefreshedAt),
           if (data.feeds['top_picks']?.isNotEmpty == true)
             _buildSection('🔥 Top Picks For You', data.feeds['top_picks']!),
           if (data.feeds['nearby']?.isNotEmpty == true)
@@ -158,64 +209,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             _buildSection('👋 New Faces', data.feeds['new_faces']!),
           if (data.feeds['recently_active']?.isNotEmpty == true)
             _buildSection('⏱️ Recently Active', data.feeds['recently_active']!),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRefreshBanner(DateTime? lastRefreshedAt) {
-    if (lastRefreshedAt == null) return const SizedBox.shrink();
-
-    final nextRefresh = lastRefreshedAt.add(const Duration(hours: 12));
-    final now = DateTime.now();
-    final difference = nextRefresh.difference(now);
-
-    if (difference.isNegative) {
-      return Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        color: Theme.of(context).colorScheme.secondaryContainer,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.refresh,
-              size: 16,
-              color: Theme.of(context).colorScheme.onSecondaryContainer,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              "New batch available! Pull to refresh.",
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: Theme.of(context).colorScheme.onSecondaryContainer,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final hours = difference.inHours;
-    final minutes = difference.inMinutes.remainder(60);
-    final timeString = hours > 0 ? '${hours}h ${minutes}m' : '${minutes}m';
-
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      color: Colors.grey[50],
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.access_time, size: 16, color: Colors.black54),
-          const SizedBox(width: 8),
-          Text(
-            "Next batch in $timeString",
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: Colors.black54,
-            ),
-          ),
         ],
       ),
     );

@@ -1420,7 +1420,7 @@ debugPrint("📞 Incoming call from ${call['caller_id']} with call ID ${call['id
                   ),
                 ),
               );
-            }).toList(),
+            }),
           ],
         );
       },
