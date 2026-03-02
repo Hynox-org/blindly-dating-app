@@ -274,7 +274,7 @@ class _LocationSetScreenState extends ConsumerState<LocationSetScreen> {
                   height: 1,
                   color: Theme.of(
                     context,
-                  ).colorScheme.onSurface.withOpacity(0.12),
+                  ).colorScheme.onSurface.withValues(alpha: 0.12),
                 ),
                 itemBuilder: (context, index) {
                   final city = _filteredCities[index];
@@ -286,7 +286,7 @@ class _LocationSetScreenState extends ConsumerState<LocationSetScreen> {
                         fontSize: 16,
                         color: Theme.of(
                           context,
-                        ).colorScheme.onSurface.withOpacity(0.87),
+                        ).colorScheme.onSurface.withValues(alpha: 0.87),
                       ),
                     ),
                     onTap: () => _handleCitySelection(city),

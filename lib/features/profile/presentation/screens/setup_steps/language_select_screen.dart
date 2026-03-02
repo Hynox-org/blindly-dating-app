@@ -202,7 +202,7 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
                       fontWeight: FontWeight.bold,
                       color: Theme.of(
                         context,
-                      ).colorScheme.onSurface.withOpacity(0.87),
+                      ).colorScheme.onSurface.withValues(alpha: 0.87),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -269,7 +269,7 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
               BoxShadow(
                 color: Theme.of(
                   context,
-                ).colorScheme.onSurface.withOpacity(0.05),
+                ).colorScheme.onSurface.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
@@ -288,7 +288,7 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
                       fontWeight: FontWeight.bold,
                       color: Theme.of(
                         context,
-                      ).colorScheme.onSurface.withOpacity(0.87),
+                      ).colorScheme.onSurface.withValues(alpha: 0.87),
                     ),
                   ),
                   Text(
@@ -297,7 +297,7 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
                       fontSize: 14,
                       color: Theme.of(
                         context,
-                      ).colorScheme.onSurface.withOpacity(0.6),
+                      ).colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
                 ],

@@ -14,6 +14,7 @@ import '../../../../core/providers/connection_mode_provider.dart';
 
 // ✅ 2. Models
 import '../../discovery/domain/models/discovery_user_model.dart';
+import '../../onboarding/domain/models/lifestyle_chip_model.dart';
 
 // ✅ 3. Components
 import '../component/ProfileSwipeCard.dart';
@@ -190,10 +191,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         hometown: user.hometown ?? '',
         workCompany: user.workCompany ?? '',
         summary: user.bio.isNotEmpty ? user.bio : 'Swipe right to know more!',
-        lookingFor: user.relationshipType ?? 'Connection',
-        lookingForTags: [], // Add if available in DiscoveryUser
+        lookingForModes: user.lookingForModes,
         quickestWay: '', // Add if available
+        prompts: user.prompts, // ✅ Pass Prompts here
         hobbies: user.interests,
+        lifestyleItems: user.lifestyle
+            .map(
+              (label) => LifestyleChip(
+                id: '',
+                categoryId: 0,
+                label: label,
+                isActive: true,
+              ),
+            )
+            .toList(), // ✅ Map strings to dummy LifestyleChips
         causes: user.causes, // ✅ Dynamic Causes
         simplePleasure: '',
         languages: user.languages, // ✅ Dynamic Languages

@@ -40,9 +40,13 @@ class ProfileUser {
   final String? zodiac;
   final String? pronouns;
   final String? relationshipType;
+  final List<String>
+  lookingForModes; // ✅ New Looking For Mode Multiple Selection
   final String? sexualOrientation;
   final bool spotifyConnected;
   final List<String> qualities;
+  final bool isVerified;
+  final String verificationLevel;
 
   ProfileUser({
     required this.id,
@@ -80,8 +84,11 @@ class ProfileUser {
     this.relationshipType,
     this.sexualOrientation,
     this.spotifyConnected = false,
+    this.lookingForModes = const [],
     this.qualities = const [],
     this.passportLocationGeom,
+    this.isVerified = false,
+    this.verificationLevel = 'unverified',
   });
 
   factory ProfileUser.fromJson(
@@ -97,7 +104,7 @@ class ProfileUser {
       name: json['display_name'] ?? 'User',
       age: _calculateAge(json['birth_date']),
       gender: json['gender'] ?? '',
-      city: json['city'] ?? '',
+      city: json['hometown_city'] ?? json['city'] ?? json['hometown'] ?? '',
       bio:
           json['bio'] ??
           '', // Bio passed from provider (fetched from ProfileMode)
@@ -141,11 +148,16 @@ class ProfileUser {
       pronouns: json['pronouns'],
       haveKids: json['have_kids'],
       relationshipType: json['relationship_type'],
+      lookingForModes:
+          (json['looking_for'] as List?)?.map((e) => e as String).toList() ??
+          [],
       sexualOrientation: json['sexual_orientation'],
       spotifyConnected: json['spotify_connected'] ?? false,
       qualities:
           (json['qualities'] as List?)?.map((e) => e as String).toList() ?? [],
       passportLocationGeom: json['passport_location_geom'],
+      isVerified: json['is_verified'] ?? false,
+      verificationLevel: json['verification_level'] ?? 'unverified',
     );
   }
 
@@ -183,10 +195,13 @@ class ProfileUser {
     String? zodiac,
     String? pronouns,
     String? relationshipType,
+    List<String>? lookingForModes,
     String? sexualOrientation,
     bool? spotifyConnected,
     List<String>? qualities,
     String? passportLocationGeom,
+    bool? isVerified,
+    String? verificationLevel,
   }) {
     return ProfileUser(
       id: id ?? this.id,
@@ -222,10 +237,13 @@ class ProfileUser {
       zodiac: zodiac ?? this.zodiac,
       pronouns: pronouns ?? this.pronouns,
       relationshipType: relationshipType ?? this.relationshipType,
+      lookingForModes: lookingForModes ?? this.lookingForModes,
       sexualOrientation: sexualOrientation ?? this.sexualOrientation,
       spotifyConnected: spotifyConnected ?? this.spotifyConnected,
       qualities: qualities ?? this.qualities,
       passportLocationGeom: passportLocationGeom ?? this.passportLocationGeom,
+      isVerified: isVerified ?? this.isVerified,
+      verificationLevel: verificationLevel ?? this.verificationLevel,
     );
   }
 

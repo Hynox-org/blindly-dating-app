@@ -68,7 +68,7 @@ class FilterScreen extends ConsumerWidget {
                   Icon(
                     Icons.arrow_forward_ios,
                     size: 20,
-                    color: theme.colorScheme.onSurface.withOpacity(0.8),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                   ),
                 ],
               ),
@@ -133,7 +133,7 @@ class FilterScreen extends ConsumerWidget {
                       Icon(
                         Icons.arrow_forward_ios,
                         size: 20,
-                        color: theme.colorScheme.onSurface.withOpacity(0.8),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                       ),
                     ],
                   ),
@@ -188,7 +188,7 @@ class FilterScreen extends ConsumerWidget {
                   Icon(
                     Icons.arrow_forward_ios,
                     size: 20,
-                    color: theme.colorScheme.onSurface.withOpacity(0.8),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                   ),
                 ],
               ),
@@ -234,7 +234,7 @@ class FilterScreen extends ConsumerWidget {
                   Icon(
                     Icons.arrow_forward_ios,
                     size: 20,
-                    color: theme.colorScheme.onSurface.withOpacity(0.8),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                   ),
                 ],
               ),
@@ -277,7 +277,7 @@ class FilterScreen extends ConsumerWidget {
                   Icon(
                     Icons.arrow_forward_ios,
                     size: 20,
-                    color: theme.colorScheme.onSurface.withOpacity(0.8),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                   ),
                 ],
               ),
@@ -315,7 +315,7 @@ class FilterScreen extends ConsumerWidget {
                   Icon(
                     Icons.arrow_forward_ios,
                     size: 20,
-                    color: theme.colorScheme.onSurface.withOpacity(0.8),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                   ),
                 ],
               ),
@@ -357,7 +357,7 @@ class FilterScreen extends ConsumerWidget {
                   Icon(
                     Icons.arrow_forward_ios,
                     size: 20,
-                    color: theme.colorScheme.onSurface.withOpacity(0.8),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                   ),
                 ],
               ),
@@ -398,7 +398,7 @@ class FilterScreen extends ConsumerWidget {
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
-          color: theme.colorScheme.onSurface.withOpacity(0.04),
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.04),
           width: 1,
         ),
       ),
@@ -438,12 +438,12 @@ class FilterScreen extends ConsumerWidget {
                     border: Border.all(
                       color: isSelected
                           ? theme.colorScheme.primary
-                          : theme.colorScheme.onSurface.withOpacity(0.05),
+                          : theme.colorScheme.onSurface.withValues(alpha: 0.05),
                       width: 1.2,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: theme.colorScheme.onSurface.withOpacity(0.01),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.01),
                         blurRadius: 2,
                         offset: const Offset(0, 1),
                       ),
@@ -456,7 +456,7 @@ class FilterScreen extends ConsumerWidget {
                       fontWeight: isSelected
                           ? FontWeight.w700
                           : FontWeight.w500,
-                      color: theme.colorScheme.onSurface.withOpacity(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 
                         isSelected ? 1.0 : 0.8,
                       ),
                     ),
@@ -474,9 +474,9 @@ class FilterScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     return SliderTheme.of(context).copyWith(
       activeTrackColor: theme.colorScheme.primary,
-      inactiveTrackColor: theme.colorScheme.onSurface.withOpacity(0.1),
+      inactiveTrackColor: theme.colorScheme.onSurface.withValues(alpha: 0.1),
       thumbColor: theme.colorScheme.secondary,
-      overlayColor: theme.colorScheme.secondary.withOpacity(0.1),
+      overlayColor: theme.colorScheme.secondary.withValues(alpha: 0.1),
       trackHeight: 3,
       thumbShape: const RoundSliderThumbShape(
         enabledThumbRadius: 9,
@@ -513,7 +513,7 @@ class FilterScreen extends ConsumerWidget {
           color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(28),
           border: Border.all(
-            color: theme.colorScheme.onSurface.withOpacity(0.04),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.04),
             width: 1,
           ),
         ),
@@ -541,7 +541,7 @@ class FilterScreen extends ConsumerWidget {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.onSurface.withOpacity(0.1),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -597,7 +597,7 @@ class FilterScreen extends ConsumerWidget {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.onSurface.withOpacity(0.1),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -684,7 +684,7 @@ class FilterScreen extends ConsumerWidget {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.onSurface.withOpacity(0.1),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),

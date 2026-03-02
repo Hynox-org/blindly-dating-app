@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'domain/models/profile_user_model.dart';
 import 'provider/profile_provider.dart';
+import 'profile_looking_for_screen.dart'; // Added looking for screen import
 import '../onboarding/presentation/screens/steps/photo_upload_screen.dart';
 import 'presentation/screens/setup_steps/profile_prompts_screen.dart';
 import 'presentation/screens/causes_communities_screen.dart';
@@ -101,6 +102,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           _buildCausesAndCommunitiesSection(profile),
           const SizedBox(height: 16),
           _buildQualitiesSection(profile),
+          const SizedBox(height: 16),
+          _buildLookingForSection(profile),
           const SizedBox(height: 16),
           _buildPromptsSection(profile),
           const SizedBox(height: 16),
@@ -297,6 +300,107 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                                 ),
                                 child: Text(
                                   quality,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(
+                          Icons.arrow_forward_ios,
+                          size: 16,
+                          color: Colors.black,
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLookingForSection(ProfileUser profile) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'I am looking for',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Let others know what you want to find',
+            style: TextStyle(fontSize: 12, color: Colors.black),
+          ),
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const ProfileLookingForScreen(isEditMode: true),
+                ),
+              );
+            },
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: profile.lookingForModes.isEmpty
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: const [
+                        Text(
+                          'Add what you are looking for',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          size: 16,
+                          color: Colors.black,
+                        ),
+                      ],
+                    )
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: profile.lookingForModes.map((option) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.grey[300]!),
+                                ),
+                                child: Text(
+                                  option,
                                   style: const TextStyle(
                                     fontSize: 12,
                                     color: Colors.black,
@@ -764,33 +868,67 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           ),
           const SizedBox(height: 8),
           // Verification row in white bg
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F5F5),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: const [
-                Icon(Icons.verified_user, size: 20, color: Colors.black),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Verification',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
+          GestureDetector(
+            onTap: () {
+              // Only navigate if NOT fully verified
+              if (!(profile.isVerified &&
+                  profile.verificationLevel == 'full_verified')) {
+                // TODO: Navigate to Verification Screen
+                // Navigator.push(context, MaterialPageRoute(builder: (context) => const GovernmentIdVerificationScreen()));
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.verified_user,
+                    size: 20,
+                    color:
+                        (profile.isVerified &&
+                            profile.verificationLevel == 'full_verified')
+                        ? Colors.blue
+                        : Colors.black,
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Verification',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                ),
-                Text(
-                  'Not Verified',
-                  style: TextStyle(fontSize: 13, color: Colors.black),
-                ),
-                SizedBox(width: 8),
-                Icon(Icons.arrow_forward_ios, size: 16, color: Colors.black),
-              ],
+                  Text(
+                    (profile.isVerified &&
+                            profile.verificationLevel == 'full_verified')
+                        ? 'Verified'
+                        : 'Not Verified',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color:
+                          (profile.isVerified &&
+                              profile.verificationLevel == 'full_verified')
+                          ? Colors.blue
+                          : Colors.black,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  if (!(profile.isVerified &&
+                      profile.verificationLevel == 'full_verified'))
+                    const Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                      color: Colors.black,
+                    ),
+                ],
+              ),
             ),
           ),
         ],
@@ -1212,7 +1350,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             _buildListTile(
               Icons.location_on_outlined,
               'Location',
-              profile.city.isNotEmpty ? profile.city : 'Unknown',
+              profile.city.isNotEmpty ? profile.city : 'Nearby',
               false,
               onTap: () {},
             ),
@@ -1514,7 +1652,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                                   borderRadius: BorderRadius.circular(20),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.05),
+                                      color: Colors.black.withValues(alpha: 0.05),
                                       offset: const Offset(0, 2),
                                       blurRadius: 4,
                                     ),
@@ -1627,7 +1765,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           return features[0]['text'] as String;
         }
       }
-      return "Unknown District";
+      return "Nearby";
     } catch (e) {
       return "Error";
     }

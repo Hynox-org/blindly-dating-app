@@ -67,9 +67,9 @@ class _DiscoveryProfileDetailScreenState
       hometown: user.hometown ?? '',
       workCompany: user.workCompany ?? '',
       summary: user.bio.isNotEmpty ? user.bio : 'Swipe right to know more!',
-      lookingFor: user.relationshipType ?? 'Connection',
-      lookingForTags: [],
+      lookingForModes: user.lookingForModes,
       quickestWay: '',
+      prompts: user.prompts, // ✅ Pass fetched Prompts here
       hobbies: user.interests,
       causes: user.causes,
       simplePleasure: '',
@@ -143,7 +143,7 @@ class _DiscoveryProfileDetailScreenState
               child: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.5),
+                  color: Colors.black.withValues(alpha: 0.5),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.close, color: Colors.white, size: 30),

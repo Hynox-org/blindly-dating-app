@@ -318,7 +318,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
             'Select up to 3 prompt to showing up your personality.',
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurface.withOpacity(0.6),
+              color: colorScheme.onSurface.withValues(alpha: 0.6),
               fontSize: 14,
             ),
           ),
@@ -350,7 +350,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
                         border: Border.all(
                           color: isSelected
                               ? Colors.transparent
-                              : colorScheme.outline.withOpacity(0.2),
+                              : colorScheme.outline.withValues(alpha: 0.2),
                         ),
                       ),
                       alignment: Alignment.center,
@@ -421,7 +421,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
                     child: Text(
                       'Please select ${3 - _selectedPrompts.length} prompt to continue',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurface.withOpacity(0.5),
+                        color: colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
                     ),
                   ),
@@ -540,7 +540,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
             Icon(
               Icons.arrow_forward_ios,
               size: 14,
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withValues(alpha: 0.5),
             ),
           ],
         ),
@@ -576,7 +576,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
                 Icon(
                   Icons.keyboard_arrow_up,
                   size: 20,
-                  color: Colors.black.withOpacity(0.5),
+                  color: Colors.black.withValues(alpha: 0.5),
                 ),
               ],
             ),
@@ -589,7 +589,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
             decoration: InputDecoration(
               hintText: 'Type your answer...',
               hintStyle: TextStyle(
-                color: Colors.black.withOpacity(0.4),
+                color: Colors.black.withValues(alpha: 0.4),
                 fontSize: 14,
               ),
               filled: true,
@@ -680,7 +680,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.1), // Light grey circle
+                    color: Colors.black.withValues(alpha: 0.1), // Light grey circle
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.close, size: 16, color: Colors.black),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../../onboarding/domain/models/lifestyle_chip_model.dart';
+import '../../onboarding/domain/models/profile_prompt_model.dart'; // ✅ Added Prompts
 import 'package:cached_network_image/cached_network_image.dart'; // ✅ Added
 import 'dart:ui';
 
@@ -30,9 +32,10 @@ class UserProfile {
   // Interests & Values
   final List<String> hobbies;
   final String summary;
-  final String lookingFor;
-  final List<String> lookingForTags;
+  final List<String> lookingForModes;
   final String quickestWay;
+  final List<LifestyleChip> lifestyleItems; // ✅ Added lifestyle items
+  final List<ProfilePrompt> prompts; // ✅ Added Prompts
   final List<String> causes;
 
   // Additional Details
@@ -64,9 +67,10 @@ class UserProfile {
     required this.workCompany,
     required this.hobbies,
     required this.summary,
-    required this.lookingFor,
-    required this.lookingForTags,
+    required this.lookingForModes,
     required this.quickestWay,
+    this.prompts = const [], // Default to empty
+    this.lifestyleItems = const [], // ✅ Optional, default empty list
     required this.causes,
     required this.simplePleasure,
     required this.languages,
@@ -118,10 +122,10 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
 
   /// Check if section data is empty
   bool _isSectionEmpty(String data) => data.trim().isEmpty;
-  bool _isListEmpty(List<String> items) => 
+  bool _isListEmpty(List<String> items) =>
       items.isEmpty || items.every((item) => item.trim().isEmpty);
-  
-  bool _isAboutMeEmpty() => 
+
+  bool _isAboutMeEmpty() =>
       _isSectionEmpty(widget.profile.height) &&
       _isSectionEmpty(widget.profile.activityLevel) &&
       _isSectionEmpty(widget.profile.education) &&
@@ -131,8 +135,9 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
       _isSectionEmpty(widget.profile.drinking) &&
       _isSectionEmpty(widget.profile.smoking);
 
-  bool _isLookingForEmpty() => _isListEmpty(widget.profile.lookingForTags);
+  bool _isLookingForEmpty() => _isListEmpty(widget.profile.lookingForModes);
   bool _isInterestsEmpty() => _isListEmpty(widget.profile.hobbies);
+  bool _isLifestyleEmpty() => widget.profile.lifestyleItems.isEmpty; // ✅ Added
   bool _isCausesEmpty() => _isListEmpty(widget.profile.causes);
   bool _isLanguagesEmpty() => _isListEmpty(widget.profile.languages);
   bool _isSpotifyEmpty() => _isListEmpty(widget.profile.spotifyArtists);
@@ -182,10 +187,10 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                     // ============ IMAGE 2 ============
                     _buildImageSection(1),
                     const SizedBox(height: 16),
-                    // ============ RELATIONSHIP SECTION ============
+                    // ============ KUDOS SECTION ============
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _buildRelationshipSection(),
+                      child: _buildKudosSection(),
                     ),
                     const SizedBox(height: 16),
                     // ============ LOOKING FOR SECTION ============
@@ -206,6 +211,14 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                       child: _buildInterestsSection(),
                     ),
                     const SizedBox(height: 16),
+                    // ============ LIFESTYLE SECTION ============
+                    if (!_isLifestyleEmpty()) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildLifestyleSection(),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     // ============ IMAGE 3 ============
                     _buildImageSection(2),
                     const SizedBox(height: 16),
@@ -284,7 +297,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.08),
+            color: colorScheme.shadow.withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -315,7 +328,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
           ),
           const SizedBox(height: 16),
           Divider(
-            color: colorScheme.outlineVariant.withOpacity(0.5),
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
             thickness: 1,
             height: 1,
           ),
@@ -351,11 +364,57 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
     );
   }
 
-  Widget _buildRelationshipSection() {
+  Widget _buildKudosSection() {
     final colorScheme = Theme.of(context).colorScheme;
-    // TODO: Add dynamic field check if needed, currently hardcoded text in fallback
-    // For now we assume if lookingFor is empty we might strictly hide it?
-    // But design seemed to have a quote. We'll leave it unless explicitly empty.
+    final profile = widget.profile;
+
+    if (profile.prompts.isEmpty) return const SizedBox.shrink();
+
+    // Show up to 2 prompts
+    final displayPrompts = profile.prompts.take(2).toList();
+
+    // Build widgets for each prompt
+    List<Widget> promptWidgets = [];
+    for (int i = 0; i < displayPrompts.length; i++) {
+      final prompt = displayPrompts[i];
+      if (prompt.userResponse.isEmpty) continue; // Skip empty answers
+
+      promptWidgets.add(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              prompt.promptQuestion ?? 'A prompt',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              prompt.userResponse,
+              style: TextStyle(
+                fontSize: 14,
+                color: colorScheme.onSurfaceVariant,
+                height: 1.5,
+              ),
+            ),
+            if (i < displayPrompts.length - 1) ...[
+              const SizedBox(height: 16),
+              Divider(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                thickness: 1,
+                height: 1,
+              ),
+              const SizedBox(height: 16),
+            ],
+          ],
+        ),
+      );
+    }
+
+    if (promptWidgets.isEmpty) return const SizedBox.shrink();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 2), // Small shim for shadow
@@ -364,7 +423,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.08),
+            color: colorScheme.shadow.withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -374,28 +433,10 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'What makes a relationship great is',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            widget.profile.lookingFor.isNotEmpty
-                ? widget.profile.lookingFor
-                : "Mutual respect, peace and the feeling that you can be your true self", // Verification fallback or hide?
-            style: TextStyle(
-              fontSize: 14,
-              color: colorScheme.onSurfaceVariant,
-              height: 1.5,
-            ),
-          ),
+          ...promptWidgets,
           const SizedBox(height: 16),
           Divider(
-            color: colorScheme.outlineVariant.withOpacity(0.5),
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
             thickness: 1,
             height: 1,
           ),
@@ -522,10 +563,10 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                   width: 48 * scaleFactor,
                   height: 48 * scaleFactor,
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.25),
+                    color: Colors.black.withValues(alpha: 0.25),
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.15),
+                      color: Colors.white.withValues(alpha: 0.15),
                       width: 1,
                     ),
                   ),
@@ -552,7 +593,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Colors.transparent, Colors.black.withOpacity(0.9)],
+                colors: [Colors.transparent, Colors.black.withValues(alpha: 0.9)],
               ),
             ),
             child: Column(
@@ -687,7 +728,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.4),
+            color: Colors.black.withValues(alpha: 0.25),
             blurRadius: 6 * scaleFactor,
             offset: Offset(0, 2 * scaleFactor),
           ),
@@ -765,9 +806,10 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
     List<Widget> tags = [];
 
     // Helper to add tag if value exists
-    void addTag(String? value, IconData icon) {
+    void addTag(String? value, IconData icon, {String? prefix}) {
       if (value != null && value.isNotEmpty && value != 'Ask me') {
-        tags.add(_buildTag(icon, value));
+        final displayText = prefix != null ? '$prefix $value' : value;
+        tags.add(_buildTag(icon, displayText));
       }
     }
 
@@ -786,21 +828,13 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
     addTag(profile.gender, Icons.face);
     addTag(profile.religion, FontAwesomeIcons.handsPraying);
     addTag(profile.zodiac, FontAwesomeIcons.solidSun);
-    addTag(profile.smoking, Icons.smoking_rooms_outlined);
-    addTag(profile.drinking, Icons.local_bar_outlined);
-    addTag(profile.politics, Icons.account_balance);
-    addTag(profile.kids, Icons.child_care);
-    addTag(profile.hometown, Icons.home_outlined);
 
-    // Languages
-    if (profile.languages.isNotEmpty) {
-      for (var lang in profile.languages) {
-        if (lang != 'English') {
-          // Optional filter
-          addTag(lang, Icons.translate);
-        }
-      }
-    }
+    // The following tags are removed as per instruction: smoking, drinking, kids, politics, hometown.
+    // addTag(profile.smoking, FontAwesomeIcons.smoking);
+    // addTag(profile.drinking, FontAwesomeIcons.wineGlass);
+    // addTag(profile.kids, FontAwesomeIcons.child);
+    // addTag(profile.politics, Icons.gavel);
+    // addTag(profile.hometown, Icons.home);
 
     if (tags.isEmpty) return const SizedBox.shrink();
 
@@ -811,7 +845,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.08),
+            color: colorScheme.shadow.withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -844,10 +878,10 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.3)),
+        border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.02),
+            color: colorScheme.shadow.withValues(alpha: 0.08),
             blurRadius: 2,
             offset: const Offset(0, 1),
           ),
@@ -877,15 +911,12 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
     final colorScheme = Theme.of(context).colorScheme;
     final profile = widget.profile;
 
-    if (profile.lookingFor.isEmpty && profile.lookingForTags.isEmpty) {
+    if (_isLookingForEmpty()) {
       return const SizedBox.shrink();
     }
 
     List<Widget> tags = [];
-    if (profile.lookingFor.isNotEmpty) {
-      tags.add(_buildTag(null, profile.lookingFor));
-    }
-    for (var tag in profile.lookingForTags) {
+    for (var tag in profile.lookingForModes) {
       tags.add(_buildTag(null, tag));
     }
 
@@ -896,7 +927,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.08),
+            color: colorScheme.shadow.withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -907,7 +938,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "I'm Looking for",
+            "I'm looking for",
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -934,7 +965,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.08),
+            color: colorScheme.shadow.withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -963,7 +994,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
           ),
           const SizedBox(height: 16),
           Divider(
-            color: colorScheme.outlineVariant.withOpacity(0.5),
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
             thickness: 1,
             height: 1,
           ),
@@ -985,7 +1016,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.08),
+            color: colorScheme.shadow.withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -1017,6 +1048,117 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
     );
   }
 
+  IconData? _getLifestyleIcon(String label) {
+    final l = label.toLowerCase();
+
+    // Smoking
+    if (l.contains('smoke') ||
+        l == 'frequently' ||
+        l == 'socially' ||
+        l == 'never') {
+      // It's hard to tell just from 'never' if it's smoking or drinking without category context.
+      // But let's map known labels if possible, or fall back to a generic icon
+    }
+
+    // We will do a generic approach first. If it's a known string, map it.
+    if (l == 'never' || l == 'socially' || l == 'frequently') {
+      // Too ambiguous without category. We will just return a generic check or nothing
+      return null; // Will just show label
+    }
+
+    if (l.contains('dog') || l.contains('cat') || l.contains('pet')) {
+      return Icons.pets;
+    }
+    if (l.contains('vegan') || l.contains('vegetarian')) {
+      return Icons.restaurant;
+    }
+    if (l.contains('gym') || l.contains('workout') || l.contains('fitness')) {
+      return FontAwesomeIcons.dumbbell;
+    }
+
+    return Icons.loyalty; // default fallback
+  }
+
+  Widget _buildLifestyleSection() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final profile = widget.profile;
+
+    if (_isLifestyleEmpty()) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'My Lifestyle',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 12,
+            children: profile.lifestyleItems.map((chip) {
+              IconData? icon;
+              String displayText = chip.label;
+
+              // Advanced matching based on our known chip labels and categories
+              if (chip.categoryName != null) {
+                final cName = chip.categoryName!.toLowerCase();
+                if (cName.contains('smok')) {
+                  icon = Icons.smoking_rooms_outlined;
+                } else if (cName.contains('drink'))
+                  icon = Icons.local_bar_outlined;
+                else if (cName.contains('pet'))
+                  icon = Icons.pets;
+                else if (cName.contains('diet'))
+                  icon = Icons.restaurant;
+                else if (cName.contains('workout'))
+                  icon = FontAwesomeIcons.dumbbell;
+
+                // Prepend category if it's ambiguous like "Never" or "Sometimes"
+                if (chip.label == 'Never' ||
+                    chip.label == 'Sometimes' ||
+                    chip.label == 'Socially') {
+                  if (cName.contains('smok')) {
+                    displayText = 'Smokes: ${chip.label}';
+                  }
+                  if (cName.contains('drink')) {
+                    displayText = 'Drinks: ${chip.label}';
+                  }
+                  if (cName.contains('workout')) {
+                    displayText = 'Works out: ${chip.label}';
+                  }
+                }
+              }
+
+              // Fallback icon based on label text
+              icon ??= _getLifestyleIcon(chip.label);
+
+              return _buildTag(icon, displayText);
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCausesSection() {
     final colorScheme = Theme.of(context).colorScheme;
     if (widget.profile.causes.isEmpty) return const SizedBox.shrink();
@@ -1028,7 +1170,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.08),
+            color: colorScheme.shadow.withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -1070,7 +1212,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.08),
+            color: colorScheme.shadow.withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -1111,7 +1253,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.08),
+            color: colorScheme.shadow.withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -1166,7 +1308,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.08),
+            color: colorScheme.shadow.withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -1244,7 +1386,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
             border: Border.all(color: Theme.of(context).colorScheme.primary),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
@@ -1337,11 +1479,11 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(40),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.3),
+          color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.25),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1392,7 +1534,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
           boxShadow: [
             if (backgroundColor != Colors.white)
               BoxShadow(
-                color: backgroundColor.withOpacity(0.4),
+                color: backgroundColor.withValues(alpha: 0.4),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),

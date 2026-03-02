@@ -22,14 +22,17 @@ class ProfilePrompt {
   factory ProfilePrompt.fromJson(Map<String, dynamic> json) {
     return ProfilePrompt(
       id: json['id'],
-      profileId: json['profile_id'],
-      promptTemplateId: json['prompt_template_id'],
-      userResponse: json['user_response'],
-      promptDisplayOrder: json['prompt_display_order'],
-      // If we join with prompt_templates, we might get the text.
-      promptQuestion: json['prompt_templates'] != null
-          ? json['prompt_templates']['prompt_text']
-          : null,
+      profileId:
+          json['profile_id'] ?? '', // ✅ Handle missing profile_id from joins
+      promptTemplateId: json['prompt_template_id'] ?? '',
+      userResponse: json['user_response'] ?? '',
+      promptDisplayOrder: json['prompt_display_order'] ?? 0,
+      // Our custom JSON join sends prompt_text directly, not nested
+      promptQuestion:
+          json['prompt_text'] ??
+          (json['prompt_templates'] != null
+              ? json['prompt_templates']['prompt_text']
+              : null),
     );
   }
 

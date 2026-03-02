@@ -242,15 +242,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       kids: user.kids ?? '',
       hometown: user.hometown ?? '',
       workCompany: user.workCompany ?? '',
-      hobbies: user.interests.isNotEmpty ? user.interests : ['Add Interests'],
+      hobbies: user.interests,
       summary: user.bio,
-      lookingFor: 'Connection', // Default
-      lookingForTags: [],
-      quickestWay: 'Ask me',
-      causes: [],
+      lookingForModes: user.lookingForModes,
+      quickestWay: '',
+      lifestyleItems: user.lifestyleItems, // ✅ Pass LifestyleChips directly
+      causes: user.causesCommunities,
       simplePleasure: 'Ask me',
+      prompts: user.prompts, // ✅ Pass Prompts here
       languages: user.languages.isNotEmpty ? user.languages : ['English'],
-      location: user.city.isNotEmpty ? user.city : 'Unknown',
+      location: user.city.isNotEmpty ? user.city : 'Nearby',
       spotifyArtists: [],
     );
 
@@ -439,7 +440,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.2),
+              color: iconColor.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: iconColor),

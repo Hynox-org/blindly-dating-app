@@ -165,7 +165,7 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen>
                         BoxShadow(
                           color: Theme.of(
                             context,
-                          ).colorScheme.onSurface.withOpacity(0.05),
+                          ).colorScheme.onSurface.withValues(alpha: 0.05),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -245,7 +245,7 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen>
                                       ).colorScheme.primary,
                                       activeTrackColor: Theme.of(
                                         context,
-                                      ).colorScheme.primary.withOpacity(0.4),
+                                      ).colorScheme.primary.withValues(alpha: 0.4),
                                       onChanged: (value) {
                                         if (value && !isGranted) {
                                           _requestPermission(perm);
@@ -264,7 +264,7 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen>
                                 thickness: 1,
                                 color: Theme.of(
                                   context,
-                                ).colorScheme.onSurface.withOpacity(0.1),
+                                ).colorScheme.onSurface.withValues(alpha: 0.1),
                                 indent: 80,
                               ),
                           ],

@@ -310,7 +310,7 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                     child: Text(
                       'Let your personality shine through. Record a 30 seconds short intro.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurface.withOpacity(0.6),
+                        color: colorScheme.onSurface.withValues(alpha: 0.6),
                         height: 1.4,
                         fontSize: 14,
                       ),
@@ -346,7 +346,7 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                             value: _currentTimerSeconds > 0
                                 ? _currentTimerSeconds / 30
                                 : 0.0,
-                            backgroundColor: accentGoldColor.withOpacity(0.3),
+                            backgroundColor: accentGoldColor.withValues(alpha: 0.3),
                             valueColor: AlwaysStoppedAnimation<Color>(
                               accentGoldColor,
                             ),
@@ -362,7 +362,7 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                             color: primaryDarkColor,
                             boxShadow: [
                               BoxShadow(
-                                color: primaryDarkColor.withOpacity(0.3),
+                                color: primaryDarkColor.withValues(alpha: 0.3),
                                 blurRadius: 12,
                                 offset: const Offset(0, 4),
                               ),
@@ -412,12 +412,12 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                         icon: Icon(
                           Icons.refresh,
                           size: 16,
-                          color: colorScheme.onSurface.withOpacity(0.6),
+                          color: colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
                         label: Text(
                           'Record Again',
                           style: TextStyle(
-                            color: colorScheme.onSurface.withOpacity(0.6),
+                            color: colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
                         ),
                       ),
@@ -439,7 +439,7 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                           'Voice prompts help you stand out and make deeper connections. Share who you really are',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: colorScheme.onSurface.withOpacity(0.6),
+                            color: colorScheme.onSurface.withValues(alpha: 0.6),
                             fontSize: 13,
                           ),
                         ),

@@ -441,7 +441,7 @@ class _SelfieVerificationScreenState
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          Colors.black.withOpacity(0.7),
+                          Colors.black.withValues(alpha: 0.7),
                           Colors.transparent,
                         ],
                         begin: Alignment.topCenter,
@@ -456,7 +456,7 @@ class _SelfieVerificationScreenState
                       gradient: LinearGradient(
                         colors: [
                           Colors.transparent,
-                          Colors.black.withOpacity(0.7),
+                          Colors.black.withValues(alpha: 0.7),
                         ],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
@@ -608,7 +608,7 @@ class _SelfieVerificationScreenState
             if (_matchProgress >= 1.0)
               Positioned.fill(
                 child: Container(
-                  color: Colors.green.withOpacity(0.6),
+                  color: Colors.green.withValues(alpha: 0.6),
                   child: const Center(
                     child: Icon(
                       Icons.check_circle_rounded,
