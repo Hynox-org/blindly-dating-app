@@ -1207,7 +1207,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             child: Container(
               padding: const EdgeInsets.all(16),
               width: double.infinity,
-              height: 100, // Fixed height to match "box" look
+              constraints: const BoxConstraints(
+                minHeight: 100,
+              ), // Fixed height removed to allow dynamic expansion
               decoration: BoxDecoration(
                 color: const Color(0xFFF5F5F5),
                 borderRadius: BorderRadius.circular(16),
@@ -1652,7 +1654,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                                   borderRadius: BorderRadius.circular(20),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.05),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.05,
+                                      ),
                                       offset: const Offset(0, 2),
                                       blurRadius: 4,
                                     ),

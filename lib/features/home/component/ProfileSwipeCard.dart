@@ -181,32 +181,44 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                       _buildImageSection(0, cardHeight: constraints.maxHeight),
                       const SizedBox(height: 12),
                       // ============ ABOUT ME SECTION ============
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildAboutMeSection(),
-                      ),
-                      const SizedBox(height: 16),
+                      if (!_isAboutMeEmpty()) ...[
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: _buildAboutMeSection(),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                       // ============ BIO SECTION ============
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildBioSection(),
-                      ),
-                      const SizedBox(height: 16),
+                      if (widget.profile.bio.isNotEmpty) ...[
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: _buildBioSection(),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                       // ============ IMAGE 2 ============
-                      _buildImageSection(1),
-                      const SizedBox(height: 16),
+                      if (widget.profile.imageUrls.length > 1) ...[
+                        _buildImageSection(1),
+                        const SizedBox(height: 16),
+                      ],
                       // ============ KUDOS SECTION ============
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildKudosSection(),
-                      ),
-                      const SizedBox(height: 16),
+                      if (widget.profile.prompts.any(
+                        (p) => p.userResponse.isNotEmpty,
+                      )) ...[
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: _buildKudosSection(),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                       // ============ LOOKING FOR SECTION ============
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildLookingForSection(),
-                      ),
-                      const SizedBox(height: 16),
+                      if (!_isLookingForEmpty()) ...[
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: _buildLookingForSection(),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                       // ============ HEART SECTION ============
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -214,11 +226,13 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                       ),
                       const SizedBox(height: 16),
                       // ============ INTERESTS SECTION ============
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildInterestsSection(),
-                      ),
-                      const SizedBox(height: 16),
+                      if (!_isInterestsEmpty()) ...[
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: _buildInterestsSection(),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                       // ============ LIFESTYLE SECTION ============
                       if (!_isLifestyleEmpty()) ...[
                         Padding(
@@ -228,32 +242,43 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                         const SizedBox(height: 16),
                       ],
                       // ============ IMAGE 3 ============
-                      _buildImageSection(2),
-                      const SizedBox(height: 16),
+                      if (widget.profile.imageUrls.length > 2) ...[
+                        _buildImageSection(2),
+                        const SizedBox(height: 16),
+                      ],
                       // ============ CAUSES SECTION ============
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildCausesSection(),
-                      ),
-                      const SizedBox(height: 16),
+                      if (!_isCausesEmpty()) ...[
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: _buildCausesSection(),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                       // ============ LANGUAGES SECTION ============
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildLanguagesSection(),
-                      ),
-                      const SizedBox(height: 16),
+                      if (!_isLanguagesEmpty()) ...[
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: _buildLanguagesSection(),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                       // ============ LOCATION SECTION ============
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildLocationSection(),
-                      ),
-                      const SizedBox(height: 16),
+                      if (!_isLocationEmpty()) ...[
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: _buildLocationSection(),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                       // ============ SPOTIFY SECTION ============
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildSpotifySection(),
-                      ),
-                      const SizedBox(height: 32),
+                      if (!_isSpotifyEmpty()) ...[
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: _buildSpotifySection(),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      const SizedBox(height: 16),
                       // ============ ACTION BUTTONS ============
                       _buildActionButtons(),
                       const SizedBox(height: 32),
@@ -506,10 +531,12 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         } else {
           return SizedBox(
             width: double.infinity,
-            height: 400,
-            child: Stack(
-              fit: StackFit.expand,
-              children: _buildImageStack(index),
+            child: AspectRatio(
+              aspectRatio: 3 / 4,
+              child: Stack(
+                fit: StackFit.expand,
+                children: _buildImageStack(index),
+              ),
             ),
           );
         }
@@ -769,24 +796,27 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16 * scaleFactor),
       ),
-      child: Column(
-        children: [
-          Text(
-            "Compatibility Score: 70%",
-            style: TextStyle(
-              fontSize: 10 * scaleFactor,
-              fontWeight: FontWeight.w600,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Column(
+          children: [
+            Text(
+              "Compatibility Score: 70%",
+              style: TextStyle(
+                fontSize: 10 * scaleFactor,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-          SizedBox(height: 2 * scaleFactor),
-          Text(
-            "Trust Score: 70%",
-            style: TextStyle(
-              fontSize: 10 * scaleFactor,
-              fontWeight: FontWeight.w600,
+            SizedBox(height: 2 * scaleFactor),
+            Text(
+              "Trust Score: 70%",
+              style: TextStyle(
+                fontSize: 10 * scaleFactor,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1303,14 +1333,18 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                 color: colorScheme.onSurface,
               ),
               const SizedBox(width: 12),
-              Text(
-                widget.profile.location.isNotEmpty
-                    ? widget.profile.location
-                    : 'Nearby',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w500,
+              Expanded(
+                child: Text(
+                  widget.profile.location.isNotEmpty
+                      ? widget.profile.location
+                      : 'Nearby',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
