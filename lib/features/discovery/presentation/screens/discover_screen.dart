@@ -5,6 +5,7 @@ import 'dart:async';
 import '../../../../core/widgets/app_layout.dart';
 import '../../../../core/widgets/app_loader.dart';
 import '../../../home/screens/connection_type_screen.dart';
+import '../../../home/screens/home_screen.dart';
 import '../../../../core/utils/navigation_utils.dart';
 import '../../povider/discovery_landing_provider.dart';
 import '../../../../core/providers/connection_mode_provider.dart';
@@ -171,7 +172,18 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: FilledButton(
-                onPressed: () => _fetchData(forceRefresh: true),
+                onPressed: () {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) =>
+                          const HomeScreen(),
+                      transitionDuration: Duration.zero,
+                      reverseTransitionDuration: Duration.zero,
+                    ),
+                    (route) => false,
+                  );
+                },
                 style: FilledButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   minimumSize: const Size(double.infinity, 56),
