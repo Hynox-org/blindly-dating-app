@@ -253,6 +253,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       languages: user.languages.isNotEmpty ? user.languages : ['English'],
       location: user.city.isNotEmpty ? user.city : 'Nearby',
       spotifyArtists: [],
+      isVerified: user.isVerified,
+      verificationLevel: user.verificationLevel,
     );
 
     showDialog(

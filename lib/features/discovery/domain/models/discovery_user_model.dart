@@ -34,6 +34,8 @@ class DiscoveryUser {
   final List<ProfilePrompt> prompts; // ✅ New: Store dynamically fetched prompts
   final List<String>
   lookingForModes; // ✅ New: Fetch active mode looking_for preferences
+  final bool isVerified;
+  final String verificationLevel;
 
   DiscoveryUser({
     required this.profileId,
@@ -67,6 +69,8 @@ class DiscoveryUser {
     this.prompts = const [],
     this.swipeAction,
     this.lookingForModes = const [],
+    this.isVerified = false,
+    this.verificationLevel = 'unverified',
   });
 
   factory DiscoveryUser.fromJson(Map<String, dynamic> json) {
@@ -141,6 +145,8 @@ class DiscoveryUser {
               ?.map((e) => e.toString())
               .toList() ??
           [],
+      isVerified: json['is_verified'] ?? false,
+      verificationLevel: json['verification_level'] ?? 'unverified',
     );
   }
 }

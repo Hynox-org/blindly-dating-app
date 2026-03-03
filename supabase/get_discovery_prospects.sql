@@ -16,7 +16,9 @@ RETURNS TABLE (
   work_title text,
   hometown_city text,
   prompts json,
-  looking_for text[]
+  looking_for text[],
+  is_verified boolean,
+  verification_level text
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -106,7 +108,9 @@ BEGIN
       '[]'::json
     ) as prompts,
     
-    COALESCE(pm.looking_for, '{}'::text[]) as looking_for
+    COALESCE(pm.looking_for, '{}'::text[]) as looking_for,
+    p.is_verified,
+    p.verification_level::text
     
   FROM public.profiles p
   INNER JOIN public.profile_modes pm ON p.id = pm.profile_id

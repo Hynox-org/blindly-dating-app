@@ -209,6 +209,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         simplePleasure: '',
         languages: user.languages, // ✅ Dynamic Languages
         spotifyArtists: user.spotifyArtists, // ✅ Dynamic Spotify
+        isVerified: user.isVerified,
+        verificationLevel: user.verificationLevel,
       );
     }).toList();
   }

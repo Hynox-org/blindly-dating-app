@@ -75,6 +75,8 @@ class _DiscoveryProfileDetailScreenState
       simplePleasure: '',
       languages: user.languages,
       spotifyArtists: user.spotifyArtists,
+      isVerified: user.isVerified,
+      verificationLevel: user.verificationLevel,
     );
   }
 
@@ -110,47 +112,76 @@ class _DiscoveryProfileDetailScreenState
     final uiProfile = _mapToUserProfile(widget.user);
 
     return Scaffold(
-      backgroundColor: Colors.black, // Dark background for focus
-      body: Stack(
-        children: [
-          // The Card
-          Positioned.fill(
-            child: ProfileSwipeCard(
-              profile: uiProfile,
-              mode: ProfileCardMode.discovery,
-              swipeState: _swipeState, // ✅ Pass down the state
-              horizontalThreshold: 0,
-              verticalThreshold: 0,
-              onLike: () => _handleAction('like'),
-              onBlock: () => _handleAction('pass'),
-              onUndo: _handleUndo, // ✅ Pass down the undo handler
-              onReport: () {
-                // Report Logic (Placeholder)
-                Navigator.pop(context);
-              },
-            ),
+      backgroundColor: Colors.transparent, // ✅ Allow backdrop to show
+      body: SafeArea(
+        child: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white, // ✅ The white background he asked for
+            borderRadius: BorderRadius.circular(
+              20,
+            ), // ✅ The curved edges he asked for
           ),
-
-          // Close Button (Top RIGHT now)
-          Positioned(
-            top: 50,
-            right: 20,
-            child: GestureDetector(
-              onTap: () => Navigator.pop(
-                context,
-                null,
-              ), // Return whatever the state was initially basically without change
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.5),
-                  shape: BoxShape.circle,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(
+                  top: 60, // Matching profile.dart exactly
+                  bottom: 80,
+                  left: 20,
+                  right: 20,
                 ),
-                child: const Icon(Icons.close, color: Colors.white, size: 30),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: ProfileSwipeCard(
+                    profile: uiProfile,
+                    mode: ProfileCardMode
+                        .discovery, // Preserve discovery mode for action buttons
+                    swipeState: _swipeState, // ✅ Pass down the state
+                    horizontalThreshold: 0,
+                    verticalThreshold: 0,
+                    onLike: () => _handleAction('like'),
+                    onBlock: () => _handleAction('pass'),
+                    onUndo: _handleUndo, // ✅ Pass down the undo handler
+                    onReport: () {
+                      // Report Logic (Placeholder)
+                      Navigator.pop(context);
+                    },
+                  ),
+                ),
               ),
-            ),
+
+              Positioned(
+                top: 10, // ✅ Restored back to 10
+                right: 10,
+                child: GestureDetector(
+                  onTap: () => Navigator.pop(
+                    context,
+                    null,
+                  ), // Return whatever the state was initially basically without change
+                  child: CircleAvatar(
+                    backgroundColor: Colors.black,
+                    radius: 20,
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
+
+              Positioned(
+                bottom: 10,
+                left: 0,
+                right: 0,
+                child: const SizedBox.shrink(), // Button moved inside card
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

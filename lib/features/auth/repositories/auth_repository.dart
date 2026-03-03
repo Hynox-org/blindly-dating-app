@@ -130,9 +130,7 @@ class AuthRepository {
 
       // 3. Initialize Configuration (Required in v7)
       // You MUST pass the serverClientId here now.
-      await googleSignIn.initialize(
-        serverClientId: webClientId,
-      );
+      await googleSignIn.initialize(serverClientId: webClientId);
 
       // Force account picker by signing out first
       await googleSignIn.signOut();
@@ -188,7 +186,7 @@ class AuthRepository {
   Future<void> signOut() async {
     await _client.auth.signOut();
     // Optional: Also sign out of Google locally to ensure account picker appears next time
-    // await GoogleSignIn.instance.signOut(); 
+    // await GoogleSignIn.instance.signOut();
   }
 
   /// Creates a profile for the user and initializes default 'date' mode.
@@ -202,11 +200,10 @@ class AuthRepository {
 
       final profileId = profileResponse['id'] as String;
 
-      await _client.from('profile_modes').upsert({
-        'profile_id': profileId,
-        'mode': 'date',
-        'is_active': true,
-      }, onConflict: 'profile_id, mode');
+      await _client.from('profile_modes').upsert([
+        {'profile_id': profileId, 'mode': 'date', 'is_active': true},
+        {'profile_id': profileId, 'mode': 'bff', 'is_active': true},
+      ], onConflict: 'profile_id, mode');
 
       AppLogger.info(
         'AUTH_REPO: Profile and default Mode created/updated for user: $userId',

@@ -43,6 +43,8 @@ class UserProfile {
   final List<String> languages;
   final String location;
   final List<String> spotifyArtists;
+  final bool isVerified;
+  final String verificationLevel;
 
   UserProfile({
     required this.id,
@@ -76,6 +78,8 @@ class UserProfile {
     required this.languages,
     required this.location,
     required this.spotifyArtists,
+    this.isVerified = false,
+    this.verificationLevel = 'unverified',
   });
 }
 
@@ -159,104 +163,109 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          color: Colors.white,
+          color: Colors
+              .transparent, // ✅ Allow parent container to define background color
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            return ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: SingleChildScrollView(
-                controller: _scrollController,
-                child: Column(
-                  children: [
-                    // ============ IMAGE 1 ============
-                    _buildImageSection(0, cardHeight: constraints.maxHeight),
-                    const SizedBox(height: 12),
-                    // ============ ABOUT ME SECTION ============
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _buildAboutMeSection(),
-                    ),
-                    const SizedBox(height: 16),
-                    // ============ BIO SECTION ============
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _buildBioSection(),
-                    ),
-                    const SizedBox(height: 16),
-                    // ============ IMAGE 2 ============
-                    _buildImageSection(1),
-                    const SizedBox(height: 16),
-                    // ============ KUDOS SECTION ============
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _buildKudosSection(),
-                    ),
-                    const SizedBox(height: 16),
-                    // ============ LOOKING FOR SECTION ============
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _buildLookingForSection(),
-                    ),
-                    const SizedBox(height: 16),
-                    // ============ HEART SECTION ============
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _buildHeartSection(),
-                    ),
-                    const SizedBox(height: 16),
-                    // ============ INTERESTS SECTION ============
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _buildInterestsSection(),
-                    ),
-                    const SizedBox(height: 16),
-                    // ============ LIFESTYLE SECTION ============
-                    if (!_isLifestyleEmpty()) ...[
+            return Container(
+              color: Colors
+                  .white, // ✅ Solid white background for the scrolling card content
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  child: Column(
+                    children: [
+                      // ============ IMAGE 1 ============
+                      _buildImageSection(0, cardHeight: constraints.maxHeight),
+                      const SizedBox(height: 12),
+                      // ============ ABOUT ME SECTION ============
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildLifestyleSection(),
+                        child: _buildAboutMeSection(),
                       ),
                       const SizedBox(height: 16),
+                      // ============ BIO SECTION ============
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildBioSection(),
+                      ),
+                      const SizedBox(height: 16),
+                      // ============ IMAGE 2 ============
+                      _buildImageSection(1),
+                      const SizedBox(height: 16),
+                      // ============ KUDOS SECTION ============
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildKudosSection(),
+                      ),
+                      const SizedBox(height: 16),
+                      // ============ LOOKING FOR SECTION ============
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildLookingForSection(),
+                      ),
+                      const SizedBox(height: 16),
+                      // ============ HEART SECTION ============
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildHeartSection(),
+                      ),
+                      const SizedBox(height: 16),
+                      // ============ INTERESTS SECTION ============
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildInterestsSection(),
+                      ),
+                      const SizedBox(height: 16),
+                      // ============ LIFESTYLE SECTION ============
+                      if (!_isLifestyleEmpty()) ...[
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: _buildLifestyleSection(),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      // ============ IMAGE 3 ============
+                      _buildImageSection(2),
+                      const SizedBox(height: 16),
+                      // ============ CAUSES SECTION ============
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildCausesSection(),
+                      ),
+                      const SizedBox(height: 16),
+                      // ============ LANGUAGES SECTION ============
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildLanguagesSection(),
+                      ),
+                      const SizedBox(height: 16),
+                      // ============ LOCATION SECTION ============
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildLocationSection(),
+                      ),
+                      const SizedBox(height: 16),
+                      // ============ SPOTIFY SECTION ============
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildSpotifySection(),
+                      ),
+                      const SizedBox(height: 32),
+                      // ============ ACTION BUTTONS ============
+                      _buildActionButtons(),
+                      const SizedBox(height: 32),
+                      // ============ BLOCK / REPORT ============
+                      // Only show block/report in Swipe or Discovery modes, not Preview
+                      if (widget.mode != ProfileCardMode.preview) ...[
+                        _buildBlockReportButtons(),
+                        const SizedBox(height: 48),
+                      ] else
+                        const SizedBox(height: 48),
                     ],
-                    // ============ IMAGE 3 ============
-                    _buildImageSection(2),
-                    const SizedBox(height: 16),
-                    // ============ CAUSES SECTION ============
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _buildCausesSection(),
-                    ),
-                    const SizedBox(height: 16),
-                    // ============ LANGUAGES SECTION ============
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _buildLanguagesSection(),
-                    ),
-                    const SizedBox(height: 16),
-                    // ============ LOCATION SECTION ============
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _buildLocationSection(),
-                    ),
-                    const SizedBox(height: 16),
-                    // ============ SPOTIFY SECTION ============
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _buildSpotifySection(),
-                    ),
-                    const SizedBox(height: 32),
-                    // ============ ACTION BUTTONS ============
-                    _buildActionButtons(),
-                    const SizedBox(height: 32),
-                    // ============ BLOCK / REPORT ============
-                    // Only show block/report in Swipe or Discovery modes, not Preview
-                    if (widget.mode != ProfileCardMode.preview) ...[
-                      _buildBlockReportButtons(),
-                      const SizedBox(height: 48),
-                    ] else
-                      const SizedBox(height: 48),
-                  ],
+                  ),
                 ),
               ),
             );
@@ -593,19 +602,29 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Colors.transparent, Colors.black.withValues(alpha: 0.9)],
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.9),
+                ],
               ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Verified tags
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    verifiedTag("Profile Verified", Colors.blue, scaleFactor),
-                    SizedBox(height: 4 * scaleFactor),
-                    verifiedTag("Photo Verified", Colors.black, scaleFactor),
+                    if (widget.profile.isVerified &&
+                        widget.profile.verificationLevel ==
+                            'full_verified') ...[
+                      verifiedTag("Profile Verified", Colors.blue, scaleFactor),
+                      SizedBox(height: 4 * scaleFactor),
+                      // Verified "Photo Verified" is blue, as requested ("show the two badges in bluue colour profile verified and photo verified")
+                      verifiedTag("Photo Verified", Colors.blue, scaleFactor),
+                    ] else ...[
+                      // "if they are noot verified the show a black badge mentioning not verified"
+                      verifiedTag("Not Verified", Colors.black, scaleFactor),
+                    ],
                   ],
                 ),
                 SizedBox(height: 8 * scaleFactor),
@@ -661,24 +680,26 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                     ),
                   ],
                 ),
-                SizedBox(height: 16 * scaleFactor),
-                // Gold buttons + scores
-                Row(
-                  children: [
-                    goldButton(loveChatIcon(scaleFactor), scaleFactor),
-                    const Spacer(),
-                    scoreBox(scaleFactor),
-                    const Spacer(),
-                    goldButton(
-                      Icon(
-                        Icons.star,
-                        color: const Color(0xFFD4AF37),
-                        size: 20 * scaleFactor,
+                if (widget.mode == ProfileCardMode.swipe) ...[
+                  SizedBox(height: 16 * scaleFactor),
+                  // Gold buttons + scores
+                  Row(
+                    children: [
+                      goldButton(loveChatIcon(scaleFactor), scaleFactor),
+                      const Spacer(),
+                      scoreBox(scaleFactor),
+                      const Spacer(),
+                      goldButton(
+                        Icon(
+                          Icons.star,
+                          color: const Color(0xFFD4AF37),
+                          size: 20 * scaleFactor,
+                        ),
+                        scaleFactor,
                       ),
-                      scaleFactor,
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -878,7 +899,9 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+        ),
         boxShadow: [
           BoxShadow(
             color: colorScheme.shadow.withValues(alpha: 0.08),
@@ -1386,7 +1409,9 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
             border: Border.all(color: Theme.of(context).colorScheme.primary),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.2),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
@@ -1479,7 +1504,9 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(40),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3),
+          color: Theme.of(
+            context,
+          ).colorScheme.outlineVariant.withValues(alpha: 0.3),
         ),
         boxShadow: [
           BoxShadow(
