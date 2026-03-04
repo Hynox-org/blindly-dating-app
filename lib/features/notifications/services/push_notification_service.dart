@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/core/utils/nav_key.dart';
 
 class PushNotificationService {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -30,12 +31,42 @@ class PushNotificationService {
     // 3. Listen to Token Refreshes
     _fcm.onTokenRefresh.listen(_saveTokenToDatabase);
 
+    // Set Presentation Options for iOS in Foreground
+    await _fcm.setForegroundNotificationPresentationOptions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
     // 4. Handle Foreground Messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint(
         'Received a message while in foreground: ${message.messageId}',
       );
       // Optionally show a local notification / snackbar here
+      if (message.notification != null) {
+        final context = navigatorKey.currentContext;
+        if (context != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: Colors.white,
+              content: Text(
+                '${message.notification?.title ?? 'New Notification'}\n${message.notification?.body ?? ''}',
+                style: const TextStyle(color: Colors.black),
+              ),
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 4),
+              action: SnackBarAction(
+                label: 'View',
+                textColor: Theme.of(context).colorScheme.primary,
+                onPressed: () {
+                  _handleDeepLink(context, message);
+                },
+              ),
+            ),
+          );
+        }
+      }
     });
 
     // 5. Handle Background/Terminated Notification Taps (Deep Linking)
