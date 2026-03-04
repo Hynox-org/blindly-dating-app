@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/security/security_config.dart';
@@ -17,6 +18,8 @@ import 'core/theme/app_theme.dart';
 import 'core/utils/logging_navigator_observer.dart';
 import 'core/utils/nav_key.dart';
 import 'features/auth/providers/auth_state_listener.dart';
+import 'features/notifications/services/push_notification_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'core/config/jiobase_proxy_client.dart';
 
@@ -48,7 +51,12 @@ void main() async {
   final proxiedHttpClient = JiobaseProxyClient(secureClient, fallbackUrl);
 
   await Future.wait([
-    Firebase.initializeApp().then((_) => SecurityConfig.initializeAppCheck()),
+    Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    ).then((_) {
+      SecurityConfig.initializeAppCheck();
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    }),
     Supabase.initialize(
       url: trueSupabaseUrl,
       anonKey: dotenv.env['SUPABASE_ANON_KEY']!,

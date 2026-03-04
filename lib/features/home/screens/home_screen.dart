@@ -23,6 +23,8 @@ import '../../discovery/presentation/widgets/no_more_profiles_widget.dart';
 import '../../../../core/utils/navigation_utils.dart';
 import 'connection_type_screen.dart';
 import '../../discovery/presentation/screens/filter_screen.dart';
+import '../../notifications/screens/notifications_screen.dart';
+import '../../notifications/services/push_notification_service.dart';
 
 // ✅ 4. Layout
 import '../../../../core/widgets/app_layout.dart';
@@ -114,6 +116,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Future<void> _initLocationAndFeed() async {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // ✅ 0. INIT PUSH NOTIFICATIONS
+      PushNotificationService().initPushNotifications(context);
+
       // ✅ 1. CHECK SESSION FLAG
       // If we already updated location this session, skip the heavy lifting.
       final isAlreadyUpdated = ref.read(locationUpdateSessionProvider);
@@ -251,6 +256,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: Icon(
+              Icons.notifications_none,
+              color: Theme.of(context).colorScheme.onSurface,
+              size: 28,
+            ),
+            onPressed: () {
+              NavigationUtils.navigateToWithSlide(
+                context,
+                const NotificationsScreen(),
+              );
+            },
+          ),
           IconButton(
             icon: Icon(
               Icons.reply,
