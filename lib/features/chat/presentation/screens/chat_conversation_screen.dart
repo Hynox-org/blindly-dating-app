@@ -9,30 +9,37 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
 // import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 // import 'package:permission_handler/permission_handler.dart';
-import './call_screen.dart';
+import '../../../call/presentation/screens/call_screen.dart';
 import 'dart:async';
-
-class ChatConversationScreen extends StatefulWidget {
+import './../../../../core/utils/app_state.dart';
+import './../../../call/provider/global_call_listener.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+class ChatConversationScreen extends ConsumerStatefulWidget {
   final String matchId;
   final String otherUserName;
   final String otherUserImage;
   final String myProfileId;
   final String otherProfileId;
+  final String name;
+  final String imageUrl;
 
   const ChatConversationScreen({
-    super.key,
+    Key? key,
     required this.matchId,
     required this.otherUserName,
     required this.otherUserImage,
     required this.myProfileId,
     required this.otherProfileId,
-  });
+    required this.name,
+    required this.imageUrl,
+  }) : super(key: key);
 
   @override
-  State<ChatConversationScreen> createState() => _ChatConversationScreenState();
+  ConsumerState<ChatConversationScreen> createState() =>
+      _ChatConversationScreenState();
 }
 
-class _ChatConversationScreenState extends State<ChatConversationScreen> {
+class _ChatConversationScreenState extends ConsumerState<ChatConversationScreen> {
   final SupabaseClient _supabase = Supabase.instance.client;
 
   final TextEditingController _controller = TextEditingController();
@@ -57,27 +64,70 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
 
   // ================== AGORA ==================
   @override
-  void initState() {
-    super.initState();
-    _listenIncomingCalls();
-    _loadHistory();
-    _listenRealtime();
-    _markMessagesAsDelivered();
-    _markMessagesAsRead();
+void initState() {
+  super.initState();
+
+  AppState.isChatScreenOpen = true;
+  AppState.currentChatProfileId = widget.otherProfileId;
+AppState.setCurrentChat(widget.otherProfileId);
+
+  // Listen to global incoming call provider
+  // Future.microtask(() {
+  //   ref.listen(incomingCallProvider, (previous, next) {
+  //     if (next == null) return;
+  //     if (!mounted) return;
+
+  //     if (_isNavigatingToCall) return;
+
+  //     // If the call belongs to THIS chat user
+  //     if (next['caller_id'] == widget.otherProfileId ||
+  //         next['receiver_id'] == widget.otherProfileId) {
+
+  //       _isNavigatingToCall = true;
+
+  //       Navigator.push(
+  //         context,
+  //         MaterialPageRoute(
+  //           builder: (_) => CallScreen(
+  //             callId: next['id'],
+  //             channelName: next['channel_name'],
+  //             isVideo: next['call_type'] == 'video',
+  //             isCaller: false,
+
+  //             // ALWAYS use global listener caller details
+  //             otherUserName: next['caller_name'] ?? 'Unknown',
+  //             otherUserImage: next['caller_image'] ?? '',
+  //           ),
+  //         ),
+  //       ).then((_) {
+  //         _isNavigatingToCall = false;
+  //       });
+  //     }
+  //   });
+  // });
+
+  _loadHistory();
+  _listenRealtime();
+  _markMessagesAsDelivered();
+  _markMessagesAsRead();
+}
+  @override
+void dispose() {
+  AppState.isChatScreenOpen = false;
+  AppState.currentChatProfileId = null;
+AppState.setCurrentChat(null);
+
+  if (_channel != null) {
+    _supabase.removeChannel(_channel!);
   }
 
-  @override
-  void dispose() {
-    if (_channel != null) {
-      _supabase.removeChannel(_channel!);
-    }
-    _controller.dispose();
-    _scrollController.dispose();
-    _focusNode.dispose();
-    _audioRecorder.dispose();
-    _incomingCallSub?.cancel();
-    super.dispose();
-  }
+  _controller.dispose();
+  _scrollController.dispose();
+  _focusNode.dispose();
+  _audioRecorder.dispose();
+
+  super.dispose();
+}
 
   //===========================================
   // AGORA CALL SETUP
@@ -191,19 +241,23 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
 
       if (!mounted) return;
 
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => CallScreen(
-            callId: call['id'],
-            channelName: widget.matchId,
-            isVideo: isVideo,
-            isCaller: true,
-            otherUserName: widget.otherUserName,
-            otherUserImage: widget.otherUserImage,
-          ),
-        ),
-      );
+      AppState.isCallScreenOpen = true;
+
+await Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (_) => CallScreen(
+      callId: call['id'],
+      channelName: widget.matchId,
+      isVideo: isVideo,
+      isCaller: true,
+      otherUserName: widget.otherUserName,
+      otherUserImage: widget.otherUserImage,
+    ),
+  ),
+);
+
+AppState.isCallScreenOpen = false;
     } catch (e) {
       debugPrint("❌ Start call error: $e");
     } finally {
@@ -214,77 +268,77 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   // INCOMING CALL LISTENER (FIXED PROPERLY)
   // ===========================================
 
-  StreamSubscription<List<Map<String, dynamic>>>? _incomingCallSub;
+  // StreamSubscription<List<Map<String, dynamic>>>? _incomingCallSub;
 
-  Future<void> _listenIncomingCalls() async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) {
-      debugPrint("❌ User is null, cannot listen for calls");
-      return;
-    }
-    final profile = await Supabase.instance.client
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-    debugPrint("✅ Profile loaded for call listener: $profile");
-    final myProfileId = profile['id'];
-    debugPrint("✅ My profile ID for call listener: $myProfileId");
-    _incomingCallSub = Supabase.instance.client
-        .from('calls')
-        .stream(primaryKey: ['id'])
-        .listen((calls) async {
-          if (!mounted) return;
-          if (_isNavigatingToCall) return;
+//   Future<void> _listenIncomingCalls() async {
+//     final user = Supabase.instance.client.auth.currentUser;
+//     if (user == null) {
+//       debugPrint("❌ User is null, cannot listen for calls");
+//       return;
+//     }
+//     final profile = await Supabase.instance.client
+//         .from('profiles')
+//         .select('id')
+//         .eq('user_id', user.id)
+//         .single();
+//     debugPrint("✅ Profile loaded for call listener: $profile");
+//     final myProfileId = profile['id'];
+//     debugPrint("✅ My profile ID for call listener: $myProfileId");
+//     _incomingCallSub = Supabase.instance.client
+//         .from('calls')
+//         .stream(primaryKey: ['id'])
+//         .listen((calls) async {
+//           if (!mounted) return;
+//           if (_isNavigatingToCall) return;
 
-          final user = Supabase.instance.client.auth.currentUser;
-          debugPrint(
-            "📞 Incoming call stream event: $calls"
-            " | Current user: ${user?.id}",
-          );
-          if (user == null) {
-            debugPrint("❌ User is null in call stream");
-            return;
-          }
-          final profile = await Supabase.instance.client
-              .from('profiles')
-              .select('id')
-              .eq('user_id', user.id)
-              .single();
+//           final user = Supabase.instance.client.auth.currentUser;
+//           debugPrint(
+//             "📞 Incoming call stream event: $calls"
+//             " | Current user: ${user?.id}",
+//           );
+//           if (user == null) {
+//             debugPrint("❌ User is null in call stream");
+//             return;
+//           }
+//           final profile = await Supabase.instance.client
+//               .from('profiles')
+//               .select('id')
+//               .eq('user_id', user.id)
+//               .single();
 
-          final myProfileId = profile['id'];
+//           final myProfileId = profile['id'];
 
-          final incoming = calls.where(
-            (call) =>
-                call['receiver_id'] == myProfileId &&
-                call['status'] == 'ringing',
-          );
-          debugPrint("✅ Incoming calls after filtering: $incoming");
-          if (incoming.isEmpty) {
-            debugPrint("📭 No incoming calls, ignoring...");
-            return;
-          }
-          final call = incoming.first;
-debugPrint("📞 Incoming call from ${call['caller_id']} with call ID ${call['id']}");
-          _isNavigatingToCall = true;
+//           final incoming = calls.where(
+//             (call) =>
+//                 call['receiver_id'] == myProfileId &&
+//                 call['status'] == 'ringing',
+//           );
+//           debugPrint("✅ Incoming calls after filtering: $incoming");
+//           if (incoming.isEmpty) {
+//             debugPrint("📭 No incoming calls, ignoring...");
+//             return;
+//           }
+//           final call = incoming.first;
+// debugPrint("📞 Incoming call from ${call['caller_id']} with call ID ${call['id']}");
+//           _isNavigatingToCall = true;
 
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => CallScreen(
-                callId: call['id'],
-                channelName: call['channel_name'],
-                isVideo: call['call_type'] == 'video',
-                isCaller: false,
-                otherUserName: widget.otherUserName,
-                otherUserImage: widget.otherUserImage,
-              ),
-            ),
-          );
+//           await Navigator.push(
+//             context,
+//             MaterialPageRoute(
+//               builder: (_) => CallScreen(
+//                 callId: call['id'],
+//                 channelName: call['channel_name'],
+//                 isVideo: call['call_type'] == 'video',
+//                 isCaller: false,
+//                 otherUserName: widget.otherUserName,
+//                 otherUserImage: widget.otherUserImage,
+//               ),
+//             ),
+//           );
 
-          _isNavigatingToCall = false;
-        });
-  }
+//           _isNavigatingToCall = false;
+//         });
+//   }
   // MARK AS DELIVERED/READ
   // ==============================
 

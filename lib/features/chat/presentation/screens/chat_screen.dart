@@ -7,7 +7,7 @@ import '../../../../core/widgets/app_layout.dart';
 import '../../../../core/widgets/app_loader.dart';
 import '../../../home/screens/home_screen.dart';
 import './chat_conversation_screen.dart';
-import './chat_detail_screen.dart';
+import './match_expiry_screen.dart';
 
 class ChatScreen extends ConsumerWidget {
   const ChatScreen({super.key});
@@ -199,18 +199,25 @@ class ChatScreen extends ConsumerWidget {
                                 padding: const EdgeInsets.only(right: 16.0),
                                 child: GestureDetector(
                                   onTap: () {
+                                    final expiryAt = match.expiryAt;
+                                    final remainingTime = expiryAt != null
+                                      ? expiryAt.difference(DateTime.now())
+                                      : Duration.zero;
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (_) => ChatDetailScreen(
-                                          name: otherName,
-                                          imageUrl: _getProfileImage(
-                                            photoUrl,
-                                            otherName,
+                                        builder: (_) => MatchExpiryScreen(
+                                          userName: otherName,
+                                          userImage: _getProfileImage(
+                                            photoUrl, 
+                                            otherName
                                           ),
                                           matchId: match.matchId,
                                           myProfileId: profileId,
                                           otherProfileId: otherProfileId,
+                                          remainingTime: remainingTime.isNegative
+                                              ? Duration.zero
+                                              : remainingTime,
                                         ),
                                       ),
                                     );
@@ -364,8 +371,9 @@ class ChatScreen extends ConsumerWidget {
                                       otherUserName: otherName,
                                       otherUserImage: otherImage,
                                       myProfileId: profileId,
-                                      otherProfileId: otherProfile['id']
-                                          .toString(),
+                                      otherProfileId: otherProfile['id'].toString(),
+                                      name:otherName,
+                                      imageUrl: otherImage,
                                     ),
                                   ),
                                 );
