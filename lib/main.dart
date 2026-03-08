@@ -5,15 +5,18 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'core/security/security_config.dart';
 import 'core/config/environment_config.dart';
+import 'core/config/jiobase_proxy_client.dart';
 
-// Import your existing screens
+// Screens
 import 'features/splash/screens/splash_screen.dart';
 import 'features/onboarding/screens/welcome_screen.dart';
 import 'features/onboarding/screens/location_access_screen.dart';
 import 'features/auth/screens/authentication_screen.dart';
 import 'features/home/screens/home_screen.dart';
+// Core
 import 'core/theme/app_theme.dart';
 import 'core/utils/logging_navigator_observer.dart';
 import 'core/utils/nav_key.dart';
@@ -21,8 +24,10 @@ import 'features/auth/providers/auth_state_listener.dart';
 import 'features/notifications/services/push_notification_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
-import 'core/config/jiobase_proxy_client.dart';
-
+//CALL SYSTEM
+// import 'features/call/provider/global_call_listener.dart';
+import 'features/call/presentation/widgets/incoming_call_overlay.dart';
+import 'features/call/global_call_initializer.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([
@@ -42,13 +47,13 @@ void main() async {
   String? directUrl = dotenv.env['SUPABASE_DIRECT_URL'];
   // The true .supabase.co URL
   String fallbackUrl = dotenv.env['SUPABASE_URL']!;
-  String trueSupabaseUrl = directUrl != null && directUrl.isNotEmpty
-      ? directUrl
-      : fallbackUrl;
+  String trueSupabaseUrl =
+      directUrl != null && directUrl.isNotEmpty
+          ? directUrl
+          : fallbackUrl;
 
-  // Use the native client for REST but route through JiobaseProxyClient
-  // which will send all HTTP to fallbackUrl (Jiobase proxy)
-  final proxiedHttpClient = JiobaseProxyClient(secureClient, fallbackUrl);
+  final proxiedHttpClient =
+      JiobaseProxyClient(secureClient, fallbackUrl);
 
   await Future.wait([
     Firebase.initializeApp(
@@ -61,7 +66,8 @@ void main() async {
       url: trueSupabaseUrl,
       anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
       httpClient: proxiedHttpClient,
-      realtimeClientOptions: const RealtimeClientOptions(eventsPerSecond: 10),
+      realtimeClientOptions:
+          const RealtimeClientOptions(eventsPerSecond: 10),
     ),
   ]);
 
@@ -73,21 +79,40 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+
+    // 🔥 START GLOBAL CALL LISTENER ONCE
+    // ref.read(incomingCallProvider.notifier).start();
+
     return MaterialApp(
       title: 'Blindly',
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.theme,
-      initialRoute: '/', // start at splash
+      initialRoute: '/',
       navigatorObservers: [LoggingNavigatorObserver()],
+
       builder: (context, child) {
-        return AuthStateListenerWrapper(child: child!);
+        return Stack(
+          children: [
+            // AuthStateListenerWrapper(
+            //   child: child!,
+            // ),
+            GlobalCallInitializer(
+              child: AuthStateListenerWrapper(child: child!),
+            ),
+            // 🔔 GLOBAL INCOMING CALL UI
+            const IncomingCallOverlay(),
+          ],
+        );
       },
+
       routes: {
         '/': (context) => const SplashScreen(),
-        '/location_access': (context) => const LocationAccessScreen(),
+        '/location_access': (context) =>
+            const LocationAccessScreen(),
         '/welcome': (context) => const WelcomeScreen(),
-        '/auth': (context) => const AuthenticationScreen(),
+        '/auth': (context) =>
+            const AuthenticationScreen(),
         '/home': (context) => const HomeScreen(),
       },
     );

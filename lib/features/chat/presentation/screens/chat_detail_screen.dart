@@ -116,6 +116,8 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
           otherUserImage: widget.imageUrl,
           myProfileId: widget.myProfileId,
           otherProfileId: widget.otherProfileId,
+          name:widget.name,
+          imageUrl: widget.imageUrl,
         ),
       ),
     );

@@ -7,6 +7,7 @@ class RecentMatch {
   final String displayName;
   final String? imageUrl;
   final DateTime matchedAt;
+  final DateTime? expiryAt;
   final String? photoUrl;
 
   const RecentMatch({
@@ -15,6 +16,7 @@ class RecentMatch {
     required this.displayName,
     required this.imageUrl,
     required this.matchedAt,
+    this.expiryAt,
     this.photoUrl,
   });
 
@@ -29,6 +31,9 @@ class RecentMatch {
       matchedAt: rawMatchedAt != null
           ? DateTime.parse(rawMatchedAt.toString())
           : DateTime.fromMillisecondsSinceEpoch(0),
+      expiryAt: json['expiry_at'] != null
+          ? DateTime.parse(json['expiry_at'].toString())
+          : null,
     );
   }
 

@@ -51,7 +51,7 @@ class RecentMatchesRepository {
       final rawMatches = await _supabase
           .from('matches')
           .select(
-              'id, user_a_id, user_b_id, status, created_at, chat_started')
+              'id, user_a_id, user_b_id, status, created_at,expires_at,chat_started')
           .eq('status', 'active')
           .eq('chat_started', false)  // ✅ FIXED: Only unstarted chats
           .or('user_a_id.eq.$profileId,user_b_id.eq.$profileId')
@@ -59,7 +59,7 @@ class RecentMatchesRepository {
 
       if (rawMatches.isEmpty) return [];
       print('✅ Raw matches loaded: ${rawMatches.length}');
-      
+      print('🔍 Raw matches data: $rawMatches');
       final List<Map<String, dynamic>> matches = [];
       final Set<String> processedMatchIds = {};  // ✅ DEDUPLICATION
 
@@ -110,7 +110,9 @@ class RecentMatchesRepository {
         data['display_name'] = profile['display_name'];
         data['photo_url'] = photoUrl;
         data['other_profile_id'] = otherProfileId;
+        data['expiry_at'] = data['expires_at'];
         
+        print('✅ Enriched match data for $matchId: ${data['display_name']}, photoUrl: $photoUrl, expiryAt: ${data['expiry_at']}, otherProfileId: ${data['other_profile_id']}, chatStarted: ${data['chat_started']}, status: ${data['status']}, created_at: ${data['created_at']}');
         print('✅ photo URLs loaded for matches: $photoUrl');
 
         matches.add(data);  // ✅ SINGLE ADD (removed duplicate)
