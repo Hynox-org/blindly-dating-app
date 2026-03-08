@@ -86,6 +86,10 @@ serve(async (req) => {
       // FCM v1 API requires all values in the data object to be strings.
       // We must stringify the nested JSON to prevent 400 errors from Google.
       const stringifiedData: Record<string, string> = {}
+
+      // Inject the notification ID so the frontend knows which record to mark as read
+      stringifiedData['notification_id'] = record.id;
+
       if (record.data && typeof record.data === 'object') {
         for (const [key, value] of Object.entries(record.data)) {
           stringifiedData[key] = typeof value === 'object' ? JSON.stringify(value) : String(value)

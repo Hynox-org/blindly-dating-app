@@ -17,17 +17,6 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(":app")
-    
-    // Force all subprojects (including plugins) to use Java 21
-    tasks.withType(JavaCompile::class).configureEach {
-        sourceCompatibility = JavaVersion.VERSION_21.toString()
-        targetCompatibility = JavaVersion.VERSION_21.toString()
-    }
-    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile::class).configureEach {
-        kotlinOptions {
-            jvmTarget = "21"
-        }
-    }
 }
 
 tasks.register<Delete>("clean") {

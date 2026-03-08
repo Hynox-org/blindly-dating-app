@@ -3,10 +3,21 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/core/utils/nav_key.dart';
+import 'dart:convert';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class PushNotificationService {
   final SupabaseClient _supabase = Supabase.instance.client;
   final FirebaseMessaging _fcm = FirebaseMessaging.instance;
+  final FlutterLocalNotificationsPlugin _localNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
+  static const AndroidNotificationChannel channel = AndroidNotificationChannel(
+    'high_importance_channel', // id
+    'High Importance Notifications', // name
+    description: 'This channel is used for important notifications.',
+    importance: Importance.max,
+  );
 
   /// Initializes push notifications, requests permissions, and saves the token to Supabase.
   Future<void> initPushNotifications(BuildContext context) async {
@@ -38,34 +49,66 @@ class PushNotificationService {
       sound: true,
     );
 
+    // Initialize Local Notifications
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/launcher_icon');
+    const DarwinInitializationSettings initializationSettingsIOS =
+        DarwinInitializationSettings();
+    const InitializationSettings initializationSettings =
+        InitializationSettings(
+          android: initializationSettingsAndroid,
+          iOS: initializationSettingsIOS,
+        );
+
+    await _localNotificationsPlugin.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        if (response.payload != null) {
+          try {
+            final Map<String, dynamic> data = json.decode(response.payload!);
+            final context = navigatorKey.currentContext;
+            if (context != null) {
+              _handleDataPayload(context, data);
+            }
+          } catch (e) {
+            debugPrint('Error parsing notification payload: $e');
+          }
+        }
+      },
+    );
+
+    await _localNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(channel);
+
     // 4. Handle Foreground Messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint(
         'Received a message while in foreground: ${message.messageId}',
       );
-      // Optionally show a local notification / snackbar here
-      if (message.notification != null) {
-        final context = navigatorKey.currentContext;
-        if (context != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              backgroundColor: Colors.white,
-              content: Text(
-                '${message.notification?.title ?? 'New Notification'}\n${message.notification?.body ?? ''}',
-                style: const TextStyle(color: Colors.black),
-              ),
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 4),
-              action: SnackBarAction(
-                label: 'View',
-                textColor: Theme.of(context).colorScheme.primary,
-                onPressed: () {
-                  _handleDeepLink(context, message);
-                },
-              ),
+      RemoteNotification? notification = message.notification;
+      AndroidNotification? android = message.notification?.android;
+
+      // Show local notification
+      if (notification != null && android != null) {
+        _localNotificationsPlugin.show(
+          notification.hashCode,
+          notification.title,
+          notification.body,
+          NotificationDetails(
+            android: AndroidNotificationDetails(
+              channel.id,
+              channel.name,
+              channelDescription: channel.description,
+              icon: '@mipmap/launcher_icon',
+              importance: Importance.max,
+              priority: Priority.high,
             ),
-          );
-        }
+          ),
+          payload: json.encode(message.data),
+        );
       }
     });
 
@@ -121,10 +164,57 @@ class PushNotificationService {
     });
   }
 
-  void _handleDeepLink(BuildContext context, RemoteMessage message) {
-    if (message.data.containsKey('route')) {
-      final route = message.data['route'];
-      Navigator.pushNamed(context, route);
+  void _handleDeepLink(BuildContext context, RemoteMessage message) async {
+    _handleDataPayload(context, message.data);
+  }
+
+  void _handleDataPayload(
+    BuildContext context,
+    Map<String, dynamic> data,
+  ) async {
+    // 1. Mark notification as read if we received its ID
+    if (data.containsKey('notification_id')) {
+      final notificationId = data['notification_id'] as String;
+      final userId = _supabase.auth.currentUser?.id;
+
+      if (userId != null && notificationId.isNotEmpty) {
+        try {
+          // Dynamic import or provide access if needed,
+          // but we can just use Supabase direct or NotificationDbService
+          // We will use direct update since NotificationDbService fetches profileId first usually.
+          // To keep it clean, let's use the same method. We need to import NotificationDbService.
+
+          // Actually, since NotificationDbService requires a quick profile lookup, doing it here is fine:
+          print('Push clicked: Marking notification $notificationId as read.');
+
+          final profileResponse = await _supabase
+              .from('profiles')
+              .select('id')
+              .eq('user_id', userId)
+              .single();
+
+          final profileId = profileResponse['id'] as String;
+
+          await _supabase
+              .from('notifications')
+              .update({
+                'is_read': true,
+                'read_at': DateTime.now().toUtc().toIso8601String(),
+              })
+              .eq('id', notificationId)
+              .eq('profile_id', profileId);
+        } catch (e) {
+          debugPrint('Error marking push notification as read: $e');
+        }
+      }
+    }
+
+    // 2. Handle routing navigate
+    if (data.containsKey('route')) {
+      final route = data['route'];
+      if (context.mounted) {
+        Navigator.pushNamed(context, route);
+      }
     }
   }
 }
