@@ -1474,7 +1474,7 @@ AppState.isCallScreenOpen = false;
                   ),
                 ),
               );
-            }).toList(),
+            }),
           ],
         );
       },

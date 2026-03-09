@@ -84,9 +84,7 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
     // }
 
     if (stepConfig == null) {
-      return const Scaffold(
-        body: Center(child: Text('Onboarding setup incomplete.')),
-      );
+      return const Scaffold(body: AppLoader());
     }
 
     return Scaffold(
