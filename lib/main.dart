@@ -28,6 +28,9 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 // import 'features/call/provider/global_call_listener.dart';
 import 'features/call/presentation/widgets/incoming_call_overlay.dart';
 import 'features/call/global_call_initializer.dart';
+import 'core/services/deep_link_service.dart'
+    as import_deep_links; // deep link setup
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([
@@ -47,13 +50,11 @@ void main() async {
   String? directUrl = dotenv.env['SUPABASE_DIRECT_URL'];
   // The true .supabase.co URL
   String fallbackUrl = dotenv.env['SUPABASE_URL']!;
-  String trueSupabaseUrl =
-      directUrl != null && directUrl.isNotEmpty
-          ? directUrl
-          : fallbackUrl;
+  String trueSupabaseUrl = directUrl != null && directUrl.isNotEmpty
+      ? directUrl
+      : fallbackUrl;
 
-  final proxiedHttpClient =
-      JiobaseProxyClient(secureClient, fallbackUrl);
+  final proxiedHttpClient = JiobaseProxyClient(secureClient, fallbackUrl);
 
   await Future.wait([
     Firebase.initializeApp(
@@ -66,20 +67,32 @@ void main() async {
       url: trueSupabaseUrl,
       anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
       httpClient: proxiedHttpClient,
-      realtimeClientOptions:
-          const RealtimeClientOptions(eventsPerSecond: 10),
+      realtimeClientOptions: const RealtimeClientOptions(eventsPerSecond: 10),
     ),
   ]);
 
   runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends ConsumerWidget {
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
 
+class _MyAppState extends ConsumerState<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Initialize deep linking listeners when the app starts
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      import_deep_links.DeepLinkService.instance.initDeepLinks();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // 🔥 START GLOBAL CALL LISTENER ONCE
     // ref.read(incomingCallProvider.notifier).start();
 
@@ -108,11 +121,9 @@ class MyApp extends ConsumerWidget {
 
       routes: {
         '/': (context) => const SplashScreen(),
-        '/location_access': (context) =>
-            const LocationAccessScreen(),
+        '/location_access': (context) => const LocationAccessScreen(),
         '/welcome': (context) => const WelcomeScreen(),
-        '/auth': (context) =>
-            const AuthenticationScreen(),
+        '/auth': (context) => const AuthenticationScreen(),
         '/home': (context) => const HomeScreen(),
       },
     );

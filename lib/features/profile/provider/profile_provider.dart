@@ -7,11 +7,11 @@ import '../../onboarding/domain/models/lifestyle_chip_model.dart';
 import '../../onboarding/domain/models/profile_prompt_model.dart';
 
 final currentUserProfileProvider =
-    AsyncNotifierProvider.autoDispose<CurrentUserProfileNotifier, ProfileUser>(
+    AsyncNotifierProvider<CurrentUserProfileNotifier, ProfileUser>(
       () => CurrentUserProfileNotifier(),
     );
 
-class CurrentUserProfileNotifier extends AutoDisposeAsyncNotifier<ProfileUser> {
+class CurrentUserProfileNotifier extends AsyncNotifier<ProfileUser> {
   @override
   Future<ProfileUser> build() async {
     final client = Supabase.instance.client;

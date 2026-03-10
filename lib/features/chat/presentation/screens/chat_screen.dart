@@ -9,8 +9,26 @@ import '../../../home/screens/home_screen.dart';
 import './chat_conversation_screen.dart';
 import './match_expiry_screen.dart';
 
-class ChatScreen extends ConsumerWidget {
+class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
+
+  @override
+  ConsumerState<ChatScreen> createState() => _ChatScreenState();
+}
+
+class _ChatScreenState extends ConsumerState<ChatScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Trigger silent background refresh without destroying the notifier instance
+      ref.read(recentMatchesProvider.notifier).refresh(forceLoading: false);
+
+      // FutureProvider can use ref.refresh() which keeps previous state (since Riverpod 2.0)
+      // ignore: unused_result
+      ref.refresh(conversationsProvider);
+    });
+  }
 
   String _getProfileName(dynamic profileData) {
     if (profileData == null) return 'Unknown User';
@@ -29,7 +47,7 @@ class ChatScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final profileIdAsync = ref.watch(currentProfileIdProvider);
     final recentMatches = ref.watch(recentMatchesProvider); // ✅ StateNotifier
     final conversations = ref.watch(conversationsProvider);
@@ -61,6 +79,7 @@ class ChatScreen extends ConsumerWidget {
           ],
         ),
         body: profileIdAsync.when(
+          skipLoadingOnReload: true,
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => Center(
             child: Column(
@@ -75,15 +94,18 @@ class ChatScreen extends ConsumerWidget {
             ),
           ),
           data: (profileId) {
-            // Global Loading Check
-            if (recentMatches.isLoading || conversations.isLoading) {
+            // Global Loading Check: Only block if we have NO previous data
+            if ((recentMatches.isLoading && !recentMatches.hasValue) ||
+                (conversations.isLoading && !conversations.hasValue)) {
               return const Center(child: AppLoader());
             }
 
             return RefreshIndicator(
               onRefresh: () async {
-                ref.invalidate(recentMatchesProvider);
-                ref.invalidate(conversationsProvider);
+                ref
+                    .read(recentMatchesProvider.notifier)
+                    .refresh(forceLoading: true);
+                ref.refresh(conversationsProvider);
               },
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -201,21 +223,22 @@ class ChatScreen extends ConsumerWidget {
                                   onTap: () {
                                     final expiryAt = match.expiryAt;
                                     final remainingTime = expiryAt != null
-                                      ? expiryAt.difference(DateTime.now())
-                                      : Duration.zero;
+                                        ? expiryAt.difference(DateTime.now())
+                                        : Duration.zero;
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
                                         builder: (_) => MatchExpiryScreen(
                                           userName: otherName,
                                           userImage: _getProfileImage(
-                                            photoUrl, 
-                                            otherName
+                                            photoUrl,
+                                            otherName,
                                           ),
                                           matchId: match.matchId,
                                           myProfileId: profileId,
                                           otherProfileId: otherProfileId,
-                                          remainingTime: remainingTime.isNegative
+                                          remainingTime:
+                                              remainingTime.isNegative
                                               ? Duration.zero
                                               : remainingTime,
                                         ),
@@ -371,8 +394,9 @@ class ChatScreen extends ConsumerWidget {
                                       otherUserName: otherName,
                                       otherUserImage: otherImage,
                                       myProfileId: profileId,
-                                      otherProfileId: otherProfile['id'].toString(),
-                                      name:otherName,
+                                      otherProfileId: otherProfile['id']
+                                          .toString(),
+                                      name: otherName,
                                       imageUrl: otherImage,
                                     ),
                                   ),

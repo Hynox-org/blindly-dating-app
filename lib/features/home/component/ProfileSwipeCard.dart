@@ -4,6 +4,7 @@ import '../../onboarding/domain/models/lifestyle_chip_model.dart';
 import '../../onboarding/domain/models/profile_prompt_model.dart'; // ✅ Added Prompts
 import 'package:cached_network_image/cached_network_image.dart'; // ✅ Added
 import 'dart:ui';
+import '../../../../core/utils/share_utils.dart'; // Add ShareUtils
 
 class UserProfile {
   final String id;
@@ -592,24 +593,29 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
           Positioned(
             top: 16 * scaleFactor,
             right: 16 * scaleFactor,
-            child: ClipOval(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Container(
-                  width: 48 * scaleFactor,
-                  height: 48 * scaleFactor,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.25),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      width: 1,
+            child: GestureDetector(
+              onTap: () {
+                ShareUtils.shareProfile(context, widget.profile);
+              },
+              child: ClipOval(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(
+                    width: 48 * scaleFactor,
+                    height: 48 * scaleFactor,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        width: 1,
+                      ),
                     ),
-                  ),
-                  child: Icon(
-                    Icons.share,
-                    color: Colors.white,
-                    size: 24 * scaleFactor,
+                    child: Icon(
+                      Icons.share,
+                      color: Colors.white,
+                      size: 24 * scaleFactor,
+                    ),
                   ),
                 ),
               ),

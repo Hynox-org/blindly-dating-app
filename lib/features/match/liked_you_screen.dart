@@ -24,10 +24,10 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
   void initState() {
     super.initState();
 
-    // // // 🔄 Fetch fresh data every time screen opens
-    // // Future.microtask(() {
-    // //   ref.read(likedYouProvider.notifier).refresh();
-    // });
+    // 🔄 Fetch fresh data silently every time screen opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(likedYouProvider.notifier).refresh();
+    });
   }
 
   @override
@@ -66,6 +66,7 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
       child: Container(
         color: Theme.of(context).scaffoldBackgroundColor,
         child: likedYouState.when(
+          skipLoadingOnReload: true,
           loading: () => const AppLoader(),
           error: (e, _) => _buildErrorState(),
           data: (users) {

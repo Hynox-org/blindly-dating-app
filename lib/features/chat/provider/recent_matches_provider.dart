@@ -139,8 +139,8 @@ class RecentMatchesNotifier
   // --------------------------------------------------
   // 🔁 REFRESH
   // --------------------------------------------------
-  Future<void> refresh() async {
-    await _load(forceLoading: true);
+  Future<void> refresh({bool forceLoading = false}) async {
+    await _load(forceLoading: forceLoading);
   }
 
   // --------------------------------------------------

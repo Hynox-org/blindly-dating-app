@@ -24,6 +24,15 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Trigger silent background refresh
+      ref.read(currentUserProfileProvider.notifier).refreshProfile();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     // ✅ Watch the provider
     final userAsync = ref.watch(currentUserProfileProvider);
@@ -73,7 +82,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       child: Container(
         color: Theme.of(context).scaffoldBackgroundColor,
         child: userAsync.when(
-          loading: () => const AppLoader(),
+          skipLoadingOnReload: true,
+          loading: () => const Center(child: AppLoader()),
           error: (err, stack) => Center(child: Text("Error loading profile")),
           data: (user) {
             return Column(

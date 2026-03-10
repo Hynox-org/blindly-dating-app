@@ -27,7 +27,7 @@ dependencies:
   firebase_core: ^4.5.0
   firebase_messaging: ^16.1.2
   firebase_app_check: ^0.4.1+4
-  http: ^1.1.0
+  http: ^1.6.0
 
   # Utils
   fpdart: ^1.1.0
@@ -65,7 +65,7 @@ dependencies:
   # Audio
   record: ^6.1.2
   audioplayers: ^6.0.0
-  path_provider: ^2.1.2
+  path_provider: ^2.1.5
 
   # Camera & ML Kit (Kept from your original file)
   camera: ^0.11.3
@@ -77,6 +77,8 @@ dependencies:
   swipe_to: ^1.0.6
   timeago: ^3.7.1
   flutter_local_notifications: ^17.0.0
+  share_plus: ^12.0.1
+  app_links: ^6.4.1
 
 dev_dependencies:
   flutter_test:

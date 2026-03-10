@@ -104,8 +104,8 @@ class LikedYouNotifier extends StateNotifier<AsyncValue<List<LikedYouUser>>> {
   // --------------------------------------------------
   // 🔁 PUBLIC REFRESH
   // --------------------------------------------------
-  Future<void> refresh() async {
-    await _loadLikedYou(forceLoading: true);
+  Future<void> refresh({bool forceLoading = false}) async {
+    await _loadLikedYou(forceLoading: forceLoading);
   }
 
   // --------------------------------------------------
@@ -150,10 +150,9 @@ class LikedYouNotifier extends StateNotifier<AsyncValue<List<LikedYouUser>>> {
 // Provider
 // ======================================================
 final likedYouProvider =
-    StateNotifierProvider.autoDispose<
-      LikedYouNotifier,
-      AsyncValue<List<LikedYouUser>>
-    >((ref) {
+    StateNotifierProvider<LikedYouNotifier, AsyncValue<List<LikedYouUser>>>((
+      ref,
+    ) {
       final repository = ref.watch(likedYouRepositoryProvider);
       return LikedYouNotifier(repository);
     });

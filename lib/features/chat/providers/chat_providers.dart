@@ -10,7 +10,6 @@ import '../../chat/repository/recent_matches_repository.dart';
 // 👉 ADD THIS — contains RecentMatchesNotifier
 import '../provider/recent_matches_provider.dart';
 
-
 /// =============================================================
 /// SUPABASE CLIENT
 /// =============================================================
@@ -18,7 +17,6 @@ import '../provider/recent_matches_provider.dart';
 final supabaseProvider = Provider<SupabaseClient>((ref) {
   return Supabase.instance.client;
 });
-
 
 /// =============================================================
 /// MATCH REPOSITORY
@@ -28,22 +26,18 @@ final matchRepositoryProvider = Provider<MatchRepository>((ref) {
   return MatchRepository(ref.read(supabaseProvider));
 });
 
-
 /// =============================================================
 /// RECENT MATCHES REPOSITORY
 /// =============================================================
 
-final recentMatchesRepositoryProvider =
-    Provider<RecentMatchesRepository>((ref) {
+final recentMatchesRepositoryProvider = Provider<RecentMatchesRepository>((
+  ref,
+) {
   final supabase = ref.read(supabaseProvider);
   final matchRepo = ref.read(matchRepositoryProvider);
 
-  return RecentMatchesRepository(
-    supabase,
-    matchRepo,
-  );
+  return RecentMatchesRepository(supabase, matchRepo);
 });
-
 
 /// =============================================================
 /// CURRENT PROFILE ID
@@ -71,38 +65,37 @@ final currentProfileIdProvider = FutureProvider<String>((ref) async {
   return profileId;
 });
 
-
 /// =============================================================
 /// RECENT MATCHES — STATE NOTIFIER
 /// =============================================================
 
 final recentMatchesProvider =
-    StateNotifierProvider.autoDispose<
-        RecentMatchesNotifier,
-        AsyncValue<List<RecentMatch>>>((ref) {
-  final repo = ref.watch(recentMatchesRepositoryProvider);
-  return RecentMatchesNotifier(repo);
-});
-
+    StateNotifierProvider<RecentMatchesNotifier, AsyncValue<List<RecentMatch>>>(
+      (ref) {
+        final repo = ref.watch(recentMatchesRepositoryProvider);
+        return RecentMatchesNotifier(repo);
+      },
+    );
 
 /// =============================================================
 /// CONVERSATIONS
 /// =============================================================
 
-final conversationsProvider =
-    FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+final conversationsProvider = FutureProvider<List<Map<String, dynamic>>>((
+  ref,
+) async {
   final profileId = await ref.watch(currentProfileIdProvider.future);
 
   debugPrint('🔍 DEBUG: Loading conversations for profile: $profileId');
 
-  final matches =
-      await ref.read(matchRepositoryProvider).fetchConversations(profileId);
+  final matches = await ref
+      .read(matchRepositoryProvider)
+      .fetchConversations(profileId);
 
   debugPrint('🔍 DEBUG: Conversations count: ${matches.length}');
 
   return matches;
 });
-
 
 /// =============================================================
 /// START CHAT

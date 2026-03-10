@@ -107,6 +107,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       child: Container(
         color: Colors.white,
         child: state.when(
+          skipLoadingOnReload: true,
           data: (data) => _buildContent(data),
           loading: () => const Center(child: AppLoader()),
           error: (err, stack) => Center(
