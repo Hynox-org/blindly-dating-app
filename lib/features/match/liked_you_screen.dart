@@ -204,10 +204,19 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
                   label: 'Like',
                   // icon: Icons.favorite_border,
                   onTap: () async {
-                    await ref
-                        .read(likedYouProvider.notifier)
-                        .matchUser(user.profileId);
-                  },
+  final success = await ref
+      .read(likedYouProvider.notifier)
+      .matchUser(user.profileId);
+
+  if (!success && mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("You can match with this user only once"),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+},
                 ),
 
                 _overlayActionButton(

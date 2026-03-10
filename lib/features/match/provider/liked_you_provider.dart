@@ -124,16 +124,25 @@ class LikedYouNotifier extends StateNotifier<AsyncValue<List<LikedYouUser>>> {
   // --------------------------------------------------
   // 🤝 MATCH USER
   // --------------------------------------------------
-  Future<void> matchUser(String otherProfileId) async {
-    try {
-      await _repository.matchUser(otherProfileId: otherProfileId);
-      // Refresh to remove card (it moved to matches)
-      await _loadLikedYou(forceLoading: false);
-    } catch (e) {
-      rethrow;
-    }
-  }
+  // Future<void> matchUser(String otherProfileId) async {
+  //   try {
+  //     await _repository.matchUser(otherProfileId: otherProfileId);
+  //     // Refresh to remove card (it moved to matches)
+  //     await _loadLikedYou(forceLoading: false);
+  //   } catch (e) {
+  //     rethrow;
+  //   }
+  // }
+  Future<bool> matchUser(String otherProfileId) async {
+    final success = await _repository.matchUser(
+      otherProfileId: otherProfileId,
+    );
 
+    if (success) {
+      await _loadLikedYou(forceLoading: false);
+    }
+    return success;
+  }
   // --------------------------------------------------
   // 🗑️ DISPOSE
   // --------------------------------------------------

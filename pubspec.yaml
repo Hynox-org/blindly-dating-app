@@ -128,3 +128,5 @@ flutter:
     - family: Poppins
       fonts:
         - asset: assets/fonts/Poppins/Poppins-Regular.ttf
+flutter_intl:
+  enabled: true
