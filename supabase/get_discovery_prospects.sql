@@ -13,7 +13,12 @@ RETURNS TABLE (
   mode_id uuid,
   image_urls text[],
   gender text,
-  work_title text
+  work_title text,
+  hometown_city text,
+  prompts json,
+  looking_for text[],
+  is_verified boolean,
+  verification_level text
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -81,7 +86,31 @@ BEGIN
     ) as image_urls,
 
     p.gender::text,
-    p.work_title::text
+    p.work_title::text,
+    p.hometown_city::text,
+    
+    -- Fetch Prompts JSON
+    COALESCE(
+      (
+        SELECT json_agg(
+            json_build_object(
+                'id', pmp.id,
+                'prompt_template_id', pmp.prompt_template_id,
+                'prompt_text', pt.prompt_text,
+                'user_response', pmp.user_response,
+                'prompt_display_order', pmp.display_order
+            ) ORDER BY pmp.display_order ASC
+        )
+        FROM public.profile_mode_prompts pmp
+        JOIN public.prompt_templates pt ON pt.id = pmp.prompt_template_id
+        WHERE pmp.profile_mode_id = pm.id
+      ), 
+      '[]'::json
+    ) as prompts,
+    
+    COALESCE(pm.looking_for, '{}'::text[]) as looking_for,
+    p.is_verified,
+    p.verification_level::text
     
   FROM public.profiles p
   INNER JOIN public.profile_modes pm ON p.id = pm.profile_id

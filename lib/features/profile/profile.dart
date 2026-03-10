@@ -176,12 +176,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              '${user.name}, ${user.age}', // ✅ Real Name & Age
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSurface,
+            Flexible(
+              child: Text(
+                '${user.name}, ${user.age}', // ✅ Real Name & Age
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             const SizedBox(width: 4),
@@ -242,16 +246,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       kids: user.kids ?? '',
       hometown: user.hometown ?? '',
       workCompany: user.workCompany ?? '',
-      hobbies: user.interests.isNotEmpty ? user.interests : ['Add Interests'],
+      hobbies: user.interests,
       summary: user.bio,
-      lookingFor: 'Connection', // Default
-      lookingForTags: [],
-      quickestWay: 'Ask me',
-      causes: [],
+      lookingForModes: user.lookingForModes,
+      quickestWay: '',
+      lifestyleItems: user.lifestyleItems, // ✅ Pass LifestyleChips directly
+      causes: user.causesCommunities,
       simplePleasure: 'Ask me',
+      prompts: user.prompts, // ✅ Pass Prompts here
       languages: user.languages.isNotEmpty ? user.languages : ['English'],
-      location: user.city.isNotEmpty ? user.city : 'Unknown',
+      location: user.city.isNotEmpty ? user.city : 'Nearby',
       spotifyArtists: [],
+      isVerified: user.isVerified,
+      verificationLevel: user.verificationLevel,
     );
 
     showDialog(
@@ -439,31 +446,33 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.2),
+              color: iconColor.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: iconColor),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: Theme.of(context).colorScheme.onSurface,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
-              ),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),

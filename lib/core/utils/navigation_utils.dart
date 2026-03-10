@@ -7,6 +7,8 @@ class NavigationUtils {
   ) {
     return Navigator.of(context).push<T>(
       PageRouteBuilder(
+        opaque:
+            false, // ✅ Set to false to allow underlying screens to show behind dialog-like screens
         pageBuilder: (context, animation, secondaryAnimation) => screen,
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           const begin = Offset(1.0, 0.0); // Slide from right

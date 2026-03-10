@@ -332,8 +332,8 @@ class _GovernmentIdVerificationScreenState
                       margin: const EdgeInsets.symmetric(horizontal: 16),
                       decoration: BoxDecoration(
                         color: isVerified
-                            ? Colors.green.shade50.withOpacity(0.5)
-                            : colorScheme.surfaceContainerHighest.withOpacity(
+                            ? Colors.green.shade50.withValues(alpha: 0.5)
+                            : colorScheme.surfaceContainerHighest.withValues(alpha: 
                                 0.3,
                               ),
                         borderRadius: BorderRadius.circular(24),
@@ -342,7 +342,7 @@ class _GovernmentIdVerificationScreenState
                               ? Colors.green.shade300
                               : (_isLoading
                                     ? Colors.grey
-                                    : colorScheme.primary.withOpacity(0.5)),
+                                    : colorScheme.primary.withValues(alpha: 0.5)),
                           width: 2,
                         ),
                       ),
@@ -392,7 +392,7 @@ class _GovernmentIdVerificationScreenState
                                       "Powered by Veriff",
                                       style: TextStyle(
                                         color: colorScheme.onSurfaceVariant
-                                            .withOpacity(0.5),
+                                            .withValues(alpha: 0.5),
                                         fontSize: 12,
                                       ),
                                     ),

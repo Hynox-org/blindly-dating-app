@@ -225,7 +225,7 @@ class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
                     child: Text(
                       'Tell us more about your habits. Pick what fits you best.',
                       style: TextStyle(
-                        color: colorScheme.onSurface.withOpacity(0.54),
+                        color: colorScheme.onSurface.withValues(alpha: 0.54),
                         fontSize: 14,
                       ),
                     ),

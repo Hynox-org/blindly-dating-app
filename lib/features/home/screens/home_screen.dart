@@ -14,6 +14,7 @@ import '../../../../core/providers/connection_mode_provider.dart';
 
 // ✅ 2. Models
 import '../../discovery/domain/models/discovery_user_model.dart';
+import '../../onboarding/domain/models/lifestyle_chip_model.dart';
 
 // ✅ 3. Components
 import '../component/ProfileSwipeCard.dart';
@@ -22,6 +23,8 @@ import '../../discovery/presentation/widgets/no_more_profiles_widget.dart';
 import '../../../../core/utils/navigation_utils.dart';
 import 'connection_type_screen.dart';
 import '../../discovery/presentation/screens/filter_screen.dart';
+import '../../notifications/screens/notifications_screen.dart';
+import '../../notifications/services/push_notification_service.dart';
 
 // ✅ 4. Layout
 import '../../../../core/widgets/app_layout.dart';
@@ -113,6 +116,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Future<void> _initLocationAndFeed() async {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // ✅ 0. INIT PUSH NOTIFICATIONS
+      PushNotificationService().initPushNotifications(context);
+
       // ✅ 1. CHECK SESSION FLAG
       // If we already updated location this session, skip the heavy lifting.
       final isAlreadyUpdated = ref.read(locationUpdateSessionProvider);
@@ -190,14 +196,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         hometown: user.hometown ?? '',
         workCompany: user.workCompany ?? '',
         summary: user.bio.isNotEmpty ? user.bio : 'Swipe right to know more!',
-        lookingFor: user.relationshipType ?? 'Connection',
-        lookingForTags: [], // Add if available in DiscoveryUser
+        lookingForModes: user.lookingForModes,
         quickestWay: '', // Add if available
+        prompts: user.prompts, // ✅ Pass Prompts here
         hobbies: user.interests,
+        lifestyleItems: user.lifestyle
+            .map(
+              (label) => LifestyleChip(
+                id: '',
+                categoryId: 0,
+                label: label,
+                isActive: true,
+              ),
+            )
+            .toList(), // ✅ Map strings to dummy LifestyleChips
         causes: user.causes, // ✅ Dynamic Causes
         simplePleasure: '',
         languages: user.languages, // ✅ Dynamic Languages
         spotifyArtists: user.spotifyArtists, // ✅ Dynamic Spotify
+        isVerified: user.isVerified,
+        verificationLevel: user.verificationLevel,
       );
     }).toList();
   }
@@ -238,6 +256,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: Icon(
+              Icons.notifications_none,
+              color: Theme.of(context).colorScheme.onSurface,
+              size: 28,
+            ),
+            onPressed: () {
+              NavigationUtils.navigateToWithSlide(
+                context,
+                const NotificationsScreen(),
+              );
+            },
+          ),
           IconButton(
             icon: Icon(
               Icons.reply,

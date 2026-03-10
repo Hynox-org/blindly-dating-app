@@ -40,7 +40,7 @@ class NoMoreProfilesWidget extends StatelessWidget {
                             Icons
                                 .mobile_friendly_rounded, // Placeholder for the phone interaction illustration
                             size: 150,
-                            color: colorScheme.onSurface.withOpacity(0.2),
+                            color: colorScheme.onSurface.withValues(alpha: 0.2),
                           );
                         },
                       ),
@@ -64,7 +64,7 @@ class NoMoreProfilesWidget extends StatelessWidget {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,
-                        color: colorScheme.onSurface.withOpacity(0.7),
+                        color: colorScheme.onSurface.withValues(alpha: 0.7),
                         height: 1.5,
                       ),
                     ),

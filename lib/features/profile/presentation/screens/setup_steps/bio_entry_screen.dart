@@ -155,7 +155,7 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
                       hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
                       filled: true,
                       fillColor: colorScheme.surfaceContainerHighest
-                          .withOpacity(0.5),
+                          .withValues(alpha: 0.5),
                       contentPadding: const EdgeInsets.all(16),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
@@ -204,8 +204,8 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  disabledBackgroundColor: colorScheme.primary.withOpacity(0.5),
-                  disabledForegroundColor: colorScheme.onPrimary.withOpacity(
+                  disabledBackgroundColor: colorScheme.primary.withValues(alpha: 0.5),
+                  disabledForegroundColor: colorScheme.onPrimary.withValues(alpha: 
                     0.7,
                   ),
                   elevation: 0,

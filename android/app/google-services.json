@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "357050970066",
-    "project_id": "blindly-ed214",
-    "storage_bucket": "blindly-ed214.firebasestorage.app"
+    "project_number": "68899152387",
+    "project_id": "blindly-dating-app",
+    "storage_bucket": "blindly-dating-app.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:357050970066:android:585d7df4e316fc26c0220b",
+        "mobilesdk_app_id": "1:68899152387:android:2ecb1b896e23fdd90f6436",
         "android_client_info": {
           "package_name": "com.hynox.blindly_dating_app"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCcMwZ5H1Cu37yQOBn3adgLtGcdXyP53UA"
+          "current_key": "AIzaSyDG-6fUX9PrDz1R2OmMl7zM0JSbXEkeVRA"
         }
       ],
       "services": {

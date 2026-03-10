@@ -71,7 +71,7 @@ class _ConnectionTypeScreenState extends ConsumerState<ConnectionTypeScreen> {
                     Text(
                       'Dates and romances, new friends, or strictly business? You can change this any time.',
                       style: TextStyle(
-                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                         fontSize: 14,
                         height: 1.5,
                       ),

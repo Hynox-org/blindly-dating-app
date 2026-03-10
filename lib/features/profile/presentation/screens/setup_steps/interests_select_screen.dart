@@ -219,7 +219,7 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
                     child: Text(
                       'Please select at least 5 interest. This helps us find your peoples',
                       style: TextStyle(
-                        color: colorScheme.onSurface.withOpacity(0.6),
+                        color: colorScheme.onSurface.withValues(alpha: 0.6),
                         fontSize: 14,
                       ),
                     ),
@@ -237,11 +237,11 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
                     decoration: InputDecoration(
                       hintText: 'Search for interest',
                       hintStyle: TextStyle(
-                        color: colorScheme.onSurface.withOpacity(0.54),
+                        color: colorScheme.onSurface.withValues(alpha: 0.54),
                       ),
                       prefixIcon: Icon(
                         Icons.search,
-                        color: colorScheme.onSurface.withOpacity(0.54),
+                        color: colorScheme.onSurface.withValues(alpha: 0.54),
                       ),
                       filled: true,
                       fillColor: colorScheme.surface,

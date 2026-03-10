@@ -62,12 +62,13 @@ class CurrentUserProfileNotifier extends AutoDisposeAsyncNotifier<ProfileUser> {
       // 2. Fetch Mode-Specific Data (Profile Modes Table)
       final modeData = await client
           .from('profile_modes')
-          .select('id, bio')
+          .select('id, bio, looking_for')
           .eq('profile_id', profileId)
           .eq('mode', currentMode)
           .maybeSingle();
 
       final String bio = modeData?['bio'] ?? '';
+      final List<dynamic> lookingForModesRaw = modeData?['looking_for'] ?? [];
       final String profileModeId = modeData?['id'] ?? '';
 
       // 3. Parallel Fetching of Related Data (only if mode exists)
@@ -116,9 +117,10 @@ class CurrentUserProfileNotifier extends AutoDisposeAsyncNotifier<ProfileUser> {
               .toList() ??
           [];
 
-      // Override bio in profileDataRaw with mode-specific bio
+      // Override bio and looking_for in profileDataRaw with mode-specific data
       final Map<String, dynamic> finalProfileData = Map.from(profileDataRaw);
       finalProfileData['bio'] = bio;
+      finalProfileData['looking_for'] = lookingForModesRaw;
 
       return ProfileUser.fromJson(
         finalProfileData,
