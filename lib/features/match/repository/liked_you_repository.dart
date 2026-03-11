@@ -194,10 +194,20 @@ Future<bool> matchUser({
       'type': 'match',
       'title': 'It’s a Match! ❤️',
       'body': 'You have a new match!',
-      'profile_id': myProfileId, // receiver gets push
+      'profile_id': myProfileId,// receiver gets push
       'data': {
         'screen': 'matches',
         'other_profile_id': otherProfileId,
+      }
+    });
+    await _supabase.from('notifications').insert({
+      'type': 'match',
+      'title': 'It’s a Match! ❤️',
+      'body': 'You have a new match!',
+      'profile_id': otherProfileId,// receiver gets push
+      'data': {
+        'screen': 'matches',
+        'other_profile_id': myProfileId,
       }
     });
 
