@@ -54,6 +54,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     _initLocationAndFeed();
+    
+    // 🔔 Listen for multi-device conflicts as they happen
+    PushNotificationService.multiDeviceConflictToken.addListener(_onTokenConflictChanged);
+  }
+
+  void _onTokenConflictChanged() {
+    final token = PushNotificationService.multiDeviceConflictToken.value;
+    if (token != null && mounted) {
+      _showEnforcedMultiDeviceDialog(token);
+    }
   }
 
   // ✅ NEW FUNCTION: Handles undo when the deck is empty
@@ -76,6 +86,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void dispose() {
     _controller.dispose();
+    PushNotificationService.multiDeviceConflictToken.removeListener(_onTokenConflictChanged);
     super.dispose();
   }
 
@@ -145,9 +156,117 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           setState(() {
             _isLocationReady = true;
           });
+          // 🚀 Initial check in case it already fired
+          _onTokenConflictChanged();
         }
       }
     });
+  }
+
+
+  void _showEnforcedMultiDeviceDialog(String currentToken) {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Force a choice
+      builder: (context) => WillPopScope(
+        onWillPop: () async => false, // Prevent back button dismissal
+        child: Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.devices_other,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 40,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Multi-Device Login',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Your account is active on another device. For security, only one session is allowed.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Colors.black54,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      final success = await PushNotificationService().clearOtherDevices(currentToken);
+                      if (success && mounted) {
+                        showSuccessPopup(context, 'Signed out other devices! 🔒');
+                      }
+                    },
+                    child: const Text('Sign Out Other Devices', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: TextButton(
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.grey[600],
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () async {
+                      // ❌ Log out current device if they refuse
+                      Navigator.pop(context);
+                      await Supabase.instance.client.auth.signOut();
+                      if (mounted) {
+                        Navigator.of(context).pushNamedAndRemoveUntil('/auth', (route) => false);
+                      }
+                    },
+                    child: const Text('Log Out This Device'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   // ✅ Helper to map API data to UI data
@@ -427,10 +546,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             40,
                           ), // ✅ Distinct stack
                           scale: 0.9, // ✅ Visible scaling
-                          threshold: 60, // ✅ Intentional swipe
+                          threshold: 50, // More responsive for smooth feel
                           duration: const Duration(
-                            milliseconds: 200,
-                          ), // ✅ Snappy return
+                            milliseconds: 500,
+                          ), // ✅ Butter smooth slow animation
                           padding: const EdgeInsets.all(10.0),
 
                           // ✅ 2. ADD LOOP FALSE: Stops random restarts
@@ -440,6 +559,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               const AllowedSwipeDirection.only(
                                 left: true,
                                 right: true,
+                                up: true,
                               ),
                           onSwipe: (prev, curr, dir) =>
                               _onSwipe(prev, curr, dir, mainDeck),
@@ -480,11 +600,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               verticalThreshold: vert.toDouble(),
                               mode: ProfileCardMode.swipe, // ✅ Swipe Mode
                               onLike: () {
-                                _handleLike(uiProfile);
                                 _controller.swipe(CardSwiperDirection.right);
                               },
+                              onPause: () {
+                                _controller.swipe(CardSwiperDirection.left);
+                              },
+                              onSuperLike: () {
+                                _controller.swipe(CardSwiperDirection.top);
+                              },
                               onBlock: () {
-                                _handlePass(uiProfile);
+                                // Default pass if pause not used
                                 _controller.swipe(CardSwiperDirection.left);
                               },
                               onReport: () {
@@ -550,9 +675,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     // 2. DB Record
     if (direction == CardSwiperDirection.left) {
-      _handlePass(uiProfile);
+      _handlePause(uiProfile);
     } else if (direction == CardSwiperDirection.right) {
       _handleLike(uiProfile);
+    } else if (direction == CardSwiperDirection.top) {
+      _handleSuperLike(uiProfile);
     }
 
     // 3. Update Provider
@@ -605,11 +732,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         .swipe(targetProfileId: profile.id, action: 'like');
   }
 
-  void _handlePass(UserProfile profile) {
-    debugPrint('Passed: ${profile.name}');
+  void _handleSuperLike(UserProfile profile) {
+    debugPrint('Super Liked: ${profile.name}');
     ref
         .read(swipeProvider.notifier)
-        .swipe(targetProfileId: profile.id, action: 'pass');
+        .swipe(targetProfileId: profile.id, action: 'super_like');
+  }
+
+  void _handlePause(UserProfile profile) {
+    debugPrint('Paused: ${profile.name}');
+    ref
+        .read(swipeProvider.notifier)
+        .swipe(targetProfileId: profile.id, action: 'pause');
   }
 
   void _showPremiumDialog() {

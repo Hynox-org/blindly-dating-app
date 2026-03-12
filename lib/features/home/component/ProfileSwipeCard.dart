@@ -98,6 +98,8 @@ class ProfileSwipeCard extends StatefulWidget {
   final VoidCallback? onBlock; // Used for "Pass" or "Not for me"
   final VoidCallback? onReport;
   final VoidCallback? onLike;
+  final VoidCallback? onSuperLike;
+  final VoidCallback? onPause;
   final VoidCallback? onEdit;
   final VoidCallback? onUndo;
 
@@ -114,6 +116,8 @@ class ProfileSwipeCard extends StatefulWidget {
     this.onBlock,
     this.onReport,
     this.onLike,
+    this.onSuperLike,
+    this.onPause,
     this.onEdit,
     this.onUndo,
   });
@@ -718,17 +722,23 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                   // Gold buttons + scores
                   Row(
                     children: [
-                      goldButton(loveChatIcon(scaleFactor), scaleFactor),
+                      GestureDetector(
+                        onTap: widget.onLike,
+                        child: goldButton(loveChatIcon(scaleFactor), scaleFactor),
+                      ),
                       const Spacer(),
                       scoreBox(scaleFactor),
                       const Spacer(),
-                      goldButton(
-                        Icon(
-                          Icons.star,
-                          color: const Color(0xFFD4AF37),
-                          size: 20 * scaleFactor,
+                      GestureDetector(
+                        onTap: widget.onSuperLike,
+                        child: goldButton(
+                          Icon(
+                            Icons.star,
+                            color: const Color(0xFFD4AF37),
+                            size: 20 * scaleFactor,
+                          ),
+                          scaleFactor,
                         ),
-                        scaleFactor,
                       ),
                     ],
                   ),
@@ -1516,7 +1526,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                   textColor: Colors.black87,
                   backgroundColor: Colors.white,
                   borderColor: Colors.grey.shade300,
-                  onTap: widget.onBlock, // "Pass" action
+                  onTap: widget.onPause ?? widget.onBlock, // Use onPause if available
                 ),
               ),
               const SizedBox(width: 16),
@@ -1563,13 +1573,13 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
             icon: Icons.close,
             color: const Color(0xFF414833),
             iconColor: const Color(0xFFD4AF37),
-            onTap: widget.onBlock,
+            onTap: widget.onPause ?? widget.onBlock,
           ),
           _buildCircleButton(
             icon: Icons.star,
             color: const Color(0xFF414833),
             iconColor: const Color(0xFFD4AF37),
-            onTap: () {}, // Super like not implemented yet
+            onTap: widget.onSuperLike,
           ),
           _buildCircleButton(
             icon: Icons.favorite,

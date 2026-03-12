@@ -47,20 +47,19 @@ class DiscoveryRepository {
 
       final int effectiveRadius = kDevMode ? _devRadiusKm : radiusKm;
 
-      debugPrint('🚀 DISCOVERY RPC CALL: get_discovery_prospects');
+      debugPrint('🚀 DISCOVERY RPC CALL: get_discovery_prospects_v2');
       debugPrint('MODE    : $currentMode');
       debugPrint('RADIUS  : $effectiveRadius KM');
       debugPrint('LIMIT   : $limit');
       debugPrint('OFFSET  : $offset');
 
-      // 1. Call DB
+      // 1. Call DB using v2 RPC (Server pulls filters from profile_modes)
       final List<dynamic>? response = await _supabase.rpc(
-        'get_discovery_prospects',
+        'get_discovery_prospects_v2',
         params: {
-          'search_mode': currentMode,
-          'radius_km': effectiveRadius,
-          'limit_count': limit,
-          'offset_count': offset,
+          'p_search_mode': currentMode,
+          'p_limit_count': limit,
+          'p_offset_count': offset,
         },
       );
 
@@ -214,6 +213,212 @@ class DiscoveryRepository {
           .eq('user_id', userId);
     } catch (e) {
       debugPrint('❌ Failed to update current mode in DB: $e');
+    }
+  }
+
+  // --------------------------------------------------
+  // 📁 SAVE FILTERS (PER MODE)
+  // --------------------------------------------------
+  Future<void> saveDiscoveryFilters(String mode, Map<String, dynamic> filters) async {
+    try {
+      final authUserId = _supabase.auth.currentUser?.id;
+      if (authUserId == null) return;
+
+      final profileData = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', authUserId)
+          .maybeSingle();
+
+      if (profileData == null) return;
+      final String profileId = profileData['id'];
+
+      await _supabase
+          .from('profile_modes')
+          .update({'filters': filters})
+          .eq('profile_id', profileId)
+          .eq('mode', mode.toLowerCase());
+
+      debugPrint('✅ Discovery filters saved for mode: $mode');
+    } catch (e) {
+      debugPrint('❌ Failed to save discovery filters: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>?> getDiscoveryFilters(String mode) async {
+    try {
+      final authUserId = _supabase.auth.currentUser?.id;
+      if (authUserId == null) return null;
+
+      final profileData = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', authUserId)
+          .maybeSingle();
+
+      if (profileData == null) return null;
+      final String profileId = profileData['id'];
+
+      final response = await _supabase
+          .from('profile_modes')
+          .select('filters')
+          .eq('profile_id', profileId)
+          .eq('mode', mode.toLowerCase())
+          .maybeSingle();
+
+      return response?['filters'] as Map<String, dynamic>?;
+    } catch (e) {
+      debugPrint('❌ Failed to fetch discovery filters: $e');
+      return null;
+    }
+  }
+
+  // --------------------------------------------------
+  // 🤝 RELATIONSHIP STATUS (FOR DEEP LINKS)
+  // --------------------------------------------------
+  Future<DiscoveryUser?> getProfileWithRelationship(String targetProfileId) async {
+    try {
+      final authUserId = _supabase.auth.currentUser?.id;
+      if (authUserId == null) throw Exception('User not logged in');
+
+      // 1. Get My Profile ID
+      final myProfileData = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', authUserId)
+          .maybeSingle();
+      if (myProfileData == null) throw Exception('Self profile not found');
+      final String myId = myProfileData['id'];
+
+      // 2. Fetch Target Profile Data (Using same logic as discovery if possible, or direct)
+      // For deep links, we might need a specific mode or the profile's current_mode.
+      // Let's fetch the profile and its active mode data.
+      final targetData = await _supabase
+          .from('profiles')
+          .select('''
+            *,
+            profile_modes!inner(*)
+          ''')
+          .eq('id', targetProfileId)
+          .eq('profile_modes.is_active', true)
+          .maybeSingle();
+
+      if (targetData == null) return null;
+
+      // Extract the active mode (usually they only have one active mode per type, we'll take the first or current)
+      final List<dynamic> modes = targetData['profile_modes'];
+      final String currentMode = targetData['current_mode'] ?? 'date';
+      final activeModeData = modes.firstWhere(
+        (m) => m['mode'] == currentMode,
+        orElse: () => modes.first,
+      );
+
+      // 3. Map to DiscoveryUser (Reuse common mapping logic if possible, otherwise manual)
+      // Note: We need to sign URLs here too if we want images.
+      final Map<String, dynamic> mappedData = {
+        'profile_id': targetData['id'],
+        'display_name': targetData['display_name'],
+        'age': 0, // Need to calc
+        'distance_km': 0.0, // Need location
+        'bio': activeModeData['bio'],
+        'mode_id': activeModeData['id'],
+        'image_urls': [], // Sign below
+        'gender': targetData['gender'],
+        'work_title': targetData['work_title'],
+        'is_verified': targetData['is_verified'],
+        'verification_level': targetData['verification_level'],
+      };
+
+      // Calc age
+      if (targetData['birth_date'] != null) {
+        final birthDate = DateTime.parse(targetData['birth_date']);
+        final today = DateTime.now();
+        int age = today.year - birthDate.year;
+        if (today.month < birthDate.month ||
+            (today.month == birthDate.month && today.day < birthDate.day)) {
+          age--;
+        }
+        mappedData['age'] = age;
+      }
+
+      // Fetch signs for media
+      final List<dynamic> rawMedia = await _supabase
+          .from('profile_mode_media')
+          .select('media_url')
+          .eq('profile_mode_id', activeModeData['id'])
+          .eq('is_deleted', false)
+          .order('is_primary', ascending: false)
+          .limit(3);
+      
+      final List<String> signedUrls = [];
+      for (var m in rawMedia) {
+        String path = m['media_url'];
+         if (path.isNotEmpty && !path.startsWith('http')) {
+            try {
+              if (path.startsWith('/')) path = path.substring(1);
+              final url = await _supabase.storage.from('user_photos').createSignedUrl(path, 3600);
+              signedUrls.add(url);
+            } catch (_) {}
+         } else if (path.isNotEmpty) {
+           signedUrls.add(path);
+         }
+      }
+      mappedData['image_urls'] = signedUrls;
+
+      // 4. CHECK RELATIONSHIP
+      RelationshipState rel = RelationshipState.none;
+
+      // Check Match first (highest priority)
+      final match = await _supabase
+          .from('matches')
+          .select('status, chat_started')
+          .or('and(user_a_id.eq.$myId,user_b_id.eq.$targetProfileId),and(user_a_id.eq.$targetProfileId,user_b_id.eq.$myId)')
+          .maybeSingle();
+
+      if (match != null) {
+        if (match['status'] == 'blocked') {
+          rel = RelationshipState.blocked;
+        } else if (match['chat_started'] == true) {
+          rel = RelationshipState.chatStarted;
+        } else {
+          rel = RelationshipState.matched;
+        }
+      } else {
+        // Check Swipes
+        final mySwipe = await _supabase
+            .from('swipes')
+            .select('action_type')
+            .eq('actor_id', myId)
+            .eq('target_id', targetProfileId)
+            .maybeSingle();
+        
+        if (mySwipe != null) {
+          final action = mySwipe['action_type'];
+          if (action == 'like' || action == 'super_like') {
+            rel = RelationshipState.likedByMe;
+          } else {
+            rel = RelationshipState.skippedByMe;
+          }
+        } else {
+          // Check if they liked me
+          final theirSwipe = await _supabase
+              .from('swipes')
+              .select('action_type')
+              .eq('actor_id', targetProfileId)
+              .eq('target_id', myId)
+              .eq('action_type', 'like')
+              .maybeSingle();
+          
+          if (theirSwipe != null) {
+            rel = RelationshipState.likedMe;
+          }
+        }
+      }
+
+      return DiscoveryUser.fromJson(mappedData).copyWith(relationship: rel);
+    } catch (e) {
+      debugPrint('❌ Error fetching profile with relationship: $e');
+      return null;
     }
   }
 }

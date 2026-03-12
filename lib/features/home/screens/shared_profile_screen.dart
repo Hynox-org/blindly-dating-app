@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-// Removed go_router import
-
 import '../../../core/widgets/app_loader.dart';
 import '../../home/component/ProfileSwipeCard.dart';
+import '../../discovery/domain/models/discovery_user_model.dart';
+import '../../discovery/repository/discovery_repository.dart';
+import '../../discovery/povider/swipe_provider.dart';
 
 class SharedProfileScreen extends ConsumerStatefulWidget {
   final String profileId;
@@ -17,7 +17,7 @@ class SharedProfileScreen extends ConsumerStatefulWidget {
 
 class _SharedProfileScreenState extends ConsumerState<SharedProfileScreen> {
   bool _isLoading = true;
-  UserProfile? _profile;
+  DiscoveryUser? _user;
   String? _errorMessage;
 
   @override
@@ -28,18 +28,10 @@ class _SharedProfileScreenState extends ConsumerState<SharedProfileScreen> {
 
   Future<void> _fetchProfile() async {
     try {
-      final supabase = Supabase.instance.client;
+      final repo = ref.read(discoveryRepositoryProvider);
+      final user = await repo.getProfileWithRelationship(widget.profileId);
 
-      final Map<String, dynamic>? data = await supabase
-          .from('profiles')
-          .select()
-          .eq(
-            'user_id',
-            widget.profileId,
-          ) // Using user_id for public linking or id if prefer
-          .maybeSingle();
-
-      if (data == null) {
+      if (user == null) {
         setState(() {
           _errorMessage = "Profile not found or no longer available.";
           _isLoading = false;
@@ -47,43 +39,9 @@ class _SharedProfileScreenState extends ConsumerState<SharedProfileScreen> {
         return;
       }
 
-      final mappedProfile = UserProfile(
-        id: data['id'],
-        name: data['display_name'] ?? 'Unknown',
-        age: data['age'] ?? 0,
-        distance: (data['distance_miles'] ?? 0.0).toDouble(),
-        bio: data['bio'] ?? '',
-        subTitle: data['job_title'],
-        imageUrls: List<String>.from(data['photos'] ?? []),
-        height: data['height'] ?? '',
-        activityLevel: data['workout'] ?? '',
-        education: data['education_level'] ?? '',
-        school: data['college'] ?? '',
-        gender: data['gender'] ?? '',
-        religion: data['religion'] ?? '',
-        zodiac: data['zodiac_sign'] ?? '',
-        drinking: data['drinking'] ?? '',
-        smoking: data['smoking'] ?? '',
-        politics: data['politics'] ?? '',
-        kids: data['kids'] ?? '',
-        hometown: data['hometown'] ?? '',
-        workCompany: data['work_company'] ?? '',
-        hobbies: List<String>.from(data['interests'] ?? []),
-        summary: data['about_me'] ?? '',
-        lookingForModes: List<String>.from(data['looking_for_modes'] ?? []),
-        quickestWay: data['quickest_way'] ?? '',
-        causes: List<String>.from(data['causes'] ?? []),
-        simplePleasure: data['simple_pleasure'] ?? '',
-        languages: List<String>.from(data['languages'] ?? []),
-        location: data['location'] ?? '',
-        spotifyArtists: List<String>.from(data['spotify_artists'] ?? []),
-        isVerified: data['is_verified'] ?? false,
-        verificationLevel: data['verification_level'] ?? 'unverified',
-      );
-
       if (mounted) {
         setState(() {
-          _profile = mappedProfile;
+          _user = user;
           _isLoading = false;
         });
       }
@@ -101,13 +59,115 @@ class _SharedProfileScreenState extends ConsumerState<SharedProfileScreen> {
     Navigator.pop(context);
   }
 
+  void _handleAction(String type) async {
+    if (_user == null) return;
+    
+    // Optimistically pop and handle action, OR show success message
+    // The requirement says: "When the user closes or swipes... automatically return to normal Discovery page"
+    
+    try {
+      if (type == 'like') {
+        await ref.read(swipeProvider.notifier).swipe(
+              targetProfileId: _user!.profileId,
+              action: 'like',
+            );
+      } else if (type == 'pass') {
+        await ref.read(swipeProvider.notifier).swipe(
+              targetProfileId: _user!.profileId,
+              action: 'pass',
+            );
+      }
+      
+      if (mounted) {
+        Navigator.pop(context); // Return to Discovery
+      }
+    } catch (e) {
+       debugPrint("Error handling deep link action: $e");
+    }
+  }
+
+  Widget _buildRelationshipOverlay() {
+    if (_user == null) return const SizedBox.shrink();
+    
+    String? message;
+    IconData? icon;
+    Color? color;
+
+    switch (_user!.relationship) {
+      case RelationshipState.likedByMe:
+        message = "You already liked this profile.";
+        icon = Icons.favorite;
+        color = Colors.redAccent;
+        break;
+      case RelationshipState.likedMe:
+        message = "This person already liked you.";
+        icon = Icons.star;
+        color = Colors.amber;
+        break;
+      case RelationshipState.matched:
+        message = "You are matched.";
+        icon = Icons.auto_awesome;
+        color = Colors.pinkAccent;
+        break;
+      case RelationshipState.chatStarted:
+        message = "You already started chatting.";
+        icon = Icons.chat;
+        color = Colors.blueAccent;
+        break;
+      case RelationshipState.skippedByMe:
+        message = "Profile already skipped.";
+        icon = Icons.block;
+        color = Colors.grey;
+        break;
+      default:
+        return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 28),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: _onDismiss,
+          )
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(body: Center(child: AppLoader()));
     }
 
-    if (_errorMessage != null || _profile == null) {
+    if (_errorMessage != null || _user == null) {
       return Scaffold(
         appBar: AppBar(title: const Text("Profile")),
         body: Center(
@@ -131,28 +191,83 @@ class _SharedProfileScreenState extends ConsumerState<SharedProfileScreen> {
       );
     }
 
+    // Convert DiscoveryUser to UserProfile for the card
+    final profile = UserProfile(
+        id: _user!.profileId,
+        name: _user!.displayName,
+        age: _user!.age,
+        distance: _user!.distanceKm,
+        bio: _user!.bio,
+        subTitle: _user!.workTitle,
+        imageUrls: _user!.imageUrls,
+        height: _user!.height?.toString() ?? '',
+        activityLevel: _user!.exercise ?? '',
+        education: _user!.education ?? '',
+        school: _user!.school ?? '',
+        gender: _user!.gender,
+        religion: _user!.religion ?? '',
+        zodiac: _user!.zodiac ?? '',
+        drinking: _user!.drinking ?? '',
+        smoking: _user!.smoking ?? '',
+        politics: _user!.politics ?? '',
+        kids: _user!.kids ?? '',
+        hometown: _user!.hometown ?? '',
+        workCompany: _user!.workCompany ?? '',
+        hobbies: _user!.interests,
+        summary: '', // discovery user doesn't have summary field but bio
+        lookingForModes: _user!.lookingForModes,
+        quickestWay: '',
+        causes: _user!.causes,
+        lifestyleItems: [], // could map lifestyle if needed
+        prompts: _user!.prompts,
+        simplePleasure: '',
+        languages: _user!.languages,
+        location: '',
+        spotifyArtists: _user!.spotifyArtists,
+        isVerified: _user!.isVerified,
+        verificationLevel: _user!.verificationLevel,
+    );
+
     return Scaffold(
-      backgroundColor: Colors.black, // Typical card background
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white, size: 28),
+          icon: const Icon(Icons.close, color: Colors.black, size: 28),
           onPressed: _onDismiss,
         ),
-      ),
-      extendBodyBehindAppBar: true,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: ProfileSwipeCard(
-            profile: _profile!,
-            horizontalThreshold: 0,
-            verticalThreshold: 0,
-            mode: ProfileCardMode
-                .preview, // Preview mode hides the swipe action buttons
-          ),
+        title: const Text(
+            "Profile Preview", 
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)
         ),
+      ),
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: ProfileSwipeCard(
+                profile: profile,
+                horizontalThreshold: 0,
+                verticalThreshold: 0,
+                mode: _user!.relationship == RelationshipState.none 
+                    ? ProfileCardMode.swipe // Show buttons if no relationship
+                    : ProfileCardMode.preview, // Hide defaults if relationship exists
+                onLike: () => _handleAction('like'),
+                onBlock: () => _handleAction('pass'),
+              ),
+            ),
+          ),
+          // Status Overlay
+          if (_user!.relationship != RelationshipState.none)
+            Positioned(
+              bottom: 20,
+              left: 0,
+              right: 0,
+              child: _buildRelationshipOverlay(),
+            ),
+        ],
       ),
     );
   }

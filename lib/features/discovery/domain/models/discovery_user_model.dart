@@ -1,5 +1,15 @@
 import '../../../onboarding/domain/models/profile_prompt_model.dart';
 
+enum RelationshipState {
+  none,
+  likedByMe,
+  likedMe, // They liked me, but I haven't liked back (potential match)
+  matched,
+  chatStarted,
+  skippedByMe,
+  blocked,
+}
+
 class DiscoveryUser {
   final String profileId;
   final String displayName;
@@ -36,6 +46,7 @@ class DiscoveryUser {
   lookingForModes; // ✅ New: Fetch active mode looking_for preferences
   final bool isVerified;
   final String verificationLevel;
+  final RelationshipState relationship; // ✅ New field
 
   DiscoveryUser({
     required this.profileId,
@@ -71,6 +82,7 @@ class DiscoveryUser {
     this.lookingForModes = const [],
     this.isVerified = false,
     this.verificationLevel = 'unverified',
+    this.relationship = RelationshipState.none,
   });
 
   factory DiscoveryUser.fromJson(Map<String, dynamic> json) {
@@ -147,6 +159,87 @@ class DiscoveryUser {
           [],
       isVerified: json['is_verified'] ?? false,
       verificationLevel: json['verification_level'] ?? 'unverified',
+      relationship:
+          json['relationship'] != null
+              ? RelationshipState.values.firstWhere(
+                (e) => e.name == json['relationship'],
+                orElse: () => RelationshipState.none,
+              )
+              : RelationshipState.none,
+    );
+  }
+
+  DiscoveryUser copyWith({
+    String? profileId,
+    String? displayName,
+    int? age,
+    double? distanceKm,
+    String? bio,
+    String? modeId,
+    List<String>? imageUrls,
+    String? gender,
+    String? workTitle,
+    String? workCompany,
+    String? education,
+    String? school,
+    int? height,
+    String? hometown,
+    List<String>? languages,
+    String? drinking,
+    String? smoking,
+    String? exercise,
+    String? religion,
+    String? zodiac,
+    String? politics,
+    String? kids,
+    List<String>? interests,
+    List<String>? lifestyle,
+    String? relationshipType,
+    List<String>? qualities,
+    List<String>? causes,
+    List<String>? spotifyArtists,
+    String? swipeAction,
+    List<ProfilePrompt>? prompts,
+    List<String>? lookingForModes,
+    bool? isVerified,
+    String? verificationLevel,
+    RelationshipState? relationship,
+  }) {
+    return DiscoveryUser(
+      profileId: profileId ?? this.profileId,
+      displayName: displayName ?? this.displayName,
+      age: age ?? this.age,
+      distanceKm: distanceKm ?? this.distanceKm,
+      bio: bio ?? this.bio,
+      modeId: modeId ?? this.modeId,
+      imageUrls: imageUrls ?? this.imageUrls,
+      gender: gender ?? this.gender,
+      workTitle: workTitle ?? this.workTitle,
+      workCompany: workCompany ?? this.workCompany,
+      education: education ?? this.education,
+      school: school ?? this.school,
+      height: height ?? this.height,
+      hometown: hometown ?? this.hometown,
+      languages: languages ?? this.languages,
+      drinking: drinking ?? this.drinking,
+      smoking: smoking ?? this.smoking,
+      exercise: exercise ?? this.exercise,
+      religion: religion ?? this.religion,
+      zodiac: zodiac ?? this.zodiac,
+      politics: politics ?? this.politics,
+      kids: kids ?? this.kids,
+      interests: interests ?? this.interests,
+      lifestyle: lifestyle ?? this.lifestyle,
+      relationshipType: relationshipType ?? this.relationshipType,
+      qualities: qualities ?? this.qualities,
+      causes: causes ?? this.causes,
+      spotifyArtists: spotifyArtists ?? this.spotifyArtists,
+      swipeAction: swipeAction ?? this.swipeAction,
+      prompts: prompts ?? this.prompts,
+      lookingForModes: lookingForModes ?? this.lookingForModes,
+      isVerified: isVerified ?? this.isVerified,
+      verificationLevel: verificationLevel ?? this.verificationLevel,
+      relationship: relationship ?? this.relationship,
     );
   }
 }

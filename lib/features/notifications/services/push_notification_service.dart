@@ -12,6 +12,9 @@ class PushNotificationService {
   final FlutterLocalNotificationsPlugin _localNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
+  /// Notification for the UI to show the 'Sign Out Other Devices' card
+  static final ValueNotifier<String?> multiDeviceConflictToken = ValueNotifier(null);
+
   static const AndroidNotificationChannel channel = AndroidNotificationChannel(
     'high_importance_channel', // id
     'High Importance Notifications', // name
@@ -122,25 +125,43 @@ class PushNotificationService {
     if (userId == null) return;
 
     try {
-      // 1. Get the profile_id for this authenticated user
-      final profileResponse = await _supabase
-          .from('profiles')
-          .select('id')
-          .eq('user_id', userId)
-          .single();
-
-      final profileId = profileResponse['id'] as String;
-
-      // 2. Upsert the device token associated with their profile
-      await _supabase.from('user_push_tokens').upsert({
-        'profile_id': profileId,
-        'token': token,
-        'platform': _getPlatform(), // 'ios' or 'android'
-        'last_used_at': DateTime.now().toUtc().toIso8601String(),
+      // Use the RPC to handle RLS and shared device conflicts
+      final response = await _supabase.rpc('register_fcm_token', params: {
+        'p_token': token,
+        'p_platform': _getPlatform(),
       });
-      debugPrint('FCM Token saved to Supabase');
+
+      if (response != null && response['success'] == true) {
+        if (response['conflict'] == true) {
+          debugPrint('⚠️ Multi-device detected for this user.');
+          multiDeviceConflictToken.value = token;
+        } else {
+          multiDeviceConflictToken.value = null; // Clear if no conflict
+        }
+        debugPrint('FCM Token registered via RPC');
+      } else {
+        debugPrint('Failed to register FCM Token: ${response?['error']}');
+      }
     } catch (e) {
-      debugPrint('Error saving FCM Token: $e');
+      debugPrint('Error saving FCM Token via RPC: $e');
+    }
+  }
+
+  /// Clears other tokens for this profile, enforcing single-device login
+  Future<bool> clearOtherDevices(String keepToken) async {
+    try {
+      final response = await _supabase.rpc('clear_other_fcm_tokens', params: {
+        'p_keep_token': keepToken,
+      });
+
+      if (response != null && response['success'] == true) {
+        multiDeviceConflictToken.value = null; // Clear conflict state
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Error clearing other devices: $e');
+      return false;
     }
   }
 
