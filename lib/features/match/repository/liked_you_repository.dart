@@ -207,7 +207,7 @@ Future<bool> matchUser({
       'profile_id': otherProfileId,// receiver gets push
       'data': {
         'screen': 'matches',
-        'other_profile_id': myProfileId,
+        'other_profile_id': myProfileId,  
       }
     });
 
