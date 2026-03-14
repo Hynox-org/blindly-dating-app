@@ -49,10 +49,11 @@ class _ChatConversationScreenState extends ConsumerState<ChatConversationScreen>
   String? _editingMessageId;
   bool get _isEditing => _editingMessageId != null;
   RealtimeChannel? _channel;
-
   final List<Message> _messages = [];
-
+  Timer? timer;
   Message? _replyingTo;
+  List<Message> messages = [];   // Ensure this exists
+  RealtimeChannel? channelRead;  // Add this
 
   // Voice recording
   final AudioRecorder _audioRecorder = AudioRecorder();
@@ -63,69 +64,72 @@ class _ChatConversationScreenState extends ConsumerState<ChatConversationScreen>
   String get _myProfileId => widget.myProfileId;
 
   // ================== AGORA ==================
-  @override
+@override
 void initState() {
   super.initState();
-
+  
   AppState.isChatScreenOpen = true;
   AppState.currentChatProfileId = widget.otherProfileId;
-AppState.setCurrentChat(widget.otherProfileId);
-
-  // Listen to global incoming call provider
-  // Future.microtask(() {
-  //   ref.listen(incomingCallProvider, (previous, next) {
-  //     if (next == null) return;
-  //     if (!mounted) return;
-
-  //     if (_isNavigatingToCall) return;
-
-  //     // If the call belongs to THIS chat user
-  //     if (next['caller_id'] == widget.otherProfileId ||
-  //         next['receiver_id'] == widget.otherProfileId) {
-
-  //       _isNavigatingToCall = true;
-
-  //       Navigator.push(
-  //         context,
-  //         MaterialPageRoute(
-  //           builder: (_) => CallScreen(
-  //             callId: next['id'],
-  //             channelName: next['channel_name'],
-  //             isVideo: next['call_type'] == 'video',
-  //             isCaller: false,
-
-  //             // ALWAYS use global listener caller details
-  //             otherUserName: next['caller_name'] ?? 'Unknown',
-  //             otherUserImage: next['caller_image'] ?? '',
-  //           ),
-  //         ),
-  //       ).then((_) {
-  //         _isNavigatingToCall = false;
-  //       });
-  //     }
-  //   });
-  // });
+  AppState.setCurrentChat(widget.otherProfileId);
 
   _loadHistory();
   _listenRealtime();
+  
+  // Store timer reference
+  timer = Timer.periodic(const Duration(seconds: 3), (timerInstance) {
+    if (mounted) _markMessagesAsRead();
+  });
+  
+  // Fix channelRead assignment (use consistent naming)
+  channelRead = _supabase.channel('read-status-${widget.matchId}')
+    .onPostgresChanges(
+      event: PostgresChangeEvent.update,
+      schema: 'public',
+      table: 'messages',
+      filter: PostgresChangeFilter(
+        type: PostgresChangeFilterType.eq,
+        column: 'match_id',  // Note: match_id (snake_case) matches your DB
+        value: widget.matchId,
+      ),
+      callback: (payload) {
+        if (!mounted) return;
+        final updated = Message.fromMap(payload.newRecord);
+        if (updated.senderProfileId != widget.myProfileId && 
+            updated.readAt != null && 
+            messages.any((m) => m.id == updated.id)) {
+          final index = messages.indexWhere((m) => m.id == updated.id);
+          if (index != -1) {
+            setState(() {
+              messages[index] = updated;
+            });
+          }
+        }
+      },
+    )
+    .subscribe();
+
   _markMessagesAsDelivered();
   _markMessagesAsRead();
 }
-  @override
+ @override
 void dispose() {
   AppState.isChatScreenOpen = false;
   AppState.currentChatProfileId = null;
-AppState.setCurrentChat(null);
+  AppState.setCurrentChat(null);
 
-  if (_channel != null) {
+  if (_channel != null) {  // Use your actual channel variable name
     _supabase.removeChannel(_channel!);
   }
-
+  if (channelRead != null) {
+    _supabase.removeChannel(channelRead!);
+  }
+  
+  timer?.cancel();  // Cancel the timer
+  
   _controller.dispose();
   _scrollController.dispose();
   _focusNode.dispose();
   _audioRecorder.dispose();
-
   super.dispose();
 }
 
@@ -411,10 +415,18 @@ AppState.isCallScreenOpen = false;
             column: 'match_id',
             value: widget.matchId,
           ),
-          callback: (payload) {
+           callback: (payload) {
             final msg = Message.fromMap(payload.newRecord);
-            setState(() => _messages.add(msg));
-            _scrollBottom();
+
+            // ✅ Prevent duplicates
+            final exists = _messages.any((m) => m.id == msg.id);
+
+            if (!exists && mounted) {
+              setState(() {
+                _messages.add(msg);
+              });
+              _scrollBottom();
+            }
           },
         )
         .onPostgresChanges(
@@ -431,13 +443,17 @@ AppState.isCallScreenOpen = false;
 
             final index = _messages.indexWhere((m) => m.id == updated.id);
 
-            if (index != -1) {
-              setState(() => _messages[index] = updated);
-            }
+            // ✅ Important: ensure UI refresh
+            if (index != -1 && mounted) {
+              setState(() {
+                _messages[index] = updated;
+              });
+            } 
           },
-        )
+       )
+
         .subscribe();
-  }
+}
 
   // ==============================
   // SEND TEXT MESSAGE
@@ -2505,30 +2521,32 @@ class Message {
 
   /// ✅ REQUIRED FOR EDIT + SOFT DELETE UI
   Message copyWith({
-    String? text,
-    String? reaction,
-    DateTime? editedAt,
-    bool? deletedForSender,
-    bool? deletedForReceiver,
-    bool? deletedForEveryone,
-  }) {
-    return Message(
-      id: id,
-      matchId: matchId,
-      senderProfileId: senderProfileId,
-      receiverProfileId: receiverProfileId,
-      text: text ?? this.text,
-      createdAt: createdAt,
-      replyToId: replyToId,
-      reaction: reaction ?? this.reaction,
-      deliveredAt: deliveredAt,
-      readAt: readAt,
-      editedAt: editedAt ?? this.editedAt,
-      messageType: messageType,
-      voiceDuration: voiceDuration,
-      deletedForSender: deletedForSender ?? this.deletedForSender,
-      deletedForReceiver: deletedForReceiver ?? this.deletedForReceiver,
-      deletedForEveryone: deletedForEveryone ?? this.deletedForEveryone,
-    );
-  }
+  String? text,
+  String? reaction,
+  DateTime? editedAt,
+  DateTime? deliveredAt,
+  DateTime? readAt,
+  bool? deletedForSender,
+  bool? deletedForReceiver,
+  bool? deletedForEveryone,
+}) {
+  return Message(
+    id: id,
+    matchId: matchId,
+    senderProfileId: senderProfileId,
+    receiverProfileId: receiverProfileId,
+    text: text ?? this.text,
+    createdAt: createdAt,
+    replyToId: replyToId,
+    reaction: reaction ?? this.reaction,
+    deliveredAt: deliveredAt ?? this.deliveredAt,
+    readAt: readAt ?? this.readAt,
+    editedAt: editedAt ?? this.editedAt,
+    messageType: messageType,
+    voiceDuration: voiceDuration,
+    deletedForSender: deletedForSender ?? this.deletedForSender,
+    deletedForReceiver: deletedForReceiver ?? this.deletedForReceiver,
+    deletedForEveryone: deletedForEveryone ?? this.deletedForEveryone,
+  );
+}
 }
