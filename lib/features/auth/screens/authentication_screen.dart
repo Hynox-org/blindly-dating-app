@@ -10,6 +10,9 @@ import '../../../core/utils/app_logger.dart';
 import '../../onboarding/presentation/screens/onboarding_shell.dart';
 // import '../../discovery/repository/discovery_repository.dart';
 import '../../../../core/widgets/app_loader.dart';
+import './../../../core/security/encryption_service.dart';
+import './../../../core/security/key_security.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 enum AuthMethod { selection, phone, phoneOTP, email, emailOTP, apple }
 
@@ -262,6 +265,14 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
           final userId = ref.read(authRepositoryProvider).currentUser?.id;
           if (userId != null) {
             await ref.read(authRepositoryProvider).createProfile(userId);
+            // ✅ STEP 1 — Generate keys
+            await KeyService.generateAndStoreKeys(userId);
+            // ✅ STEP 2 — Get public key
+            // final publicKey = await EncryptionService.getPublicKey();
+            // ✅ STEP 3 — Upload to Supabase
+            // await Supabase.instance.client
+            //   .from('profiles')
+            //   .update({'public_key': publicKey}).eq('id', userId);
           }
 
           if (mounted) {
@@ -353,6 +364,14 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
           final userId = ref.read(authRepositoryProvider).currentUser?.id;
           if (userId != null) {
             await ref.read(authRepositoryProvider).createProfile(userId);
+            // ✅ STEP 1 — Generate keys
+            await KeyService.generateAndStoreKeys(userId);
+            // ✅ STEP 2 — Get public key
+            // final publicKey = await EncryptionService.getPublicKey();
+            // ✅ STEP 3 — Upload to Supabase
+            // await Supabase.instance.client
+            //   .from('profiles')
+            //   .update({'public_key': publicKey}).eq('id', userId);
           }
 
           if (mounted) {
@@ -447,6 +466,18 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
       try {
         final userId = ref.read(authRepositoryProvider).currentUser?.id;
         if (userId != null) {
+          await ref.read(authRepositoryProvider).createProfile(userId);
+          // ✅ STEP 1 — Generate keys
+          await KeyService.generateAndStoreKeys(userId);
+
+          // ✅ STEP 2 — Get public key
+          // final publicKey = await EncryptionService.getPublicKey();
+
+          // ✅ STEP 3 — Upload to Supabase
+          // await Supabase.instance.client
+          //   .from('profiles')
+          //   .update({'public_key': publicKey}).eq('id', userId);
+
           final isOnboarded = await ref
               .read(onboardingRepositoryProvider)
               .checkOnboardingStatus(userId);
@@ -664,11 +695,20 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                           if (mounted) {
                             // Check onboarding status
                             try {
-                              final userId = ref
-                                  .read(authRepositoryProvider)
-                                  .currentUser
-                                  ?.id;
+                              final userId = ref.read(authRepositoryProvider).currentUser?.id;
                               if (userId != null) {
+                                await ref.read(authRepositoryProvider).createProfile(userId);
+                                // ✅ STEP 1 — Generate keys
+                                await KeyService.generateAndStoreKeys(userId);
+
+                                // ✅ STEP 2 — Get public key
+                                // final publicKey = await EncryptionService.getPublicKey();
+
+                                // ✅ STEP 3 — Upload to Supabase
+                                // await Supabase.instance.client
+                                  // .from('profiles')
+                                  // .update({'public_key': publicKey}).eq('id', userId);
+
                                 final isOnboarded = await ref
                                     .read(onboardingRepositoryProvider)
                                     .checkOnboardingStatus(userId);
