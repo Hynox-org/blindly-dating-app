@@ -12,7 +12,6 @@ import 'package:flutter/services.dart';
 import '../../../call/presentation/screens/call_screen.dart';
 import 'dart:async';
 import './../../../../core/utils/app_state.dart';
-import './../../../call/provider/global_call_listener.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 class ChatConversationScreen extends ConsumerStatefulWidget {
   final String matchId;
@@ -24,7 +23,7 @@ class ChatConversationScreen extends ConsumerStatefulWidget {
   final String imageUrl;
 
   const ChatConversationScreen({
-    Key? key,
+    super.key,
     required this.matchId,
     required this.otherUserName,
     required this.otherUserImage,
@@ -32,7 +31,7 @@ class ChatConversationScreen extends ConsumerStatefulWidget {
     required this.otherProfileId,
     required this.name,
     required this.imageUrl,
-  }) : super(key: key);
+  });
 
   @override
   ConsumerState<ChatConversationScreen> createState() =>
@@ -1155,6 +1154,73 @@ AppState.isCallScreenOpen = false;
     return groups;
   }
 
+  Widget _buildEncryptionMessage() {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.only(top: 8, bottom: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        width: MediaQuery.of(context).size.width * 0.85,
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF9C4).withOpacity(0.3), // Very light yellow tint
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: const Color(0xFFE6C97A).withOpacity(0.4),
+            width: 0.5,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.lock_outline,
+                  size: 14,
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  "End-to-end encrypted",
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            RichText(
+              textAlign: TextAlign.center,
+              text: TextSpan(
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.black.withOpacity(0.6),
+                  fontFamily: 'Poppins', // Match theme
+                  height: 1.4,
+                ),
+                children: [
+                  const TextSpan(
+                    text:
+                        "Messages and calls are end-to-end encrypted. No one outside of this chat, not even Blindly, can read or listen to them. ",
+                  ),
+                  TextSpan(
+                    text: "Tap to learn more.",
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ==============================
   // UI
   // ==============================
@@ -1384,8 +1450,13 @@ AppState.isCallScreenOpen = false;
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.all(12),
-      itemCount: groupedMessages.length,
-      itemBuilder: (_, groupIndex) {
+      itemCount: groupedMessages.length + 1,
+      itemBuilder: (_, index) {
+        if (index == 0) {
+          return _buildEncryptionMessage();
+        }
+
+        final groupIndex = index - 1;
         final group = groupedMessages[groupIndex];
 
         return Column(

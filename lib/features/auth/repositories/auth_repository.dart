@@ -115,63 +115,71 @@ class AuthRepository {
     return await _client.auth.signUp(email: email, password: password);
   }
 
-  /// Sign in with Google (OAuth flow) - UPDATED FOR V7.0.0+
-  // Sign in with Google (Fixed for version 7.0.0+)
+  /// Sign in with Google (OAuth flow) - NATIVE FLOW (v7.0.0+)
   Future<void> signInWithGoogle() async {
+    AppLogger.info('AUTH_REPO: Starting Google Sign-In flow');
     try {
-      // 1. Get the Web Client ID from your .env file
       final webClientId = dotenv.env['WEB_CLIENT_ID'];
       if (webClientId == null) {
         throw const AuthException('WEB_CLIENT_ID not found in .env');
       }
 
-      // 2. Use the Singleton Instance (Required in v7)
       final GoogleSignIn googleSignIn = GoogleSignIn.instance;
 
-      // 3. Initialize Configuration (Required in v7)
-      // You MUST pass the serverClientId here now.
+      // 1. Initialize Configuration (Required in v7)
+      AppLogger.info('AUTH_REPO: Initializing GoogleSignIn');
       await googleSignIn.initialize(serverClientId: webClientId);
 
       // Force account picker by signing out first
-      await googleSignIn.signOut();
+      AppLogger.info('AUTH_REPO: Signing out from local Google session');
+      try {
+        await googleSignIn.signOut();
+      } catch (e) {
+        AppLogger.warning('AUTH_REPO: Local Google signOut failed: $e');
+      }
 
-      // 4. Authenticate
-      // 'signIn()' is now 'authenticate()'
+      // 2. Authenticate
+      AppLogger.info('AUTH_REPO: Calling googleSignIn.authenticate()');
       final GoogleSignInAccount? googleUser;
       try {
         googleUser = await googleSignIn.authenticate();
       } catch (e) {
-        // Handle user cancelling the popup
-        AppLogger.warning('AUTH_REPO: Google Sign-In cancelled: $e');
-        throw const AuthException('Sign in cancelled', statusCode: 'CANCELLED');
+        AppLogger.warning('AUTH_REPO: Google Sign-In call failed: $e');
+        if (e.toString().contains('network_error')) {
+          throw const AuthException('Network error during Google Sign-In');
+        }
+        rethrow;
       }
 
-      // 5. Get Tokens (No 'await' needed anymore)
+      // 3. Get Tokens (authentication is a GETTER in 7.0+)
+      AppLogger.info('AUTH_REPO: Retrieving authentication tokens');
       final googleAuth = googleUser.authentication;
-
-      // 6. Fix: 'accessToken' DOES NOT EXIST in v7. We only need idToken.
       final idToken = googleAuth.idToken;
 
       if (idToken == null) {
+        AppLogger.error('AUTH_REPO: No ID Token found in googleAuth');
         throw const AuthException('No ID Token found from Google Sign-In');
       }
 
-      // 7. Sign in to Supabase
-      // Pass 'null' for accessToken. Supabase will verify using the idToken.
+      // 4. Sign in to Supabase
+      AppLogger.info('AUTH_REPO: Signing in to Supabase with ID Token');
       final response = await _client.auth.signInWithIdToken(
         provider: OAuthProvider.google,
         idToken: idToken,
-        accessToken: null, // <--- Correct!
       );
 
       if (response.user != null) {
+        AppLogger.info('AUTH_REPO: Supabase auth successful, creating/updating profile');
         await createProfile(response.user!.id);
       }
 
-      AppLogger.info('AUTH_REPO: Google Sign-In successful');
+      AppLogger.info('AUTH_REPO: Google Sign-In flow completed successfully');
     } catch (e, stackTrace) {
-      if (e is AuthException) rethrow;
-      AppLogger.error('AUTH_REPO: Google Sign-In failed', e, stackTrace);
+      if (e is AuthException) {
+        AppLogger.warning('AUTH_REPO: Google Sign-In AuthException: ${e.message}');
+        rethrow;
+      }
+      AppLogger.error('AUTH_REPO: Unexpected failure in signInWithGoogle', e, stackTrace);
       rethrow;
     }
   }

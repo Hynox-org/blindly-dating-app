@@ -136,7 +136,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
       if (isAlreadyUpdated) {
         debugPrint('⏩ Session: Location already updated. Skipping.');
-        if (mounted) setState(() => _isLocationReady = true);
+        if (mounted) {
+          debugPrint('🏠 HOMESCREEN: Setting _isLocationReady = true (cached)');
+          setState(() => _isLocationReady = true);
+        }
         return;
       }
 
@@ -153,6 +156,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         debugPrint('❌ HOMESCREEN: Location update failed: $e');
       } finally {
         if (mounted) {
+          debugPrint('🏠 HOMESCREEN: Setting _isLocationReady = true (final)');
           setState(() {
             _isLocationReady = true;
           });

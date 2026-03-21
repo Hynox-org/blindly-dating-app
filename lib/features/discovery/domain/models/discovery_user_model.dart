@@ -108,7 +108,7 @@ class DiscoveryUser {
       education:
           json['education_level'], // Mapping education_level to education
       school: json['educated_at'], // Mapping educated_at to school
-      height: json['height'] as int?,
+      height: json['height_cm'] as int?,
       hometown: json['hometown_city'] ?? json['hometown'],
       languages:
           (json['languages'] as List<dynamic>?)
@@ -119,7 +119,7 @@ class DiscoveryUser {
       smoking: json['smoking'],
       exercise: json['exercise'],
       religion: json['religion'],
-      zodiac: json['zodiac'],
+      zodiac: json['star_sign'],
       politics: json['politics'],
       kids: json['kids'],
       interests:

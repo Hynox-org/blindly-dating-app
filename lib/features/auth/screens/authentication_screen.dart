@@ -5,7 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_providers.dart';
-import '../../onboarding/providers/onboarding_providers.dart';
+import '../../onboarding/data/repositories/onboarding_repository.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../onboarding/presentation/screens/onboarding_shell.dart';
 // import '../../discovery/repository/discovery_repository.dart';

@@ -63,6 +63,7 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
   }) : _repository = repository,
        _currentMode = mode.toLowerCase(),
        super(DiscoveryState(mainDeck: [])) {
+    debugPrint("🧬 DISCOVERY_NOTIFIER: Initialized for mode: $_currentMode");
     // Initial Load
     refreshFeed();
   }

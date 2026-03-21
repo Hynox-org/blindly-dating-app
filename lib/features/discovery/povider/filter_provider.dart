@@ -117,7 +117,7 @@ class FilterNotifier extends StateNotifier<FilterState> {
 
   Future<void> _loadFilters() async {
     if (_repository != null && _currentMode != null) {
-      final savedFilters = await _repository.getDiscoveryFilters(_currentMode!);
+      final savedFilters = await _repository.getDiscoveryFilters(_currentMode);
       if (!mounted) return;
       if (savedFilters != null) {
         state = FilterState.fromJson(savedFilters);

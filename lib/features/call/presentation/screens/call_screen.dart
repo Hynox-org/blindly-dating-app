@@ -304,7 +304,7 @@ if (!widget.isCaller &&
               _localJoined = true;
               _myUid ??= connection.localUid;
             });
-            debugPrint("✅ Joined channel: ${_myUid}");
+            debugPrint("✅ Joined channel: $_myUid");
           },
           onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
             if (!mounted) return;

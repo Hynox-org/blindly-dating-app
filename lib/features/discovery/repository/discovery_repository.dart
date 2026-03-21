@@ -47,25 +47,29 @@ class DiscoveryRepository {
 
       final int effectiveRadius = kDevMode ? _devRadiusKm : radiusKm;
 
-      debugPrint('🚀 DISCOVERY RPC CALL: get_discovery_prospects_v2');
+      debugPrint('🚀 DISCOVERY RPC CALL: get_discovery_prospects');
       debugPrint('MODE    : $currentMode');
       debugPrint('RADIUS  : $effectiveRadius KM');
       debugPrint('LIMIT   : $limit');
       debugPrint('OFFSET  : $offset');
 
-      // 1. Call DB using v2 RPC (Server pulls filters from profile_modes)
+      // 1. Call DB using reverted RPC
       final List<dynamic>? response = await _supabase.rpc(
-        'get_discovery_prospects_v2',
+        'get_discovery_prospects',
         params: {
-          'p_search_mode': currentMode,
-          'p_limit_count': limit,
-          'p_offset_count': offset,
+          'p_mode': currentMode,
+          'p_limit': limit,
+          'p_offset': offset,
         },
       );
 
-      if (response == null || response.isEmpty) return [];
+      if (response == null || response.isEmpty) {
+        debugPrint('🧪 DISCOVERY: No results returned from RPC');
+        return [];
+      }
 
       debugPrint('🧪 DISCOVERY ROWS FOUND: ${response.length}');
+      debugPrint('🧪 DISCOVERY FIRST ROW (RAW): ${response.first}');
 
       // 2. PARALLEL PROCESSING (Iterate Users)
       final futureUsers = response.map((raw) async {

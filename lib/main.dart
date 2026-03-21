@@ -66,7 +66,9 @@ void main() async {
     Supabase.initialize(
       url: trueSupabaseUrl,
       anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
-      httpClient: proxiedHttpClient,
+      httpClient: directUrl != null && directUrl.isNotEmpty 
+          ? secureClient 
+          : proxiedHttpClient,
       realtimeClientOptions: const RealtimeClientOptions(eventsPerSecond: 10),
     ),
   ]);
