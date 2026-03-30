@@ -3,19 +3,37 @@ import 'package:encrypt/encrypt.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:basic_utils/basic_utils.dart';
 import 'package:pointycastle/export.dart';
-import 'dart:convert'; // For utf8.encode/decode
-// import 'package:pointycastle/src/parser/pem_parser.dart'; // Add this import
+import 'dart:convert';
+import 'package:pointycastle/pointycastle.dart' as pc;
 
 class EncryptionResult {
   final String cipherText;
-  final String encryptedKey;
+  final String encryptedKeyForSender;   // ✅ NEW
+  final String encryptedKeyForReceiver; // ✅ NEW
   final String iv;
 
-  EncryptionResult(this.cipherText, this.encryptedKey, this.iv);
+  EncryptionResult(
+    this.cipherText,
+    this.encryptedKeyForSender,
+    this.encryptedKeyForReceiver,
+    this.iv,
+  );
 }
 
 class EncryptionService {
   static final _secureStorage = const FlutterSecureStorage();
+
+  // ==============================
+  // ✅ NEW: Base64 Validation Helper
+  // ==============================
+  static bool _isValidBase64(String str) {
+    try {
+      base64Decode(str);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
 
   // ==============================
   // GET PRIVATE KEY
@@ -23,12 +41,6 @@ class EncryptionService {
   static Future<String?> getPrivateKeyPem() async {
     return await _secureStorage.read(key: 'private_key');
   }
-
-  // ==============================
-  // ❌ REMOVE THIS (IMPORTANT)
-  // ==============================
-  // DO NOT generate keys here anymore
-  // KeyService is responsible for key generation
 
   // ==============================
   // GET PUBLIC KEY (optional)
@@ -41,89 +53,143 @@ class EncryptionService {
   // ENCRYPT MESSAGE
   // ==============================
   static Future<EncryptionResult> encryptMessage({
-    required String message,
-    required String receiverPublicKeyPem,
-  }) async {
-    print('🔍 ENCRYPT: message length=${message.length}'); // DEBUG
-
-    // ✅ 10k char LIMIT (safe for AES CBC + Base64)
-    final maxLength = 10000;
-    String safeMessage = message.length > maxLength
-        ? message.substring(0, maxLength) + '[truncated]'
-        : message;
-
-    // ✅ UTF-8 encode FIRST
-    final messageBytes = utf8.encode(safeMessage);
-    print('🔍 ENCRYPT: bytes length=${messageBytes.length}'); // DEBUG
-
-    final aesKey = Key.fromSecureRandom(32);
-    final iv = IV.fromSecureRandom(16);
-
-    // ✅ CBC + PKCS7 (default)
-    final aesEncrypter = Encrypter(AES(aesKey, mode: AESMode.cbc,));
-
-    // ✅ CRITICAL: encrypt BYTES not string
-    final encryptedMessage = aesEncrypter.encryptBytes(messageBytes, iv: iv);
-
-    final parser = RSAKeyParser();
-    final publicKey = parser.parse(receiverPublicKeyPem) as RSAPublicKey;
-    final rsaEncrypter = Encrypter(
-      RSA(
-        publicKey: publicKey,
-        encoding: RSAEncoding.OAEP,
-        digest: RSADigest.SHA256, // ✅ must match decrypt
-      ),
-    );
-    final encryptedKey = rsaEncrypter.encryptBytes(aesKey.bytes);
-
-    print('✅ ENCRYPT SUCCESS'); // DEBUG
-    return EncryptionResult(
-      encryptedMessage.base64,
-      encryptedKey.base64,
-      iv.base64,
-    );
-  }
-
-  // ==============================
-  // DECRYPT MESSAGE
-  // ==============================
-// ... other imports remain the same
-
-static Future<String> decryptMessage({
-  required String cipherText,
-  required String encryptedKey,
-  required String iv,
+  required String message,
+  required String receiverPublicKeyPem,
 }) async {
-  final privateKeyPem = await _secureStorage.read(key: 'private_key');
+  print('🔍 ENCRYPT: message length=${message.length}');
 
-  if (privateKeyPem == null) {
-    throw Exception("Private key not found");
-  }
+  final maxLength = 10000;
+  String safeMessage = message.length > maxLength
+      ? message.substring(0, maxLength) + '[truncated]'
+      : message;
 
-  // ✅ Proper PEM parsing (handles PKCS#1 & PKCS#8 automatically)
+  final messageBytes = utf8.encode(safeMessage);
+
+  // 🔐 AES
+  final aesKey = Key.fromSecureRandom(32);
+  final iv = IV.fromSecureRandom(16);
+
+  final aesEncrypter = Encrypter(AES(aesKey, mode: AESMode.cbc));
+  final encryptedMessage = aesEncrypter.encryptBytes(messageBytes, iv: iv);
+
   final parser = RSAKeyParser();
-  final privateKey = parser.parse(privateKeyPem) as RSAPrivateKey;
 
-  final rsaDecrypter = Encrypter(
+  // ==============================
+  // 🔐 Receiver encryption
+  // ==============================
+  final receiverPublicKey =
+      parser.parse(receiverPublicKeyPem) as RSAPublicKey;
+
+  final receiverEncrypter = Encrypter(
     RSA(
-      privateKey: privateKey,
+      publicKey: receiverPublicKey,
       encoding: RSAEncoding.OAEP,
       digest: RSADigest.SHA256,
     ),
   );
 
-  // ✅ Decrypt AES key
-  final aesKeyBytes =
-      rsaDecrypter.decryptBytes(Encrypted.fromBase64(encryptedKey));
+  final encryptedKeyForReceiver =
+      receiverEncrypter.encryptBytes(aesKey.bytes);
 
-  final aesKey = Key(Uint8List.fromList(aesKeyBytes));
-  final aesEncrypter = Encrypter(AES(aesKey, mode: AESMode.cbc));
+  // ==============================
+  // 🔐 Sender encryption (IMPORTANT FIX)
+  // ==============================
+  final myPublicKeyPem = await getPublicKey();
 
-  final decryptedBytes = aesEncrypter.decryptBytes(
-    Encrypted.fromBase64(cipherText),
-    iv: IV.fromBase64(iv),
+  if (myPublicKeyPem == null) {
+    throw Exception("Sender public key not found");
+  }
+
+  final myPublicKey = parser.parse(myPublicKeyPem) as RSAPublicKey;
+
+  final senderEncrypter = Encrypter(
+    RSA(
+      publicKey: myPublicKey,
+      encoding: RSAEncoding.OAEP,
+      digest: RSADigest.SHA256,
+    ),
   );
 
-  return utf8.decode(decryptedBytes);
+  final encryptedKeyForSender =
+      senderEncrypter.encryptBytes(aesKey.bytes);
+
+  print('✅ ENCRYPT SUCCESS');
+
+  return EncryptionResult(
+    encryptedMessage.base64,
+    encryptedKeyForSender.base64,
+    encryptedKeyForReceiver.base64,
+    iv.base64,
+  );
+}
+  // ==============================
+  // DECRYPT MESSAGE (FULLY FIXED)
+  // ==============================
+  static Future<String> decryptMessage({
+  required String cipherText,
+  required String encryptedKey, // will be sender OR receiver key
+  required String iv,
+}) async {
+  final privateKeyPem = await _secureStorage.read(key: 'private_key');
+  if (privateKeyPem == null) {
+    throw Exception("Private key not found");
+  }
+
+  if (!_isValidBase64(cipherText) ||
+      !_isValidBase64(encryptedKey) ||
+      !_isValidBase64(iv)) {
+    throw Exception("Invalid Base64");
+  }
+
+  try {
+    final parser = RSAKeyParser();
+    final privateKey = parser.parse(privateKeyPem) as RSAPrivateKey;
+
+    final rsaDecrypter = Encrypter(
+      RSA(
+        privateKey: privateKey,
+        encoding: RSAEncoding.OAEP,
+        digest: RSADigest.SHA256,
+      ),
+    );
+
+    Uint8List aesKeyBytes;
+
+    try {
+      aesKeyBytes = Uint8List.fromList(
+        rsaDecrypter.decryptBytes(
+          Encrypted.fromBase64(encryptedKey),
+        ),
+      );
+    } catch (e) {
+      print('❌ OAEP failed, fallback PKCS1');
+
+      final fallbackCipher = pc.AsymmetricBlockCipher('RSA/PKCS1-v1_5')
+        ..init(false, pc.PrivateKeyParameter<pc.RSAPrivateKey>(privateKey));
+
+      aesKeyBytes = Uint8List.fromList(
+        fallbackCipher.process(
+          Uint8List.fromList(base64Decode(encryptedKey)),
+        ),
+      );
+    }
+
+    if (aesKeyBytes.length != 32) {
+      throw Exception("Invalid AES key length");
+    }
+
+    final aesKey = Key(aesKeyBytes);
+    final aesDecrypter = Encrypter(AES(aesKey, mode: AESMode.cbc));
+
+    final decryptedBytes = aesDecrypter.decryptBytes(
+      Encrypted.fromBase64(cipherText),
+      iv: IV.fromBase64(iv),
+    );
+
+    return utf8.decode(decryptedBytes);
+  } catch (e) {
+    print('❌ FULL DECRYPT ERROR: $e');
+    rethrow;
+  }
 }
 }

@@ -322,67 +322,84 @@ class _ChatConversationScreenState
   // ==============================
 
   Future<void> _loadHistory() async {
-    try {
-      final res = await _supabase
-          .from('messages')
-          .select()
-          .eq('match_id', widget.matchId)
-          .order('created_at', ascending: true);
+  try {
+    final res = await _supabase
+        .from('messages')
+        .select()
+        .eq('match_id', widget.matchId)
+        .order('created_at', ascending: true);
 
-      final List data = res as List;
+    final List data = res as List;
 
-      print("📜 Loaded messages from DB: ${data.length}");
+    print("📜 Loaded messages from DB: ${data.length}");
 
-      final List<Message> loadedMessages = [];
+    final List<Message> loadedMessages = [];
 
-      for (final raw in data) {
-        final msg = Map<String, dynamic>.from(raw);
+    for (final raw in data) {
+      final msg = Map<String, dynamic>.from(raw);
 
-        String content = msg['content'] ?? '';
-        if (msg['message_type'] == 'text') {
-          print(
-            "📜 Processing message ${msg['id']} with content length ${content.length}, message_type: ${msg['message_type']}",
-          );
+      String content = msg['content'] ?? '';
 
-          print(
-            "🔍 Decrypting message ${msg['id']} with content length ${content.length},message_type: ${msg['message_type']}",
-          );
-          try {
-            // 🔐 Decrypt only encrypted TEXT messages
-            if (msg['message_type'] == 'text' &&
-                msg['encrypted_key'] != null &&
-                msg['iv'] != null &&
-                msg['content'] != null) {
-              content = await EncryptionService.decryptMessage(
-                cipherText: msg['content'],
-                encryptedKey: msg['encrypted_key'],
-                iv: msg['iv'],
-              );
+      if (msg['message_type'] == 'text') {
+        print(
+          "📜 Processing message ${msg['id']} (len=${content.length})",
+        );
+
+        try {
+          // ✅ Ensure required fields exist
+          if (msg['iv'] != null &&
+              msg['content'] != null &&
+              (msg['encrypted_key_sender'] != null ||
+                  msg['encrypted_key_receiver'] != null)) {
+
+            // ✅ Identify ownership
+            final isMe = msg['sender_profile_id'] == _myProfileId;
+
+            // ✅ Pick correct key
+            final encryptedKey = isMe
+                ? msg['encrypted_key_sender']
+                : msg['encrypted_key_receiver'];
+
+            if (encryptedKey == null) {
+              throw Exception("Missing encrypted key");
             }
-          } catch (e) {
-            content = "🔒 Encrypted message";
-            print("❌ Decrypt failed for message ${msg['id']}: $e");
+
+            print(
+              "🔍 Decrypting message ${msg['id']} (isMe=$isMe)",
+            );
+
+            content = await EncryptionService.decryptMessage(
+              cipherText: msg['content'],
+              encryptedKey: encryptedKey,
+              iv: msg['iv'],
+            );
+
+            print("✅ Decrypted: $content");
           }
+        } catch (e) {
+          content = "🔒 Encrypted message";
+          print("❌ Decrypt failed for message ${msg['id']}: $e");
         }
-
-        msg['content'] = content;
-
-        loadedMessages.add(Message.fromMap(msg));
       }
 
-      if (!mounted) return;
+      msg['content'] = content;
 
-      setState(() {
-        _messages
-          ..clear()
-          ..addAll(loadedMessages);
-      });
-
-      _scrollToBottom();
-    } catch (e) {
-      debugPrint('❌ Error loading message history: $e');
+      loadedMessages.add(Message.fromMap(msg));
     }
+
+    if (!mounted) return;
+
+    setState(() {
+      _messages
+        ..clear()
+        ..addAll(loadedMessages);
+    });
+
+    _scrollToBottom();
+  } catch (e) {
+    debugPrint('❌ Error loading message history: $e');
   }
+}
 
   Future<void> diagnosePrivateKey() async {
     try {
@@ -411,75 +428,116 @@ class _ChatConversationScreenState
   }
 
   Future<void> _handleRealtimeMessage(Map<String, dynamic> raw) async {
-    print(raw);
-    final data = Map<String, dynamic>.from(raw);
-    print("📩 Realtime message data: $data");
-    String content = data['content'] ?? '';
+  print(raw);
 
-    try {
-      if (data['message_type'] == 'text' &&
-          data['encrypted_key'] != null &&
-          data['iv'] != null &&
-          data['content'] != null) {
-        print("🔍 Realtime decrypting message ${data['id']}...");
+  final data = Map<String, dynamic>.from(raw);
+  print("📩 Realtime message data: $data");
+
+  String content = "⏳ Decrypting...";
+
+  try {
+    if (data['message_type'] == 'text' &&
+        data['iv'] != null &&
+        data['content'] != null) {
+
+      final isMe = data['sender_profile_id'] == _myProfileId;
+
+      // ✅ Support BOTH new + old schema
+      final encryptedKey = data['encrypted_key_sender'] != null
+          ? (isMe
+              ? data['encrypted_key_sender']
+              : data['encrypted_key_receiver'])
+          : data['encrypted_key']; // fallback
+
+      if (encryptedKey != null) {
+        print("🔍 Realtime decrypting message ${data['id']} (isMe=$isMe)...");
+
         content = await EncryptionService.decryptMessage(
           cipherText: data['content'],
-          encryptedKey: data['encrypted_key'],
+          encryptedKey: encryptedKey,
           iv: data['iv'],
         );
-        print("content: $content");
+
+        print("✅ Decrypted content: $content");
       }
-    } catch (e) {
-      content = "🔒 Encrypted message";
-      print("❌ Realtime decrypt failed: $e");
     }
-
-    data['content'] = content;
-
-    final msg = Message.fromMap(data);
-
-    final exists = _messages.any((m) => m.id == msg.id);
-
-    if (!exists && mounted) {
-      setState(() => _messages.add(msg));
-      _scrollToBottom();
-    }
+  } catch (e) {
+    content = "🔒 Encrypted message";
+    print("❌ Realtime decrypt failed: $e");
   }
 
-  Future<void> _handleRealtimeUpdate(Map<String, dynamic> raw) async {
-    print(raw);
-    final data = Map<String, dynamic>.from(raw);
+  data['content'] = content;
 
-    String content = data['content'] ?? '';
+  final msg = Message.fromMap(data);
 
-    try {
-      if (data['message_type'] == 'text' &&
-          data['encrypted_key'] != null &&
-          data['iv'] != null &&
-          data['content'] != null) {
+  // ✅ FIX: update instead of duplicate
+  final index = _messages.indexWhere((m) =>
+      m.id == msg.id ||
+      (m.createdAt == msg.createdAt &&
+       m.senderProfileId == msg.senderProfileId));
+
+  if (mounted) {
+    setState(() {
+      if (index != -1) {
+        _messages[index] = msg; // ✅ update existing
+      } else {
+        _messages.add(msg); // ✅ add new
+      }
+    });
+
+    _scrollToBottom();
+  }
+} Future<void> _handleRealtimeUpdate(Map<String, dynamic> raw) async {
+  print(raw);
+
+  final data = Map<String, dynamic>.from(raw);
+
+  String content = "⏳ Decrypting...";
+
+  try {
+    if (data['message_type'] == 'text' &&
+        data['iv'] != null &&
+        data['content'] != null) {
+
+      final isMe = data['sender_profile_id'] == _myProfileId;
+
+      // ✅ Support BOTH new + old schema
+      final encryptedKey = data['encrypted_key_sender'] != null
+          ? (isMe
+              ? data['encrypted_key_sender']
+              : data['encrypted_key_receiver'])
+          : data['encrypted_key']; // fallback
+
+      if (encryptedKey != null) {
+        print("🔄 Updating message ${data['id']} (isMe=$isMe)...");
+
         content = await EncryptionService.decryptMessage(
           cipherText: data['content'],
-          encryptedKey: data['encrypted_key'],
+          encryptedKey: encryptedKey,
           iv: data['iv'],
         );
-        print("content: $content");
+
+        print("✅ Updated decrypted content: $content");
       }
-    } catch (e) {
-      content = "🔒 Encrypted message";
-      print("❌ Update decrypt failed: $e");
     }
-
-    data['content'] = content;
-
-    final updated = Message.fromMap(data);
-
-    final index = _messages.indexWhere((m) => m.id == updated.id);
-
-    if (index != -1 && mounted) {
-      setState(() => _messages[index] = updated);
-    }
+  } catch (e) {
+    content = "🔒 Encrypted message";
+    print("❌ Update decrypt failed: $e");
   }
-  // ==============================
+
+  data['content'] = content;
+
+  final updated = Message.fromMap(data);
+
+  final index = _messages.indexWhere((m) => m.id == updated.id);
+
+  if (index != -1 && mounted) {
+    setState(() {
+      _messages[index] = updated; // ✅ always update
+    });
+  }
+}
+ // ==============================
   // REALTIME
   // ==============================
 
@@ -552,7 +610,7 @@ class _ChatConversationScreenState
       final res = await _supabase
           .from('profiles')
           .select('public_key')
-          .eq('user_id', userId)
+          .eq('id', widget.otherProfileId)
           .single();
 
       receiverPublicKeyPem = res['public_key'];
@@ -587,6 +645,7 @@ class _ChatConversationScreenState
       return;
     }
     if (!_isKeyReady) {
+      print("⏳ Skipping decrypt, key not ready");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Encryption key not loaded. Please wait."),
@@ -611,7 +670,8 @@ class _ChatConversationScreenState
             .from('messages')
             .update({
               'content': encrypted.cipherText,
-              'encrypted_key': encrypted.encryptedKey,
+              'encrypted_key_sender': encrypted.encryptedKeyForSender,
+              'encrypted_key_receiver': encrypted.encryptedKeyForReceiver,
               'iv': encrypted.iv,
               'edited_at': DateTime.now().toIso8601String(),
             })
@@ -624,7 +684,8 @@ class _ChatConversationScreenState
           'sender_profile_id': _myProfileId,
           'receiver_profile_id': widget.otherProfileId,
           'content': encrypted.cipherText,
-          'encrypted_key': encrypted.encryptedKey,
+          'encrypted_key_sender': encrypted.encryptedKeyForSender,
+          'encrypted_key_receiver': encrypted.encryptedKeyForReceiver,
           'iv': encrypted.iv,
           'message_type': 'text',
           'reply_to_id': _replyingTo?.id,
