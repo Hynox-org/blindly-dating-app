@@ -206,9 +206,9 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
                   // icon: Icons.favorite_border,
                   onTap: () async {
                     await ref
-                        .read(likedYouProvider.notifier)
-                        .matchUser(user.profileId);
-                  },
+                      .read(likedYouProvider.notifier)
+                      .matchUser(user.profileId);
+                    },
                 ),
 
                 _overlayActionButton(

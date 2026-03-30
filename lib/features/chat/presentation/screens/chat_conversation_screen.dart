@@ -13,6 +13,12 @@ import '../../../call/presentation/screens/call_screen.dart';
 import 'dart:async';
 import './../../../../core/utils/app_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/security/encryption_service.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../../../../core/security/key_security.dart';
+// import 'package:cached_network_image/cached_network_image.dart';
+// import 'package:image/image.dart' as img;
+
 class ChatConversationScreen extends ConsumerStatefulWidget {
   final String matchId;
   final String otherUserName;
@@ -38,7 +44,8 @@ class ChatConversationScreen extends ConsumerStatefulWidget {
       _ChatConversationScreenState();
 }
 
-class _ChatConversationScreenState extends ConsumerState<ChatConversationScreen> {
+class _ChatConversationScreenState
+    extends ConsumerState<ChatConversationScreen> {
   final SupabaseClient _supabase = Supabase.instance.client;
 
   final TextEditingController _controller = TextEditingController();
@@ -48,11 +55,13 @@ class _ChatConversationScreenState extends ConsumerState<ChatConversationScreen>
   String? _editingMessageId;
   bool get _isEditing => _editingMessageId != null;
   RealtimeChannel? _channel;
-
   final List<Message> _messages = [];
-
+  Timer? timer;
   Message? _replyingTo;
-
+  // List<Message> messages = [];   // Ensure this exists
+  RealtimeChannel? channelRead; // Add this
+  String? receiverPublicKeyPem;
+  bool _isKeyReady = false;
   // Voice recording
   final AudioRecorder _audioRecorder = AudioRecorder();
   bool _isRecording = false;
@@ -60,73 +69,87 @@ class _ChatConversationScreenState extends ConsumerState<ChatConversationScreen>
   Duration _recordingDuration = Duration.zero;
 
   String get _myProfileId => widget.myProfileId;
+  final userId = Supabase.instance.client.auth.currentUser!.id;
 
   // ================== AGORA ==================
   @override
-void initState() {
-  super.initState();
+  void initState() {
+    super.initState();
+    AppState.isChatScreenOpen = true;
+    AppState.currentChatProfileId = widget.otherProfileId;
+    AppState.setCurrentChat(widget.otherProfileId);
 
-  AppState.isChatScreenOpen = true;
-  AppState.currentChatProfileId = widget.otherProfileId;
-AppState.setCurrentChat(widget.otherProfileId);
+    // Initialize keys FIRST, then load other data
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await KeyService.generateAndStoreKeys(userId);
+      if (mounted) {
+        await _loadReceiverKey();
+        await _loadHistory();
+        _listenRealtime();
+        await diagnosePrivateKey(); // ADD THIS
+      }
+    });
 
-  // Listen to global incoming call provider
-  // Future.microtask(() {
-  //   ref.listen(incomingCallProvider, (previous, next) {
-  //     if (next == null) return;
-  //     if (!mounted) return;
+    // Rest of your existing initState code (timer, etc.)
+    timer = Timer.periodic(const Duration(seconds: 3), (timerInstance) {
+      if (mounted) _markMessagesAsRead();
+    });
 
-  //     if (_isNavigatingToCall) return;
+    // Fix channelRead assignment (use consistent naming)
+    channelRead = _supabase
+        .channel('read-status-${widget.matchId}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'messages',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'match_id', // Note: match_id (snake_case) matches your DB
+            value: widget.matchId,
+          ),
+          callback: (payload) {
+            if (!mounted) return;
+            final updated = Message.fromMap(payload.newRecord);
+            if (updated.senderProfileId != widget.myProfileId &&
+                updated.readAt != null &&
+                _messages.any((m) => m.id == updated.id)) {
+              final index = _messages.indexWhere((m) => m.id == updated.id);
+              if (index != -1) {
+                setState(() {
+                  _messages[index] = updated;
+                });
+              }
+            }
+          },
+        )
+        .subscribe();
 
-  //     // If the call belongs to THIS chat user
-  //     if (next['caller_id'] == widget.otherProfileId ||
-  //         next['receiver_id'] == widget.otherProfileId) {
-
-  //       _isNavigatingToCall = true;
-
-  //       Navigator.push(
-  //         context,
-  //         MaterialPageRoute(
-  //           builder: (_) => CallScreen(
-  //             callId: next['id'],
-  //             channelName: next['channel_name'],
-  //             isVideo: next['call_type'] == 'video',
-  //             isCaller: false,
-
-  //             // ALWAYS use global listener caller details
-  //             otherUserName: next['caller_name'] ?? 'Unknown',
-  //             otherUserImage: next['caller_image'] ?? '',
-  //           ),
-  //         ),
-  //       ).then((_) {
-  //         _isNavigatingToCall = false;
-  //       });
-  //     }
-  //   });
-  // });
-
-  _loadHistory();
-  _listenRealtime();
-  _markMessagesAsDelivered();
-  _markMessagesAsRead();
-}
-  @override
-void dispose() {
-  AppState.isChatScreenOpen = false;
-  AppState.currentChatProfileId = null;
-AppState.setCurrentChat(null);
-
-  if (_channel != null) {
-    _supabase.removeChannel(_channel!);
+    _markMessagesAsDelivered();
+    _markMessagesAsRead();
   }
 
-  _controller.dispose();
-  _scrollController.dispose();
-  _focusNode.dispose();
-  _audioRecorder.dispose();
+  @override
+  void dispose() {
+    AppState.isChatScreenOpen = false;
+    AppState.currentChatProfileId = null;
+    AppState.setCurrentChat(null);
 
-  super.dispose();
-}
+    if (_channel != null) {
+      // Use your actual channel variable name
+      _supabase.removeChannel(_channel!);
+    }
+    if (channelRead != null) {
+      _supabase.removeChannel(channelRead!);
+    }
+
+    timer?.cancel(); // Cancel the timer
+
+    _controller.dispose();
+    _scrollController.dispose();
+    _focusNode.dispose();
+    _audioRecorder.dispose();
+    super.dispose();
+  }
 
   //===========================================
   // AGORA CALL SETUP
@@ -242,102 +265,29 @@ AppState.setCurrentChat(null);
 
       AppState.isCallScreenOpen = true;
 
-await Navigator.push(
-  context,
-  MaterialPageRoute(
-    builder: (_) => CallScreen(
-      callId: call['id'],
-      channelName: widget.matchId,
-      isVideo: isVideo,
-      isCaller: true,
-      otherUserName: widget.otherUserName,
-      otherUserImage: widget.otherUserImage,
-    ),
-  ),
-);
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CallScreen(
+            callId: call['id'],
+            channelName: widget.matchId,
+            isVideo: isVideo,
+            isCaller: true,
+            otherUserName: widget.otherUserName,
+            otherUserImage: widget.otherUserImage,
+          ),
+        ),
+      );
 
-AppState.isCallScreenOpen = false;
+      AppState.isCallScreenOpen = false;
     } catch (e) {
       debugPrint("❌ Start call error: $e");
     } finally {
       _isNavigatingToCall = false;
     }
   }
-  // ===========================================
-  // INCOMING CALL LISTENER (FIXED PROPERLY)
-  // ===========================================
 
-  // StreamSubscription<List<Map<String, dynamic>>>? _incomingCallSub;
-
-//   Future<void> _listenIncomingCalls() async {
-//     final user = Supabase.instance.client.auth.currentUser;
-//     if (user == null) {
-//       debugPrint("❌ User is null, cannot listen for calls");
-//       return;
-//     }
-//     final profile = await Supabase.instance.client
-//         .from('profiles')
-//         .select('id')
-//         .eq('user_id', user.id)
-//         .single();
-//     debugPrint("✅ Profile loaded for call listener: $profile");
-//     final myProfileId = profile['id'];
-//     debugPrint("✅ My profile ID for call listener: $myProfileId");
-//     _incomingCallSub = Supabase.instance.client
-//         .from('calls')
-//         .stream(primaryKey: ['id'])
-//         .listen((calls) async {
-//           if (!mounted) return;
-//           if (_isNavigatingToCall) return;
-
-//           final user = Supabase.instance.client.auth.currentUser;
-//           debugPrint(
-//             "📞 Incoming call stream event: $calls"
-//             " | Current user: ${user?.id}",
-//           );
-//           if (user == null) {
-//             debugPrint("❌ User is null in call stream");
-//             return;
-//           }
-//           final profile = await Supabase.instance.client
-//               .from('profiles')
-//               .select('id')
-//               .eq('user_id', user.id)
-//               .single();
-
-//           final myProfileId = profile['id'];
-
-//           final incoming = calls.where(
-//             (call) =>
-//                 call['receiver_id'] == myProfileId &&
-//                 call['status'] == 'ringing',
-//           );
-//           debugPrint("✅ Incoming calls after filtering: $incoming");
-//           if (incoming.isEmpty) {
-//             debugPrint("📭 No incoming calls, ignoring...");
-//             return;
-//           }
-//           final call = incoming.first;
-// debugPrint("📞 Incoming call from ${call['caller_id']} with call ID ${call['id']}");
-//           _isNavigatingToCall = true;
-
-//           await Navigator.push(
-//             context,
-//             MaterialPageRoute(
-//               builder: (_) => CallScreen(
-//                 callId: call['id'],
-//                 channelName: call['channel_name'],
-//                 isVideo: call['call_type'] == 'video',
-//                 isCaller: false,
-//                 otherUserName: widget.otherUserName,
-//                 otherUserImage: widget.otherUserImage,
-//               ),
-//             ),
-//           );
-
-//           _isNavigatingToCall = false;
-//         });
-//   }
+  // ==============================
   // MARK AS DELIVERED/READ
   // ==============================
 
@@ -379,26 +329,163 @@ AppState.isCallScreenOpen = false;
           .eq('match_id', widget.matchId)
           .order('created_at', ascending: true);
 
-      final data = List<Map<String, dynamic>>.from(res);
+      final List data = res as List;
+
+      print("📜 Loaded messages from DB: ${data.length}");
+
+      final List<Message> loadedMessages = [];
+
+      for (final raw in data) {
+        final msg = Map<String, dynamic>.from(raw);
+
+        String content = msg['content'] ?? '';
+        if (msg['message_type'] == 'text') {
+          print(
+            "📜 Processing message ${msg['id']} with content length ${content.length}, message_type: ${msg['message_type']}",
+          );
+
+          print(
+            "🔍 Decrypting message ${msg['id']} with content length ${content.length},message_type: ${msg['message_type']}",
+          );
+          try {
+            // 🔐 Decrypt only encrypted TEXT messages
+            if (msg['message_type'] == 'text' &&
+                msg['encrypted_key'] != null &&
+                msg['iv'] != null &&
+                msg['content'] != null) {
+              content = await EncryptionService.decryptMessage(
+                cipherText: msg['content'],
+                encryptedKey: msg['encrypted_key'],
+                iv: msg['iv'],
+              );
+            }
+          } catch (e) {
+            content = "🔒 Encrypted message";
+            print("❌ Decrypt failed for message ${msg['id']}: $e");
+          }
+        }
+
+        msg['content'] = content;
+
+        loadedMessages.add(Message.fromMap(msg));
+      }
+
+      if (!mounted) return;
 
       setState(() {
         _messages
           ..clear()
-          ..addAll(data.map(Message.fromMap));
+          ..addAll(loadedMessages);
       });
 
-      _scrollBottom();
+      _scrollToBottom();
     } catch (e) {
-      debugPrint('Error loading message history: $e');
+      debugPrint('❌ Error loading message history: $e');
     }
   }
 
+  Future<void> diagnosePrivateKey() async {
+    try {
+      // ✅ Use EncryptionService's public method instead of private field
+      final privateKeyPem = await EncryptionService.getPrivateKeyPem();
+      print(
+        "🔑 PRIVATE KEY EXISTS: ${privateKeyPem != null ? 'YES (${privateKeyPem.length} chars)' : 'NO'}",
+      );
+
+      if (privateKeyPem != null) {
+        print("🔑 PRIVATE KEY SAMPLE: ${privateKeyPem}");
+        print(
+          "🔑 PRIVATE KEY TYPE: ${privateKeyPem.contains('PRIVATE KEY') ? 'VALID' : 'INVALID'}",
+        );
+        print("🔑 PRIVATE KEY START: ${privateKeyPem.substring(0, 50)}...");
+        print(
+          "🔑 PRIVATE KEY END: ...${privateKeyPem.substring(privateKeyPem.length - 50)}",
+        );
+        print(
+          "🔑 PRIVATE KEY TYPE: ${privateKeyPem.contains('RSA PRIVATE KEY') ? 'RSA' : 'UNKNOWN'}",
+        );
+      }
+    } catch (e) {
+      print("❌ PRIVATE KEY ERROR: $e");
+    }
+  }
+
+  Future<void> _handleRealtimeMessage(Map<String, dynamic> raw) async {
+    print(raw);
+    final data = Map<String, dynamic>.from(raw);
+    print("📩 Realtime message data: $data");
+    String content = data['content'] ?? '';
+
+    try {
+      if (data['message_type'] == 'text' &&
+          data['encrypted_key'] != null &&
+          data['iv'] != null &&
+          data['content'] != null) {
+        print("🔍 Realtime decrypting message ${data['id']}...");
+        content = await EncryptionService.decryptMessage(
+          cipherText: data['content'],
+          encryptedKey: data['encrypted_key'],
+          iv: data['iv'],
+        );
+        print("content: $content");
+      }
+    } catch (e) {
+      content = "🔒 Encrypted message";
+      print("❌ Realtime decrypt failed: $e");
+    }
+
+    data['content'] = content;
+
+    final msg = Message.fromMap(data);
+
+    final exists = _messages.any((m) => m.id == msg.id);
+
+    if (!exists && mounted) {
+      setState(() => _messages.add(msg));
+      _scrollToBottom();
+    }
+  }
+
+  Future<void> _handleRealtimeUpdate(Map<String, dynamic> raw) async {
+    print(raw);
+    final data = Map<String, dynamic>.from(raw);
+
+    String content = data['content'] ?? '';
+
+    try {
+      if (data['message_type'] == 'text' &&
+          data['encrypted_key'] != null &&
+          data['iv'] != null &&
+          data['content'] != null) {
+        content = await EncryptionService.decryptMessage(
+          cipherText: data['content'],
+          encryptedKey: data['encrypted_key'],
+          iv: data['iv'],
+        );
+        print("content: $content");
+      }
+    } catch (e) {
+      content = "🔒 Encrypted message";
+      print("❌ Update decrypt failed: $e");
+    }
+
+    data['content'] = content;
+
+    final updated = Message.fromMap(data);
+
+    final index = _messages.indexWhere((m) => m.id == updated.id);
+
+    if (index != -1 && mounted) {
+      setState(() => _messages[index] = updated);
+    }
+  }
   // ==============================
   // REALTIME
   // ==============================
 
   void _listenRealtime() {
-    _channel = _supabase.channel('messages:${widget.matchId}');
+    // ✅ FIX 1: Use stable channel name (NOT dynamic per match)
+    _channel = _supabase.channel('messages');
 
     _channel!
         .onPostgresChanges(
@@ -410,10 +497,14 @@ AppState.isCallScreenOpen = false;
             column: 'match_id',
             value: widget.matchId,
           ),
-          callback: (payload) {
-            final msg = Message.fromMap(payload.newRecord);
-            setState(() => _messages.add(msg));
-            _scrollBottom();
+          callback: (payload) async {
+            print("📩 Realtime INSERT received");
+
+            final newMsg = payload.newRecord;
+
+            if (newMsg == null) return;
+
+            await _handleRealtimeMessage(newMsg);
           },
         )
         .onPostgresChanges(
@@ -425,19 +516,59 @@ AppState.isCallScreenOpen = false;
             column: 'match_id',
             value: widget.matchId,
           ),
-          callback: (payload) {
-            final updated = Message.fromMap(payload.newRecord);
+          callback: (payload) async {
+            print("✏️ Realtime UPDATE received");
 
-            final index = _messages.indexWhere((m) => m.id == updated.id);
+            final updatedMsg = payload.newRecord;
 
-            if (index != -1) {
-              setState(() => _messages[index] = updated);
-            }
+            if (updatedMsg == null) return;
+
+            await _handleRealtimeUpdate(updatedMsg);
           },
         )
-        .subscribe();
+        .subscribe((status, error) {
+          print("📡 Realtime status: $status");
+
+          if (error != null) {
+            print("❌ Realtime error: $error");
+          }
+        });
   }
 
+  void _scrollToBottom() {
+    Future.delayed(const Duration(milliseconds: 200), () {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  Future<void> _loadReceiverKey() async {
+    try {
+      final res = await _supabase
+          .from('profiles')
+          .select('public_key')
+          .eq('user_id', userId)
+          .single();
+
+      receiverPublicKeyPem = res['public_key'];
+
+      if (receiverPublicKeyPem != null && receiverPublicKeyPem!.isNotEmpty) {
+        _isKeyReady = true;
+        print("✅ Receiver public key loaded");
+      } else {
+        _isKeyReady = false;
+        print("❌ Receiver public key is EMPTY");
+      }
+    } catch (e) {
+      _isKeyReady = false;
+      print("❌ Failed to load receiver key: $e");
+    }
+  }
   // ==============================
   // SEND TEXT MESSAGE
   // ==============================
@@ -446,31 +577,57 @@ AppState.isCallScreenOpen = false;
     if (text.trim().isEmpty) return;
 
     final trimmedText = text.trim();
+    if (trimmedText.length > 14000) {
+      // UI warning
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Message too long. Keep under 14k chars.'),
+        ),
+      );
+      return;
+    }
+    if (!_isKeyReady) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Encryption key not loaded. Please wait."),
+        ),
+      );
+      return;
+    }
+
+    if (_myProfileId == null || widget.otherProfileId.isEmpty) return;
 
     try {
+      // ==============================
+      // 🔐 ENCRYPT MESSAGE
+      // ==============================
+      final encrypted = await EncryptionService.encryptMessage(
+        message: trimmedText,
+        receiverPublicKeyPem: receiverPublicKeyPem!,
+      );
+
       if (_isEditing) {
-        /// ✅ UPDATE EXISTING MESSAGE
         await _supabase
             .from('messages')
             .update({
-              'content': trimmedText,
+              'content': encrypted.cipherText,
+              'encrypted_key': encrypted.encryptedKey,
+              'iv': encrypted.iv,
               'edited_at': DateTime.now().toIso8601String(),
             })
             .eq('id', _editingMessageId!);
 
-        setState(() {
-          _editingMessageId = null;
-        });
+        setState(() => _editingMessageId = null);
       } else {
-        /// ✅ INSERT NEW MESSAGE
         await _supabase.from('messages').insert({
           'match_id': widget.matchId,
           'sender_profile_id': _myProfileId,
           'receiver_profile_id': widget.otherProfileId,
-          'content': trimmedText,
+          'content': encrypted.cipherText,
+          'encrypted_key': encrypted.encryptedKey,
+          'iv': encrypted.iv,
           'message_type': 'text',
           'reply_to_id': _replyingTo?.id,
-          'reaction': null,
         });
 
         setState(() => _replyingTo = null);
@@ -478,15 +635,7 @@ AppState.isCallScreenOpen = false;
 
       _controller.clear();
     } catch (e) {
-      debugPrint('Error sending message: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to send message: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      debugPrint('❌ Error sending encrypted message: $e');
     }
   }
 
@@ -1731,7 +1880,7 @@ AppState.isCallScreenOpen = false;
               if (_controller.text.trim().isNotEmpty) ...[
                 const SizedBox(width: 8),
                 GestureDetector(
-                  onTap: () => _send(_controller.text),
+                  onTap: !_isKeyReady ? null : () => _send(_controller.text),
                   child: Container(
                     margin: const EdgeInsets.all(4),
                     padding: const EdgeInsets.all(10),
@@ -2579,6 +2728,8 @@ class Message {
     String? text,
     String? reaction,
     DateTime? editedAt,
+    DateTime? deliveredAt,
+    DateTime? readAt,
     bool? deletedForSender,
     bool? deletedForReceiver,
     bool? deletedForEveryone,
@@ -2592,8 +2743,8 @@ class Message {
       createdAt: createdAt,
       replyToId: replyToId,
       reaction: reaction ?? this.reaction,
-      deliveredAt: deliveredAt,
-      readAt: readAt,
+      deliveredAt: deliveredAt ?? this.deliveredAt,
+      readAt: readAt ?? this.readAt,
       editedAt: editedAt ?? this.editedAt,
       messageType: messageType,
       voiceDuration: voiceDuration,

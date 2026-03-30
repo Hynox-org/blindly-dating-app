@@ -129,24 +129,94 @@ Future<void> ignoreLike(String fromProfileId) async {
   }
 }
 
-Future<void> matchUser({
+Future<bool> matchUser({
   required String otherProfileId,
-  }) async {
-    try {
-      await _supabase.rpc(
-        'create_match',
-        params: {
-          'p_other_profile_id': otherProfileId,
-        },
-      );
+}) async {
+  try {
+    final user = _supabase.auth.currentUser;
+    if (user == null) throw Exception('User not logged in');
 
-      debugPrint('✅ Match created for $otherProfileId');
-    } catch (e, st) {
-      debugPrint('🛑 Match failed');
-      debugPrint(e.toString());
-      debugPrint(st.toString());
-      rethrow;
+    // --------------------------------------------------
+    // 1️⃣ Get my profile ID
+    // --------------------------------------------------
+    final myProfile = await _supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+    final myProfileId = myProfile['id'];
+
+    // --------------------------------------------------
+    // 2️⃣ Check if match already exists (order independent)
+    // --------------------------------------------------
+    final existingMatch = await _supabase
+        .from('matches')
+        .select('id')
+        .or(
+          'and(user_a_id.eq.$myProfileId,user_b_id.eq.$otherProfileId),'
+          'and(user_a_id.eq.$otherProfileId,user_b_id.eq.$myProfileId)',
+        )
+        .maybeSingle();
+
+    if (existingMatch != null) {
+      debugPrint('⚠️ Match already exists between users');
+      await _supabase.from('notifications').insert({
+      'type': 'match',
+      'title': 'you can not Match! ❤️',
+      'body': 'You have already matched with this user!',
+      'profile_id': myProfileId, // receiver gets push
+      'data': {
+        'screen': 'matches',
+        'other_profile_id': otherProfileId,
+      }
+    });
+
+      return false; // ❌ Duplicate found
     }
-  }
 
+    // --------------------------------------------------
+    // 3️⃣ Create match
+    // --------------------------------------------------
+    await _supabase.rpc(
+      'create_match',
+      params: {
+        'p_other_profile_id': otherProfileId,
+      },
+    );
+
+    debugPrint('✅ Match created with profile $otherProfileId');
+
+    // --------------------------------------------------
+    // 4️⃣ Insert notification (TRIGGER SENDS PUSH)
+    // --------------------------------------------------
+    await _supabase.from('notifications').insert({
+      'type': 'match',
+      'title': 'It’s a Match! ❤️',
+      'body': 'You have a new match!',
+      'profile_id': myProfileId,// receiver gets push
+      'data': {
+        'screen': 'matches',
+        'other_profile_id': otherProfileId,
+      }
+    });
+    await _supabase.from('notifications').insert({
+      'type': 'match',
+      'title': 'It’s a Match! ❤️',
+      'body': 'You have a new match!',
+      'profile_id': otherProfileId,// receiver gets push
+      'data': {
+        'screen': 'matches',
+        'other_profile_id': myProfileId,  
+      }
+    });
+
+    debugPrint('🔔 Notification inserted → push will be sent');
+
+    return true; // ✅ success
+  } catch (e) {
+    debugPrint('🛑 matchUser failed: $e');
+    rethrow;
+  }
+}
 }

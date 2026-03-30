@@ -44,7 +44,7 @@ dependencies:
   flutter_dotenv: ^6.0.0
   url_launcher: ^6.3.2
   safe_device: ^1.1.4
-  dart_jsonwebtoken: ^3.3.1
+  dart_jsonwebtoken: 3.1.1
   shared_preferences: ^2.5.4
   google_sign_in: ^7.2.0
   font_awesome_flutter: ^10.12.0
@@ -79,6 +79,13 @@ dependencies:
   flutter_local_notifications: ^17.0.0
   share_plus: ^12.0.1
   app_links: ^6.4.1
+
+  #encryption
+  encrypt: ^5.0.3
+  pointycastle: ^3.6.2
+  asn1lib: ^1.5.0
+  basic_utils: ^5.7.0
+ # flutter_secure_storage: ^9.0.0
 
 dev_dependencies:
   flutter_test:
@@ -132,3 +139,5 @@ flutter:
     - family: Poppins
       fonts:
         - asset: assets/fonts/Poppins/Poppins-Regular.ttf
+flutter_intl:
+  enabled: true
