@@ -60,7 +60,7 @@ class EncryptionService {
 
   final maxLength = 10000;
   String safeMessage = message.length > maxLength
-      ? message.substring(0, maxLength) + '[truncated]'
+      ? '${message.substring(0, maxLength)}[truncated]'
       : message;
 
   final messageBytes = utf8.encode(safeMessage);

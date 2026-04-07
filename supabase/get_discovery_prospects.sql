@@ -18,7 +18,8 @@ RETURNS TABLE (
   prompts json,
   looking_for text[],
   is_verified boolean,
-  verification_level text
+    verification_level text,
+    voice_intro_url text
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -74,13 +75,13 @@ BEGIN
     pm.bio,
     pm.id as mode_id,
     
-    -- ✅ UPDATED SUBQUERY: Fetches Array of up to 3 images
+    -- ✅ Image URLs
     ARRAY(
       SELECT media_url 
       FROM public.profile_mode_media pmm
       WHERE pmm.profile_mode_id = pm.id 
       AND pmm.is_deleted = false
-      -- Put Primary First (TRUE sorts before FALSE in DESC), then newest
+      AND pmm.media_type = 'photo'
       ORDER BY pmm.is_primary DESC, pmm.created_at DESC 
       LIMIT 3
     ) as image_urls,
@@ -110,7 +111,19 @@ BEGIN
     
     COALESCE(pm.looking_for, '{}'::text[]) as looking_for,
     p.is_verified,
-    p.verification_level::text
+    p.verification_level::text,
+
+    -- ✅ NEW: Fetch most recent Voice Intro globally (from any active mode)
+    (
+      SELECT media_url 
+      FROM public.profile_mode_media vmm
+      JOIN public.profile_modes vpm ON vpm.id = vmm.profile_mode_id
+      WHERE vpm.profile_id = p.id
+      AND vmm.media_type = 'voice_intro'
+      AND vmm.is_deleted = false
+      ORDER BY vmm.created_at DESC
+      LIMIT 1
+    )::text as voice_intro_url
     
   FROM public.profiles p
   INNER JOIN public.profile_modes pm ON p.id = pm.profile_id

@@ -339,6 +339,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         spotifyArtists: user.spotifyArtists, // ✅ Dynamic Spotify
         isVerified: user.isVerified,
         verificationLevel: user.verificationLevel,
+        voiceIntroUrl: user.voiceIntroUrl,
+        voiceIntroDuration: user.voiceIntroDuration,
       );
     }).toList();
   }

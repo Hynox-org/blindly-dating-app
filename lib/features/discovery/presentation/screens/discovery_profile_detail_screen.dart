@@ -77,6 +77,8 @@ class _DiscoveryProfileDetailScreenState
       spotifyArtists: user.spotifyArtists,
       isVerified: user.isVerified,
       verificationLevel: user.verificationLevel,
+      voiceIntroUrl: user.voiceIntroUrl,
+      voiceIntroDuration: user.voiceIntroDuration,
     );
   }
 

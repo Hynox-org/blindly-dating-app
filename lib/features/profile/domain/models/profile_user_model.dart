@@ -45,6 +45,10 @@ class ProfileUser {
   final String? sexualOrientation;
   final bool spotifyConnected;
   final List<String> qualities;
+  final String? dateModeId;
+  final String? bffModeId;
+  final String? voiceIntroUrl;
+  final int? voiceIntroDuration;
   final bool isVerified;
   final String verificationLevel;
 
@@ -87,6 +91,10 @@ class ProfileUser {
     this.lookingForModes = const [],
     this.qualities = const [],
     this.passportLocationGeom,
+    this.voiceIntroUrl,
+    this.voiceIntroDuration,
+    this.dateModeId,
+    this.bffModeId,
     this.isVerified = false,
     this.verificationLevel = 'unverified',
   });
@@ -156,6 +164,10 @@ class ProfileUser {
       qualities:
           (json['qualities'] as List?)?.map((e) => e as String).toList() ?? [],
       passportLocationGeom: json['passport_location_geom'],
+      voiceIntroUrl: json['voice_into_url'] ?? json['voice_intro_url'],
+      voiceIntroDuration: json['voice_intro_duration'] ?? json['duration_seconds'],
+      dateModeId: json['date_mode_id'],
+      bffModeId: json['bff_mode_id'],
       isVerified: json['is_verified'] ?? false,
       verificationLevel: json['verification_level'] ?? 'unverified',
     );
@@ -200,6 +212,10 @@ class ProfileUser {
     bool? spotifyConnected,
     List<String>? qualities,
     String? passportLocationGeom,
+    String? voiceIntroUrl,
+    int? voiceIntroDuration,
+    String? dateModeId,
+    String? bffModeId,
     bool? isVerified,
     String? verificationLevel,
   }) {
@@ -242,6 +258,10 @@ class ProfileUser {
       spotifyConnected: spotifyConnected ?? this.spotifyConnected,
       qualities: qualities ?? this.qualities,
       passportLocationGeom: passportLocationGeom ?? this.passportLocationGeom,
+      voiceIntroUrl: voiceIntroUrl ?? this.voiceIntroUrl,
+      voiceIntroDuration: voiceIntroDuration ?? this.voiceIntroDuration,
+      dateModeId: dateModeId ?? this.dateModeId,
+      bffModeId: bffModeId ?? this.bffModeId,
       isVerified: isVerified ?? this.isVerified,
       verificationLevel: verificationLevel ?? this.verificationLevel,
     );

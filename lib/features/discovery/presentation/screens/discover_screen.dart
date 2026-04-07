@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'dart:async';
 import '../../../../core/widgets/app_layout.dart';
 import '../../../../core/widgets/app_loader.dart';
@@ -25,10 +26,21 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   Timer? _countdownTimer;
   final Map<String, String> _userInteractions =
       {}; // Track grid actions locally
+  late final AudioPlayer _audioPlayer;
+  String? _currentlyPlayingProfileId;
 
   @override
   void initState() {
     super.initState();
+    _audioPlayer = AudioPlayer();
+    _audioPlayer.onPlayerComplete.listen((_) {
+      if (mounted) {
+        setState(() {
+          _currentlyPlayingProfileId = null;
+        });
+      }
+    });
+
     // Trigger initial fetch
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchData();
@@ -43,6 +55,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   @override
   void dispose() {
     _countdownTimer?.cancel();
+    _audioPlayer.dispose();
     super.dispose();
   }
 
@@ -62,6 +75,23 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           );
     } catch (e) {
       debugPrint('Location error in DiscoverScreen: $e');
+    }
+  }
+
+  Future<void> _toggleVoiceIntro(DiscoveryUser user) async {
+    if (_currentlyPlayingProfileId == user.profileId) {
+      await _audioPlayer.stop();
+      setState(() {
+        _currentlyPlayingProfileId = null;
+      });
+    } else {
+      if (user.voiceIntroUrl != null) {
+        await _audioPlayer.stop();
+        await _audioPlayer.play(UrlSource(user.voiceIntroUrl!));
+        setState(() {
+          _currentlyPlayingProfileId = user.profileId;
+        });
+      }
     }
   }
 
@@ -407,9 +437,48 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    '${user.distanceKm.toStringAsFixed(1)} km away',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 11),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${user.distanceKm.toStringAsFixed(1)} km away',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                      if (user.voiceIntroUrl != null)
+                        GestureDetector(
+                          onTap: () {
+                            // Prevent card tap when clicking audio
+                            _toggleVoiceIntro(user);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color:
+                                  _currentlyPlayingProfileId == user.profileId
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(
+                                        context,
+                                      ).colorScheme.primary.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              _currentlyPlayingProfileId == user.profileId
+                                  ? Icons.stop
+                                  : Icons.mic,
+                              size: 14,
+                              color:
+                                  _currentlyPlayingProfileId == user.profileId
+                                      ? Colors.white
+                                      : Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ],
               ),

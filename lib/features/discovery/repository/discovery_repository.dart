@@ -108,6 +108,22 @@ class DiscoveryRepository {
           }
         }
 
+        // ✅ NEW: Sign Voice Intro URL
+        if (data['voice_intro_url'] != null &&
+            data['voice_intro_url'].toString().isNotEmpty &&
+            !data['voice_intro_url'].toString().startsWith('http')) {
+          try {
+            String voicePath = data['voice_intro_url'].toString();
+            if (voicePath.startsWith('/')) voicePath = voicePath.substring(1);
+            final signedVoiceUrl = await _supabase.storage
+                .from('user_voices')
+                .createSignedUrl(voicePath, 60 * 60);
+            data['voice_intro_url'] = signedVoiceUrl;
+          } catch (e) {
+            debugPrint('⚠️ Voice intro sign failed: $e');
+          }
+        }
+
         // ✅ UPDATE DATA: Replace the raw paths with the signed URLs
         data['image_urls'] = signedUrls;
 

@@ -15,7 +15,9 @@ import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_s
 import '../../../../../core/widgets/app_loader.dart';
 
 class VoiceIntroScreen extends ConsumerStatefulWidget {
-  const VoiceIntroScreen({super.key});
+  final bool isEditMode;
+
+  const VoiceIntroScreen({super.key, this.isEditMode = false});
 
   @override
   ConsumerState<VoiceIntroScreen> createState() => _VoiceIntroScreenState();
@@ -242,9 +244,13 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
       // 4. Save new entry
       await mediaRepo.saveMedia([mediaData]);
 
-      // 5. Complete Step
+      // 5. Complete Step or Go Back
       if (mounted) {
-        ref.read(onboardingProvider.notifier).completeStep('voice_intro');
+        if (widget.isEditMode) {
+          Navigator.pop(context);
+        } else {
+          ref.read(onboardingProvider.notifier).completeStep('voice_intro');
+        }
       }
     } catch (e) {
       AppLogger.error('Upload voice error', e);
@@ -259,6 +265,7 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
   }
 
   Future<void> _handleSkip() async {
+    if (widget.isEditMode) return;
     ref.read(onboardingProvider.notifier).skipStep('voice_intro');
   }
 
@@ -497,9 +504,9 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                               size: 24,
                             ),
                           )
-                        : const Text(
-                            "Save & Continue",
-                            style: TextStyle(
+                        : Text(
+                            widget.isEditMode ? "Update" : "Save & Continue",
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
@@ -532,31 +539,32 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                         ),
                       ),
                     ),
-                    Directionality(
-                      textDirection: TextDirection.rtl,
-                      child: TextButton.icon(
-                        onPressed: _handleSkip,
-                        icon: Icon(
-                          Icons.skip_next_rounded,
-                          size: 24,
-                          color: colorScheme.onSurface,
-                        ),
-                        label: Text(
-                          "Skip",
-                          style: TextStyle(
+                    if (!widget.isEditMode)
+                      Directionality(
+                        textDirection: TextDirection.rtl,
+                        child: TextButton.icon(
+                          onPressed: _handleSkip,
+                          icon: Icon(
+                            Icons.skip_next_rounded,
+                            size: 24,
                             color: colorScheme.onSurface,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
                           ),
-                        ),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 12,
-                            horizontal: 8,
+                          label: Text(
+                            "Skip",
+                            style: TextStyle(
+                              color: colorScheme.onSurface,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                              horizontal: 8,
+                            ),
                           ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ],
@@ -568,7 +576,11 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
   }
 
   void _onBack() {
-    ref.read(onboardingProvider.notifier).goToPreviousStep();
+    if (widget.isEditMode) {
+      Navigator.pop(context);
+    } else {
+      ref.read(onboardingProvider.notifier).goToPreviousStep();
+    }
   }
 
   Widget _buildBenefitItem(Color color, String text) {

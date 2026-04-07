@@ -410,7 +410,7 @@ class _ChatConversationScreenState
       );
 
       if (privateKeyPem != null) {
-        print("🔑 PRIVATE KEY SAMPLE: ${privateKeyPem}");
+        print("🔑 PRIVATE KEY SAMPLE: $privateKeyPem");
         print(
           "🔑 PRIVATE KEY TYPE: ${privateKeyPem.contains('PRIVATE KEY') ? 'VALID' : 'INVALID'}",
         );
@@ -560,8 +560,6 @@ class _ChatConversationScreenState
 
             final newMsg = payload.newRecord;
 
-            if (newMsg == null) return;
-
             await _handleRealtimeMessage(newMsg);
           },
         )
@@ -578,8 +576,6 @@ class _ChatConversationScreenState
             print("✏️ Realtime UPDATE received");
 
             final updatedMsg = payload.newRecord;
-
-            if (updatedMsg == null) return;
 
             await _handleRealtimeUpdate(updatedMsg);
           },
@@ -654,7 +650,7 @@ class _ChatConversationScreenState
       return;
     }
 
-    if (_myProfileId == null || widget.otherProfileId.isEmpty) return;
+    if (widget.otherProfileId.isEmpty) return;
 
     try {
       // ==============================

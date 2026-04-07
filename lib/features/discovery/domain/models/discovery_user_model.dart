@@ -44,6 +44,8 @@ class DiscoveryUser {
   final List<ProfilePrompt> prompts; // ✅ New: Store dynamically fetched prompts
   final List<String>
   lookingForModes; // ✅ New: Fetch active mode looking_for preferences
+  final String? voiceIntroUrl; // ✅ New: Shared voice intro
+  final int? voiceIntroDuration;
   final bool isVerified;
   final String verificationLevel;
   final RelationshipState relationship; // ✅ New field
@@ -80,6 +82,8 @@ class DiscoveryUser {
     this.prompts = const [],
     this.swipeAction,
     this.lookingForModes = const [],
+    this.voiceIntroUrl,
+    this.voiceIntroDuration,
     this.isVerified = false,
     this.verificationLevel = 'unverified',
     this.relationship = RelationshipState.none,
@@ -157,6 +161,8 @@ class DiscoveryUser {
               ?.map((e) => e.toString())
               .toList() ??
           [],
+      voiceIntroUrl: json['voice_into_url'] ?? json['voice_intro_url'],
+      voiceIntroDuration: json['voice_intro_duration'] ?? json['duration_seconds'],
       isVerified: json['is_verified'] ?? false,
       verificationLevel: json['verification_level'] ?? 'unverified',
       relationship:
@@ -201,6 +207,8 @@ class DiscoveryUser {
     String? swipeAction,
     List<ProfilePrompt>? prompts,
     List<String>? lookingForModes,
+    String? voiceIntroUrl,
+    int? voiceIntroDuration,
     bool? isVerified,
     String? verificationLevel,
     RelationshipState? relationship,
@@ -237,6 +245,8 @@ class DiscoveryUser {
       swipeAction: swipeAction ?? this.swipeAction,
       prompts: prompts ?? this.prompts,
       lookingForModes: lookingForModes ?? this.lookingForModes,
+      voiceIntroUrl: voiceIntroUrl ?? this.voiceIntroUrl,
+      voiceIntroDuration: voiceIntroDuration ?? this.voiceIntroDuration,
       isVerified: isVerified ?? this.isVerified,
       verificationLevel: verificationLevel ?? this.verificationLevel,
       relationship: relationship ?? this.relationship,

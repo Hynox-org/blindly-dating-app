@@ -269,6 +269,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       spotifyArtists: [],
       isVerified: user.isVerified,
       verificationLevel: user.verificationLevel,
+      voiceIntroUrl: user.voiceIntroUrl,
+      voiceIntroDuration: user.voiceIntroDuration,
     );
 
     showDialog(

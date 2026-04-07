@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../../../../core/widgets/voice_playback_widget.dart';
 import '../../onboarding/domain/models/lifestyle_chip_model.dart';
 import '../../onboarding/domain/models/profile_prompt_model.dart'; // ✅ Added Prompts
 import 'package:cached_network_image/cached_network_image.dart'; // ✅ Added
@@ -14,6 +15,8 @@ class UserProfile {
   final String bio;
   final String? subTitle;
   final List<String> imageUrls;
+  final String? voiceIntroUrl;
+  final int? voiceIntroDuration;
 
   // Basic Info
   final String height;
@@ -79,6 +82,8 @@ class UserProfile {
     required this.languages,
     required this.location,
     required this.spotifyArtists,
+    this.voiceIntroUrl,
+    this.voiceIntroDuration,
     this.isVerified = false,
     this.verificationLevel = 'unverified',
   });
@@ -184,6 +189,13 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                     children: [
                       // ============ IMAGE 1 ============
                       _buildImageSection(0, cardHeight: constraints.maxHeight),
+                      if (widget.profile.voiceIntroUrl != null) ...[
+                        const SizedBox(height: 12),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: _buildVoiceIntroSection(),
+                        ),
+                      ],
                       const SizedBox(height: 12),
                       // ============ ABOUT ME SECTION ============
                       if (!_isAboutMeEmpty()) ...[
@@ -301,6 +313,43 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
             );
           },
         ),
+      ),
+    );
+  }
+
+  Widget _buildVoiceIntroSection() {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Voice Intro',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 12),
+          VoicePlaybackWidget(
+            url: widget.profile.voiceIntroUrl!,
+            durationSeconds: widget.profile.voiceIntroDuration ?? 0,
+          ),
+        ],
       ),
     );
   }

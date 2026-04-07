@@ -226,6 +226,8 @@ class _SharedProfileScreenState extends ConsumerState<SharedProfileScreen> {
         spotifyArtists: _user!.spotifyArtists,
         isVerified: _user!.isVerified,
         verificationLevel: _user!.verificationLevel,
+        voiceIntroUrl: _user!.voiceIntroUrl,
+        voiceIntroDuration: _user!.voiceIntroDuration,
     );
 
     return Scaffold(

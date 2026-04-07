@@ -60,22 +60,34 @@ class CurrentUserProfileNotifier extends AsyncNotifier<ProfileUser> {
       final profileId = profileDataRaw['id'] as String;
 
       // 2. Fetch Mode-Specific Data (Profile Modes Table)
-      final modeData = await client
+      final allModesData = await client
           .from('profile_modes')
-          .select('id, bio, looking_for')
-          .eq('profile_id', profileId)
-          .eq('mode', currentMode)
-          .maybeSingle();
+          .select('id, mode, bio, looking_for')
+          .eq('profile_id', profileId);
 
-      final String bio = modeData?['bio'] ?? '';
-      final List<dynamic> lookingForModesRaw = modeData?['looking_for'] ?? [];
-      final String profileModeId = modeData?['id'] ?? '';
+      final dateMode = allModesData.firstWhere(
+        (m) => (m['mode'] as String).toLowerCase() == 'date',
+        orElse: () => <String, dynamic>{},
+      );
+      final bffMode = allModesData.firstWhere(
+        (m) => (m['mode'] as String).toLowerCase() == 'bff',
+        orElse: () => <String, dynamic>{},
+      );
+
+      final currentModeData =
+          currentMode == 'date' ? dateMode : bffMode;
+
+      final String bio = currentModeData['bio'] ?? '';
+      final List<dynamic> lookingForModesRaw = currentModeData['looking_for'] ?? [];
+      final String profileModeId = currentModeData['id'] ?? '';
 
       // 3. Parallel Fetching of Related Data (only if mode exists)
       List<String> finalImageUrls = [];
       List<String> interestNames = [];
       List<LifestyleChip> lifestyleList = [];
       List<ProfilePrompt> promptList = [];
+      String? voiceIntroUrl;
+      int? voiceIntroDuration;
 
       if (profileModeId.isNotEmpty) {
         // Future.wait for better performance
@@ -104,6 +116,12 @@ class CurrentUserProfileNotifier extends AsyncNotifier<ProfileUser> {
             profileModeId,
             profileId,
           ).then((prompts) => promptList = prompts),
+
+          // E. Fetch & Sign Voice Intro (Global for any mode)
+          _fetchVoiceIntro(client, profileId).then((data) {
+            voiceIntroUrl = data?['url'];
+            voiceIntroDuration = data?['duration'];
+          }),
         ]);
       } else {
         // Default fallback if mode doesn't exist yet
@@ -121,6 +139,10 @@ class CurrentUserProfileNotifier extends AsyncNotifier<ProfileUser> {
       final Map<String, dynamic> finalProfileData = Map.from(profileDataRaw);
       finalProfileData['bio'] = bio;
       finalProfileData['looking_for'] = lookingForModesRaw;
+      finalProfileData['voice_intro_url'] = voiceIntroUrl;
+      finalProfileData['voice_intro_duration'] = voiceIntroDuration;
+      finalProfileData['date_mode_id'] = dateMode['id'];
+      finalProfileData['bff_mode_id'] = bffMode['id'];
 
       return ProfileUser.fromJson(
         finalProfileData,
@@ -251,6 +273,40 @@ Future<List<ProfilePrompt>> _fetchPrompts(
     debugPrint('⚠️ Prompt Fetch Error: $e');
     return [];
   }
+}
+
+Future<Map<String, dynamic>?> _fetchVoiceIntro(
+  SupabaseClient client,
+  String profileId,
+) async {
+  try {
+    final data = await client
+        .from('profile_mode_media')
+        .select('media_url, duration_seconds, profile_modes!inner(profile_id)')
+        .eq('profile_modes.profile_id', profileId)
+        .eq('media_type', 'voice_intro')
+        .eq('is_deleted', false)
+        .order('created_at', ascending: false)
+        .limit(1)
+        .maybeSingle();
+
+    if (data != null && data['media_url'] != null) {
+      final String rawPath = data['media_url'];
+      String finalUrl = rawPath;
+      if (!rawPath.startsWith('http')) {
+        finalUrl = await client.storage
+            .from('user_voices')
+            .createSignedUrl(rawPath, 3600);
+      }
+      return {
+        'url': finalUrl,
+        'duration': data['duration_seconds'],
+      };
+    }
+  } catch (e) {
+    debugPrint('⚠️ Voice Intro Fetch Error: $e');
+  }
+  return null;
 }
 
 ProfileUser _getEmptyProfile(String id) {

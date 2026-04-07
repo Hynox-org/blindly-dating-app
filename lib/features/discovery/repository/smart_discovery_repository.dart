@@ -70,6 +70,8 @@ class SmartDiscoveryRepository {
               is_active,
               profile_mode_media (
                 media_url,
+                media_type,
+                duration_seconds,
                 is_primary,
                 created_at,
                 is_deleted
@@ -172,10 +174,26 @@ class SmartDiscoveryRepository {
           });
 
           final rawImages = mediaList
+              .where((m) => m['media_type'] == 'photo')
               .map((m) => m['media_url'])
               .take(3)
               .toList();
+          
+          final voiceIntroMedia = mediaList.where((m) => m['media_type'] == 'voice_intro').firstOrNull;
+          
           profileData['image_urls'] = await signImages(rawImages);
+          
+          if (voiceIntroMedia != null) {
+            final String rawVoicePath = voiceIntroMedia['media_url'];
+            String voiceUrl = rawVoicePath;
+            if (!rawVoicePath.startsWith('http')) {
+               voiceUrl = await _supabase.storage
+                  .from('user_voices')
+                  .createSignedUrl(rawVoicePath, 3600);
+            }
+            profileData['voice_intro_url'] = voiceUrl;
+            profileData['voice_intro_duration'] = voiceIntroMedia['duration_seconds'];
+          }
 
           // Calculate Age dummy (matching standard logic)
           if (profileData['birth_date'] != null) {

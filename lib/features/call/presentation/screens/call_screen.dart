@@ -422,7 +422,7 @@ class _CallScreenState extends State<CallScreen> {
             if (_remoteUid != null && _timer == null) {
               _startTimer();
             }
-            debugPrint("✅ Joined channel: ${_myUid}");
+            debugPrint("✅ Joined channel: $_myUid");
             debugPrint("✅ Joined channel: $_myUid");
           },
           onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {

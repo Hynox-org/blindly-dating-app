@@ -10,9 +10,7 @@ import '../../../core/utils/app_logger.dart';
 import '../../onboarding/presentation/screens/onboarding_shell.dart';
 // import '../../discovery/repository/discovery_repository.dart';
 import '../../../../core/widgets/app_loader.dart';
-import './../../../core/security/encryption_service.dart';
 import './../../../core/security/key_security.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 enum AuthMethod { selection, phone, phoneOTP, email, emailOTP, apple }
 

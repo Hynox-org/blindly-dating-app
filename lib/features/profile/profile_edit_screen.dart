@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'domain/models/profile_user_model.dart';
 import 'provider/profile_provider.dart';
+import '../../core/widgets/voice_playback_widget.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'presentation/screens/setup_steps/voice_intro_screen.dart';
+import '../media/providers/media_provider.dart';
+import '../../core/providers/connection_mode_provider.dart';
 import 'profile_looking_for_screen.dart'; // Added looking for screen import
 import '../onboarding/presentation/screens/steps/photo_upload_screen.dart';
 import 'presentation/screens/setup_steps/profile_prompts_screen.dart';
 import 'presentation/screens/causes_communities_screen.dart';
 import 'presentation/screens/qualities_selection_screen.dart';
-// import '../onboarding/presentation/screens/steps/name_birth_entry_screen.dart';
 import '../onboarding/presentation/screens/steps/gender_select_screen.dart';
 
 import 'presentation/screens/setup_steps/interests_select_screen.dart';
@@ -51,6 +55,18 @@ class ProfileEditScreen extends ConsumerStatefulWidget {
 
 class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   final Set<int> _expandedPromptIndices = {};
+  late final AudioPlayer _audioPlayer;
+  @override
+  void initState() {
+    super.initState();
+    _audioPlayer = AudioPlayer();
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer.dispose();
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     final profileAsync = ref.watch(currentUserProfileProvider);
@@ -94,6 +110,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           _buildProfileStrength(profile),
           const SizedBox(height: 16),
           _buildPhotosSection(profile),
+          const SizedBox(height: 16),
+          _buildVoiceIntroSection(profile),
           const SizedBox(height: 16),
           _buildInterestsSection(profile),
           const SizedBox(height: 16),
@@ -758,6 +776,128 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     );
   }
 
+  Widget _buildVoiceIntroSection(ProfileUser profile) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Voice Intro',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Let people hear your voice.',
+            style: TextStyle(fontSize: 12, color: Colors.black),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F5F5),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: profile.voiceIntroUrl == null
+                ? GestureDetector(
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const VoiceIntroScreen(isEditMode: true),
+                      ),
+                    );
+                    await ref.refresh(currentUserProfileProvider);
+                  },
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: const [
+                      Text(
+                        'Add a voice intro',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      Icon(
+                        Icons.add_circle_outline,
+                        size: 20,
+                        color: Colors.black,
+                      ),
+                    ],
+                  ),
+                )
+                : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: VoicePlaybackWidget(
+                            url: profile.voiceIntroUrl!,
+                            durationSeconds: profile.voiceIntroDuration,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.red),
+                          onPressed: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Delete Voice Intro?'),
+                                content: const Text('This will remove your voice intro from your profile.'),
+                                actions: [
+                                  TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                                  TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+                                ],
+                              ),
+                            );
+                            
+                            if (confirm == true) {
+                              final repo = ref.read(mediaRepositoryProvider);
+                              final mode = ref.read(connectionModeProvider);
+                              final modeId = mode == 'date' ? profile.dateModeId : profile.bffModeId;
+                              
+                              if (modeId != null) {
+                                await repo.deleteUserVoiceIntro(modeId);
+                                // ignore: unused_result
+            // ignore: unused_result
+                    ref.refresh(currentUserProfileProvider);
+                              }
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 24),
+                    TextButton.icon(
+                      onPressed: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const VoiceIntroScreen(isEditMode: true),
+                          ),
+                        );
+    // ignore: unused_result
+                    ref.refresh(currentUserProfileProvider);
+                      },
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Re-record intro'),
+                    ),
+                  ],
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPhotosSection(ProfileUser profile) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -795,6 +935,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                             const PhotoUploadScreen(isEditMode: true),
                       ),
                     );
+// ignore: unused_result
                     ref.refresh(currentUserProfileProvider);
                   },
                   child: Container(
@@ -817,7 +958,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                           const PhotoUploadScreen(isEditMode: true),
                     ),
                   );
-                  ref.refresh(currentUserProfileProvider);
+                  await ref.refresh(currentUserProfileProvider);
                 },
                 child: Container(
                   decoration: BoxDecoration(
@@ -1097,7 +1238,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                               const InterestsSelectScreen(isEditMode: true),
                         ),
                       );
-                      ref.refresh(currentUserProfileProvider);
+  // ignore: unused_result
+                    ref.refresh(currentUserProfileProvider);
                     },
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1123,7 +1265,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                               const InterestsSelectScreen(isEditMode: true),
                         ),
                       );
-                      ref.refresh(currentUserProfileProvider);
+  // ignore: unused_result
+                    ref.refresh(currentUserProfileProvider);
                     },
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1202,7 +1345,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                   ),
                 ),
               );
-              ref.refresh(currentUserProfileProvider);
+              await ref.refresh(currentUserProfileProvider);
             },
             child: Container(
               padding: const EdgeInsets.all(16),
