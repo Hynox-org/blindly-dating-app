@@ -12,9 +12,11 @@ import 'package:flutter/services.dart';
 import '../../../call/presentation/screens/call_screen.dart';
 import 'dart:async';
 import './../../../../core/utils/app_state.dart';
+import '../../../../core/services/chat_cache_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/security/encryption_service.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../../core/security/key_security.dart';
 // import 'package:cached_network_image/cached_network_image.dart';
 // import 'package:image/image.dart' as img;
@@ -84,7 +86,8 @@ class _ChatConversationScreenState
       await KeyService.generateAndStoreKeys(userId);
       if (mounted) {
         await _loadReceiverKey();
-        await _loadHistory();
+        _loadCachedHistory(); // Load from cache instantly
+        await _loadHistory(); // Then fetch fresh from DB
         _listenRealtime();
         await diagnosePrivateKey(); // ADD THIS
       }
@@ -308,12 +311,37 @@ class _ChatConversationScreenState
     try {
       await _supabase
           .from('messages')
-          .update({'read_at': DateTime.now().toUtc().toIso8601String()})
+          .update({
+            'delivered_at': DateTime.now().toUtc().toIso8601String(),
+            'read_at': DateTime.now().toUtc().toIso8601String(),
+            'is_read': true,
+          })
           .eq('match_id', widget.matchId)
           .eq('receiver_profile_id', _myProfileId)
           .isFilter('read_at', null);
     } catch (e) {
       debugPrint('Error marking messages as read: $e');
+    }
+  }
+
+  // ==============================
+  // CACHE LOAD
+  // ==============================
+
+  void _loadCachedHistory() {
+    final cachedMaps = ChatCacheService().getMessages(widget.matchId);
+    if (cachedMaps.isEmpty) return;
+
+    final List<Message> cachedMessages = [];
+    for (final map in cachedMaps) {
+      cachedMessages.add(Message.fromMap(map));
+    }
+
+    if (mounted) {
+      setState(() {
+        _messages.addAll(cachedMessages);
+      });
+      _scrollToBottom();
     }
   }
 
@@ -360,19 +388,26 @@ class _ChatConversationScreenState
                 ? msg['encrypted_key_sender']
                 : msg['encrypted_key_receiver'];
 
-            if (encryptedKey == null) {
-              throw Exception("Missing encrypted key");
-            }
-
             print(
               "🔍 Decrypting message ${msg['id']} (isMe=$isMe)",
             );
 
-            content = await EncryptionService.decryptMessage(
+            // Attempt to use cached Match Key for speed
+            String? symmetricKey = ChatCacheService().getMatchKey(widget.matchId);
+
+            final decryptionResult = await EncryptionService.decryptMessage(
               cipherText: msg['content'],
-              encryptedKey: encryptedKey,
+              encryptedKey: symmetricKey ?? encryptedKey,
               iv: msg['iv'],
+              symmetricKeyBase64: symmetricKey,
             );
+
+            content = decryptionResult.text;
+
+            // If we just decrypted with a new key, save it to cache
+            if (symmetricKey == null && decryptionResult.decryptedSymmetricKey != null) {
+              await ChatCacheService().saveMatchKey(widget.matchId, decryptionResult.decryptedSymmetricKey!);
+            }
 
             print("✅ Decrypted: $content");
           }
@@ -394,6 +429,17 @@ class _ChatConversationScreenState
         ..clear()
         ..addAll(loadedMessages);
     });
+
+    // ✅ Update Cache with DECRYPTED CONTENT list
+    final List<Map<String, dynamic>> cacheData = data.map((raw) {
+      final m = Map<String, dynamic>.from(raw);
+      // Find the corresponding loaded message to get decrypted content
+      final loaded = loadedMessages.firstWhere((element) => element.id == m['id'].toString(), orElse: () => Message.fromMap(m));
+      m['content'] = loaded.text;
+      return m;
+    }).toList();
+    
+    ChatCacheService().saveMessages(widget.matchId, cacheData);
 
     _scrollToBottom();
   } catch (e) {
@@ -452,11 +498,22 @@ class _ChatConversationScreenState
       if (encryptedKey != null) {
         print("🔍 Realtime decrypting message ${data['id']} (isMe=$isMe)...");
 
-        content = await EncryptionService.decryptMessage(
+        // Attempt to use cached Match Key for speed
+        String? symmetricKey = ChatCacheService().getMatchKey(widget.matchId);
+
+        final result = await EncryptionService.decryptMessage(
           cipherText: data['content'],
-          encryptedKey: encryptedKey,
+          encryptedKey: symmetricKey ?? encryptedKey,
           iv: data['iv'],
+          symmetricKeyBase64: symmetricKey,
         );
+        
+        content = result.text;
+
+        // If we just decrypted with a new key, save it to cache
+        if (symmetricKey == null && result.decryptedSymmetricKey != null) {
+          await ChatCacheService().saveMatchKey(widget.matchId, result.decryptedSymmetricKey!);
+        }
 
         print("✅ Decrypted content: $content");
       }
@@ -486,8 +543,31 @@ class _ChatConversationScreenState
     });
 
     _scrollToBottom();
+
+    // ✅ Update Cache with DECRYPTED content
+    ChatCacheService().updateSingleMessage(widget.matchId, data);
+    
+    // ✅ Handshake: Mark as delivered & read if we are looking at it
+    if (msg.senderProfileId != _myProfileId) {
+      _markMessageAsDeliveredAndRead(msg.id);
+    }
   }
-} Future<void> _handleRealtimeUpdate(Map<String, dynamic> raw) async {
+}
+
+Future<void> _markMessageAsDeliveredAndRead(String messageId) async {
+  try {
+    await _supabase.from('messages').update({
+      'delivered_at': DateTime.now().toUtc().toIso8601String(),
+      'read_at': DateTime.now().toUtc().toIso8601String(),
+      'is_read': true,
+    }).eq('id', messageId);
+    print("🤝 Foreground Handshake: Marked message $messageId as delivered & read");
+  } catch (e) {
+    print("❌ Foreground Handshake Error: $e");
+  }
+}
+
+Future<void> _handleRealtimeUpdate(Map<String, dynamic> raw) async {
   print(raw);
 
   final data = Map<String, dynamic>.from(raw);
@@ -511,11 +591,22 @@ class _ChatConversationScreenState
       if (encryptedKey != null) {
         print("🔄 Updating message ${data['id']} (isMe=$isMe)...");
 
-        content = await EncryptionService.decryptMessage(
+        // Attempt to use cached Match Key for speed
+        String? symmetricKey = ChatCacheService().getMatchKey(widget.matchId);
+
+        final result = await EncryptionService.decryptMessage(
           cipherText: data['content'],
-          encryptedKey: encryptedKey,
+          encryptedKey: symmetricKey ?? encryptedKey,
           iv: data['iv'],
+          symmetricKeyBase64: symmetricKey,
         );
+        
+        content = result.text;
+
+        // If we just decrypted with a new key, save it to cache
+        if (symmetricKey == null && result.decryptedSymmetricKey != null) {
+          await ChatCacheService().saveMatchKey(widget.matchId, result.decryptedSymmetricKey!);
+        }
 
         print("✅ Updated decrypted content: $content");
       }
@@ -1295,14 +1386,20 @@ class _ChatConversationScreenState
     }
 
     if (message.readAt != null) {
-      return const Icon(Icons.done_all, size: 14, color: Colors.blue);
+      return Padding(
+        padding: const EdgeInsets.only(left: 4.0),
+        child: Text(
+          "Seen",
+          style: TextStyle(
+            fontSize: 10,
+            color: Colors.grey.shade600,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      );
     }
 
-    if (message.deliveredAt != null) {
-      return Icon(Icons.done_all, size: 14, color: Colors.grey.shade400);
-    }
-
-    return Icon(Icons.done, size: 14, color: Colors.grey.shade400);
+    return const SizedBox.shrink();
   }
 
   // ==============================
@@ -1515,7 +1612,16 @@ class _ChatConversationScreenState
                 children: [
                   CircleAvatar(
                     radius: 20,
-                    backgroundImage: NetworkImage(widget.otherUserImage),
+                    child: ClipOval(
+                      child: CachedNetworkImage(
+                        imageUrl: widget.otherUserImage,
+                        fit: BoxFit.cover,
+                        width: 40,
+                        height: 40,
+                        placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 2),
+                        errorWidget: (context, url, error) => const Icon(Icons.person),
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -2313,7 +2419,9 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
       if (_isPlaying) {
         await _audioPlayer.pause();
       } else {
-        await _audioPlayer.play(UrlSource(widget.message.text));
+        // Optimize: Use CacheManager to get local file
+        final file = await DefaultCacheManager().getSingleFile(widget.message.text);
+        await _audioPlayer.play(DeviceFileSource(file.path));
       }
     } catch (e) {
       debugPrint('Error playing audio: $e');
@@ -2458,53 +2566,42 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
           },
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              widget.message.text,
+            child: CachedNetworkImage(
+              imageUrl: widget.message.text,
               width: 200,
               height: 200,
               fit: BoxFit.cover,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return Container(
-                  width: 200,
-                  height: 200,
-                  color: textColor.withOpacity(0.1),
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      value: loadingProgress.expectedTotalBytes != null
-                          ? loadingProgress.cumulativeBytesLoaded /
-                                loadingProgress.expectedTotalBytes!
-                          : null,
-                      color: textColor,
+              placeholder: (context, url) => Container(
+                width: 200,
+                height: 200,
+                color: textColor.withOpacity(0.1),
+                child: Center(
+                  child: CircularProgressIndicator(color: textColor),
+                ),
+              ),
+              errorWidget: (context, url, error) => Container(
+                width: 200,
+                height: 200,
+                color: textColor.withOpacity(0.1),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.broken_image,
+                      color: textColor.withOpacity(0.5),
+                      size: 40,
                     ),
-                  ),
-                );
-              },
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  width: 200,
-                  height: 200,
-                  color: textColor.withOpacity(0.1),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.broken_image,
-                        color: textColor.withValues(alpha: 0.5),
-                        size: 40,
+                    const SizedBox(height: 8),
+                    Text(
+                      'Failed to load',
+                      style: TextStyle(
+                        color: textColor.withOpacity(0.5),
+                        fontSize: 12,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Failed to load',
-                        style: TextStyle(
-                          color: textColor.withValues(alpha: 0.5),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),

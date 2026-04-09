@@ -42,7 +42,6 @@ serve(async (req) => {
     const record = payload.record
 
     // 1. Initialize Supabase client
-    // We use the service_role key to bypass RLS and read user_push_tokens
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey)
@@ -83,11 +82,7 @@ serve(async (req) => {
     for (const device of tokens) {
       console.log(`Sending to device token: ${device.token} (Platform: ${device.platform})`)
 
-      // FCM v1 API requires all values in the data object to be strings.
-      // We must stringify the nested JSON to prevent 400 errors from Google.
       const stringifiedData: Record<string, string> = {}
-
-      // Inject the notification ID so the frontend knows which record to mark as read
       stringifiedData['notification_id'] = record.id;
 
       if (record.data && typeof record.data === 'object') {
@@ -109,7 +104,15 @@ serve(async (req) => {
               title: record.title,
               body: record.body,
             },
-            data: stringifiedData, // FCM requires all keys to map to string values
+            // ✅ ANDROID HARDENING: Set priority to high to wake device
+            android: {
+              priority: 'high',
+              notification: {
+                sound: 'default',
+                click_action: 'FLUTTER_NOTIFICATION_CLICK',
+              }
+            },
+            data: stringifiedData,
           }
         })
       })

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../core/utils/nav_key.dart';
 
@@ -29,7 +30,22 @@ class _AuthStateListenerWrapperState
     super.initState();
 
     // Listen to manual sign outs or expiries
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
+      final session = data.session;
+      
+      // ✅ SYNC TOKEN: Store current session tokens in shared_preferences
+      // This makes them accessible to the background isolate for WhatsApp handshakes!
+      if (session != null) {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('sb_access_token', session.accessToken);
+          await prefs.setString('sb_refresh_token', session.refreshToken ?? '');
+          AppLogger.info('AUTH_STATE_LISTENER: Session tokens synced successfully');
+        } catch (e) {
+          AppLogger.error('AUTH_STATE_LISTENER: Error syncing tokens: $e');
+        }
+      }
+
       if (!mounted) return;
 
       final event = data.event;

@@ -20,6 +20,13 @@ class EncryptionResult {
   );
 }
 
+class DecryptionResult {
+  final String text;
+  final String? decryptedSymmetricKey; // Base64
+
+  DecryptionResult(this.text, this.decryptedSymmetricKey);
+}
+
 class EncryptionService {
   static final _secureStorage = const FlutterSecureStorage();
 
@@ -123,73 +130,74 @@ class EncryptionService {
   );
 }
   // ==============================
-  // DECRYPT MESSAGE (FULLY FIXED)
+  // DECRYPT MESSAGE (FULLY FIXED + OPTIMIZED)
   // ==============================
-  static Future<String> decryptMessage({
-  required String cipherText,
-  required String encryptedKey, // will be sender OR receiver key
-  required String iv,
-}) async {
-  final privateKeyPem = await _secureStorage.read(key: 'private_key');
-  if (privateKeyPem == null) {
-    throw Exception("Private key not found");
-  }
-
-  if (!_isValidBase64(cipherText) ||
-      !_isValidBase64(encryptedKey) ||
-      !_isValidBase64(iv)) {
-    throw Exception("Invalid Base64");
-  }
-
-  try {
-    final parser = RSAKeyParser();
-    final privateKey = parser.parse(privateKeyPem) as RSAPrivateKey;
-
-    final rsaDecrypter = Encrypter(
-      RSA(
-        privateKey: privateKey,
-        encoding: RSAEncoding.OAEP,
-        digest: RSADigest.SHA256,
-      ),
-    );
-
-    Uint8List aesKeyBytes;
-
+  static Future<DecryptionResult> decryptMessage({
+    required String cipherText,
+    required String encryptedKey, // will be sender OR receiver key
+    required String iv,
+    String? symmetricKeyBase64, // ✅ OPTIONAL CACHED KEY
+  }) async {
     try {
-      aesKeyBytes = Uint8List.fromList(
-        rsaDecrypter.decryptBytes(
-          Encrypted.fromBase64(encryptedKey),
-        ),
+      if (!_isValidBase64(cipherText) || !_isValidBase64(iv)) {
+        throw Exception("Invalid Base64");
+      }
+
+      Key aesKey;
+      String? finalSymmetricKeyBase64 = symmetricKeyBase64;
+
+      if (symmetricKeyBase64 != null && _isValidBase64(symmetricKeyBase64)) {
+        // ✅ FAST PATH: Use cached key
+        aesKey = Key(base64Decode(symmetricKeyBase64));
+      } else {
+        // 🔐 SLOW PATH: Decrypt key using RSA
+        final privateKeyPem = await _secureStorage.read(key: 'private_key');
+        if (privateKeyPem == null) throw Exception("Private key not found");
+        if (!_isValidBase64(encryptedKey)) throw Exception("Invalid Key Base64");
+
+        final parser = RSAKeyParser();
+        final privateKey = parser.parse(privateKeyPem) as RSAPrivateKey;
+
+        final rsaDecrypter = Encrypter(
+          RSA(
+            privateKey: privateKey,
+            encoding: RSAEncoding.OAEP,
+            digest: RSADigest.SHA256,
+          ),
+        );
+
+        Uint8List aesKeyBytes;
+        try {
+          aesKeyBytes = Uint8List.fromList(
+            rsaDecrypter.decryptBytes(Encrypted.fromBase64(encryptedKey)),
+          );
+        } catch (e) {
+          print('❌ OAEP failed, fallback PKCS1');
+          final fallbackCipher = pc.AsymmetricBlockCipher('RSA/PKCS1-v1_5')
+            ..init(false, pc.PrivateKeyParameter<pc.RSAPrivateKey>(privateKey));
+          aesKeyBytes = Uint8List.fromList(
+            fallbackCipher.process(Uint8List.fromList(base64Decode(encryptedKey))),
+          );
+        }
+
+        if (aesKeyBytes.length != 32) throw Exception("Invalid AES key length");
+        aesKey = Key(aesKeyBytes);
+        finalSymmetricKeyBase64 = base64Encode(aesKeyBytes);
+      }
+
+      final aesDecrypter = Encrypter(AES(aesKey, mode: AESMode.cbc));
+      final decryptedBytes = aesDecrypter.decryptBytes(
+        Encrypted.fromBase64(cipherText),
+        iv: IV.fromBase64(iv),
+      );
+
+      return DecryptionResult(
+        utf8.decode(decryptedBytes),
+        finalSymmetricKeyBase64,
       );
     } catch (e) {
-      print('❌ OAEP failed, fallback PKCS1');
-
-      final fallbackCipher = pc.AsymmetricBlockCipher('RSA/PKCS1-v1_5')
-        ..init(false, pc.PrivateKeyParameter<pc.RSAPrivateKey>(privateKey));
-
-      aesKeyBytes = Uint8List.fromList(
-        fallbackCipher.process(
-          Uint8List.fromList(base64Decode(encryptedKey)),
-        ),
-      );
+      print('❌ FULL DECRYPT ERROR: $e');
+      rethrow;
     }
-
-    if (aesKeyBytes.length != 32) {
-      throw Exception("Invalid AES key length");
-    }
-
-    final aesKey = Key(aesKeyBytes);
-    final aesDecrypter = Encrypter(AES(aesKey, mode: AESMode.cbc));
-
-    final decryptedBytes = aesDecrypter.decryptBytes(
-      Encrypted.fromBase64(cipherText),
-      iv: IV.fromBase64(iv),
-    );
-
-    return utf8.decode(decryptedBytes);
-  } catch (e) {
-    print('❌ FULL DECRYPT ERROR: $e');
-    rethrow;
   }
-}
 }

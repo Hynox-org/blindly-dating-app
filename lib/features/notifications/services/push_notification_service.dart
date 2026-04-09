@@ -1,4 +1,3 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
@@ -86,11 +85,18 @@ class PushNotificationService {
         >()
         ?.createNotificationChannel(channel);
 
-    // 4. Handle Foreground Messages
+    // 4. Handle Incoming Messages (Delivery Handshake)
+    _setupMessageListeners();
+
+    // 5. Handle Background/Terminated Notification Taps (Deep Linking)
+    _handleInteraction(context);
+  }
+
+  void _setupMessageListeners() {
+    // Foreground
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      debugPrint(
-        'Received a message while in foreground: ${message.messageId}',
-      );
+      debugPrint('📩 Received message in foreground: ${message.messageId}');
+
       RemoteNotification? notification = message.notification;
       AndroidNotification? android = message.notification?.android;
 
@@ -114,10 +120,8 @@ class PushNotificationService {
         );
       }
     });
-
-    // 5. Handle Background/Terminated Notification Taps (Deep Linking)
-    _handleInteraction(context);
   }
+
 
   /// Saves the FCM token to the Supabase `user_push_tokens` table.
   Future<void> _saveTokenToDatabase(String token) async {
@@ -125,7 +129,6 @@ class PushNotificationService {
     if (userId == null) return;
 
     try {
-      // Use the RPC to handle RLS and shared device conflicts
       final response = await _supabase.rpc('register_fcm_token', params: {
         'p_token': token,
         'p_platform': _getPlatform(),
@@ -167,7 +170,6 @@ class PushNotificationService {
 
   /// Helper to get the current platform string for the database
   String _getPlatform() {
-    // For simplicity, imported dart:io can provide Platform.isIOS / Platform.isAndroid
     return 'android'; // Defaulting to android for this implementation
   }
 
@@ -200,12 +202,6 @@ class PushNotificationService {
 
       if (userId != null && notificationId.isNotEmpty) {
         try {
-          // Dynamic import or provide access if needed,
-          // but we can just use Supabase direct or NotificationDbService
-          // We will use direct update since NotificationDbService fetches profileId first usually.
-          // To keep it clean, let's use the same method. We need to import NotificationDbService.
-
-          // Actually, since NotificationDbService requires a quick profile lookup, doing it here is fine:
           print('Push clicked: Marking notification $notificationId as read.');
 
           final profileResponse = await _supabase
@@ -240,9 +236,8 @@ class PushNotificationService {
   }
 }
 
-/// A top-level function required by Firebase to handle background messages
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
-  debugPrint("Handling a background message: ${message.messageId}");
+  // Empty handler. Notifications are now tracked via the 'notifications' table trigger.
+  debugPrint("🌙 Handling a background message: ${message.messageId}");
 }

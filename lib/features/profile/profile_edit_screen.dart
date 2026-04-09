@@ -811,7 +811,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                         builder: (context) => const VoiceIntroScreen(isEditMode: true),
                       ),
                     );
-                    await ref.refresh(currentUserProfileProvider);
+                    ref.refresh(currentUserProfileProvider);
                   },
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -958,7 +958,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                           const PhotoUploadScreen(isEditMode: true),
                     ),
                   );
-                  await ref.refresh(currentUserProfileProvider);
+                  ref.refresh(currentUserProfileProvider);
                 },
                 child: Container(
                   decoration: BoxDecoration(
@@ -1345,7 +1345,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                   ),
                 ),
               );
-              await ref.refresh(currentUserProfileProvider);
+              ref.refresh(currentUserProfileProvider);
             },
             child: Container(
               padding: const EdgeInsets.all(16),
