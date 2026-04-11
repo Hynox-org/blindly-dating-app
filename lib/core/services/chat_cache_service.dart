@@ -110,4 +110,14 @@ class ChatCacheService {
       return null;
     }
   }
+
+  /// Clears all cached symmetric keys.
+  Future<void> clearAllMatchKeys() async {
+    await _keyBox.clear();
+  }
+
+  /// Clears cache for all matches.
+  Future<void> clearAllMessages() async {
+    await _box.clear();
+  }
 }

@@ -11,15 +11,16 @@ import 'package:flutter/services.dart';
 // import 'package:permission_handler/permission_handler.dart';
 import '../../../call/presentation/screens/call_screen.dart';
 import 'dart:async';
-import './../../../../core/utils/app_state.dart';
+import '../../domain/models/message_model.dart';
 import '../../../../core/services/chat_cache_service.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/security/encryption_service.dart';
 import '../../../../core/security/key_security.dart';
-// import 'package:cached_network_image/cached_network_image.dart';
-// import 'package:image/image.dart' as img;
+import '../../../../core/utils/app_state.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:uuid/uuid.dart';
+import 'package:encrypt/encrypt.dart' as encrypt;
 
 class ChatConversationScreen extends ConsumerStatefulWidget {
   final String matchId;
@@ -52,6 +53,7 @@ class _ChatConversationScreenState
 
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final Uuid _uuid = const Uuid();
   final FocusNode _focusNode = FocusNode();
   final ImagePicker _imagePicker = ImagePicker();
   String? _editingMessageId;
@@ -61,7 +63,7 @@ class _ChatConversationScreenState
   Timer? timer;
   Message? _replyingTo;
   // List<Message> messages = [];   // Ensure this exists
-  RealtimeChannel? channelRead; // Add this
+  RealtimeChannel? _channelRead;
   String? receiverPublicKeyPem;
   bool _isKeyReady = false;
   // Voice recording
@@ -81,54 +83,26 @@ class _ChatConversationScreenState
     AppState.currentChatProfileId = widget.otherProfileId;
     AppState.setCurrentChat(widget.otherProfileId);
 
+
     // Initialize keys FIRST, then load other data
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await KeyService.generateAndStoreKeys(userId);
+      await ChatCacheService().clearAllMessages();
+      await ChatCacheService().clearAllMatchKeys();
+
       if (mounted) {
         await _loadReceiverKey();
-        _loadCachedHistory(); // Load from cache instantly
-        await _loadHistory(); // Then fetch fresh from DB
+        _loadCachedHistory();
+        await _loadHistory();
         _listenRealtime();
-        await diagnosePrivateKey(); // ADD THIS
+        _markMessagesAsDelivered();
+        _markMessagesAsRead();
       }
     });
 
-    // Rest of your existing initState code (timer, etc.)
     timer = Timer.periodic(const Duration(seconds: 3), (timerInstance) {
       if (mounted) _markMessagesAsRead();
     });
-
-    // Fix channelRead assignment (use consistent naming)
-    channelRead = _supabase
-        .channel('read-status-${widget.matchId}')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.update,
-          schema: 'public',
-          table: 'messages',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'match_id', // Note: match_id (snake_case) matches your DB
-            value: widget.matchId,
-          ),
-          callback: (payload) {
-            if (!mounted) return;
-            final updated = Message.fromMap(payload.newRecord);
-            if (updated.senderProfileId != widget.myProfileId &&
-                updated.readAt != null &&
-                _messages.any((m) => m.id == updated.id)) {
-              final index = _messages.indexWhere((m) => m.id == updated.id);
-              if (index != -1) {
-                setState(() {
-                  _messages[index] = updated;
-                });
-              }
-            }
-          },
-        )
-        .subscribe();
-
-    _markMessagesAsDelivered();
-    _markMessagesAsRead();
   }
 
   @override
@@ -138,11 +112,10 @@ class _ChatConversationScreenState
     AppState.setCurrentChat(null);
 
     if (_channel != null) {
-      // Use your actual channel variable name
       _supabase.removeChannel(_channel!);
     }
-    if (channelRead != null) {
-      _supabase.removeChannel(channelRead!);
+    if (_channelRead != null) {
+      _supabase.removeChannel(_channelRead!);
     }
 
     timer?.cancel(); // Cancel the timer
@@ -332,10 +305,7 @@ class _ChatConversationScreenState
     final cachedMaps = ChatCacheService().getMessages(widget.matchId);
     if (cachedMaps.isEmpty) return;
 
-    final List<Message> cachedMessages = [];
-    for (final map in cachedMaps) {
-      cachedMessages.add(Message.fromMap(map));
-    }
+    final List<Message> cachedMessages = cachedMaps.map((map) => Message.fromMap(map)).toList();
 
     if (mounted) {
       setState(() {
@@ -350,102 +320,70 @@ class _ChatConversationScreenState
   // ==============================
 
   Future<void> _loadHistory() async {
-  try {
-    final res = await _supabase
-        .from('messages')
-        .select()
-        .eq('match_id', widget.matchId)
-        .order('created_at', ascending: true);
+    try {
+      final res = await _supabase
+          .from('messages')
+          .select()
+          .eq('match_id', widget.matchId)
+          .order('created_at', ascending: true);
 
-    final List data = res as List;
+      final List data = res as List;
+      print("📜 Loaded ${data.length} messages from DB");
 
-    print("📜 Loaded messages from DB: ${data.length}");
+      final List<Message> loadedMessages = [];
+      String? symmetricKey = ChatCacheService().getMatchKey(widget.matchId);
 
-    final List<Message> loadedMessages = [];
+      for (final raw in data) {
+        final msgMap = Map<String, dynamic>.from(raw);
+        String decryptedContent = msgMap['content'] ?? '';
 
-    for (final raw in data) {
-      final msg = Map<String, dynamic>.from(raw);
-
-      String content = msg['content'] ?? '';
-
-      if (msg['message_type'] == 'text') {
-        print(
-          "📜 Processing message ${msg['id']} (len=${content.length})",
-        );
-
-        try {
-          // ✅ Ensure required fields exist
-          if (msg['iv'] != null &&
-              msg['content'] != null &&
-              (msg['encrypted_key_sender'] != null ||
-                  msg['encrypted_key_receiver'] != null)) {
-
-            // ✅ Identify ownership
-            final isMe = msg['sender_profile_id'] == _myProfileId;
-
-            // ✅ Pick correct key
+        if (msgMap['message_type'] == 'text' && msgMap['iv'] != null) {
+          try {
+            final isMe = msgMap['sender_profile_id'] == _myProfileId;
             final encryptedKey = isMe
-                ? msg['encrypted_key_sender']
-                : msg['encrypted_key_receiver'];
+                ? msgMap['encrypted_key_sender']
+                : msgMap['encrypted_key_receiver'];
 
-            print(
-              "🔍 Decrypting message ${msg['id']} (isMe=$isMe)",
-            );
-
-            // Attempt to use cached Match Key for speed
-            String? symmetricKey = ChatCacheService().getMatchKey(widget.matchId);
-
-            final decryptionResult = await EncryptionService.decryptMessage(
-              cipherText: msg['content'],
-              encryptedKey: symmetricKey ?? encryptedKey,
-              iv: msg['iv'],
-              symmetricKeyBase64: symmetricKey,
-            );
-
-            content = decryptionResult.text;
-
-            // If we just decrypted with a new key, save it to cache
-            if (symmetricKey == null && decryptionResult.decryptedSymmetricKey != null) {
-              await ChatCacheService().saveMatchKey(widget.matchId, decryptionResult.decryptedSymmetricKey!);
+            if (encryptedKey != null) {
+              final result = await EncryptionService.decryptMessage(
+                cipherText: msgMap['content'],
+                encryptedKey: symmetricKey ?? encryptedKey,
+                iv: msgMap['iv'],
+                symmetricKeyBase64: symmetricKey,
+              );
+              decryptedContent = result.text;
+              
+              if (symmetricKey != result.decryptedSymmetricKey && result.decryptedSymmetricKey != null) {
+                symmetricKey = result.decryptedSymmetricKey;
+                await ChatCacheService().saveMatchKey(widget.matchId, symmetricKey!);
+              }
             }
-
-            print("✅ Decrypted: $content");
+          } catch (e) {
+            decryptedContent = "🔒 Encrypted message";
+            print("❌ Decrypt failed for ${msgMap['id']}: $e");
           }
-        } catch (e) {
-          content = "🔒 Encrypted message";
-          print("❌ Decrypt failed for message ${msg['id']}: $e");
         }
+
+        loadedMessages.add(Message.fromMap(msgMap, decryptedText: decryptedContent));
       }
 
-      msg['content'] = content;
+      if (!mounted) return;
 
-      loadedMessages.add(Message.fromMap(msg));
+      setState(() {
+        _messages
+          ..clear()
+          ..addAll(loadedMessages);
+      });
+
+      // Update Cache with Decrypted content
+      final List<Map<String, dynamic>> cacheData = loadedMessages.map((m) => m.toMap()).toList();
+      ChatCacheService().saveMessages(widget.matchId, cacheData);
+
+      _scrollToBottom();
+    } catch (e) {
+      debugPrint('❌ Error loading message history: $e');
     }
-
-    if (!mounted) return;
-
-    setState(() {
-      _messages
-        ..clear()
-        ..addAll(loadedMessages);
-    });
-
-    // ✅ Update Cache with DECRYPTED CONTENT list
-    final List<Map<String, dynamic>> cacheData = data.map((raw) {
-      final m = Map<String, dynamic>.from(raw);
-      // Find the corresponding loaded message to get decrypted content
-      final loaded = loadedMessages.firstWhere((element) => element.id == m['id'].toString(), orElse: () => Message.fromMap(m));
-      m['content'] = loaded.text;
-      return m;
-    }).toList();
-    
-    ChatCacheService().saveMessages(widget.matchId, cacheData);
-
-    _scrollToBottom();
-  } catch (e) {
-    debugPrint('❌ Error loading message history: $e');
   }
-}
 
   Future<void> diagnosePrivateKey() async {
     try {
@@ -469,173 +407,115 @@ class _ChatConversationScreenState
         );
       }
     } catch (e) {
-      print("❌ PRIVATE KEY ERROR: $e");
+      print("❌ Error diagnosing private key: $e");
     }
   }
 
   Future<void> _handleRealtimeMessage(Map<String, dynamic> raw) async {
-  print(raw);
+    final data = Map<String, dynamic>.from(raw);
+    String decryptedContent = "⏳ Decrypting...";
 
-  final data = Map<String, dynamic>.from(raw);
-  print("📩 Realtime message data: $data");
+    try {
+      if (data['message_type'] == 'text' && data['iv'] != null && data['content'] != null) {
+        final isMe = data['sender_profile_id'] == _myProfileId;
+        final encryptedKey = isMe ? data['encrypted_key_sender'] : data['encrypted_key_receiver'];
 
-  String content = "⏳ Decrypting...";
+        if (encryptedKey != null) {
+          String? symmetricKey = ChatCacheService().getMatchKey(widget.matchId);
+          final result = await EncryptionService.decryptMessage(
+            cipherText: data['content'],
+            encryptedKey: symmetricKey ?? encryptedKey,
+            iv: data['iv'],
+            symmetricKeyBase64: symmetricKey,
+          );
+          decryptedContent = result.text;
 
-  try {
-    if (data['message_type'] == 'text' &&
-        data['iv'] != null &&
-        data['content'] != null) {
-
-      final isMe = data['sender_profile_id'] == _myProfileId;
-
-      // ✅ Support BOTH new + old schema
-      final encryptedKey = data['encrypted_key_sender'] != null
-          ? (isMe
-              ? data['encrypted_key_sender']
-              : data['encrypted_key_receiver'])
-          : data['encrypted_key']; // fallback
-
-      if (encryptedKey != null) {
-        print("🔍 Realtime decrypting message ${data['id']} (isMe=$isMe)...");
-
-        // Attempt to use cached Match Key for speed
-        String? symmetricKey = ChatCacheService().getMatchKey(widget.matchId);
-
-        final result = await EncryptionService.decryptMessage(
-          cipherText: data['content'],
-          encryptedKey: symmetricKey ?? encryptedKey,
-          iv: data['iv'],
-          symmetricKeyBase64: symmetricKey,
-        );
-        
-        content = result.text;
-
-        // If we just decrypted with a new key, save it to cache
-        if (symmetricKey == null && result.decryptedSymmetricKey != null) {
-          await ChatCacheService().saveMatchKey(widget.matchId, result.decryptedSymmetricKey!);
+          if (symmetricKey != result.decryptedSymmetricKey && result.decryptedSymmetricKey != null) {
+            await ChatCacheService().saveMatchKey(widget.matchId, result.decryptedSymmetricKey!);
+          }
         }
-
-        print("✅ Decrypted content: $content");
       }
+    } catch (e) {
+      decryptedContent = "🔒 Encrypted message";
+      print("❌ Realtime decrypt failed: $e");
     }
-  } catch (e) {
-    content = "🔒 Encrypted message";
-    print("❌ Realtime decrypt failed: $e");
-  }
 
-  data['content'] = content;
+    final msg = Message.fromMap(data, decryptedText: decryptedContent);
 
-  final msg = Message.fromMap(data);
-
-  // ✅ FIX: update instead of duplicate
-  final index = _messages.indexWhere((m) =>
-      m.id == msg.id ||
-      (m.createdAt == msg.createdAt &&
-       m.senderProfileId == msg.senderProfileId));
-
-  if (mounted) {
-    setState(() {
-      if (index != -1) {
-        _messages[index] = msg; // ✅ update existing
-      } else {
-        _messages.add(msg); // ✅ add new
-      }
-    });
-
-    _scrollToBottom();
-
-    // ✅ Update Cache with DECRYPTED content
-    ChatCacheService().updateSingleMessage(widget.matchId, data);
-    
-    // ✅ Handshake: Mark as delivered & read if we are looking at it
-    if (msg.senderProfileId != _myProfileId) {
-      _markMessageAsDeliveredAndRead(msg.id);
-    }
-  }
-}
-
-Future<void> _markMessageAsDeliveredAndRead(String messageId) async {
-  try {
-    await _supabase.from('messages').update({
-      'delivered_at': DateTime.now().toUtc().toIso8601String(),
-      'read_at': DateTime.now().toUtc().toIso8601String(),
-      'is_read': true,
-    }).eq('id', messageId);
-    print("🤝 Foreground Handshake: Marked message $messageId as delivered & read");
-  } catch (e) {
-    print("❌ Foreground Handshake Error: $e");
-  }
-}
-
-Future<void> _handleRealtimeUpdate(Map<String, dynamic> raw) async {
-  print(raw);
-
-  final data = Map<String, dynamic>.from(raw);
-
-  String content = "⏳ Decrypting...";
-
-  try {
-    if (data['message_type'] == 'text' &&
-        data['iv'] != null &&
-        data['content'] != null) {
-
-      final isMe = data['sender_profile_id'] == _myProfileId;
-
-      // ✅ Support BOTH new + old schema
-      final encryptedKey = data['encrypted_key_sender'] != null
-          ? (isMe
-              ? data['encrypted_key_sender']
-              : data['encrypted_key_receiver'])
-          : data['encrypted_key']; // fallback
-
-      if (encryptedKey != null) {
-        print("🔄 Updating message ${data['id']} (isMe=$isMe)...");
-
-        // Attempt to use cached Match Key for speed
-        String? symmetricKey = ChatCacheService().getMatchKey(widget.matchId);
-
-        final result = await EncryptionService.decryptMessage(
-          cipherText: data['content'],
-          encryptedKey: symmetricKey ?? encryptedKey,
-          iv: data['iv'],
-          symmetricKeyBase64: symmetricKey,
-        );
-        
-        content = result.text;
-
-        // If we just decrypted with a new key, save it to cache
-        if (symmetricKey == null && result.decryptedSymmetricKey != null) {
-          await ChatCacheService().saveMatchKey(widget.matchId, result.decryptedSymmetricKey!);
+    if (mounted) {
+      setState(() {
+        final index = _messages.indexWhere((m) => m.id == msg.id);
+        if (index != -1) {
+          _messages[index] = msg;
+        } else {
+          _messages.add(msg);
         }
-
-        print("✅ Updated decrypted content: $content");
+      });
+      _scrollToBottom();
+      ChatCacheService().updateSingleMessage(widget.matchId, msg.toMap());
+      
+      if (msg.senderProfileId != _myProfileId) {
+        _markMessageAsDeliveredAndRead(msg.id);
       }
     }
-  } catch (e) {
-    content = "🔒 Encrypted message";
-    print("❌ Update decrypt failed: $e");
   }
 
-  data['content'] = content;
-
-  final updated = Message.fromMap(data);
-
-  final index = _messages.indexWhere((m) => m.id == updated.id);
-
-  if (index != -1 && mounted) {
-    setState(() {
-      _messages[index] = updated; // ✅ always update
-    });
+  Future<void> _markMessageAsDeliveredAndRead(String messageId) async {
+    try {
+      final now = DateTime.now().toUtc().toIso8601String();
+      await _supabase.from('messages').update({
+        'delivered_at': now,
+        'read_at': now,
+      }).eq('id', messageId);
+    } catch (e) {
+      debugPrint('❌ Error marking message as read: $e');
+    }
   }
-}
+
+  Future<void> _handleRealtimeUpdate(Map<String, dynamic> raw) async {
+    final data = Map<String, dynamic>.from(raw);
+    String decryptedContent = "⏳ Decrypting...";
+
+    try {
+      if (data['message_type'] == 'text' && data['iv'] != null && data['content'] != null) {
+        final isMe = data['sender_profile_id'] == _myProfileId;
+        final encryptedKey = isMe ? data['encrypted_key_sender'] : data['encrypted_key_receiver'];
+
+        if (encryptedKey != null) {
+          String? symmetricKey = ChatCacheService().getMatchKey(widget.matchId);
+          final result = await EncryptionService.decryptMessage(
+            cipherText: data['content'],
+            encryptedKey: symmetricKey ?? encryptedKey,
+            iv: data['iv'],
+            symmetricKeyBase64: symmetricKey,
+          );
+          decryptedContent = result.text;
+        }
+      }
+    } catch (e) {
+      decryptedContent = "🔒 Encrypted message";
+    }
+
+    final updated = Message.fromMap(data, decryptedText: decryptedContent);
+    final index = _messages.indexWhere((m) => m.id == updated.id);
+
+    if (index != -1 && mounted) {
+      setState(() {
+        _messages[index] = updated;
+      });
+      ChatCacheService().updateSingleMessage(widget.matchId, updated.toMap());
+    }
+  }
  // ==============================
   // REALTIME
   // ==============================
 
   void _listenRealtime() {
-    // ✅ FIX 1: Use stable channel name (NOT dynamic per match)
-    _channel = _supabase.channel('messages');
+    // Scoped channels for zero-latency reliability
+    _channel = _supabase.channel('messages:${widget.matchId}');
+    _channelRead = _supabase.channel('reads:${widget.matchId}');
 
+    // Listen for new messages & content updates
     _channel!
         .onPostgresChanges(
           event: PostgresChangeEvent.insert,
@@ -646,13 +526,7 @@ Future<void> _handleRealtimeUpdate(Map<String, dynamic> raw) async {
             column: 'match_id',
             value: widget.matchId,
           ),
-          callback: (payload) async {
-            print("📩 Realtime INSERT received");
-
-            final newMsg = payload.newRecord;
-
-            await _handleRealtimeMessage(newMsg);
-          },
+          callback: (payload) => _handleRealtimeMessage(payload.newRecord),
         )
         .onPostgresChanges(
           event: PostgresChangeEvent.update,
@@ -663,20 +537,40 @@ Future<void> _handleRealtimeUpdate(Map<String, dynamic> raw) async {
             column: 'match_id',
             value: widget.matchId,
           ),
-          callback: (payload) async {
-            print("✏️ Realtime UPDATE received");
+          callback: (payload) => _handleRealtimeMessage(payload.newRecord),
+        )
+        .subscribe((status, error) {
+          print("📡 Message channel status (${widget.matchId}): $status");
+          if (error != null) print("❌ Message channel error: $error");
+        });
 
-            final updatedMsg = payload.newRecord;
-
-            await _handleRealtimeUpdate(updatedMsg);
+    // Listen for status changes (Read/Delivered) separately to avoid heavy decrypt on every ping
+    _channelRead!
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'messages',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'match_id',
+            value: widget.matchId,
+          ),
+          callback: (payload) {
+            if (!mounted) return;
+            final updatedMap = payload.newRecord;
+            final messageId = updatedMap['id'].toString();
+            final index = _messages.indexWhere((m) => m.id == messageId);
+            
+            if (index != -1) {
+              setState(() {
+                // Preserve the text we already have decrypted
+                _messages[index] = Message.fromMap(updatedMap, decryptedText: _messages[index].text);
+              });
+            }
           },
         )
         .subscribe((status, error) {
-          print("📡 Realtime status: $status");
-
-          if (error != null) {
-            print("❌ Realtime error: $error");
-          }
+           print("📡 Status channel status (${widget.matchId}): $status");
         });
   }
 
@@ -720,53 +614,56 @@ Future<void> _handleRealtimeUpdate(Map<String, dynamic> raw) async {
 
   Future<void> _send(String text) async {
     if (text.trim().isEmpty) return;
-
     final trimmedText = text.trim();
-    if (trimmedText.length > 14000) {
-      // UI warning
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Message too long. Keep under 14k chars.'),
-        ),
-      );
-      return;
-    }
+    
     if (!_isKeyReady) {
-      print("⏳ Skipping decrypt, key not ready");
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Encryption key not loaded. Please wait."),
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Encryption key not loaded. Please wait.")));
       return;
     }
 
-    if (widget.otherProfileId.isEmpty) return;
+    // 🚀 OPTIMISTIC UPDATE: Add message to UI immediately
+    final String messageId = _uuid.v4();
+    final optimisticMsg = Message(
+      id: messageId,
+      matchId: widget.matchId,
+      senderProfileId: _myProfileId,
+      receiverProfileId: widget.otherProfileId,
+      text: trimmedText,
+      createdAt: DateTime.now(),
+      isSending: true,
+      messageType: 'text',
+      replyToId: _replyingTo?.id,
+    );
+
+    setState(() {
+      _messages.add(optimisticMsg);
+      _controller.clear();
+      _replyingTo = null;
+    });
+    _scrollToBottom();
 
     try {
-      // ==============================
-      // 🔐 ENCRYPT MESSAGE
-      // ==============================
+      final matchKey = ChatCacheService().getMatchKey(widget.matchId);
       final encrypted = await EncryptionService.encryptMessage(
         message: trimmedText,
         receiverPublicKeyPem: receiverPublicKeyPem!,
+        symmetricKeyBase64: matchKey,
       );
 
       if (_isEditing) {
-        await _supabase
-            .from('messages')
-            .update({
-              'content': encrypted.cipherText,
-              'encrypted_key_sender': encrypted.encryptedKeyForSender,
-              'encrypted_key_receiver': encrypted.encryptedKeyForReceiver,
-              'iv': encrypted.iv,
-              'edited_at': DateTime.now().toIso8601String(),
-            })
-            .eq('id', _editingMessageId!);
-
+        // Handle editing (less frequent path)
+        await _supabase.from('messages').update({
+          'content': encrypted.cipherText,
+          'encrypted_key_sender': encrypted.encryptedKeyForSender,
+          'encrypted_key_receiver': encrypted.encryptedKeyForReceiver,
+          'iv': encrypted.iv,
+          'edited_at': DateTime.now().toIso8601String(),
+        }).eq('id', _editingMessageId!);
         setState(() => _editingMessageId = null);
       } else {
+        // Standard send with pre-generated UUID
         await _supabase.from('messages').insert({
+          'id': messageId,
           'match_id': widget.matchId,
           'sender_profile_id': _myProfileId,
           'receiver_profile_id': widget.otherProfileId,
@@ -775,15 +672,18 @@ Future<void> _handleRealtimeUpdate(Map<String, dynamic> raw) async {
           'encrypted_key_receiver': encrypted.encryptedKeyForReceiver,
           'iv': encrypted.iv,
           'message_type': 'text',
-          'reply_to_id': _replyingTo?.id,
+          'reply_to_id': optimisticMsg.replyToId,
         });
-
-        setState(() => _replyingTo = null);
       }
-
-      _controller.clear();
     } catch (e) {
-      debugPrint('❌ Error sending encrypted message: $e');
+      debugPrint('❌ Error sending message: $e');
+      // If error, mark the optimistic message as failed or remove it
+      setState(() {
+        _messages.removeWhere((m) => m.id == messageId);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to send message: $e"), backgroundColor: Colors.red),
+      );
     }
   }
 
@@ -1385,6 +1285,17 @@ Future<void> _handleRealtimeUpdate(Map<String, dynamic> raw) async {
       return const SizedBox.shrink();
     }
 
+    if (message.isSending) {
+      return Padding(
+        padding: const EdgeInsets.only(left: 4.0),
+        child: Icon(
+          Icons.access_time, // Clock icon for "sending"
+          size: 10,
+          color: Colors.white.withOpacity(0.6),
+        ),
+      );
+    }
+
     if (message.readAt != null) {
       return Padding(
         padding: const EdgeInsets.only(left: 4.0),
@@ -1392,29 +1303,22 @@ Future<void> _handleRealtimeUpdate(Map<String, dynamic> raw) async {
           "Seen",
           style: TextStyle(
             fontSize: 10,
-            color: Colors.grey.shade600,
+            color: Colors.white.withOpacity(0.8),
             fontWeight: FontWeight.w500,
           ),
         ),
       );
     }
 
-    return const SizedBox.shrink();
+    return Icon(
+      Icons.done, // Single check for "sent"
+      size: 10,
+      color: Colors.white.withOpacity(0.6),
+    );
   }
 
   // ==============================
 
-  void _scrollBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
-  }
 
   String _formatTime(DateTime dt) => DateFormat('h:mm a').format(dt);
 
@@ -2804,107 +2708,9 @@ class WaveformPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant WaveformPainter oldDelegate) {
+  bool shouldRepaint(WaveformPainter oldDelegate) {
     return oldDelegate.progress != progress;
   }
 }
 
-// ======================================================
-// MODEL
-// ======================================================
-
-class Message {
-  final String id;
-  final String matchId;
-  final String senderProfileId;
-  final String receiverProfileId; // ✅ REQUIRED
-  final String text;
-  final DateTime createdAt;
-  final String? replyToId;
-  final String? reaction;
-  final DateTime? deliveredAt;
-  final DateTime? readAt;
-  final DateTime? editedAt; // ✅ REQUIRED
-  final String messageType;
-  final int? voiceDuration;
-
-  final bool deletedForSender;
-  final bool deletedForReceiver;
-  final bool deletedForEveryone;
-
-  Message({
-    required this.id,
-    required this.matchId,
-    required this.senderProfileId,
-    required this.receiverProfileId,
-    required this.text,
-    required this.createdAt,
-    this.replyToId,
-    this.reaction,
-    this.deliveredAt,
-    this.readAt,
-    this.editedAt,
-    this.messageType = 'text',
-    this.voiceDuration,
-    this.deletedForSender = false,
-    this.deletedForReceiver = false,
-    this.deletedForEveryone = false,
-  });
-  factory Message.fromMap(Map<String, dynamic> map) {
-    return Message(
-      id: map['id'].toString(),
-      matchId: map['match_id'],
-      senderProfileId: map['sender_profile_id'],
-      receiverProfileId: map['receiver_profile_id'], // ✅ REQUIRED
-      text: map['content'] ?? '',
-      createdAt: DateTime.parse(map['created_at']).toLocal(),
-      replyToId: map['reply_to_id'],
-      reaction: map['reaction'],
-      deliveredAt: map['delivered_at'] != null
-          ? DateTime.parse(map['delivered_at']).toLocal()
-          : null,
-      readAt: map['read_at'] != null
-          ? DateTime.parse(map['read_at']).toLocal()
-          : null,
-      editedAt: map['edited_at'] != null
-          ? DateTime.parse(map['edited_at']).toLocal()
-          : null,
-      messageType: map['message_type'] ?? 'text',
-      voiceDuration: map['voice_duration'],
-      deletedForSender: map['deleted_for_sender'] ?? false,
-      deletedForReceiver: map['deleted_for_receiver'] ?? false,
-      deletedForEveryone: map['deleted_for_everyone'] ?? false,
-    );
-  }
-
-  /// ✅ REQUIRED FOR EDIT + SOFT DELETE UI
-  Message copyWith({
-    String? text,
-    String? reaction,
-    DateTime? editedAt,
-    DateTime? deliveredAt,
-    DateTime? readAt,
-    bool? deletedForSender,
-    bool? deletedForReceiver,
-    bool? deletedForEveryone,
-  }) {
-    return Message(
-      id: id,
-      matchId: matchId,
-      senderProfileId: senderProfileId,
-      receiverProfileId: receiverProfileId,
-      text: text ?? this.text,
-      createdAt: createdAt,
-      replyToId: replyToId,
-      reaction: reaction ?? this.reaction,
-      deliveredAt: deliveredAt ?? this.deliveredAt,
-      readAt: readAt ?? this.readAt,
-      editedAt: editedAt ?? this.editedAt,
-      messageType: messageType,
-      voiceDuration: voiceDuration,
-      deletedForSender: deletedForSender ?? this.deletedForSender,
-      deletedForReceiver: deletedForReceiver ?? this.deletedForReceiver,
-      deletedForEveryone: deletedForEveryone ?? this.deletedForEveryone,
-    );
-  }
-}
+// Message class moved to lib/features/chat/domain/models/message_model.dart
