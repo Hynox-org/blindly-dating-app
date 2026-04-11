@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/core/utils/nav_key.dart';
 import 'dart:convert';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import '../../chat/presentation/screens/chat_conversation_screen.dart';
+// import '../../profile/domain/models/profile_user_model.dart';
 
 class PushNotificationService {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -226,12 +228,102 @@ class PushNotificationService {
       }
     }
 
-    // 2. Handle routing navigate
+    // 2. Handle Chat Deep Link (Explicit match_id)
+    if (data.containsKey('match_id')) {
+      final matchId = data['match_id'] as String;
+      _handleChatNavigation(matchId);
+      return; // Stop here if handled as chat
+    }
+
+    // 3. Handle routing navigate (Legacy or Generic)
     if (data.containsKey('route')) {
       final route = data['route'];
-      if (context.mounted) {
-        Navigator.pushNamed(context, route);
+      final targetContext = navigatorKey.currentContext ?? context;
+      if (targetContext.mounted) {
+        Navigator.pushNamed(targetContext, route);
       }
+    }
+  }
+
+  /// Fetches necessary data and routes to the chat conversation screen
+  Future<void> _handleChatNavigation(String matchId) async {
+    final navState = navigatorKey.currentState;
+    if (navState == null) {
+      debugPrint('PushNotificationService ChatNavigation: Navigator state is null');
+      return;
+    }
+
+    try {
+      final myUserId = _supabase.auth.currentUser?.id;
+      if (myUserId == null) return;
+
+      // 1. Get my profile ID
+      final myProfileResponse = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', myUserId)
+          .single();
+      final myProfileId = myProfileResponse['id'] as String;
+
+      // 2. Get match details with profile data
+      // We perform a query similar to ChatScreen's conversationsProvider
+      final matchResponse = await _supabase
+          .from('matches')
+          .select('*, user_a:profiles!matches_user_a_id_fkey(*), user_b:profiles!matches_user_b_id_fkey(*)')
+          .eq('id', matchId)
+          .single();
+
+      final profileA = matchResponse['user_a'] as Map<String, dynamic>;
+      final profileB = matchResponse['user_b'] as Map<String, dynamic>;
+
+      final isUserA = matchResponse['user_a_id'] == myProfileId;
+      final otherProfile = isUserA ? profileB : profileA;
+      final otherProfileId = otherProfile['id'] as String;
+      final otherName = otherProfile['display_name'] ?? 'Blindly User';
+
+      // 3. Get other user's primary image from STORAGE (mirroring MatchRepository)
+      String otherImage = '';
+      final otherUserId = otherProfile['user_id'];
+
+      if (otherUserId != null) {
+        try {
+          final files = await _supabase.storage
+              .from('user_photos')
+              .list(path: otherUserId);
+
+          if (files.isNotEmpty) {
+            final firstFile = files.first;
+            otherImage = await _supabase.storage
+                .from('user_photos')
+                .createSignedUrl('$otherUserId/${firstFile.name}', 3600);
+          }
+        } catch (e) {
+          debugPrint('PushNotificationService Storage Error: $e');
+        }
+      }
+
+      if (otherImage.isEmpty) {
+        // Fallback to UI avatar
+        otherImage = "https://ui-avatars.com/api/?name=${Uri.encodeComponent(otherName)}"
+            "&size=128&background=4F46E5&color=fff";
+      }
+
+      // 4. Navigate
+      navState.push(
+        MaterialPageRoute(
+          builder: (_) => ChatConversationScreen(
+            matchId: matchId,
+            otherUserName: otherName,
+            otherUserImage: otherImage,
+            myProfileId: myProfileId,
+            otherProfileId: otherProfileId,
+            name: otherName,
+            imageUrl: otherImage,
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint('PushNotificationService ChatNavigation Error: $e');
     }
   }
 }

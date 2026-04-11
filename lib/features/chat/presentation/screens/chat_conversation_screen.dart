@@ -20,7 +20,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:uuid/uuid.dart';
-import 'package:encrypt/encrypt.dart' as encrypt;
+// import 'package:encrypt/encrypt.dart' as encrypt;
 
 class ChatConversationScreen extends ConsumerStatefulWidget {
   final String matchId;
@@ -311,7 +311,7 @@ class _ChatConversationScreenState
       setState(() {
         _messages.addAll(cachedMessages);
       });
-      _scrollToBottom();
+      _scrollToBottom(force: true);
     }
   }
 
@@ -379,7 +379,7 @@ class _ChatConversationScreenState
       final List<Map<String, dynamic>> cacheData = loadedMessages.map((m) => m.toMap()).toList();
       ChatCacheService().saveMessages(widget.matchId, cacheData);
 
-      _scrollToBottom();
+      _scrollToBottom(force: true);
     } catch (e) {
       debugPrint('❌ Error loading message history: $e');
     }
@@ -413,38 +413,45 @@ class _ChatConversationScreenState
 
   Future<void> _handleRealtimeMessage(Map<String, dynamic> raw) async {
     final data = Map<String, dynamic>.from(raw);
+    final messageId = data['id'].toString();
+    final index = _messages.indexWhere((m) => m.id == messageId);
+
     String decryptedContent = "⏳ Decrypting...";
 
-    try {
-      if (data['message_type'] == 'text' && data['iv'] != null && data['content'] != null) {
-        final isMe = data['sender_profile_id'] == _myProfileId;
-        final encryptedKey = isMe ? data['encrypted_key_sender'] : data['encrypted_key_receiver'];
+    // 🚀 OPTIMIZATION: If we already have the message decrypted (i.e. status update), preserve it
+    if (index != -1 && _messages[index].text != "⏳ Decrypting..." && _messages[index].text != "🔒 Encrypted message") {
+      decryptedContent = _messages[index].text;
+    } else {
+      try {
+        if (data['message_type'] == 'text' && data['iv'] != null && data['content'] != null) {
+          final isMe = data['sender_profile_id'] == _myProfileId;
+          final encryptedKey = isMe ? data['encrypted_key_sender'] : data['encrypted_key_receiver'];
 
-        if (encryptedKey != null) {
-          String? symmetricKey = ChatCacheService().getMatchKey(widget.matchId);
-          final result = await EncryptionService.decryptMessage(
-            cipherText: data['content'],
-            encryptedKey: symmetricKey ?? encryptedKey,
-            iv: data['iv'],
-            symmetricKeyBase64: symmetricKey,
-          );
-          decryptedContent = result.text;
+          if (encryptedKey != null) {
+            String? symmetricKey = ChatCacheService().getMatchKey(widget.matchId);
+            final result = await EncryptionService.decryptMessage(
+              cipherText: data['content'],
+              encryptedKey: symmetricKey ?? encryptedKey,
+              iv: data['iv'],
+              symmetricKeyBase64: symmetricKey,
+            );
+            decryptedContent = result.text;
 
-          if (symmetricKey != result.decryptedSymmetricKey && result.decryptedSymmetricKey != null) {
-            await ChatCacheService().saveMatchKey(widget.matchId, result.decryptedSymmetricKey!);
+            if (symmetricKey != result.decryptedSymmetricKey && result.decryptedSymmetricKey != null) {
+              await ChatCacheService().saveMatchKey(widget.matchId, result.decryptedSymmetricKey!);
+            }
           }
         }
+      } catch (e) {
+        decryptedContent = "🔒 Encrypted message";
+        debugPrint("❌ Realtime decrypt failed: $e");
       }
-    } catch (e) {
-      decryptedContent = "🔒 Encrypted message";
-      print("❌ Realtime decrypt failed: $e");
     }
 
     final msg = Message.fromMap(data, decryptedText: decryptedContent);
 
     if (mounted) {
       setState(() {
-        final index = _messages.indexWhere((m) => m.id == msg.id);
         if (index != -1) {
           _messages[index] = msg;
         } else {
@@ -454,7 +461,7 @@ class _ChatConversationScreenState
       _scrollToBottom();
       ChatCacheService().updateSingleMessage(widget.matchId, msg.toMap());
       
-      if (msg.senderProfileId != _myProfileId) {
+      if (msg.senderProfileId != _myProfileId && msg.readAt == null) {
         _markMessageAsDeliveredAndRead(msg.id);
       }
     }
@@ -472,50 +479,10 @@ class _ChatConversationScreenState
     }
   }
 
-  Future<void> _handleRealtimeUpdate(Map<String, dynamic> raw) async {
-    final data = Map<String, dynamic>.from(raw);
-    String decryptedContent = "⏳ Decrypting...";
-
-    try {
-      if (data['message_type'] == 'text' && data['iv'] != null && data['content'] != null) {
-        final isMe = data['sender_profile_id'] == _myProfileId;
-        final encryptedKey = isMe ? data['encrypted_key_sender'] : data['encrypted_key_receiver'];
-
-        if (encryptedKey != null) {
-          String? symmetricKey = ChatCacheService().getMatchKey(widget.matchId);
-          final result = await EncryptionService.decryptMessage(
-            cipherText: data['content'],
-            encryptedKey: symmetricKey ?? encryptedKey,
-            iv: data['iv'],
-            symmetricKeyBase64: symmetricKey,
-          );
-          decryptedContent = result.text;
-        }
-      }
-    } catch (e) {
-      decryptedContent = "🔒 Encrypted message";
-    }
-
-    final updated = Message.fromMap(data, decryptedText: decryptedContent);
-    final index = _messages.indexWhere((m) => m.id == updated.id);
-
-    if (index != -1 && mounted) {
-      setState(() {
-        _messages[index] = updated;
-      });
-      ChatCacheService().updateSingleMessage(widget.matchId, updated.toMap());
-    }
-  }
- // ==============================
-  // REALTIME
-  // ==============================
-
   void _listenRealtime() {
-    // Scoped channels for zero-latency reliability
+    // Single channel for all message-related updates to ensure order and reliability
     _channel = _supabase.channel('messages:${widget.matchId}');
-    _channelRead = _supabase.channel('reads:${widget.matchId}');
 
-    // Listen for new messages & content updates
     _channel!
         .onPostgresChanges(
           event: PostgresChangeEvent.insert,
@@ -540,48 +507,25 @@ class _ChatConversationScreenState
           callback: (payload) => _handleRealtimeMessage(payload.newRecord),
         )
         .subscribe((status, error) {
-          print("📡 Message channel status (${widget.matchId}): $status");
-          if (error != null) print("❌ Message channel error: $error");
-        });
-
-    // Listen for status changes (Read/Delivered) separately to avoid heavy decrypt on every ping
-    _channelRead!
-        .onPostgresChanges(
-          event: PostgresChangeEvent.update,
-          schema: 'public',
-          table: 'messages',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'match_id',
-            value: widget.matchId,
-          ),
-          callback: (payload) {
-            if (!mounted) return;
-            final updatedMap = payload.newRecord;
-            final messageId = updatedMap['id'].toString();
-            final index = _messages.indexWhere((m) => m.id == messageId);
-            
-            if (index != -1) {
-              setState(() {
-                // Preserve the text we already have decrypted
-                _messages[index] = Message.fromMap(updatedMap, decryptedText: _messages[index].text);
-              });
-            }
-          },
-        )
-        .subscribe((status, error) {
-           print("📡 Status channel status (${widget.matchId}): $status");
+          debugPrint("📡 Message channel status (${widget.matchId}): $status");
+          if (error != null) debugPrint("❌ Message channel error: $error");
         });
   }
 
-  void _scrollToBottom() {
-    Future.delayed(const Duration(milliseconds: 200), () {
+  void _scrollToBottom({bool force = false}) {
+    Future.delayed(const Duration(milliseconds: 300), () {
       if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+        final pos = _scrollController.position.pixels;
+        final max = _scrollController.position.maxScrollExtent;
+        final isNearBottom = pos > max - 200;
+
+        if (force || isNearBottom) {
+          _scrollController.animateTo(
+            max,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
       }
     });
   }
@@ -640,7 +584,7 @@ class _ChatConversationScreenState
       _controller.clear();
       _replyingTo = null;
     });
-    _scrollToBottom();
+    _scrollToBottom(force: true);
 
     try {
       final matchKey = ChatCacheService().getMatchKey(widget.matchId);
@@ -674,16 +618,26 @@ class _ChatConversationScreenState
           'message_type': 'text',
           'reply_to_id': optimisticMsg.replyToId,
         });
+
+        // 🚀 SUCCESS: Update local state to remove "isSending" (Clock) immediately
+        if (mounted) {
+          setState(() {
+            final idx = _messages.indexWhere((m) => m.id == messageId);
+            if (idx != -1) {
+              _messages[idx] = optimisticMsg.copyWith(isSending: false);
+            }
+          });
+        }
       }
     } catch (e) {
       debugPrint('❌ Error sending message: $e');
-      // If error, mark the optimistic message as failed or remove it
-      setState(() {
-        _messages.removeWhere((m) => m.id == messageId);
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to send message: $e"), backgroundColor: Colors.red),
-      );
+      // 🚀 FAILURE: Message remains with isSending=true (Clock) 
+      // or we could add an explicit error state here.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to send: $e"), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -1270,50 +1224,48 @@ class _ChatConversationScreenState
   //       content: Text(
   //         "${_selectedMessageIds.length} message(s) selected to forward",
   //       ),
-  //     ),
   //   );
 
   //   _clearSelection();
   // }
-
-  // ==============================
-  // MESSAGE STATUS BUILDER
-  // ==============================
 
   Widget _buildMessageStatus(Message message) {
     if (message.senderProfileId != _myProfileId) {
       return const SizedBox.shrink();
     }
 
+    // 1. Weak Network / Sending State -> Clock Symbol
     if (message.isSending) {
       return Padding(
         padding: const EdgeInsets.only(left: 4.0),
         child: Icon(
-          Icons.access_time, // Clock icon for "sending"
-          size: 10,
+          Icons.access_time,
+          size: 12,
           color: Colors.white.withOpacity(0.6),
         ),
       );
     }
 
+    // 2. Read by Receiver -> Double Blue Tick
     if (message.readAt != null) {
-      return Padding(
-        padding: const EdgeInsets.only(left: 4.0),
-        child: Text(
-          "Seen",
-          style: TextStyle(
-            fontSize: 10,
-            color: Colors.white.withOpacity(0.8),
-            fontWeight: FontWeight.w500,
-          ),
+      return const Padding(
+        padding: EdgeInsets.only(left: 4.0),
+        child: Icon(
+          Icons.done_all,
+          size: 14,
+          color: Colors.blueAccent,
         ),
       );
     }
 
-    return Icon(
-      Icons.done, // Single check for "sent"
-      size: 10,
-      color: Colors.white.withOpacity(0.6),
+    // 3. Saved in DB / Sent -> Single Grey Tick
+    return Padding(
+      padding: const EdgeInsets.only(left: 4.0),
+      child: Icon(
+        Icons.done,
+        size: 14,
+        color: Colors.white.withOpacity(0.6),
+      ),
     );
   }
 
