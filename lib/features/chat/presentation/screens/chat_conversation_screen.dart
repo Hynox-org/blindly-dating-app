@@ -464,6 +464,11 @@ class _ChatConversationScreenState
       if (msg.senderProfileId != _myProfileId && msg.readAt == null) {
         _markMessageAsDeliveredAndRead(msg.id);
       }
+      
+      // Force a UI refresh if it's a known message but something changed (like ticks)
+      if (index != -1 && mounted) {
+         setState(() {}); 
+      }
     }
   }
 
@@ -508,7 +513,12 @@ class _ChatConversationScreenState
         )
         .subscribe((status, error) {
           debugPrint("📡 Message channel status (${widget.matchId}): $status");
-          if (error != null) debugPrint("❌ Message channel error: $error");
+          if (error != null) {
+            debugPrint("❌ Message channel error: $error");
+          }
+          if (status == RealtimeSubscribeStatus.channelError) {
+             debugPrint("⚠️ Realtime Channel Error: MatchId might be invalid or permissions restricted.");
+          }
         });
   }
 

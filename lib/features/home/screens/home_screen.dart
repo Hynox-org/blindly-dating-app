@@ -127,8 +127,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Future<void> _initLocationAndFeed() async {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // ✅ 0. INIT PUSH NOTIFICATIONS
-      PushNotificationService().initPushNotifications(context);
+      // Push notifications are now initialized in main.dart
 
       // ✅ 1. CHECK SESSION FLAG
       // If we already updated location this session, skip the heavy lifting.
@@ -237,7 +236,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                     onPressed: () async {
                       Navigator.pop(context);
-                      final success = await PushNotificationService().clearOtherDevices(currentToken);
+                      final success = await PushNotificationService.instance.clearOtherDevices(currentToken);
                       if (success && mounted) {
                         showSuccessPopup(context, 'Signed out other devices! 🔒');
                       }

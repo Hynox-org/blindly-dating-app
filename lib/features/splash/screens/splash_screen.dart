@@ -9,6 +9,8 @@ import '../../auth/providers/auth_providers.dart';
 import '../../onboarding/data/repositories/onboarding_repository.dart';
 import '../../onboarding/presentation/screens/onboarding_shell.dart';
 
+import '../../notifications/services/push_notification_service.dart';
+
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -46,6 +48,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     // Wait for the entrance animation to finish, hold on screen for a moment, then navigate
     Future.delayed(const Duration(milliseconds: 3500), () {
       if (mounted && !_isNavigating) {
+        // ✅ CRITICAL: Check if a notification is handling the navigation redirect
+        if (PushNotificationService.instance.isHandlingRedirect) {
+          debugPrint('🌊 [SplashScreen] Redirect handling by Push Service. Skipping auto-nav.');
+          return;
+        }
+
         _isNavigating = true;
         _proceedToNextScreen();
       }

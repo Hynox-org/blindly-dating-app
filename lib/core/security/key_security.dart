@@ -1,7 +1,6 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:basic_utils/basic_utils.dart';
-import 'package:pointycastle/export.dart';
 
 class KeyService {
   static final _storage = const FlutterSecureStorage();

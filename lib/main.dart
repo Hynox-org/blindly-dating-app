@@ -63,9 +63,14 @@ void main() async {
   await Future.wait([
     Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
-    ).then((_) {
+    ).then((_) async {
       SecurityConfig.initializeAppCheck();
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+      
+      // 🔥 Capture intent before the rest of the app boots
+      await PushNotificationService.instance.captureLaunchNotification();
+      
+      PushNotificationService.instance.initPushNotifications();
     }),
     Supabase.initialize(
       url: trueSupabaseUrl,
