@@ -227,10 +227,56 @@ class PushNotificationService {
     }
 
     // 2. Handle routing navigate
+    if (data.containsKey('type') && data['type'] == 'chat') {
+      final matchId = data['match_id']?.toString();
+      final otherProfileId = data['other_profile_id']?.toString();
+      final otherName = data['other_user_name']?.toString() ?? 'Chat';
+      final otherImage = data['other_user_image']?.toString() ?? '';
+
+      if (matchId != null && otherProfileId != null) {
+        // We need myProfileId. For now, we fetch it or use a default if we can't get it easily.
+        // It's better to fetch it from the database to be sure.
+        try {
+          final userId = _supabase.auth.currentUser?.id;
+          if (userId != null) {
+            final profileRes = await _supabase
+                .from('profiles')
+                .select('id')
+                .eq('user_id', userId)
+                .single();
+            final myProfileId = profileRes['id'];
+
+            if (navigatorKey.currentState != null) {
+              // Import chat screen dynamically to avoid circular dependencies if possible, 
+              // or just use regular import if the project structure allows it.
+              // For now, I'll assume standard import is fine or I will add it.
+              
+              // Navigator logic
+              navigatorKey.currentState!.pushNamed(
+                '/chat_conversation', 
+                arguments: {
+                  'matchId': matchId,
+                  'otherUserName': otherName,
+                  'otherUserImage': otherImage,
+                  'myProfileId': myProfileId,
+                  'otherProfileId': otherProfileId,
+                  'name': otherName,
+                  'imageUrl': otherImage,
+                },
+              );
+            }
+          }
+        } catch (e) {
+          debugPrint('Error routing to chat from notification: $e');
+        }
+      }
+      return;
+    }
+
     if (data.containsKey('route')) {
       final route = data['route'];
-      if (context.mounted) {
-        Navigator.pushNamed(context, route);
+      if (navigatorKey.currentState != null) {
+        navigatorKey.currentState!.pushNamed(route);
       }
     }
   }

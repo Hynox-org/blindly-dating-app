@@ -17,6 +17,7 @@ import 'features/onboarding/screens/welcome_screen.dart';
 import 'features/onboarding/screens/location_access_screen.dart';
 import 'features/auth/screens/authentication_screen.dart';
 import 'features/home/screens/home_screen.dart';
+import 'features/chat/presentation/screens/chat_conversation_screen.dart';
 // Core
 import 'core/theme/app_theme.dart';
 import 'core/utils/logging_navigator_observer.dart';
@@ -131,6 +132,18 @@ class _MyAppState extends ConsumerState<MyApp> {
         '/welcome': (context) => const WelcomeScreen(),
         '/auth': (context) => const AuthenticationScreen(),
         '/home': (context) => const HomeScreen(),
+        '/chat_conversation': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+          return ChatConversationScreen(
+            matchId: args['matchId'],
+            otherUserName: args['otherUserName'],
+            otherUserImage: args['otherUserImage'],
+            myProfileId: args['myProfileId'],
+            otherProfileId: args['otherProfileId'],
+            name: args['name'],
+            imageUrl: args['imageUrl'],
+          );
+        },
       },
     );
   }

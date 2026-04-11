@@ -89,7 +89,8 @@ class _ChatConversationScreenState
         _loadCachedHistory(); // Load from cache instantly
         await _loadHistory(); // Then fetch fresh from DB
         _listenRealtime();
-        await diagnosePrivateKey(); // ADD THIS
+        setState(() => _isKeyReady = true); // ✅ MARK AS READY
+        await diagnosePrivateKey(); 
       }
     });
 
@@ -380,40 +381,68 @@ class _ChatConversationScreenState
               (msg['encrypted_key_sender'] != null ||
                   msg['encrypted_key_receiver'] != null)) {
 
-            // ✅ Identify ownership
-            final isMe = msg['sender_profile_id'] == _myProfileId;
+          // Select the correct encrypted key for this user
+          String? encryptedKey;
+          bool isMe = false;
 
-            // ✅ Pick correct key
-            final encryptedKey = isMe
+          try {
+            // ✅ Robust comparison (convert both to string)
+            final senderId = msg['sender_profile_id']?.toString();
+            final currentId = _myProfileId.toString();
+            
+            isMe = senderId == currentId;
+            
+            print("👤 ID CHECK: sender=$senderId, me=$currentId, isMe=$isMe");
+
+            encryptedKey = isMe
                 ? msg['encrypted_key_sender']
                 : msg['encrypted_key_receiver'];
+          } catch (e) {
+            print("❌ ID Selection error: $e");
+          }
 
             print(
               "🔍 Decrypting message ${msg['id']} (isMe=$isMe)",
             );
 
-            // Attempt to use cached Match Key for speed
+            // Attempt Decryption with Self-Healing Logic
+            DecryptionResult? decryptionResult;
             String? symmetricKey = ChatCacheService().getMatchKey(widget.matchId);
 
-            final decryptionResult = await EncryptionService.decryptMessage(
-              cipherText: msg['content'],
-              encryptedKey: symmetricKey ?? encryptedKey,
-              iv: msg['iv'],
-              symmetricKeyBase64: symmetricKey,
-            );
+            try {
+              decryptionResult = await EncryptionService.decryptMessage(
+                cipherText: msg['content'],
+                encryptedKey: symmetricKey ?? encryptedKey ?? "",
+                iv: msg['iv'],
+                symmetricKeyBase64: symmetricKey,
+              );
+            } catch (e) {
+              print("⚠️ Cached key failed for message ${msg['id']}, retrying with RSA slow path...");
+              // 🔄 SELF-HEALING: Clear bad cache and retry with RSA
+              if (symmetricKey != null) {
+                await ChatCacheService().saveMatchKey(widget.matchId, null as dynamic); // clear cache
+                decryptionResult = await EncryptionService.decryptMessage(
+                  cipherText: msg['content'],
+                  encryptedKey: encryptedKey ?? "",
+                  iv: msg['iv'],
+                  symmetricKeyBase64: null,
+                );
+              } else {
+                rethrow; // No cache involved, or second failure
+              }
+            }
 
             content = decryptionResult.text;
 
-            // If we just decrypted with a new key, save it to cache
-            if (symmetricKey == null && decryptionResult.decryptedSymmetricKey != null) {
+            // If we just decrypted with a new key (or after healing), save it to cache
+            if (decryptionResult.decryptedSymmetricKey != null) {
               await ChatCacheService().saveMatchKey(widget.matchId, decryptionResult.decryptedSymmetricKey!);
             }
-
-            print("✅ Decrypted: $content");
-          }
+            print("✅ Decrypted ${msg['id']}: $content");
+                    }
         } catch (e) {
           content = "🔒 Encrypted message";
-          print("❌ Decrypt failed for message ${msg['id']}: $e");
+          print("❌ Final decrypt fail for message ${msg['id']}: $e");
         }
       }
 
@@ -479,14 +508,20 @@ class _ChatConversationScreenState
   final data = Map<String, dynamic>.from(raw);
   print("📩 Realtime message data: $data");
 
-  String content = "⏳ Decrypting...";
+  String content = ""; 
 
   try {
     if (data['message_type'] == 'text' &&
         data['iv'] != null &&
         data['content'] != null) {
 
-      final isMe = data['sender_profile_id'] == _myProfileId;
+      // ✅ Robust comparison (convert both to string)
+      final senderId = data['sender_profile_id']?.toString();
+      final currentId = _myProfileId.toString();
+
+      final isMe = senderId == currentId;
+
+      print("📩 Realtime ID CHECK: sender=$senderId, me=$currentId, isMe=$isMe");
 
       // ✅ Support BOTH new + old schema
       final encryptedKey = data['encrypted_key_sender'] != null
@@ -498,25 +533,40 @@ class _ChatConversationScreenState
       if (encryptedKey != null) {
         print("🔍 Realtime decrypting message ${data['id']} (isMe=$isMe)...");
 
-        // Attempt to use cached Match Key for speed
+        // Attempt Decryption with Self-Healing Logic
+        DecryptionResult? result;
         String? symmetricKey = ChatCacheService().getMatchKey(widget.matchId);
 
-        final result = await EncryptionService.decryptMessage(
-          cipherText: data['content'],
-          encryptedKey: symmetricKey ?? encryptedKey,
-          iv: data['iv'],
-          symmetricKeyBase64: symmetricKey,
-        );
+        try {
+          result = await EncryptionService.decryptMessage(
+            cipherText: data['content'],
+            encryptedKey: (symmetricKey ?? encryptedKey) ?? "",
+            iv: data['iv'],
+            symmetricKeyBase64: symmetricKey,
+          );
+        } catch (e) {
+          print("⚠️ Realtime cached key failed for ${data['id']}, retrying with RSA...");
+          if (symmetricKey != null) {
+            await ChatCacheService().saveMatchKey(widget.matchId, null as dynamic);
+            result = await EncryptionService.decryptMessage(
+              cipherText: data['content'],
+              encryptedKey: encryptedKey ?? "",
+              iv: data['iv'],
+              symmetricKeyBase64: null,
+            );
+          } else {
+            rethrow;
+          }
+        }
         
         content = result.text;
 
-        // If we just decrypted with a new key, save it to cache
-        if (symmetricKey == null && result.decryptedSymmetricKey != null) {
+        // If we just decrypted with a new key (or after healing), save it to cache
+        if (result.decryptedSymmetricKey != null) {
           await ChatCacheService().saveMatchKey(widget.matchId, result.decryptedSymmetricKey!);
         }
-
         print("✅ Decrypted content: $content");
-      }
+            }
     }
   } catch (e) {
     content = "🔒 Encrypted message";
@@ -572,14 +622,20 @@ Future<void> _handleRealtimeUpdate(Map<String, dynamic> raw) async {
 
   final data = Map<String, dynamic>.from(raw);
 
-  String content = "⏳ Decrypting...";
+  String content = ""; 
 
   try {
     if (data['message_type'] == 'text' &&
         data['iv'] != null &&
         data['content'] != null) {
 
-      final isMe = data['sender_profile_id'] == _myProfileId;
+      // ✅ Robust comparison (convert both to string)
+      final senderId = data['sender_profile_id']?.toString();
+      final currentId = _myProfileId.toString();
+
+      final isMe = senderId == currentId;
+
+      print("🔄 Update ID CHECK: sender=$senderId, me=$currentId, isMe=$isMe");
 
       // ✅ Support BOTH new + old schema
       final encryptedKey = data['encrypted_key_sender'] != null
@@ -591,25 +647,40 @@ Future<void> _handleRealtimeUpdate(Map<String, dynamic> raw) async {
       if (encryptedKey != null) {
         print("🔄 Updating message ${data['id']} (isMe=$isMe)...");
 
-        // Attempt to use cached Match Key for speed
+        // Attempt Decryption with Self-Healing Logic
+        DecryptionResult? result;
         String? symmetricKey = ChatCacheService().getMatchKey(widget.matchId);
 
-        final result = await EncryptionService.decryptMessage(
-          cipherText: data['content'],
-          encryptedKey: symmetricKey ?? encryptedKey,
-          iv: data['iv'],
-          symmetricKeyBase64: symmetricKey,
-        );
+        try {
+          result = await EncryptionService.decryptMessage(
+            cipherText: data['content'],
+            encryptedKey: (symmetricKey ?? encryptedKey) ?? "",
+            iv: data['iv'],
+            symmetricKeyBase64: symmetricKey,
+          );
+        } catch (e) {
+          print("⚠️ Update cached key failed for ${data['id']}, retrying with RSA...");
+          if (symmetricKey != null) {
+            await ChatCacheService().saveMatchKey(widget.matchId, null as dynamic);
+            result = await EncryptionService.decryptMessage(
+              cipherText: data['content'],
+              encryptedKey: encryptedKey ?? "",
+              iv: data['iv'],
+              symmetricKeyBase64: null,
+            );
+          } else {
+            rethrow;
+          }
+        }
         
         content = result.text;
 
-        // If we just decrypted with a new key, save it to cache
-        if (symmetricKey == null && result.decryptedSymmetricKey != null) {
+        // If we just decrypted with a new key (or after healing), save it to cache
+        if (result.decryptedSymmetricKey != null) {
           await ChatCacheService().saveMatchKey(widget.matchId, result.decryptedSymmetricKey!);
         }
-
         print("✅ Updated decrypted content: $content");
-      }
+            }
     }
   } catch (e) {
     content = "🔒 Encrypted message";
@@ -2853,9 +2924,9 @@ class Message {
   factory Message.fromMap(Map<String, dynamic> map) {
     return Message(
       id: map['id'].toString(),
-      matchId: map['match_id'],
-      senderProfileId: map['sender_profile_id'],
-      receiverProfileId: map['receiver_profile_id'], // ✅ REQUIRED
+      matchId: (map['match_id'] ?? '').toString(),
+      senderProfileId: (map['sender_profile_id'] ?? '').toString(),
+      receiverProfileId: (map['receiver_profile_id'] ?? '').toString(),
       text: map['content'] ?? '',
       createdAt: DateTime.parse(map['created_at']).toLocal(),
       replyToId: map['reply_to_id'],

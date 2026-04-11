@@ -152,8 +152,13 @@ class EncryptionService {
       } else {
         // 🔐 SLOW PATH: Decrypt key using RSA
         final privateKeyPem = await _secureStorage.read(key: 'private_key');
-        if (privateKeyPem == null) throw Exception("Private key not found");
-        if (!_isValidBase64(encryptedKey)) throw Exception("Invalid Key Base64");
+        if (privateKeyPem == null || privateKeyPem.trim().isEmpty) {
+          throw Exception("Private key not found or empty in secure storage");
+        }
+        
+        if (encryptedKey.trim().isEmpty || !_isValidBase64(encryptedKey)) {
+          throw Exception("Invalid or empty Encrypted Key Base64");
+        }
 
         final parser = RSAKeyParser();
         final privateKey = parser.parse(privateKeyPem) as RSAPrivateKey;
@@ -172,7 +177,7 @@ class EncryptionService {
             rsaDecrypter.decryptBytes(Encrypted.fromBase64(encryptedKey)),
           );
         } catch (e) {
-          print('❌ OAEP failed, fallback PKCS1');
+          print('❌ RSA-OAEP Decryption failed: $e. Attempting PKCS1 fallback...');
           final fallbackCipher = pc.AsymmetricBlockCipher('RSA/PKCS1-v1_5')
             ..init(false, pc.PrivateKeyParameter<pc.RSAPrivateKey>(privateKey));
           aesKeyBytes = Uint8List.fromList(
