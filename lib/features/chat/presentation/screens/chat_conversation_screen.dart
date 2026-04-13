@@ -18,6 +18,8 @@ import '../../../../core/security/key_security.dart';
 import '../../../../core/utils/app_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:blindly_dating_app/features/chat/presentation/widgets/media_picker.dart';
+import 'dart:convert';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:uuid/uuid.dart';
 // import 'package:encrypt/encrypt.dart' as encrypt;
@@ -335,33 +337,13 @@ class _ChatConversationScreenState
 
       for (final raw in data) {
         final msgMap = Map<String, dynamic>.from(raw);
-        String decryptedContent = msgMap['content'] ?? '';
-
-        if (msgMap['message_type'] == 'text' && msgMap['iv'] != null) {
-          try {
-            final isMe = msgMap['sender_profile_id'] == _myProfileId;
-            final encryptedKey = isMe
-                ? msgMap['encrypted_key_sender']
-                : msgMap['encrypted_key_receiver'];
-
-            if (encryptedKey != null) {
-              final result = await EncryptionService.decryptMessage(
-                cipherText: msgMap['content'],
-                encryptedKey: symmetricKey ?? encryptedKey,
-                iv: msgMap['iv'],
-                symmetricKeyBase64: symmetricKey,
-              );
-              decryptedContent = result.text;
-              
-              if (symmetricKey != result.decryptedSymmetricKey && result.decryptedSymmetricKey != null) {
-                symmetricKey = result.decryptedSymmetricKey;
-                await ChatCacheService().saveMatchKey(widget.matchId, symmetricKey!);
-              }
-            }
-          } catch (e) {
-            decryptedContent = "🔒 Encrypted message";
-            print("❌ Decrypt failed for ${msgMap['id']}: $e");
-          }
+        String decryptedContent = await _decryptMessageItem(msgMap, symmetricKey: symmetricKey);
+        
+        // Update symmetric key cache if it changed during decryption
+        if (symmetricKey == null && msgMap['message_type'] != 'system') {
+           // We might want to re-fetch/update symmetricKey here if _decryptMessageItem updated it, 
+           // but for simplicity, we rely on ChatCacheService being updated within _decryptMessageItem.
+           symmetricKey = ChatCacheService().getMatchKey(widget.matchId);
         }
 
         loadedMessages.add(Message.fromMap(msgMap, decryptedText: decryptedContent));
@@ -382,6 +364,44 @@ class _ChatConversationScreenState
       _scrollToBottom(force: true);
     } catch (e) {
       debugPrint('❌ Error loading message history: $e');
+    }
+  }
+
+  Future<String> _decryptMessageItem(Map<String, dynamic> msgMap, {String? symmetricKey}) async {
+    final type = msgMap['message_type'];
+    final content = msgMap['content'];
+    final iv = msgMap['iv'];
+
+    if (type == 'system' || iv == null || content == null) {
+      return content ?? '';
+    }
+
+    try {
+      final isMe = msgMap['sender_profile_id'] == _myProfileId;
+      final encryptedKey = isMe
+          ? msgMap['encrypted_key_sender']
+          : msgMap['encrypted_key_receiver'];
+
+      if (encryptedKey != null) {
+        final cacheKey = symmetricKey ?? ChatCacheService().getMatchKey(widget.matchId);
+        
+        final result = await EncryptionService.decryptMessage(
+          cipherText: content,
+          encryptedKey: cacheKey ?? encryptedKey,
+          iv: iv,
+          symmetricKeyBase64: cacheKey,
+        );
+
+        if (cacheKey != result.decryptedSymmetricKey && result.decryptedSymmetricKey != null) {
+          await ChatCacheService().saveMatchKey(widget.matchId, result.decryptedSymmetricKey!);
+        }
+
+        return result.text;
+      }
+      return content;
+    } catch (e) {
+      debugPrint("❌ Decrypt failed for ${msgMap['id']}: $e");
+      return "🔒 Encrypted message";
     }
   }
 
@@ -422,30 +442,7 @@ class _ChatConversationScreenState
     if (index != -1 && _messages[index].text != "⏳ Decrypting..." && _messages[index].text != "🔒 Encrypted message") {
       decryptedContent = _messages[index].text;
     } else {
-      try {
-        if (data['message_type'] == 'text' && data['iv'] != null && data['content'] != null) {
-          final isMe = data['sender_profile_id'] == _myProfileId;
-          final encryptedKey = isMe ? data['encrypted_key_sender'] : data['encrypted_key_receiver'];
-
-          if (encryptedKey != null) {
-            String? symmetricKey = ChatCacheService().getMatchKey(widget.matchId);
-            final result = await EncryptionService.decryptMessage(
-              cipherText: data['content'],
-              encryptedKey: symmetricKey ?? encryptedKey,
-              iv: data['iv'],
-              symmetricKeyBase64: symmetricKey,
-            );
-            decryptedContent = result.text;
-
-            if (symmetricKey != result.decryptedSymmetricKey && result.decryptedSymmetricKey != null) {
-              await ChatCacheService().saveMatchKey(widget.matchId, result.decryptedSymmetricKey!);
-            }
-          }
-        }
-      } catch (e) {
-        decryptedContent = "🔒 Encrypted message";
-        debugPrint("❌ Realtime decrypt failed: $e");
-      }
+      decryptedContent = await _decryptMessageItem(data);
     }
 
     final msg = Message.fromMap(data, decryptedText: decryptedContent);
@@ -575,7 +572,7 @@ class _ChatConversationScreenState
       return;
     }
 
-    // 🚀 OPTIMISTIC UPDATE: Add message to UI immediately
+    // 🚀 OPTIMISTIC UPDATE
     final String messageId = _uuid.v4();
     final optimisticMsg = Message(
       id: messageId,
@@ -605,7 +602,6 @@ class _ChatConversationScreenState
       );
 
       if (_isEditing) {
-        // Handle editing (less frequent path)
         await _supabase.from('messages').update({
           'content': encrypted.cipherText,
           'encrypted_key_sender': encrypted.encryptedKeyForSender,
@@ -615,7 +611,6 @@ class _ChatConversationScreenState
         }).eq('id', _editingMessageId!);
         setState(() => _editingMessageId = null);
       } else {
-        // Standard send with pre-generated UUID
         await _supabase.from('messages').insert({
           'id': messageId,
           'match_id': widget.matchId,
@@ -628,24 +623,89 @@ class _ChatConversationScreenState
           'message_type': 'text',
           'reply_to_id': optimisticMsg.replyToId,
         });
-
-        // 🚀 SUCCESS: Update local state to remove "isSending" (Clock) immediately
         if (mounted) {
           setState(() {
             final idx = _messages.indexWhere((m) => m.id == messageId);
-            if (idx != -1) {
-              _messages[idx] = optimisticMsg.copyWith(isSending: false);
-            }
+            if (idx != -1) _messages[idx] = optimisticMsg.copyWith(isSending: false);
           });
         }
       }
     } catch (e) {
       debugPrint('❌ Error sending message: $e');
-      // 🚀 FAILURE: Message remains with isSending=true (Clock) 
-      // or we could add an explicit error state here.
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Failed to send: $e"), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _sendMediaMessage(String url, String previewUrl, int width, int height, String type) async {
+    if (!_isKeyReady) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Encryption key not loaded. Please wait.")));
+      return;
+    }
+
+    // Prepare JSON metadata for media
+    final mediaData = jsonEncode({
+      'url': url,
+      'previewUrl': previewUrl,
+      'width': width,
+      'height': height,
+      'type': type,
+    });
+
+    final String messageId = _uuid.v4();
+    final optimisticMsg = Message(
+      id: messageId,
+      matchId: widget.matchId,
+      senderProfileId: _myProfileId,
+      receiverProfileId: widget.otherProfileId,
+      text: mediaData, 
+      createdAt: DateTime.now(),
+      isSending: true,
+      messageType: type, // 'gif' or 'sticker'
+      replyToId: _replyingTo?.id,
+    );
+
+    setState(() {
+      _messages.add(optimisticMsg);
+      _replyingTo = null;
+    });
+    _scrollToBottom(force: true);
+
+    try {
+      final matchKey = ChatCacheService().getMatchKey(widget.matchId);
+      final encrypted = await EncryptionService.encryptMessage(
+        message: mediaData,
+        receiverPublicKeyPem: receiverPublicKeyPem!,
+        symmetricKeyBase64: matchKey,
+      );
+
+      await _supabase.from('messages').insert({
+        'id': messageId,
+        'match_id': widget.matchId,
+        'sender_profile_id': _myProfileId,
+        'receiver_profile_id': widget.otherProfileId,
+        'content': encrypted.cipherText,
+        'encrypted_key_sender': encrypted.encryptedKeyForSender,
+        'encrypted_key_receiver': encrypted.encryptedKeyForReceiver,
+        'iv': encrypted.iv,
+        'message_type': type,
+        'reply_to_id': optimisticMsg.replyToId,
+      });
+
+      if (mounted) {
+        setState(() {
+          final idx = _messages.indexWhere((m) => m.id == messageId);
+          if (idx != -1) _messages[idx] = optimisticMsg.copyWith(isSending: false);
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ Error sending media message: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to send $type: $e"), backgroundColor: Colors.red),
         );
       }
     }
@@ -1871,8 +1931,8 @@ class _ChatConversationScreenState
               if (_controller.text.trim().isEmpty) ...[
                 GestureDetector(
                   onTap: () {
-                    // Handle sticker picker
-                    _showStickerPicker();
+                    // Handle media picker (GIFs and Stickers)
+                    _showMediaPicker();
                   },
                   child: Icon(
                     Icons.tag_faces, // Sticker icon
@@ -2106,11 +2166,18 @@ class _ChatConversationScreenState
   }
 
   // Placeholder methods for sticker and attachment
-  void _showStickerPicker() {
-    // TODO: Implement sticker picker
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Sticker picker coming soon')));
+  void _showMediaPicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true, // Crucial for keyboard resizing
+      backgroundColor: Colors.transparent,
+      builder: (context) => MediaPicker(
+        onSelect: (url, previewUrl, width, height, type) {
+          Navigator.pop(context);
+          _sendMediaMessage(url, previewUrl, width, height, type);
+        },
+      ),
+    );
   }
 
   void _pickAttachment() {
@@ -2354,11 +2421,15 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
                 children: [
                   if (widget.replyMessage != null) _replyPreview(),
 
-                  // Handle all message types: voice, image, or text
+                  // Handle all message types
                   if (widget.message.messageType == 'voice')
                     _buildVoiceMessage(textColor)
                   else if (widget.message.messageType == 'image')
                     _buildImageMessage(textColor)
+                  else if (widget.message.messageType == 'gif')
+                    _buildGifMessage(textColor)
+                  else if (widget.message.messageType == 'sticker')
+                    _buildStickerMessage(textColor)
                   else
                     _buildTextMessage(textColor),
                 ],
@@ -2587,8 +2658,158 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
     );
   }
 
+  Widget _buildGifMessage(Color textColor) {
+    Map<String, dynamic> data = {};
+    try {
+      data = jsonDecode(widget.message.text);
+    } catch (e) {
+      return Text('Error loading GIF', style: TextStyle(color: textColor));
+    }
+
+    final previewUrl = data['previewUrl'];
+    final url = data['url'];
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              _isGifPlaying = !_isGifPlaying;
+            });
+          },
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: CachedNetworkImage(
+                  imageUrl: _isGifPlaying ? url : previewUrl,
+                  placeholder: (context, url) => Container(
+                    width: 200,
+                    height: 150,
+                    color: textColor.withOpacity(0.1),
+                    child: const Center(child: CircularProgressIndicator()),
+                  ),
+                ),
+              ),
+              if (!_isGifPlaying)
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black45,
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: const Icon(Icons.play_arrow, color: Colors.white, size: 30),
+                ),
+              Positioned(
+                bottom: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text('GIF', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              widget.formatTime(widget.message.createdAt),
+              style: TextStyle(fontSize: 10, color: textColor.withOpacity(.7)),
+            ),
+            const SizedBox(width: 4),
+            widget.buildStatus(widget.message),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStickerMessage(Color textColor) {
+    Map<String, dynamic> data = {};
+    try {
+      data = jsonDecode(widget.message.text);
+    } catch (e) {
+      return Text('Error loading Sticker', style: TextStyle(color: textColor));
+    }
+
+    final url = data['url'];
+    
+    // Fallback logic for stickers (same set as in picker)
+    final List<String> fallbackUrls = [
+      'https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Smilies/Beaming%20Face%20with%20Smiling%20Eyes.png',
+      'https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Smilies/Heart%20Eyes.png',
+      'https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Hand%20gestures/High%20Five.png',
+      'https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Activities/Party%20Popper.png',
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CachedNetworkImage(
+          imageUrl: url,
+          width: 120,
+          height: 120,
+          fit: BoxFit.contain,
+          placeholder: (context, url) => Container(
+            width: 120,
+            height: 120,
+            color: textColor.withOpacity(0.05),
+            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          ),
+          errorWidget: (context, url, error) {
+            // Check if we can find a matching index from the URL or just use a default
+            int fallbackIndex = 0;
+            if (url.contains('sticker_')) {
+              try {
+                final parts = url.split('sticker_');
+                final last = parts.last.split('.').first;
+                fallbackIndex = (int.parse(last) - 1).clamp(0, fallbackUrls.length - 1);
+              } catch (_) {}
+            }
+            return CachedNetworkImage(
+              imageUrl: fallbackUrls[fallbackIndex],
+              width: 120,
+              height: 120,
+              fit: BoxFit.contain,
+            );
+          },
+        ),
+        const SizedBox(height: 4),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              widget.formatTime(widget.message.createdAt),
+              style: TextStyle(fontSize: 10, color: textColor.withOpacity(.7)),
+            ),
+            const SizedBox(width: 4),
+            widget.buildStatus(widget.message),
+          ],
+        ),
+      ],
+    );
+  }
+
+  bool _isGifPlaying = false;
+
   Widget _replyPreview() {
     final isVoice = widget.replyMessage?.messageType == 'voice';
+    final isGif = widget.replyMessage?.messageType == 'gif';
+    final isSticker = widget.replyMessage?.messageType == 'sticker';
+
+    String previewText = widget.replyMessage?.text ?? '';
+    if (isGif) previewText = 'GIF';
+    if (isSticker) previewText = 'Sticker';
+    if (isVoice) previewText = 'Voice message';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
@@ -2609,9 +2830,7 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  isVoice
-                      ? '🎤 Voice message'
-                      : widget.replyMessage?.text ?? '',
+                  previewText,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(

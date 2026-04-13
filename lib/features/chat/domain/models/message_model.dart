@@ -50,6 +50,7 @@ class Message {
   });
 
   factory Message.fromMap(Map<String, dynamic> map, {String? decryptedText}) {
+    // If messageType is gif or sticker, the content (decrypted) is a JSON string
     return Message(
       id: map['id'].toString(),
       matchId: map['match_id'],
@@ -77,7 +78,7 @@ class Message {
       deletedForSender: map['deleted_for_sender'] ?? false,
       deletedForReceiver: map['deleted_for_receiver'] ?? false,
       deletedForEveryone: map['deleted_for_everyone'] ?? false,
-      isSending: false, // Messages from DB are never optimistic
+      isSending: false,
     );
   }
 
