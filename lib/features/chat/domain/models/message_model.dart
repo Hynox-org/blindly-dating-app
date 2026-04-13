@@ -23,6 +23,7 @@ class Message {
   final bool deletedForSender;
   final bool deletedForReceiver;
   final bool deletedForEveryone;
+  final bool isEncrypted;
   final bool isSending; // Added for optimistic updates
 
   const Message({
@@ -46,6 +47,7 @@ class Message {
     this.deletedForSender = false,
     this.deletedForReceiver = false,
     this.deletedForEveryone = false,
+    this.isEncrypted = false,
     this.isSending = false,
   });
 
@@ -78,6 +80,7 @@ class Message {
       deletedForSender: map['deleted_for_sender'] ?? false,
       deletedForReceiver: map['deleted_for_receiver'] ?? false,
       deletedForEveryone: map['deleted_for_everyone'] ?? false,
+      isEncrypted: map['is_encrypted'] ?? false,
       isSending: false,
     );
   }
@@ -103,6 +106,7 @@ class Message {
       'deleted_for_sender': deletedForSender,
       'deleted_for_receiver': deletedForReceiver,
       'deleted_for_everyone': deletedForEveryone,
+      'is_encrypted': isEncrypted,
     };
   }
 
@@ -113,9 +117,12 @@ class Message {
     DateTime? editedAt,
     DateTime? deliveredAt,
     DateTime? readAt,
+    String? messageType,
+    int? voiceDuration,
     bool? deletedForSender,
     bool? deletedForReceiver,
     bool? deletedForEveryone,
+    bool? isEncrypted,
     bool? isSending,
   }) {
     return Message(
@@ -131,14 +138,15 @@ class Message {
       deliveredAt: deliveredAt ?? this.deliveredAt,
       readAt: readAt ?? this.readAt,
       editedAt: editedAt ?? this.editedAt,
-      messageType: messageType,
-      voiceDuration: voiceDuration,
+      messageType: messageType ?? this.messageType,
+      voiceDuration: voiceDuration ?? this.voiceDuration,
       iv: iv,
       encryptedKeySender: encryptedKeySender,
       encryptedKeyReceiver: encryptedKeyReceiver,
       deletedForSender: deletedForSender ?? this.deletedForSender,
       deletedForReceiver: deletedForReceiver ?? this.deletedForReceiver,
       deletedForEveryone: deletedForEveryone ?? this.deletedForEveryone,
+      isEncrypted: isEncrypted ?? this.isEncrypted,
       isSending: isSending ?? this.isSending,
     );
   }

@@ -81,6 +81,21 @@ class ChatCacheService {
     }
   }
 
+  /// Deletes a single message from the cache.
+  Future<void> deleteSingleMessage(String matchId, String messageId) async {
+    try {
+      final messages = getMessages(matchId);
+      final index = messages.indexWhere((m) => m['id'] == messageId);
+      
+      if (index != -1) {
+        messages.removeAt(index);
+        await saveMessages(matchId, messages);
+      }
+    } catch (e) {
+      debugPrint('Error deleting single cached message: $e');
+    }
+  }
+
   /// Clears cache for a specific match
   Future<void> clearCache(String matchId) async {
     await _box.delete(matchId);

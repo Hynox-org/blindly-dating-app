@@ -573,25 +573,39 @@ class _ChatConversationScreenState
     }
 
     // 🚀 OPTIMISTIC UPDATE
-    final String messageId = _uuid.v4();
-    final optimisticMsg = Message(
-      id: messageId,
-      matchId: widget.matchId,
-      senderProfileId: _myProfileId,
-      receiverProfileId: widget.otherProfileId,
-      text: trimmedText,
-      createdAt: DateTime.now(),
-      isSending: true,
-      messageType: 'text',
-      replyToId: _replyingTo?.id,
-    );
+    Message? optimisticMsg;
+    if (_isEditing) {
+      setState(() {
+        final idx = _messages.indexWhere((m) => m.id == _editingMessageId);
+        if (idx != -1) {
+          _messages[idx] = _messages[idx].copyWith(
+            text: trimmedText,
+            isSending: true,
+          );
+        }
+        _controller.clear();
+      });
+    } else {
+      final String messageId = _uuid.v4();
+      optimisticMsg = Message(
+        id: messageId,
+        matchId: widget.matchId,
+        senderProfileId: _myProfileId,
+        receiverProfileId: widget.otherProfileId,
+        text: trimmedText,
+        createdAt: DateTime.now(),
+        isSending: true,
+        messageType: 'text',
+        replyToId: _replyingTo?.id,
+      );
 
-    setState(() {
-      _messages.add(optimisticMsg);
-      _controller.clear();
-      _replyingTo = null;
-    });
-    _scrollToBottom(force: true);
+      setState(() {
+        _messages.add(optimisticMsg!);
+        _controller.clear();
+        _replyingTo = null;
+      });
+      _scrollToBottom(force: true);
+    }
 
     try {
       final matchKey = ChatCacheService().getMatchKey(widget.matchId);
@@ -602,15 +616,23 @@ class _ChatConversationScreenState
       );
 
       if (_isEditing) {
+        final String editId = _editingMessageId!;
         await _supabase.from('messages').update({
           'content': encrypted.cipherText,
           'encrypted_key_sender': encrypted.encryptedKeyForSender,
           'encrypted_key_receiver': encrypted.encryptedKeyForReceiver,
           'iv': encrypted.iv,
+          'is_encrypted': true,
           'edited_at': DateTime.now().toIso8601String(),
-        }).eq('id', _editingMessageId!);
+        }).eq('id', editId);
+        
         setState(() => _editingMessageId = null);
+        
+        // Update local state and cache
+        final updatedMsg = _messages.firstWhere((m) => m.id == editId);
+        ChatCacheService().updateSingleMessage(widget.matchId, updatedMsg.copyWith(isSending: false).toMap());
       } else {
+        final String messageId = _messages.last.id; 
         await _supabase.from('messages').insert({
           'id': messageId,
           'match_id': widget.matchId,
@@ -621,12 +643,16 @@ class _ChatConversationScreenState
           'encrypted_key_receiver': encrypted.encryptedKeyForReceiver,
           'iv': encrypted.iv,
           'message_type': 'text',
-          'reply_to_id': optimisticMsg.replyToId,
+          'is_encrypted': true,
+          'reply_to_id': optimisticMsg?.replyToId,
         });
+        
         if (mounted) {
           setState(() {
             final idx = _messages.indexWhere((m) => m.id == messageId);
-            if (idx != -1) _messages[idx] = optimisticMsg.copyWith(isSending: false);
+            if (idx != -1) {
+              _messages[idx] = _messages[idx].copyWith(isSending: false);
+            }
           });
         }
       }
@@ -692,6 +718,7 @@ class _ChatConversationScreenState
         'encrypted_key_receiver': encrypted.encryptedKeyForReceiver,
         'iv': encrypted.iv,
         'message_type': type,
+        'is_encrypted': true,
         'reply_to_id': optimisticMsg.replyToId,
       });
 
@@ -708,6 +735,52 @@ class _ChatConversationScreenState
           SnackBar(content: Text("Failed to send $type: $e"), backgroundColor: Colors.red),
         );
       }
+    }
+  }
+
+  // ==============================
+  // DELETE LOGIC
+  // ==============================
+
+  Future<void> _deleteMessageForMe(Message message) async {
+    final isMe = message.senderProfileId == _myProfileId;
+    final column = isMe ? 'deleted_for_sender' : 'deleted_for_receiver';
+
+    try {
+      await _supabase.from('messages').update({
+        column: true,
+      }).eq('id', message.id);
+
+      setState(() {
+        _messages.removeWhere((m) => m.id == message.id);
+      });
+      
+      // Update cache
+      ChatCacheService().deleteSingleMessage(widget.matchId, message.id);
+    } catch (e) {
+      debugPrint('❌ Error deleting message for me: $e');
+    }
+  }
+
+  Future<void> _deleteMessageForEveryone(Message message) async {
+    if (message.senderProfileId != _myProfileId) return;
+
+    try {
+      await _supabase.from('messages').update({
+        'deleted_for_everyone': true,
+      }).eq('id', message.id);
+
+      setState(() {
+        final idx = _messages.indexWhere((m) => m.id == message.id);
+        if (idx != -1) {
+          _messages[idx] = _messages[idx].copyWith(deletedForEveryone: true);
+        }
+      });
+      
+      // Update cache
+      ChatCacheService().updateSingleMessage(widget.matchId, _messages.firstWhere((m) => m.id == message.id).toMap());
+    } catch (e) {
+      debugPrint('❌ Error deleting message for everyone: $e');
     }
   }
 
@@ -880,6 +953,14 @@ class _ChatConversationScreenState
   Future<void> _deleteSelectedMessages() async {
     if (_selectedMessageIds.isEmpty) return;
 
+    final selectedMessages = _messages.where((m) => _selectedMessageIds.contains(m.id)).toList();
+    final allMine = selectedMessages.every((m) => m.senderProfileId == _myProfileId);
+    final allRecent = selectedMessages.every((m) => 
+        DateTime.now().difference(m.createdAt).inHours < 24);
+    
+    // Check if any are already deleted for everyone (placeholders)
+    final anyDeletedForEveryone = selectedMessages.any((m) => m.deletedForEveryone);
+
     showModalBottomSheet(
       context: context,
       builder: (_) {
@@ -895,14 +976,15 @@ class _ChatConversationScreenState
                   await _deleteForMe();
                 },
               ),
-              ListTile(
-                leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text("Delete for everyone"),
-                onTap: () async {
-                  Navigator.pop(context);
-                  await _deleteForEveryone();
-                },
-              ),
+              if (allMine && allRecent && !anyDeletedForEveryone)
+                ListTile(
+                  leading: const Icon(Icons.delete, color: Colors.red),
+                  title: const Text("Delete for everyone"),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await _deleteForEveryone();
+                  },
+                ),
             ],
           ),
         );
@@ -914,15 +996,18 @@ class _ChatConversationScreenState
     try {
       for (final id in _selectedMessageIds) {
         final message = _messages.firstWhere((m) => m.id == id);
-
         final isSender = message.senderProfileId == _myProfileId;
+        final column = isSender ? 'deleted_for_sender' : 'deleted_for_receiver';
 
         await _supabase
             .from('messages')
-            .update({
-              isSender ? 'deleted_for_sender' : 'deleted_for_receiver': true,
-            })
+            .update({column: true})
             .eq('id', id);
+        
+        // Update local cache for zero-latency consistency
+        final updatedData = message.toMap();
+        updatedData[column] = true;
+        ChatCacheService().updateSingleMessage(widget.matchId, updatedData);
       }
 
       _clearSelection();
@@ -943,6 +1028,13 @@ class _ChatConversationScreenState
             .from('messages')
             .update({'deleted_for_everyone': true})
             .eq('id', id);
+        
+        // Update local cache
+        final updatedData = message.toMap();
+        updatedData['deleted_for_everyone'] = true;
+        // Also change message type to text for placeholder
+        updatedData['message_type'] = 'text';
+        ChatCacheService().updateSingleMessage(widget.matchId, updatedData);
       }
 
       _clearSelection();
@@ -1116,6 +1208,7 @@ class _ChatConversationScreenState
         'receiver_profile_id': widget.otherProfileId,
         'content': publicUrl,
         'message_type': 'voice',
+        'is_encrypted': true,
         'voice_duration': _recordingDuration.inSeconds,
         'reply_to_id': _replyingTo?.id,
         'reaction': null,
@@ -1300,42 +1393,41 @@ class _ChatConversationScreenState
   // }
 
   Widget _buildMessageStatus(Message message) {
-    if (message.senderProfileId != _myProfileId) {
-      return const SizedBox.shrink();
-    }
-
-    // 1. Weak Network / Sending State -> Clock Symbol
-    if (message.isSending) {
-      return Padding(
-        padding: const EdgeInsets.only(left: 4.0),
-        child: Icon(
-          Icons.access_time,
-          size: 12,
-          color: Colors.white.withOpacity(0.6),
-        ),
-      );
-    }
-
-    // 2. Read by Receiver -> Double Blue Tick
-    if (message.readAt != null) {
-      return const Padding(
-        padding: EdgeInsets.only(left: 4.0),
-        child: Icon(
-          Icons.done_all,
-          size: 14,
-          color: Colors.blueAccent,
-        ),
-      );
-    }
-
-    // 3. Saved in DB / Sent -> Single Grey Tick
-    return Padding(
-      padding: const EdgeInsets.only(left: 4.0),
-      child: Icon(
-        Icons.done,
-        size: 14,
-        color: Colors.white.withOpacity(0.6),
-      ),
+    Color statusColor = (message.senderProfileId == _myProfileId ? Colors.white : Colors.black).withOpacity(0.5);
+    
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (message.editedAt != null)
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: Text(
+              '(Edited)',
+              style: TextStyle(
+                fontSize: 10,
+                color: statusColor,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        if (message.senderProfileId == _myProfileId) ...[
+          if (message.isSending)
+            Padding(
+              padding: const EdgeInsets.only(left: 4.0),
+              child: Icon(Icons.access_time, size: 12, color: statusColor),
+            )
+          else if (message.readAt != null)
+            const Padding(
+              padding: EdgeInsets.only(left: 4.0),
+              child: Icon(Icons.done_all, size: 14, color: Colors.blueAccent),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.only(left: 4.0),
+              child: Icon(Icons.done, size: 14, color: statusColor),
+            ),
+        ],
+      ],
     );
   }
 
@@ -1369,7 +1461,13 @@ class _ChatConversationScreenState
     final groups = <MessageGroup>[];
     String? currentDay;
 
-    for (final msg in _messages) {
+    final visibleMessages = _messages.where((msg) {
+      if (msg.senderProfileId == _myProfileId && msg.deletedForSender == true) return false;
+      if (msg.receiverProfileId == _myProfileId && msg.deletedForReceiver == true) return false;
+      return true;
+    }).toList();
+
+    for (final msg in visibleMessages) {
       final dayLabel = _formatDayLabel(msg.createdAt);
 
       if (currentDay != dayLabel) {
@@ -1488,45 +1586,48 @@ class _ChatConversationScreenState
               ),
               title: Text(
                 "${_selectedMessageIds.length} selected",
-                style: const TextStyle(color: Colors.black),
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               actions: [
+                /// REACTIONS (only if single message selected)
+                if (_selectedMessageIds.length == 1)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: ['❤️', '😂', '😮', '😢', '👍'].map((emoji) {
+                      final msg = _messages.firstWhere((m) => m.id == _selectedMessageIds.first);
+                      return GestureDetector(
+                        onTap: () {
+                          _reactToMessage(msg, emoji);
+                          _clearSelection();
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Text(emoji, style: const TextStyle(fontSize: 22)),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+
+                const SizedBox(width: 8),
+
                 /// Edit (only if single message selected)
                 if (_selectedMessageIds.length == 1)
                   IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.black),
+                    icon: const Icon(Icons.edit_outlined, color: Colors.black),
                     onPressed: _editSelectedMessage,
-                  ),
-
-                /// Forward
-                // IconButton(
-                //   icon: const Icon(Icons.forward, color: Colors.black),
-                //   onPressed: _forwardSelectedMessages,
-                // ),
-                /// COPY (only if 1 text message selected & not deleted)
-                if (_selectedMessageIds.length == 1 &&
-                    _messages
-                            .firstWhere(
-                              (m) => m.id == _selectedMessageIds.first,
-                            )
-                            .messageType ==
-                        'text' &&
-                    _messages
-                            .firstWhere(
-                              (m) => m.id == _selectedMessageIds.first,
-                            )
-                            .deletedForEveryone !=
-                        true)
-                  IconButton(
-                    icon: const Icon(Icons.copy, color: Colors.black),
-                    onPressed: _copySelectedMessage,
                   ),
 
                 /// DELETE
                 IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.black),
+                  icon: const Icon(Icons.delete_outline, color: Colors.red),
                   onPressed: _deleteSelectedMessages,
                 ),
+                
+                const SizedBox(width: 8),
               ],
             )
           : AppBar(
@@ -1724,23 +1825,35 @@ class _ChatConversationScreenState
 
             // Messages for this day
             ...group.messages.map((msg) {
-              // 🔴 Handle deletion visibility
+              final isSender = msg.senderProfileId == _myProfileId;
+              
+              // 1. Handle "Delete for Me" FIRST (Highest priority - completely vanish)
+              if ((isSender && msg.deletedForSender == true) || 
+                  (!isSender && msg.deletedForReceiver == true)) {
+                return const SizedBox.shrink();
+              }
+
+              // 2. Handle "Delete for Everyone" (Placeholder)
               if (msg.deletedForEveryone == true) {
                 return SwipeableMessage(
                   key: ValueKey(msg.id),
-                  message: msg.copyWith(text: "This message was deleted"),
+                  message: msg.copyWith(
+                    text: "This message was deleted",
+                    messageType: "text",
+                  ),
                   replyMessage: null,
                   isMe: msg.senderProfileId == _myProfileId,
                   onReply: () {},
                   onReact: (_) {},
                   formatTime: _formatTime,
                   buildStatus: _buildMessageStatus,
+                  onEdit: () {},
+                  onDeleteForMe: () => _deleteMessageForMe(msg),
+                  onDeleteForEveryone: () {},
+                  isSelected: _selectedMessageIds.contains(msg.id),
+                  selectionMode: _isSelectionMode,
+                  onToggleSelection: (m) => _toggleSelection(m),
                 );
-              }
-
-              if (msg.senderProfileId == _myProfileId &&
-                  msg.deletedForSender == true) {
-                return const SizedBox.shrink();
               }
 
               if (msg.receiverProfileId == _myProfileId &&
@@ -1760,28 +1873,26 @@ class _ChatConversationScreenState
 
               final isSelected = _selectedMessageIds.contains(msg.id);
 
-              return GestureDetector(
-                onLongPress: () {
-                  _toggleSelection(msg);
+              return SwipeableMessage(
+                key: ValueKey(msg.id),
+                message: msg,
+                replyMessage: repliedMessage,
+                isMe: msg.senderProfileId == _myProfileId,
+                onReply: () => _replyTo(msg),
+                onReact: (emoji) => _reactToMessage(msg, emoji),
+                formatTime: _formatTime,
+                buildStatus: _buildMessageStatus,
+                onEdit: () {
+                  _editingMessageId = msg.id;
+                  _controller.text = msg.text;
+                  _focusNode.requestFocus();
+                  setState(() {});
                 },
-                onTap: () {
-                  if (_isSelectionMode) {
-                    _toggleSelection(msg);
-                  }
-                },
-                child: Container(
-                  color: isSelected ? Colors.grey.shade300 : Colors.transparent,
-                  child: SwipeableMessage(
-                    key: ValueKey(msg.id),
-                    message: msg,
-                    replyMessage: repliedMessage,
-                    isMe: msg.senderProfileId == _myProfileId,
-                    onReply: () => _replyTo(msg),
-                    onReact: (emoji) => _reactToMessage(msg, emoji),
-                    formatTime: _formatTime,
-                    buildStatus: _buildMessageStatus,
-                  ),
-                ),
+                onDeleteForMe: () => _deleteMessageForMe(msg),
+                onDeleteForEveryone: () => _deleteMessageForEveryone(msg),
+                isSelected: isSelected,
+                selectionMode: _isSelectionMode,
+                onToggleSelection: (m) => _toggleSelection(m),
               );
             }),
           ],
@@ -2129,6 +2240,7 @@ class _ChatConversationScreenState
         'receiver_profile_id': widget.otherProfileId,
         'content': publicUrl,
         'message_type': 'image',
+        'is_encrypted': true,
         'reply_to_id': _replyingTo?.id,
         'reaction': null,
       });
@@ -2211,6 +2323,12 @@ class SwipeableMessage extends StatefulWidget {
   final Function(String) onReact;
   final String Function(DateTime) formatTime;
   final Widget Function(Message) buildStatus;
+  final VoidCallback onEdit;
+  final VoidCallback onDeleteForMe;
+  final VoidCallback onDeleteForEveryone;
+  final bool isSelected;
+  final bool selectionMode;
+  final Function(Message) onToggleSelection;
 
   const SwipeableMessage({
     super.key,
@@ -2221,6 +2339,12 @@ class SwipeableMessage extends StatefulWidget {
     required this.onReact,
     required this.formatTime,
     required this.buildStatus,
+    required this.onEdit,
+    required this.onDeleteForMe,
+    required this.onDeleteForEveryone,
+    this.isSelected = false,
+    this.selectionMode = false,
+    required this.onToggleSelection,
   });
 
   @override
@@ -2229,8 +2353,6 @@ class SwipeableMessage extends StatefulWidget {
 
 class _SwipeableMessageState extends State<SwipeableMessage> {
   double _dragX = 0;
-
-  OverlayEntry? _reactionOverlay;
 
   // Voice playback
   final AudioPlayer _audioPlayer = AudioPlayer();
@@ -2270,81 +2392,12 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
 
   @override
   void dispose() {
-    _removeReactionOverlay();
     _audioPlayer.dispose();
     super.dispose();
   }
 
-  void _showReactionPicker() {
-    _removeReactionOverlay();
-
-    final renderBox = context.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
-
-    final size = renderBox.size;
-    final offset = renderBox.localToGlobal(Offset.zero);
-
-    _reactionOverlay = OverlayEntry(
-      builder: (context) {
-        return Stack(
-          children: [
-            Positioned.fill(
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: _removeReactionOverlay,
-              ),
-            ),
-
-            Positioned(
-              left: widget.isMe ? offset.dx + size.width - 200 : offset.dx,
-              top: offset.dy - 60,
-              child: Material(
-                color: Colors.transparent,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black87,
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: ['❤️', '😂', '😮', '😢', '👍']
-                        .map(
-                          (e) => GestureDetector(
-                            onTap: () {
-                              _removeReactionOverlay();
-                              widget.onReact(e);
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                              ),
-                              child: Text(
-                                e,
-                                style: const TextStyle(fontSize: 22),
-                              ),
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-
-    Overlay.of(context).insert(_reactionOverlay!);
-  }
-
   void _removeReactionOverlay() {
-    _reactionOverlay?.remove();
-    _reactionOverlay = null;
+    // Overlays removed in favor of AppBar actions to fix overflow
   }
 
   Future<void> _togglePlayPause() async {
@@ -2388,8 +2441,12 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
         if (_dragX > 85) widget.onReply();
         setState(() => _dragX = 0);
       },
-      onLongPress: _showReactionPicker,
-      onTap: _removeReactionOverlay,
+      onLongPress: () {
+        widget.onToggleSelection(widget.message);
+      },
+      onTap: widget.selectionMode
+          ? () => widget.onToggleSelection(widget.message)
+          : null,
       child: Transform.translate(offset: Offset(_dragX, 0), child: _bubble()),
     );
   }
@@ -2398,85 +2455,117 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
     final textColor = widget.isMe ? Colors.white : Colors.black;
     final hasReaction = widget.message.reaction != null;
 
-    return Align(
-      alignment: widget.isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.7,
-        ),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 22),
-          padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-          decoration: BoxDecoration(
-            color: widget.isMe
-                ? const Color(0xFF3F472E)
-                : const Color(0xFFEBC163),
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (widget.replyMessage != null) _replyPreview(),
-
-                  // Handle all message types
-                  if (widget.message.messageType == 'voice')
-                    _buildVoiceMessage(textColor)
-                  else if (widget.message.messageType == 'image')
-                    _buildImageMessage(textColor)
-                  else if (widget.message.messageType == 'gif')
-                    _buildGifMessage(textColor)
-                  else if (widget.message.messageType == 'sticker')
-                    _buildStickerMessage(textColor)
-                  else
-                    _buildTextMessage(textColor),
-                ],
+    return GestureDetector(
+      onTap: widget.selectionMode
+          ? () => widget.onToggleSelection(widget.message)
+          : _removeReactionOverlay,
+      child: Container(
+        color: widget.isSelected ? Colors.blue.withOpacity(0.1) : Colors.transparent,
+        child: Row(
+          children: [
+            if (widget.selectionMode)
+              Padding(
+                padding: const EdgeInsets.only(left: 12),
+                child: Icon(
+                  widget.isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+                  color: widget.isSelected ? const Color(0xFF3F472E) : Colors.grey,
+                  size: 22,
+                ),
               ),
-
-              if (hasReaction)
-                Positioned(
-                  bottom: -25,
-                  left: widget.isMe ? null : -8,
-                  right: widget.isMe ? -8 : null,
+            Expanded(
+              child: Align(
+                alignment: widget.isMe ? Alignment.centerRight : Alignment.centerLeft,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width * 0.7,
+                  ),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 3,
-                    ),
+                    margin: const EdgeInsets.only(bottom: 22, left: 14, right: 14),
+                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: const [
-                        BoxShadow(blurRadius: 6, color: Colors.black12),
-                      ],
+                      color: widget.isMe
+                          ? const Color(0xFF3F472E)
+                          : const Color(0xFFEBC163),
+                      borderRadius: BorderRadius.circular(18),
                     ),
-                    child: Text(
-                      widget.message.reaction!,
-                      style: const TextStyle(fontSize: 14),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (widget.replyMessage != null) _replyPreview(),
+
+                            // Handle all message types
+                            if (widget.message.messageType == 'voice')
+                              _buildVoiceMessage(textColor)
+                            else if (widget.message.messageType == 'image')
+                              _buildImageMessage(textColor)
+                            else if (widget.message.messageType == 'gif')
+                              _buildGifMessage(textColor)
+                            else if (widget.message.messageType == 'sticker')
+                              _buildStickerMessage(textColor)
+                            else
+                              _buildTextMessage(textColor),
+                          ],
+                        ),
+
+                        if (hasReaction)
+                          Positioned(
+                            bottom: -25,
+                            left: widget.isMe ? null : -8,
+                            right: widget.isMe ? -8 : null,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: const [
+                                  BoxShadow(blurRadius: 6, color: Colors.black12),
+                                ],
+                              ),
+                              child: Text(
+                                widget.message.reaction!,
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ),
-            ],
-          ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildTextMessage(Color textColor) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
+    // Determine if deleted for everyone
+    final isDeleted = widget.message.deletedForEveryone;
+    final messageText = isDeleted ? "This message was deleted" : widget.message.text;
+    final fontStyle = isDeleted ? FontStyle.italic : FontStyle.normal;
+    final opacity = isDeleted ? 0.7 : 1.0;
+
+    return Wrap(
+      alignment: WrapAlignment.end,
+      crossAxisAlignment: WrapCrossAlignment.end,
+      spacing: 8,
+      runSpacing: 4,
       children: [
-        Flexible(
-          child: Text(
-            widget.message.text,
-            style: TextStyle(color: textColor, fontSize: 15),
+        Text(
+          messageText,
+          style: TextStyle(
+            color: textColor.withOpacity(opacity),
+            fontSize: 15,
+            fontStyle: fontStyle,
           ),
         ),
-        const SizedBox(width: 6),
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -2746,7 +2835,7 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
     // Fallback logic for stickers (same set as in picker)
     final List<String> fallbackUrls = [
       'https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Smilies/Beaming%20Face%20with%20Smiling%20Eyes.png',
-      'https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Smilies/Heart%20Eyes.png',
+      'https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Smilies/Smiling%20Face%20with%20Heart-Eyes.png',
       'https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Hand%20gestures/High%20Five.png',
       'https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Activities/Party%20Popper.png',
     ];
