@@ -41,7 +41,7 @@ class SwipeRepository {
       debugPrint('TARGET: $targetProfileId');
       debugPrint('ACTION: $action');
 
-      await _supabase.rpc(
+      final response = await _supabase.rpc(
         'record_swipe',
         params: {
           'p_target_profile_id': targetProfileId,
@@ -49,10 +49,24 @@ class SwipeRepository {
         },
       );
 
+      // We need to parse the response to see if success = true
+      if (response != null && response is Map<String, dynamic>) {
+        if (response['success'] == false) {
+          final code = response['code'] ?? 'UNKNOWN_ERROR';
+          debugPrint('❌ RECORD SWIPE REJECTED BY BACKEND: $code');
+          if (code == 'LIKE_LIMIT_REACHED') {
+            throw SwipeException('LIKE_LIMIT_REACHED');
+          }
+          throw SwipeException('Backend rejected swipe: $code');
+        }
+      }
+
       // If no exception → success
-      debugPrint('✅ Swipe recorded');
+      debugPrint('✅ Swipe recorded successfully');
     } catch (e) {
       debugPrint('❌ RECORD SWIPE ERROR: $e');
+
+      if (e is SwipeException) rethrow;
 
       // Ignore duplicate swipe (unique constraint)
       if (e.toString().contains('unique_swipe_per_actor_target')) {
@@ -60,7 +74,7 @@ class SwipeRepository {
         return;
       }
 
-      throw SwipeException('Failed to record swipe');
+      throw SwipeException('Failed to record swipe: $e');
     }
   }
 

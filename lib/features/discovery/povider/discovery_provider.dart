@@ -16,6 +16,7 @@ class DiscoveryState {
   final bool isLoading; // Initial load state
   final bool isFetchingMore; // Pagination background load state
   final bool isDeckExhausted; // True when server returns 0 items
+  final bool hasLocationError; // True when Lambda rejects request due to missing location
 
   DiscoveryState({
     required this.mainDeck,
@@ -24,6 +25,7 @@ class DiscoveryState {
     this.isLoading = false,
     this.isFetchingMore = false,
     this.isDeckExhausted = false,
+    this.hasLocationError = false,
   });
 
   DiscoveryState copyWith({
@@ -33,6 +35,7 @@ class DiscoveryState {
     bool? isLoading,
     bool? isFetchingMore,
     bool? isDeckExhausted,
+    bool? hasLocationError,
   }) {
     return DiscoveryState(
       mainDeck: mainDeck ?? this.mainDeck,
@@ -41,6 +44,7 @@ class DiscoveryState {
       isLoading: isLoading ?? this.isLoading,
       isFetchingMore: isFetchingMore ?? this.isFetchingMore,
       isDeckExhausted: isDeckExhausted ?? this.isDeckExhausted,
+      hasLocationError: hasLocationError ?? this.hasLocationError,
     );
   }
 }
@@ -81,6 +85,7 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
         historyDeck: [],
         seenIds: {},
         isDeckExhausted: false,
+        hasLocationError: false,
       );
 
       // This takes time...
@@ -89,11 +94,12 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
       // 🛑 CRITICAL FIX: Check mounted again before turning off loading
       if (!mounted) return;
 
-      state = state.copyWith(isLoading: false);
+      state = state.copyWith(isLoading: false, hasLocationError: false);
     } catch (e) {
+      final isLocError = e.toString().toLowerCase().contains('no location set');
       // 🛑 Safety check here too
       if (mounted) {
-        state = state.copyWith(isLoading: false);
+        state = state.copyWith(isLoading: false, hasLocationError: isLocError);
       }
       debugPrint("❌ Error refreshing feed: $e");
     }
@@ -166,16 +172,12 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
 
     try {
       // 1. Fetch from Repo
-      // We pass 'offset' as 0 because the SQL function intelligently filters
-      // out users we've already swiped. So we always ask for the "Next 10".
-      final newCandidates = await _repository.getDiscoveryFeed(
+      final (newCandidates, exhausted) = await _repository.getDiscoveryFeed(
         currentMode: _currentMode,
         limit: _batchSize,
         radiusKm: 50,
       );
 
-      // 🛑 OPTIMIZATION: Check if disposed IMMEDIATELY after async,
-      // before trying to access 'state' (which throws if disposed).
       if (!mounted) return;
 
       final validUsers = <DiscoveryUser>[];
@@ -189,31 +191,18 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
       }
 
       // 3. Update State
-      if (validUsers.isEmpty) {
-        // If we got users from DB but they were all duplicates, we might need to fetch MORE immediately
-        // BUT, if the DB returned 0 items, then we are truly exhausted.
-        if (newCandidates.isEmpty) {
-          state = state.copyWith(
-            isFetchingMore: false,
-            isDeckExhausted: true, // Show "No More Profiles" UI
-          );
-        } else {
-          // Recursive fetch? Or just stop for now to avoid infinite loops?
-          // For safety, we stop, but you could trigger another load here.
-          state = state.copyWith(isFetchingMore: false);
-        }
-      } else {
-        state = state.copyWith(
-          isFetchingMore: false,
-          mainDeck: [...state.mainDeck, ...validUsers],
-          seenIds: newSeenIds,
-          isDeckExhausted: false,
-        );
-      }
+      state = state.copyWith(
+        isFetchingMore: false,
+        mainDeck: [...state.mainDeck, ...validUsers],
+        seenIds: newSeenIds,
+        isDeckExhausted: exhausted, // Use the flag from Lambda
+        hasLocationError: false,
+      );
     } catch (e) {
       debugPrint("❌ Discovery Fetch Error: $e");
+      final isLocError = e.toString().toLowerCase().contains('no location set');
       if (mounted) {
-        state = state.copyWith(isFetchingMore: false);
+        state = state.copyWith(isFetchingMore: false, hasLocationError: isLocError);
       }
       // Optional: Set an error state if you have one
     }

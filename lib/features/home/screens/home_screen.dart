@@ -346,6 +346,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ Listen for Location Rejection from Lambda
+    ref.listen<DiscoveryState>(discoveryFeedProvider, (prev, next) {
+      if (next.hasLocationError && (prev == null || !prev.hasLocationError)) {
+        _showLocationRequiredDialog();
+      }
+    });
+
     // ✅ NEW: Watch the DiscoveryState object (which holds mainDeck + historyDeck)
     final DiscoveryState feedState = _isLocationReady
         ? ref.watch(discoveryFeedProvider)
@@ -408,14 +415,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
               HapticFeedback.mediumImpact();
 
-              // 2. Call Provider (Instant)
+              // 2. Memory LIFO Restore
               ref.read(discoveryFeedProvider.notifier).undoLastSwipe();
 
-              // 3. FORCE UI RESTORE (The Fix for "Not coming back")
-              // If the deck was finished or empty, we must manually tell the UI
-              // "Hey, we are not finished anymore, reset to the first card!"
+              // 3. Database DB Restore
+              ref.read(swipeProvider.notifier).undo();
+
+              // 4. Force UI Mount & Refresh
               if (mounted) {
-                // Check if we need to revive the stack
                 if (_isDeckFinished || mainDeck.isEmpty) {
                   setState(() {
                     _isDeckFinished = false;
@@ -674,8 +681,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // However, the 'previousIndex' passed by the library might be 0.
     if (currentDeck.isEmpty) return true;
 
-    // We target the FIRST card because that's the one being swiped away.
-    final swipedUser = currentDeck.first;
+    // We target the exact card being swiped away using previousIndex.
+    final swipedUser = currentDeck[previousIndex];
     final uiProfile = _mapToUserProfiles([swipedUser]).first;
 
     // 2. DB Record
@@ -748,19 +755,42 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     debugPrint('Paused: ${profile.name}');
     ref
         .read(swipeProvider.notifier)
-        .swipe(targetProfileId: profile.id, action: 'pause');
+        .swipe(targetProfileId: profile.id, action: 'pass');
   }
 
-  void _showPremiumDialog() {
+
+  void _showLocationRequiredDialog() {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Premium Feature'),
-        content: const Text('Undo is for premium members.'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Location Required 📍', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text(
+          'We need your location to find amazing people near you.\n\n'
+          'Please tap "Settings" to enable location permissions, then hit "Retry".',
+          style: TextStyle(height: 1.4),
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+            onPressed: () {
+              Navigator.pop(context);
+              Geolocator.openAppSettings();
+            },
+            // Using app theme colors as per guidelines
+            child: Text('Settings', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              ref.read(discoveryFeedProvider.notifier).refreshFeed();
+            },
+            child: const Text('Retry', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
