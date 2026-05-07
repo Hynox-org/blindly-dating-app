@@ -31,6 +31,7 @@ class _CausesCommunitiesScreenState
   ];
 
   final List<String> _selectedCauses = [];
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -58,22 +59,23 @@ class _CausesCommunitiesScreenState
   }
 
   Future<void> _save() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
     try {
-      final userId = ref.read(currentUserProfileProvider).value!.id;
-      final repo = ref.read(profileRepositoryProvider);
+      final currentProfile = ref.read(currentUserProfileProvider).value;
+      if (currentProfile == null) return;
 
-      await repo.updateProfile(userId, {'causes_communities': _selectedCauses});
+      final updatedProfile = currentProfile.copyWith(
+        causesCommunities: _selectedCauses,
+      );
+
+      await ref.read(currentUserProfileProvider.notifier).updateProfileAndRecalculateTrust(
+        userId: currentProfile.id,
+        updates: {'causes_communities': _selectedCauses},
+        updatedProfile: updatedProfile,
+      );
 
       if (mounted) {
-        final currentProfile = ref.read(currentUserProfileProvider).value;
-        if (currentProfile != null) {
-          final updatedProfile = currentProfile.copyWith(
-            causesCommunities: _selectedCauses,
-          );
-          ref
-              .read(currentUserProfileProvider.notifier)
-              .updateProfile(updatedProfile);
-        }
         Navigator.pop(context);
       }
     } catch (e) {
@@ -82,6 +84,8 @@ class _CausesCommunitiesScreenState
           context,
         ).showSnackBar(SnackBar(content: Text('Failed to update causes: $e')));
       }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -186,14 +190,23 @@ class _CausesCommunitiesScreenState
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Save',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text(
+                        'Save',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
               ),
             ),
           ),

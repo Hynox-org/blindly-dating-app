@@ -201,6 +201,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const SizedBox(width: 4),
             // Only show verified check if verified (assuming logic exists, else static for now)
             const Icon(Icons.verified, color: Colors.blue, size: 20),
+            if (user.trustScore > 0) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.withValues(alpha: 0.5)),
+                ),
+                child: Text(
+                  '${user.trustScore}% Trust',
+                  style: const TextStyle(
+                    color: Colors.green,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
         const SizedBox(height: 8),
@@ -269,6 +288,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       spotifyArtists: [],
       isVerified: user.isVerified,
       verificationLevel: user.verificationLevel,
+      trustScore: user.trustScore, // ✅ Pass Trust Score
       voiceIntroUrl: user.voiceIntroUrl,
       voiceIntroDuration: user.voiceIntroDuration,
     );

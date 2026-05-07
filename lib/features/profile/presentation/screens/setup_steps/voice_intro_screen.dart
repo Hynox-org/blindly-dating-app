@@ -13,6 +13,7 @@ import '../../../../media/providers/media_provider.dart';
 import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
 import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
 import '../../../../../core/widgets/app_loader.dart';
+import '../../../../profile/provider/profile_provider.dart';
 
 class VoiceIntroScreen extends ConsumerStatefulWidget {
   final bool isEditMode;
@@ -247,6 +248,13 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
       // 5. Complete Step or Go Back
       if (mounted) {
         if (widget.isEditMode) {
+          final currentProfile = ref.read(currentUserProfileProvider).value;
+          if (currentProfile != null) {
+            // Trigger trust calculation
+            await ref
+                .read(currentUserProfileProvider.notifier)
+                .triggerTrustCalculation();
+          }
           Navigator.pop(context);
         } else {
           ref.read(onboardingProvider.notifier).completeStep('voice_intro');

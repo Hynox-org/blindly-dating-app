@@ -6,6 +6,7 @@ import '../../events/screens/events_home_screen.dart';
 import 'home_screen.dart';
 
 import '../../../core/providers/connection_mode_provider.dart';
+import '../../profile/provider/profile_provider.dart';
 
 class ConnectionTypeScreen extends ConsumerStatefulWidget {
   final String? initialMode;
@@ -153,6 +154,10 @@ class _ConnectionTypeScreenState extends ConsumerState<ConnectionTypeScreen> {
         }
       } else {
         // Mode is already updated via connectionModeProvider
+        
+        // 🚀 Trigger trust calculation as requested for setting changes
+        ref.read(currentUserProfileProvider.notifier).triggerTrustCalculation();
+
         if (mounted) {
           Navigator.pushAndRemoveUntil(
             context,

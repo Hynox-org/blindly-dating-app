@@ -1,8 +1,12 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../../core/providers/connection_mode_provider.dart';
 import '../domain/models/profile_user_model.dart';
+import '../domain/repositories/profile_repository.dart';
 import '../../onboarding/domain/models/lifestyle_chip_model.dart';
 import '../../onboarding/domain/models/profile_prompt_model.dart';
 
@@ -45,6 +49,141 @@ class CurrentUserProfileNotifier extends AsyncNotifier<ProfileUser> {
     state = await AsyncValue.guard(() => _fetchProfile(authId, currentMode));
   }
 
+  /// Triggers the external trust score calculation Lambda.
+  /// [identifier] can be either the Auth User ID or the Profiles Table ID.
+  /// If [identifier] is not provided, it defaults to the currently logged in user's profile ID.
+  Future<void> triggerTrustCalculation([String? identifier]) async {
+    try {
+      final client = Supabase.instance.client;
+      final authUser = client.auth.currentUser;
+      
+      String? resolvedProfileId;
+
+      // 1. Resolve the Profile ID (primary key of profiles table)
+      if (identifier != null && identifier.isNotEmpty) {
+        debugPrint('🔍 Attempting to resolve Profile ID for identifier: $identifier');
+        
+        // Check if the identifier is already our cached profile's ID
+        if (state.value?.id == identifier) {
+          resolvedProfileId = identifier;
+          debugPrint('✅ Using Profile ID from cached state: $resolvedProfileId');
+        } else {
+          // Fetch from DB: First try as user_id (Auth ID)
+          final profileByUserId = await client
+              .from('profiles')
+              .select('id')
+              .eq('user_id', identifier)
+              .maybeSingle();
+          
+          if (profileByUserId != null) {
+            resolvedProfileId = profileByUserId['id'];
+            debugPrint('✅ Resolved Profile ID from Auth User ID: $resolvedProfileId');
+          } else {
+            // Try as Profile ID (PK)
+            final profileById = await client
+                .from('profiles')
+                .select('id')
+                .eq('id', identifier)
+                .maybeSingle();
+            
+            resolvedProfileId = profileById?['id'];
+            if (resolvedProfileId != null) {
+              debugPrint('✅ Verified identifier is a valid Profile ID: $resolvedProfileId');
+            }
+          }
+        }
+      } else {
+        // Fallback to current profile state
+        resolvedProfileId = state.value?.id;
+        if (resolvedProfileId != null) {
+          debugPrint('✅ Using Profile ID from current profile state: $resolvedProfileId');
+        }
+        
+        // If state is not loaded, try to fetch by current auth user id
+        if (resolvedProfileId == null && authUser != null) {
+          debugPrint('🔍 No identifier or state, fetching profile by Auth User ID: ${authUser.id}');
+          final profileData = await client
+              .from('profiles')
+              .select('id')
+              .eq('user_id', authUser.id)
+              .maybeSingle();
+          resolvedProfileId = profileData?['id'];
+          if (resolvedProfileId != null) {
+            debugPrint('✅ Resolved Profile ID for current user: $resolvedProfileId');
+          }
+        }
+      }
+
+      if (resolvedProfileId == null) {
+        debugPrint('❌ Cannot trigger trust calculation: Could not resolve Profile ID for $identifier');
+        return;
+      }
+
+      final baseUrlString = dotenv.get('AWS_TRUST_SCORE_URL');
+      if (baseUrlString.isEmpty) {
+        debugPrint('❌ AWS_TRUST_SCORE_URL is not set in .env');
+        return;
+      }
+
+      // 2. Prepare the Request
+      // We merge the profile_id into existing query parameters to avoid stripping API keys or other params
+      final baseUri = Uri.parse(baseUrlString);
+      final queryParams = Map<String, dynamic>.from(baseUri.queryParameters);
+      queryParams['profile_id'] = resolvedProfileId;
+      
+      final finalUri = baseUri.replace(queryParameters: queryParams);
+      
+      debugPrint('🚀 Triggering trust calculation Lambda at: $finalUri');
+      debugPrint('📦 Payload: {"profile_id": "$resolvedProfileId"}');
+
+      final response = await http.post(
+        finalUri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'profile_id': resolvedProfileId,
+        }),
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        debugPrint('✅ Trust calculation triggered successfully');
+        // Refresh profile to get the updated score from the database
+        await refreshProfile();
+      } else {
+        debugPrint(
+            '❌ Trust calculation API error: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('❌ Error triggering trust calculation: $e');
+    }
+  }
+
+  /// Unified method to update profile in Supabase, update local state, and trigger trust calculation.
+  Future<void> updateProfileAndRecalculateTrust({
+    required String userId, // This can be Auth ID or Profile ID
+    required Map<String, dynamic> updates,
+    required ProfileUser updatedProfile,
+  }) async {
+    try {
+      final repo = ref.read(profileRepositoryProvider);
+      
+      // The repository update logic also needs to be robust about which ID it uses.
+      // We pass the ID to the repo.
+      await repo.updateProfile(userId, updates);
+
+      // Update local state for immediate feedback
+      updateProfile(updatedProfile);
+
+      // Trigger trust calculation using the same ID (the provider will resolve it to Profile ID)
+      await triggerTrustCalculation(userId);
+    } catch (e) {
+      debugPrint('❌ Error in updateProfileAndRecalculateTrust: $e');
+      rethrow;
+    }
+  }
+
   Future<ProfileUser> _fetchProfile(String authId, String currentMode) async {
     final client = Supabase.instance.client;
     try {
@@ -74,11 +213,11 @@ class CurrentUserProfileNotifier extends AsyncNotifier<ProfileUser> {
         orElse: () => <String, dynamic>{},
       );
 
-      final currentModeData =
-          currentMode == 'date' ? dateMode : bffMode;
+      final currentModeData = currentMode == 'date' ? dateMode : bffMode;
 
       final String bio = currentModeData['bio'] ?? '';
-      final List<dynamic> lookingForModesRaw = currentModeData['looking_for'] ?? [];
+      final List<dynamic> lookingForModesRaw =
+          currentModeData['looking_for'] ?? [];
       final String profileModeId = currentModeData['id'] ?? '';
 
       // 3. Parallel Fetching of Related Data (only if mode exists)
@@ -298,10 +437,7 @@ Future<Map<String, dynamic>?> _fetchVoiceIntro(
             .from('user_voices')
             .createSignedUrl(rawPath, 3600);
       }
-      return {
-        'url': finalUrl,
-        'duration': data['duration_seconds'],
-      };
+      return {'url': finalUrl, 'duration': data['duration_seconds']};
     }
   } catch (e) {
     debugPrint('⚠️ Voice Intro Fetch Error: $e');

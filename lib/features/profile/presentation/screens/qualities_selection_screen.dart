@@ -67,24 +67,19 @@ class _QualitiesSelectionScreenState
   Future<void> _saveAndContinue() async {
     setState(() => _isLoading = true);
     try {
-      final profileRepo = ref.read(profileRepositoryProvider);
-      final userId = ref.read(currentUserProfileProvider).value?.id;
-
-      if (userId != null) {
-        await profileRepo.updateProfile(userId, {
-          'qualities': _selectedQualities,
-        });
+      final currentProfile = ref.read(currentUserProfileProvider).value;
+      if (currentProfile != null) {
+        final updatedProfile = currentProfile.copyWith(
+          qualities: _selectedQualities,
+        );
+        
+        await ref.read(currentUserProfileProvider.notifier).updateProfileAndRecalculateTrust(
+          userId: currentProfile.id,
+          updates: {'qualities': _selectedQualities},
+          updatedProfile: updatedProfile,
+        );
 
         if (mounted) {
-          final currentProfile = ref.read(currentUserProfileProvider).value;
-          if (currentProfile != null) {
-            final updatedProfile = currentProfile.copyWith(
-              qualities: _selectedQualities,
-            );
-            ref
-                .read(currentUserProfileProvider.notifier)
-                .updateProfile(updatedProfile);
-          }
           Navigator.pop(context);
         }
       }

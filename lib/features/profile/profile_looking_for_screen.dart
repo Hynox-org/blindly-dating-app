@@ -102,7 +102,10 @@ class _ProfileLookingForScreenState
           .eq('mode', currentMode);
 
       // Refresh provider
-      ref.invalidate(currentUserProfileProvider);
+      await ref.read(currentUserProfileProvider.notifier).refreshProfile();
+      
+      // Trigger trust calculation
+      await ref.read(currentUserProfileProvider.notifier).triggerTrustCalculation();
 
       if (mounted) {
         Navigator.pop(context);

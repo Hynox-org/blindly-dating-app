@@ -53,6 +53,11 @@ class _ProfessionScreenState extends ConsumerState<ProfessionScreen> {
           ref
               .read(currentUserProfileProvider.notifier)
               .updateProfile(updatedProfile);
+
+          // Trigger trust calculation
+          await ref
+              .read(currentUserProfileProvider.notifier)
+              .triggerTrustCalculation();
         }
         Navigator.pop(context);
       }

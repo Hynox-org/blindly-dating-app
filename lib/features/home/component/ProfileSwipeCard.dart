@@ -49,6 +49,7 @@ class UserProfile {
   final List<String> spotifyArtists;
   final bool isVerified;
   final String verificationLevel;
+  final int trustScore; // ✅ Added Trust Score
 
   UserProfile({
     required this.id,
@@ -86,6 +87,7 @@ class UserProfile {
     this.voiceIntroDuration,
     this.isVerified = false,
     this.verificationLevel = 'unverified',
+    this.trustScore = 0, // ✅ Default to 0
   });
 }
 
@@ -711,6 +713,10 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                       // "if they are noot verified the show a black badge mentioning not verified"
                       verifiedTag("Not Verified", Colors.black, scaleFactor),
                     ],
+                    if (widget.profile.trustScore > 0) ...[
+                      SizedBox(height: 4 * scaleFactor),
+                      _buildTrustScoreBadge(scaleFactor),
+                    ],
                   ],
                 ),
                 SizedBox(height: 8 * scaleFactor),
@@ -832,6 +838,38 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
     );
   }
 
+  Widget _buildTrustScoreBadge(double scaleFactor) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: 8 * scaleFactor,
+        vertical: 4 * scaleFactor,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.green.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(16 * scaleFactor),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.shield_outlined,
+            size: 14 * scaleFactor,
+            color: Colors.white,
+          ),
+          SizedBox(width: 4 * scaleFactor),
+          Text(
+            "Trust Score: ${widget.profile.trustScore}%",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 10 * scaleFactor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget goldButton(Widget icon, double scaleFactor) {
     return Container(
       height: 44 * scaleFactor,
@@ -874,7 +912,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
             ),
             SizedBox(height: 2 * scaleFactor),
             Text(
-              "Trust Score: 70%",
+              "Trust Score: ${widget.profile.trustScore}%",
               style: TextStyle(
                 fontSize: 10 * scaleFactor,
                 fontWeight: FontWeight.w600,

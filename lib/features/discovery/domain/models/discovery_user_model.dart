@@ -48,6 +48,7 @@ class DiscoveryUser {
   final int? voiceIntroDuration;
   final bool isVerified;
   final String verificationLevel;
+  final int trustScore; // ✅ Added Trust Score
   final RelationshipState relationship; // ✅ New field
 
   DiscoveryUser({
@@ -86,6 +87,7 @@ class DiscoveryUser {
     this.voiceIntroDuration,
     this.isVerified = false,
     this.verificationLevel = 'unverified',
+    this.trustScore = 0, // ✅ Default to 0
     this.relationship = RelationshipState.none,
   });
 
@@ -165,6 +167,7 @@ class DiscoveryUser {
       voiceIntroDuration: json['voice_intro_duration'] ?? json['duration_seconds'],
       isVerified: json['is_verified'] ?? false,
       verificationLevel: json['verification_level'] ?? 'unverified',
+      trustScore: json['trust_score'] ?? 0, // ✅ Map Trust Score
       relationship:
           json['relationship'] != null
               ? RelationshipState.values.firstWhere(
@@ -211,6 +214,7 @@ class DiscoveryUser {
     int? voiceIntroDuration,
     bool? isVerified,
     String? verificationLevel,
+    int? trustScore,
     RelationshipState? relationship,
   }) {
     return DiscoveryUser(
@@ -249,6 +253,7 @@ class DiscoveryUser {
       voiceIntroDuration: voiceIntroDuration ?? this.voiceIntroDuration,
       isVerified: isVerified ?? this.isVerified,
       verificationLevel: verificationLevel ?? this.verificationLevel,
+      trustScore: trustScore ?? this.trustScore,
       relationship: relationship ?? this.relationship,
     );
   }

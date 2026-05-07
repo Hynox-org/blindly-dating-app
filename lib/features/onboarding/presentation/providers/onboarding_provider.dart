@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/onboarding_step_model.dart';
 import '../../data/repositories/onboarding_repository.dart';
 import '../../../../features/auth/providers/auth_providers.dart';
+import '../../../../features/profile/provider/profile_provider.dart';
 import '../../../../core/utils/app_logger.dart';
 
 // State for the onboarding flow
@@ -193,6 +194,12 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
       // 2. Re-evaluate "Where am I?" by running init logic again
       // This is robust: it reads the new state and finds the next incomplete step.
       await init();
+
+      // 3. Trigger trust calculation to update score based on latest step data
+      // Use the Auth User ID (user.id) as requested
+      _ref
+          .read(currentUserProfileProvider.notifier)
+          .triggerTrustCalculation(user.id);
     } catch (e) {
       AppLogger.info('Error advancing step: $e');
       state = state.copyWith(
@@ -213,6 +220,12 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
 
     // Mark high-level status as complete
     await _repo.completeOnboarding(user.id);
+
+    // Trigger trust calculation using the Auth User ID
+    _ref
+        .read(currentUserProfileProvider.notifier)
+        .triggerTrustCalculation(user.id);
+
     state = state.copyWith(currentStepKey: 'complete');
   }
 

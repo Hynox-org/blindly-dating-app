@@ -86,6 +86,11 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
             ref
                 .read(currentUserProfileProvider.notifier)
                 .updateProfile(updatedProfile);
+
+            // Trigger trust calculation
+            await ref
+                .read(currentUserProfileProvider.notifier)
+                .triggerTrustCalculation();
           }
           Navigator.pop(context);
         }

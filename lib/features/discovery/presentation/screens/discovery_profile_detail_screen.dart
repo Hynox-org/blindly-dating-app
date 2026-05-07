@@ -77,6 +77,7 @@ class _DiscoveryProfileDetailScreenState
       spotifyArtists: user.spotifyArtists,
       isVerified: user.isVerified,
       verificationLevel: user.verificationLevel,
+      trustScore: user.trustScore, // ✅ Pass Trust Score
       voiceIntroUrl: user.voiceIntroUrl,
       voiceIntroDuration: user.voiceIntroDuration,
     );

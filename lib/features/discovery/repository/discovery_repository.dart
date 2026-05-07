@@ -95,6 +95,9 @@ class DiscoveryRepository {
       if (myProfileResponse == null) throw Exception('Profile not found');
       final String myProfileId = myProfileResponse['id'];
 
+      // 🛡️ FIX: Ensure the profile mode exists and is active before calling Lambda
+      await ensureProfileMode(currentMode);
+
       debugPrint('🚀 CALLING LAMBDA: $_lambdaUrl');
       final lambdaResponse = await http.post(
         Uri.parse(_lambdaUrl),
@@ -319,7 +322,18 @@ class DiscoveryRepository {
           'mode': dbMode,
           'is_active': true,
         });
+      } else {
+        // Force it to be active if it exists but is inactive
+        await _supabase.from('profile_modes')
+          .update({'is_active': true})
+          .eq('profile_id', profileId)
+          .eq('mode', dbMode);
       }
+
+      // Also ensure the main profile table is in sync
+      await _supabase.from('profiles')
+        .update({'current_mode': dbMode})
+        .eq('id', profileId);
     } catch (e) {
       debugPrint('❌ Failed to ensure profile mode: $e');
     }

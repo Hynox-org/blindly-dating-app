@@ -51,6 +51,7 @@ class ProfileUser {
   final int? voiceIntroDuration;
   final bool isVerified;
   final String verificationLevel;
+  final int trustScore; // ✅ Added Trust Score
 
   ProfileUser({
     required this.id,
@@ -97,6 +98,7 @@ class ProfileUser {
     this.bffModeId,
     this.isVerified = false,
     this.verificationLevel = 'unverified',
+    this.trustScore = 0, // ✅ Default to 0
   });
 
   factory ProfileUser.fromJson(
@@ -170,6 +172,7 @@ class ProfileUser {
       bffModeId: json['bff_mode_id'],
       isVerified: json['is_verified'] ?? false,
       verificationLevel: json['verification_level'] ?? 'unverified',
+      trustScore: json['trust_score'] ?? 0, // ✅ Map Trust Score
     );
   }
 
@@ -218,6 +221,7 @@ class ProfileUser {
     String? bffModeId,
     bool? isVerified,
     String? verificationLevel,
+    int? trustScore,
   }) {
     return ProfileUser(
       id: id ?? this.id,
@@ -264,6 +268,7 @@ class ProfileUser {
       bffModeId: bffModeId ?? this.bffModeId,
       isVerified: isVerified ?? this.isVerified,
       verificationLevel: verificationLevel ?? this.verificationLevel,
+      trustScore: trustScore ?? this.trustScore,
     );
   }
 

@@ -22,8 +22,11 @@ class ProfileRepository {
       // Based on schema, profiles has 'id' as PK and 'user_id' as FK unique.
       // It's safer to update by 'id' if we have it, or 'user_id' if we don't.
 
-      // For now, let's assume the passed ID is the profile ID (UUID)
-      await _client.from('profiles').update(updates).eq('id', userId);
+      // Use OR to match either the Profile PK (id) or the Auth FK (user_id)
+      await _client
+          .from('profiles')
+          .update(updates)
+          .or('id.eq.$userId,user_id.eq.$userId');
     } catch (e) {
       throw Exception('Failed to update profile: $e');
     }

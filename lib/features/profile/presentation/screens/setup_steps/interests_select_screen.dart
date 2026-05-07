@@ -134,6 +134,11 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
               ref
                   .read(currentUserProfileProvider.notifier)
                   .updateProfile(updatedProfile);
+
+              // Trigger trust calculation
+              await ref
+                  .read(currentUserProfileProvider.notifier)
+                  .triggerTrustCalculation();
             }
             Navigator.pop(context);
           }

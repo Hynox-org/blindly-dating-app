@@ -22,7 +22,7 @@ import 'package:blindly_dating_app/features/chat/presentation/widgets/media_pick
 import 'dart:convert';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:uuid/uuid.dart';
-// import 'package:encrypt/encrypt.dart' as encrypt;
+import '../../data/icebreaker_service.dart';
 
 class ChatConversationScreen extends ConsumerStatefulWidget {
   final String matchId;
@@ -785,7 +785,11 @@ class _ChatConversationScreenState
   }
 
   Future<void> _showIceBreakerSheet() async {
-    final categories = ["All", "Playful", "Deep", "Quirky", "Hypothesis"];
+    final categories = ["All", "AI ✨", "Playful", "Deep", "Quirky", "Hypothesis"];
+    int selectedCategory = 0;
+    bool isAiLoading = false;
+    IcebreakerResponse? aiResults;
+    int selectedAiMode = 0; // 0: Both, 1: Recipient Only
 
     final icebreakers = [
       "What’s a small thing that made you smile recently?",
@@ -793,8 +797,6 @@ class _ChatConversationScreenState
       "If you could have any superpower, what would it be?",
       "What’s the most interesting thing you’ve learned lately?",
     ];
-
-    int selectedCategory = 0;
 
     final selectedText = await showModalBottomSheet<String>(
       context: context,
@@ -804,7 +806,7 @@ class _ChatConversationScreenState
         return StatefulBuilder(
           builder: (context, setModalState) {
             return Container(
-              height: MediaQuery.of(context).size.height * 0.7,
+              height: MediaQuery.of(context).size.height * 0.75,
               decoration: const BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -812,7 +814,6 @@ class _ChatConversationScreenState
               child: Column(
                 children: [
                   const SizedBox(height: 12),
-
                   Container(
                     height: 5,
                     width: 40,
@@ -821,14 +822,11 @@ class _ChatConversationScreenState
                       borderRadius: BorderRadius.circular(6),
                     ),
                   ),
-
                   const SizedBox(height: 16),
-
                   const Text(
                     "Icebreakers",
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                   ),
-
                   const SizedBox(height: 16),
 
                   /// Categories
@@ -841,20 +839,31 @@ class _ChatConversationScreenState
                       separatorBuilder: (_, _) => const SizedBox(width: 8),
                       itemBuilder: (context, index) {
                         final selected = selectedCategory == index;
-
                         return ChoiceChip(
                           label: Text(categories[index]),
                           selected: selected,
                           showCheckmark: false,
-                          selectedColor: Colors.black,
+                          selectedColor: index == 1 ? const Color(0xFF3F472E) : Colors.black,
                           backgroundColor: Colors.grey.shade200,
                           labelStyle: TextStyle(
                             color: selected ? Colors.white : Colors.black,
+                            fontWeight: index == 1 ? FontWeight.bold : FontWeight.normal,
                           ),
-                          onSelected: (_) {
+                          onSelected: (_) async {
                             setModalState(() {
                               selectedCategory = index;
                             });
+                            if (index == 1 && aiResults == null && !isAiLoading) {
+                              setModalState(() => isAiLoading = true);
+                              final res = await IcebreakerService.fetchAiIcebreakers(
+                                senderId: widget.myProfileId,
+                                recipientId: widget.otherProfileId,
+                              );
+                              setModalState(() {
+                                aiResults = res;
+                                isAiLoading = false;
+                              });
+                            }
                           },
                         );
                       },
@@ -863,25 +872,31 @@ class _ChatConversationScreenState
 
                   const SizedBox(height: 18),
 
-                  /// Icebreaker list
+                  /// Content Area
                   Expanded(
-                    child: ListView.separated(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: icebreakers.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        return ListTile(
-                          leading: const Icon(Icons.lightbulb_outline),
-                          title: Text(icebreakers[index]),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.send),
-                            onPressed: () {
-                              Navigator.pop(context, icebreakers[index]);
-                            },
-                          ),
-                        );
-                      },
-                    ),
+                    child: selectedCategory == 1 
+                      ? _buildAiIcebreakerSection(
+                          isLoading: isAiLoading,
+                          results: aiResults,
+                          selectedMode: selectedAiMode,
+                          onModeChanged: (mode) => setModalState(() => selectedAiMode = mode),
+                          onSelect: (text) => Navigator.pop(context, text),
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: icebreakers.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            return ListTile(
+                              leading: const Icon(Icons.lightbulb_outline),
+                              title: Text(icebreakers[index]),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.send),
+                                onPressed: () => Navigator.pop(context, icebreakers[index]),
+                              ),
+                            );
+                          },
+                        ),
                   ),
                 ],
               ),
@@ -894,6 +909,133 @@ class _ChatConversationScreenState
     if (selectedText != null) {
       _send(selectedText);
     }
+  }
+
+  Widget _buildAiIcebreakerSection({
+    required bool isLoading,
+    required IcebreakerResponse? results,
+    required int selectedMode,
+    required Function(int) onModeChanged,
+    required Function(String) onSelect,
+  }) {
+    if (isLoading) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(color: Color(0xFF3F472E)),
+            SizedBox(height: 16),
+            Text("AI is analyzing your profiles...", style: TextStyle(color: Colors.grey)),
+          ],
+        ),
+      );
+    }
+
+    if (results == null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.auto_awesome_outlined, size: 48, color: Colors.grey.shade400),
+            const SizedBox(height: 16),
+            const Text("Failed to generate AI icebreakers"),
+            TextButton(
+              onPressed: () { /* Retry logic could go here if handled by StatefulBuilder */ },
+              child: const Text("Try Again"),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final data = selectedMode == 0 ? results.bothProfiles : results.recipientOnly;
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              _aiModeChip("Personalized", selectedMode == 0, () => onModeChanged(0)),
+              const SizedBox(width: 8),
+              _aiModeChip("Them only", selectedMode == 1, () => onModeChanged(1)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            children: [
+              _aiIcebreakerCard("Question", data['question'] ?? "", Icons.question_answer_outlined, onSelect),
+              _aiIcebreakerCard("Observation", data['observation'] ?? "", Icons.remove_red_eye_outlined, onSelect),
+              _aiIcebreakerCard("Fun Fact", data['fun_fact'] ?? "", Icons.celebration_outlined, onSelect),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _aiModeChip(String label, bool isSelected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF3F472E).withOpacity(0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: isSelected ? const Color(0xFF3F472E) : Colors.grey.shade300),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? const Color(0xFF3F472E) : Colors.grey.shade600,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _aiIcebreakerCard(String title, String content, IconData icon, Function(String) onSelect) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 4)),
+        ],
+      ),
+      child: InkWell(
+        onTap: () => onSelect(content),
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, size: 18, color: const Color(0xFF3F472E)),
+                  const SizedBox(width: 8),
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)),
+                  const Spacer(),
+                  const Icon(Icons.arrow_forward_ios, size: 12, color: Colors.grey),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                content,
+                style: const TextStyle(fontSize: 15, height: 1.4),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   // ==============================
