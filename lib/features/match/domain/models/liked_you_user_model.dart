@@ -23,8 +23,7 @@ class LikedYouUser {
   // ❤️ LIKE METADATA
   // --------------------------------------------------
   final DateTime likedAt;
-
-  /// 🔥 TOTAL LIKES COUNT (same for all rows)
+  final String actionType;
   final int totalLikes;
 
   const LikedYouUser({
@@ -33,12 +32,10 @@ class LikedYouUser {
     required this.age,
     required this.imageUrl,
     required this.likedAt,
+    this.actionType = 'like',
     required this.totalLikes,
   });
 
-  // --------------------------------------------------
-  // 🧩 FROM SUPABASE (RPC)
-  // --------------------------------------------------
   factory LikedYouUser.fromJson(Map<String, dynamic> json) {
     return LikedYouUser(
       profileId: json['profile_id'] as String,
@@ -46,8 +43,7 @@ class LikedYouUser {
       age: (json['age'] as int?) ?? 0,
       imageUrl: json['image_url'] as String?,
       likedAt: DateTime.parse(json['liked_at'] as String),
-
-      // ✅ SAFE DEFAULT (important)
+      actionType: (json['action_type'] as String?) ?? 'like',
       totalLikes: (json['total_likes'] as int?) ?? 0,
     );
   }

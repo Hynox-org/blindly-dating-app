@@ -1,3 +1,0 @@
-{
-    "body": "{\"current_user\": {\"profile_id\": \"user-1-uuid\", \"location_geom\": \"POINT(77.5946 12.9716)\", \"interests\": [\"hiking\", \"reading\"], \"lifestyle\": [\"coffee\", \"early_bird\"]}, \"candidate_pool\": [{\"profile_id\": \"top-pick-uuid\", \"location_geom\": \"POINT(77.5950 12.9720)\", \"interests\": [\"hiking\", \"reading\"], \"lifestyle\": [\"coffee\", \"tea\"], \"last_active_at\": \"2024-10-25T10:00:00Z\"}, {\"profile_id\": \"nearby-uuid\", \"location_geom\": \"POINT(77.6000 12.9800)\", \"interests\": [\"gaming\"], \"lifestyle\": [\"night_owl\"], \"last_active_at\": \"2024-10-20T10:00:00Z\"}], \"requirements\": {\"max_per_category\": 5}}"
-}

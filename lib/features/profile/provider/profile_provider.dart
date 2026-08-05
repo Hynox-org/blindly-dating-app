@@ -119,42 +119,16 @@ class CurrentUserProfileNotifier extends AsyncNotifier<ProfileUser> {
         return;
       }
 
-      final baseUrlString = dotenv.get('AWS_TRUST_SCORE_URL');
-      if (baseUrlString.isEmpty) {
-        debugPrint('❌ AWS_TRUST_SCORE_URL is not set in .env');
-        return;
-      }
+      // 2. Execute calculation via Supabase RPC function
+      debugPrint('🚀 Triggering trust calculation via Supabase RPC for profile: $resolvedProfileId');
 
-      // 2. Prepare the Request
-      // We merge the profile_id into existing query parameters to avoid stripping API keys or other params
-      final baseUri = Uri.parse(baseUrlString);
-      final queryParams = Map<String, dynamic>.from(baseUri.queryParameters);
-      queryParams['profile_id'] = resolvedProfileId;
-      
-      final finalUri = baseUri.replace(queryParameters: queryParams);
-      
-      debugPrint('🚀 Triggering trust calculation Lambda at: $finalUri');
-      debugPrint('📦 Payload: {"profile_id": "$resolvedProfileId"}');
+      await Supabase.instance.client
+          .rpc('recalculate_trust_score', params: {
+            'p_profile_id': resolvedProfileId,
+          });
 
-      final response = await http.post(
-        finalUri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode({
-          'profile_id': resolvedProfileId,
-        }),
-      ).timeout(const Duration(seconds: 30));
-
-      if (response.statusCode == 200) {
-        debugPrint('✅ Trust calculation triggered successfully');
-        // Refresh profile to get the updated score from the database
-        await refreshProfile();
-      } else {
-        debugPrint(
-            '❌ Trust calculation API error: ${response.statusCode} - ${response.body}');
-      }
+      debugPrint('✅ Trust calculation triggered successfully');
+      await refreshProfile();
     } catch (e) {
       debugPrint('❌ Error triggering trust calculation: $e');
     }

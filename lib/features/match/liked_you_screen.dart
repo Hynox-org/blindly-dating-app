@@ -178,6 +178,38 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
             ),
           ),
 
+          // ⭐ Superlike Badge
+          if (user.actionType == 'super_like')
+            Positioned(
+              top: 10,
+              left: 10,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade600,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black26, blurRadius: 4),
+                  ],
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.star, color: Colors.white, size: 14),
+                    SizedBox(width: 4),
+                    Text(
+                      'Super Liked',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
           // Name + age
           Positioned(
             left: 12,
@@ -202,19 +234,19 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _overlayActionButton(
-                  label: 'Like',
-                  // icon: Icons.favorite_border,
+                  label: 'Match',
                   onTap: () async {
+                    debugPrint('❤️ Tapped Match for profile: ${user.profileId}');
                     await ref
-                      .read(likedYouProvider.notifier)
-                      .matchUser(user.profileId);
-                    },
+                        .read(likedYouProvider.notifier)
+                        .matchUser(user.profileId);
+                  },
                 ),
 
                 _overlayActionButton(
                   label: 'Pass',
-                  // icon: Icons.pause,
                   onTap: () async {
+                    debugPrint('💔 Tapped Pass for profile: ${user.profileId}');
                     await ref
                         .read(likedYouProvider.notifier)
                         .passUser(user.profileId);
@@ -389,32 +421,29 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
 //--------------------------------------------------
 Widget _overlayActionButton({
   required String label,
-  // required IconData icon,
   required VoidCallback onTap,
 }) {
   return Builder(
     builder: (context) {
-      return GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(
-            children: [
-              // Icon(icon, size: 16, color: Colors.Black),
-              const SizedBox(width: 2),
-              Text(
-                label,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Ink(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
               ),
-            ],
+            ),
           ),
         ),
       );

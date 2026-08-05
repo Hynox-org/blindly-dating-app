@@ -1,9 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 
 import '../../../features/discovery/domain/models/discovery_user_model.dart';
 import '../../../features/discovery/domain/models/discovery_landing_data.dart';
@@ -20,19 +17,11 @@ final discoveryRepositoryProvider = Provider<DiscoveryRepository>((ref) {
 // ======================================================
 class DiscoveryRepository {
   final SupabaseClient _supabase;
-  final String _lambdaUrl = dotenv.env['AWS_SWIPE_FEED_URL'] ?? '';
 
   DiscoveryRepository(this._supabase);
 
-  // --------------------------------------------------
-  // 🔧 CONFIG
-  // --------------------------------------------------
-
-  /// Dev mode ignores distance limits
+  /// Dev mode hides some auth-screen affordances (see authentication_screen.dart)
   static const bool kDevMode = true;
-
-  /// Huge radius when dev mode is ON (20,000 KM to cover the world)
-  static const int _devRadiusKm = 20000;
 
   // --------------------------------------------------
   // 📸 HELPER: SIGN IMAGES
@@ -78,74 +67,30 @@ class DiscoveryRepository {
   // --------------------------------------------------
   Future<(List<DiscoveryUser>, bool)> getDiscoveryFeed({
     required String currentMode,
-    int radiusKm = 50,
     int limit = 20,
-    int offset = 0,
   }) async {
     try {
       final authUser = _supabase.auth.currentUser;
       if (authUser == null) throw Exception('User not logged in');
 
-      final myProfileResponse = await _supabase
-          .from('profiles')
-          .select('id')
-          .eq('user_id', authUser.id)
-          .maybeSingle();
-
-      if (myProfileResponse == null) throw Exception('Profile not found');
-      final String myProfileId = myProfileResponse['id'];
-
-      // 🛡️ FIX: Ensure the profile mode exists and is active before calling Lambda
+      // 🛡️ Ensure the profile mode exists and is active before querying
       await ensureProfileMode(currentMode);
 
-      debugPrint('🚀 CALLING LAMBDA: $_lambdaUrl');
-      final lambdaResponse = await http.post(
-        Uri.parse(_lambdaUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'profile_id': myProfileId}),
-      );
-
-      if (lambdaResponse.statusCode != 200) {
-        debugPrint('🛑 LAMBDA ERROR: ${lambdaResponse.statusCode} - ${lambdaResponse.body}');
-        throw Exception('Failed to get profiles from Lambda: ${lambdaResponse.body}');
-      }
-
-      final Map<String, dynamic> lambdaData = jsonDecode(lambdaResponse.body);
-      debugPrint('🧪 LAMBDA RAW RESPONSE (SWIPE): ${lambdaResponse.body}');
-
-      // Extract ids dynamically whether the lambda returned "profiles" array or "categories" dict
-      List<String> profileIds = [];
-      if (lambdaData.containsKey('profiles')) {
-        profileIds = List<String>.from(lambdaData['profiles']);
-      } else if (lambdaData.containsKey('categories')) {
-        final Map<String, dynamic> cats = lambdaData['categories'];
-        final Set<String> uniqueIds = {};
-        for (var list in cats.values) {
-          uniqueIds.addAll(List<String>.from(list));
-        }
-        profileIds = uniqueIds.toList();
-      }
-
-      final bool exhausted = lambdaData['exhausted'] ?? profileIds.isEmpty;
-
-      if (profileIds.isEmpty) {
-        return (<DiscoveryUser>[], exhausted);
-      }
-
-      debugPrint('🚀 HYDRATING PROFILES: ${profileIds.length} users');
+      // Swiped/blocked profiles are excluded server-side, so every call returns
+      // the next unseen batch — no offset needed.
       final List<dynamic>? response = await _supabase.rpc(
-        'hydrate_discovery_profiles',
+        'get_discovery_prospects',
         params: {
-          'payload': {
-            'p_ids': profileIds,
-            'p_mode': currentMode,
-          },
+          'p_mode': currentMode,
+          'p_limit': limit,
         },
       );
 
       if (response == null || response.isEmpty) {
-        return (<DiscoveryUser>[], exhausted);
+        return (<DiscoveryUser>[], true);
       }
+
+      final exhausted = response.length < limit;
 
       final futureUsers = response.map((raw) async {
         final Map<String, dynamic> data = Map<String, dynamic>.from(raw);
@@ -191,25 +136,21 @@ class DiscoveryRepository {
     try {
       final searchMode = mode.toLowerCase();
       
-      // 1. Call the Edge Function wrapper for smart discovery categories
-      final response = await _supabase.functions.invoke(
-        'smart-discovery',
-        body: {'mode': searchMode},
+      // 1. Today's categorised ids. The set is seeded on the date server-side,
+      //    so it stays put for 24h and rotates at midnight.
+      final List<dynamic>? rows = await _supabase.rpc(
+        'get_discovery_categories',
+        params: {'p_mode': searchMode},
       );
 
-      if (response.status != 200) {
-        throw Exception('Failed to get smart discovery feed: ${response.status}');
-      }
-
-      final Map<String, dynamic> responseData = response.data['data'] ?? {};
-      final Map<String, List<dynamic>> categories =
-          Map<String, List<dynamic>>.from(responseData['categories'] ?? {});
-
-      // Flatten UUIDs to fetch profiles in one DB batch
+      final Map<String, List<dynamic>> categories = {};
       final Set<String> allUuids = {};
-      categories.forEach((key, uuids) {
-        allUuids.addAll(uuids.cast<String>());
-      });
+      for (final row in rows ?? const []) {
+        final category = row['category'] as String;
+        final id = row['profile_id'] as String;
+        categories.putIfAbsent(category, () => <dynamic>[]).add(id);
+        allUuids.add(id);
+      }
 
       if (allUuids.isEmpty) {
         return DiscoveryLandingData(feeds: {}, lastRefreshedAt: DateTime.now());

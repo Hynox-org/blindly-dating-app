@@ -933,17 +933,44 @@ class _ChatConversationScreenState
 
     if (results == null) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.auto_awesome_outlined, size: 48, color: Colors.grey.shade400),
-            const SizedBox(height: 16),
-            const Text("Failed to generate AI icebreakers"),
-            TextButton(
-              onPressed: () { /* Retry logic could go here if handled by StatefulBuilder */ },
-              child: const Text("Try Again"),
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3F472E).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.construction_rounded,
+                  size: 44,
+                  color: Color(0xFF3F472E),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                "Under Development",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "AI Icebreakers feature is currently under active development and will be available soon!",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade600,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }

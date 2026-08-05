@@ -1,4 +1,4 @@
-// import 'dart:convert';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -186,7 +186,14 @@ class _GovernmentIdVerificationScreenState
               color: Colors.white,
             ),
             SizedBox(width: 12),
-            Text(message, style: TextStyle(fontWeight: FontWeight.bold)),
+            Expanded(
+              child: Text(
+                message, 
+                style: TextStyle(fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
+              ),
+            ),
           ],
         ),
         backgroundColor: isError ? Colors.red.shade700 : Colors.green.shade700,
@@ -214,7 +221,16 @@ class _GovernmentIdVerificationScreenState
         },
       );
 
-      final sessionUrl = response.data['url'];
+      final dynamic rawData = response.data;
+      final Map<String, dynamic> data = (rawData is String) 
+          ? Map<String, dynamic>.from(jsonDecode(rawData))
+          : Map<String, dynamic>.from(rawData ?? {});
+
+      if (response.status != 200 || data.containsKey('error')) {
+        throw Exception(data['error'] ?? "Function returned HTTP ${response.status}");
+      }
+
+      final sessionUrl = data['url'];
       if (sessionUrl == null) throw Exception("Failed to generate Veriff URL");
 
       // B. Start SDK
@@ -225,8 +241,32 @@ class _GovernmentIdVerificationScreenState
       Result result = await veriff.start(config);
 
       if (result.status == Status.done) {
-        // User finished. We keep spinner loading while waiting for Webhook.
-        print("Veriff finished. Waiting for webhook...");
+        // User finished. Keep spinner loading and poll for status update
+        print("Veriff finished. Waiting for webhook update...");
+        _showProfessionalToast("Verification Submitted! Reviewing your ID...", isError: false);
+
+        // Fallback polling for instant update if webhook takes a moment
+        Future.delayed(const Duration(seconds: 3), () async {
+          if (!mounted) return;
+          try {
+            final authUserId = Supabase.instance.client.auth.currentUser?.id;
+            if (authUserId == null) return;
+            final profile = await Supabase.instance.client
+                .from('profiles')
+                .select('is_verified')
+                .eq('user_id', authUserId)
+                .maybeSingle();
+
+            if (profile != null && (profile['is_verified'] ?? false)) {
+              if (mounted) {
+                setState(() {
+                  _isLoading = false;
+                  _currentStep = GovIdStep.verified;
+                });
+              }
+            }
+          } catch (_) {}
+        });
       } else if (result.status == Status.error) {
         setState(() => _isLoading = false);
         _showProfessionalToast("Camera Error: ${result.error}", isError: true);
@@ -234,10 +274,12 @@ class _GovernmentIdVerificationScreenState
         setState(() => _isLoading = false);
         print("User cancelled verification");
       }
-    } catch (e) {
+    } catch (e, stack) {
+      print("❌ Veriff invocation error: $e");
+      print(stack);
       setState(() => _isLoading = false);
       _showProfessionalToast(
-        "Connection Failed. Please try again.",
+        "Connection Failed: $e",
         isError: true,
       );
     }

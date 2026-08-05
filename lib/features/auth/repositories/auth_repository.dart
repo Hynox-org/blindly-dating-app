@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../core/security/jwt_validator.dart';
 
@@ -190,11 +191,44 @@ class AuthRepository {
   /// Stream of auth state changes.
   Stream<AuthState> get authStateChanges => _client.auth.onAuthStateChange;
 
-  /// Signs out the user.
+  /// Signs out the user and purges all cached app state.
   Future<void> signOut() async {
-    await _client.auth.signOut();
-    // Optional: Also sign out of Google locally to ensure account picker appears next time
-    // await GoogleSignIn.instance.signOut();
+    try {
+      // 1. Sign out of Supabase
+      await _client.auth.signOut();
+
+      // 2. Sign out of Google locally
+      try {
+        await GoogleSignIn.instance.signOut();
+      } catch (e) {
+        AppLogger.warning('AUTH_REPO: Local Google signOut failed: $e');
+      }
+
+      // 3. Clear local SharedPreferences (OTP rate limits, cached session tokens, user flags)
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.clear();
+        AppLogger.info('AUTH_REPO: SharedPreferences cleared on signOut');
+      } catch (e) {
+        AppLogger.error('AUTH_REPO: Failed to clear SharedPreferences: $e');
+      }
+
+      // 4. Clear Hive local cache (chat cache, match keys)
+      try {
+        if (Hive.isBoxOpen('chat_cache')) {
+          await Hive.box('chat_cache').clear();
+        }
+        if (Hive.isBoxOpen('match_keys')) {
+          await Hive.box('match_keys').clear();
+        }
+        AppLogger.info('AUTH_REPO: Hive boxes cleared on signOut');
+      } catch (e) {
+        AppLogger.error('AUTH_REPO: Failed to clear Hive boxes: $e');
+      }
+    } catch (e, stackTrace) {
+      AppLogger.error('AUTH_REPO: Exception during signOut: $e', e, stackTrace);
+      rethrow;
+    }
   }
 
   /// Creates a profile for the user and initializes default 'date' mode.

@@ -84,7 +84,7 @@ class FilterScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${filterState.minAge.toInt()} years old',
+                    '${filterState.minAge.toInt()} - ${filterState.maxAge.toInt()} years old',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -93,18 +93,20 @@ class FilterScreen extends ConsumerWidget {
                   const SizedBox(height: 4),
                   SliderTheme(
                     data: _getSliderTheme(context),
-                    child: Slider(
-                      value: filterState.minAge,
+                    child: RangeSlider(
+                      values: RangeValues(
+                        filterState.minAge.clamp(18, 80),
+                        filterState.maxAge.clamp(18, 80),
+                      ),
                       min: 18,
                       max: 80,
                       divisions: 62,
-                      onChanged: (value) {
-                        filterNotifier.setAgeRange(
-                          value,
-                          filterState.maxAge < value
-                              ? value
-                              : filterState.maxAge,
-                        );
+                      labels: RangeLabels(
+                        '${filterState.minAge.toInt()}',
+                        '${filterState.maxAge.toInt()}',
+                      ),
+                      onChanged: (range) {
+                        filterNotifier.setAgeRange(range.start, range.end);
                       },
                     ),
                   ),

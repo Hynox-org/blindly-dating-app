@@ -175,7 +175,6 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
       final (newCandidates, exhausted) = await _repository.getDiscoveryFeed(
         currentMode: _currentMode,
         limit: _batchSize,
-        radiusKm: 50,
       );
 
       if (!mounted) return;

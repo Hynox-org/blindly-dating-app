@@ -252,13 +252,14 @@ class SettingsScreen extends ConsumerWidget {
       width: double.infinity,
       child: ElevatedButton.icon(
         onPressed: () async {
-          // Implement logout
           await ref.read(authRepositoryProvider).signOut();
-          // Assuming the auth state listener will handle navigation to login screen
-          // But we might need to pop everything if the listener doesn't automatically redirect
-          // In many Riverpod setups, the router watches the auth state.
-          // If not, we might need to navigate manually.
-          // For now, let's assume the root widget catches the auth state change.
+          if (context.mounted) {
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/welcome',
+              (route) => false,
+            );
+          }
         },
         icon: const Icon(Icons.logout, color: Colors.white),
         label: const Text(

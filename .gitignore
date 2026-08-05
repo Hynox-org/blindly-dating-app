@@ -53,3 +53,27 @@ supabase/.branches
 supabase/.temp
 supabase_bin/
 supabase.zip
+
+# ---------------------------------------------------------------------------
+# Scratch / generated output. Deliberately NOT blanket *.txt or *.md: the
+# Windows build needs CMakeLists.txt, the fonts ship OFL.txt licences, and
+# README.md / docs/ are real project docs.
+# ---------------------------------------------------------------------------
+
+# Analysis + debug dumps
+analyze*.txt
+analysis_output.txt
+*_analysis.txt
+diff.txt
+scratch/
+
+# Dumped tool output (Supabase project lists, generated API spec)
+projects.json
+all_projects.json
+openapi.json
+
+# AI agent tooling
+.agent/
+.agents/
+.claude/
+skills-lock.json

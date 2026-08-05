@@ -76,7 +76,7 @@ class FilterState {
     return FilterState(
       genderPreference: json['genderPreference'] ?? 'Everyone',
       minAge: (json['minAge'] as num?)?.toDouble() ?? 18,
-      maxAge: (json['maxAge'] as num?)?.toDouble() ?? 50,
+      maxAge: (json['maxAge'] as num?)?.toDouble() ?? 60,
       distanceLimit: (json['distanceLimit'] as num?)?.toDouble() ?? 50,
       selectedInterests: List<String>.from(json['selectedInterests'] ?? []),
       selectedLanguages: List<String>.from(json['selectedLanguages'] ?? []),
@@ -92,7 +92,7 @@ class FilterState {
     return FilterState(
       genderPreference: 'Everyone',
       minAge: 18,
-      maxAge: 50,
+      maxAge: 60,
       distanceLimit: 50,
       selectedInterests: [],
       selectedLanguages: [],
@@ -141,7 +141,11 @@ class FilterNotifier extends StateNotifier<FilterState> {
   }
 
   void setAgeRange(double min, double max) {
-    state = state.copyWith(minAge: min, maxAge: max);
+    // Keep the pair ordered — RangeSlider asserts start <= end, and the SQL
+    // BETWEEN would silently return nothing if they were swapped.
+    final lo = min <= max ? min : max;
+    final hi = min <= max ? max : min;
+    state = state.copyWith(minAge: lo, maxAge: hi);
     _saveFilters();
   }
 
