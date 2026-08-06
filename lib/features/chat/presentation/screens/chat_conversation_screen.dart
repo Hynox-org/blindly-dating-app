@@ -23,6 +23,7 @@ import 'dart:convert';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:uuid/uuid.dart';
 import '../../data/icebreaker_service.dart';
+import '../../../../core/services/translation_service.dart';
 
 class ChatConversationScreen extends ConsumerStatefulWidget {
   final String matchId;
@@ -2557,9 +2558,22 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
   Duration _currentPosition = Duration.zero;
   Duration _totalDuration = Duration.zero;
 
+  // On-device translation
+  String? _translated;
+  bool _translating = false;
+  bool _showOriginal = false;
+  bool _translateFailed = false;
+
   @override
   void initState() {
     super.initState();
+
+    // Already translated in an earlier session? Show it without a round trip.
+    final target = TranslationService().deviceLanguage;
+    if (target != null) {
+      _translated = TranslationService().cached(widget.message.id, target);
+    }
+
     if (widget.message.messageType == 'voice') {
       _audioPlayer.onPlayerStateChanged.listen((state) {
         if (mounted) {
@@ -2742,12 +2756,92 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
     );
   }
 
+  /// Translates the message into the device language, on-device.
+  Future<void> _translate() async {
+    setState(() => _translating = true);
+    try {
+      final result = await TranslationService()
+          .translate(widget.message.id, widget.message.text);
+      if (!mounted) return;
+      setState(() {
+        _translating = false;
+        _translated = result;
+        _showOriginal = false;
+        _translateFailed = result == null;
+      });
+    } catch (e) {
+      debugPrint('Translation failed: $e');
+      if (!mounted) return;
+      setState(() {
+        _translating = false;
+        _translateFailed = true;
+      });
+    }
+  }
+
+  Widget _translateAction(Color textColor) {
+    if (_translating) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: SizedBox(
+          height: 12,
+          width: 12,
+          child: CircularProgressIndicator(
+            strokeWidth: 1.5,
+            color: textColor.withOpacity(.6),
+          ),
+        ),
+      );
+    }
+
+    final String label;
+    if (_translateFailed) {
+      label = 'Translation unavailable';
+    } else if (_translated == null) {
+      label = 'Translate';
+    } else {
+      label = _showOriginal ? 'Show translation' : 'Show original';
+    }
+
+    return GestureDetector(
+      onTap: _translateFailed
+          ? null
+          : () {
+              if (_translated == null) {
+                _translate();
+              } else {
+                setState(() => _showOriginal = !_showOriginal);
+              }
+            },
+      child: Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: textColor.withOpacity(.6),
+            decoration: _translateFailed ? null : TextDecoration.underline,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildTextMessage(Color textColor) {
     // Determine if deleted for everyone
     final isDeleted = widget.message.deletedForEveryone;
-    final messageText = isDeleted ? "This message was deleted" : widget.message.text;
+    final showTranslated = _translated != null && !_showOriginal;
+    final messageText = isDeleted
+        ? "This message was deleted"
+        : (showTranslated ? _translated! : widget.message.text);
     final fontStyle = isDeleted ? FontStyle.italic : FontStyle.normal;
     final opacity = isDeleted ? 0.7 : 1.0;
+
+    // Only incoming, non-deleted text is worth translating — you wrote your own.
+    final canTranslate = !isDeleted &&
+        !widget.isMe &&
+        !widget.message.isSending &&
+        widget.message.text.trim().isNotEmpty;
 
     return Wrap(
       alignment: WrapAlignment.end,
@@ -2755,13 +2849,20 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
       spacing: 8,
       runSpacing: 4,
       children: [
-        Text(
-          messageText,
-          style: TextStyle(
-            color: textColor.withOpacity(opacity),
-            fontSize: 15,
-            fontStyle: fontStyle,
-          ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              messageText,
+              style: TextStyle(
+                color: textColor.withOpacity(opacity),
+                fontSize: 15,
+                fontStyle: fontStyle,
+              ),
+            ),
+            if (canTranslate) _translateAction(textColor),
+          ],
         ),
         Row(
           mainAxisSize: MainAxisSize.min,
