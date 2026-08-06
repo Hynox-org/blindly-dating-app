@@ -1,9 +1,6 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../../core/providers/connection_mode_provider.dart';
 import '../domain/models/profile_user_model.dart';
 import '../domain/repositories/profile_repository.dart';
@@ -49,85 +46,17 @@ class CurrentUserProfileNotifier extends AsyncNotifier<ProfileUser> {
     state = await AsyncValue.guard(() => _fetchProfile(authId, currentMode));
   }
 
-  /// Triggers the external trust score calculation Lambda.
-  /// [identifier] can be either the Auth User ID or the Profiles Table ID.
-  /// If [identifier] is not provided, it defaults to the currently logged in user's profile ID.
+  /// Recalculates the current user's trust score.
+  ///
+  /// The RPC resolves the profile from auth.uid() and refuses to touch any
+  /// other user's profile, so no identifier is needed or accepted.
+  /// [identifier] is ignored and kept only for existing call sites.
   Future<void> triggerTrustCalculation([String? identifier]) async {
     try {
-      final client = Supabase.instance.client;
-      final authUser = client.auth.currentUser;
-      
-      String? resolvedProfileId;
+      final result = await Supabase.instance.client
+          .rpc('recalculate_trust_score');
 
-      // 1. Resolve the Profile ID (primary key of profiles table)
-      if (identifier != null && identifier.isNotEmpty) {
-        debugPrint('🔍 Attempting to resolve Profile ID for identifier: $identifier');
-        
-        // Check if the identifier is already our cached profile's ID
-        if (state.value?.id == identifier) {
-          resolvedProfileId = identifier;
-          debugPrint('✅ Using Profile ID from cached state: $resolvedProfileId');
-        } else {
-          // Fetch from DB: First try as user_id (Auth ID)
-          final profileByUserId = await client
-              .from('profiles')
-              .select('id')
-              .eq('user_id', identifier)
-              .maybeSingle();
-          
-          if (profileByUserId != null) {
-            resolvedProfileId = profileByUserId['id'];
-            debugPrint('✅ Resolved Profile ID from Auth User ID: $resolvedProfileId');
-          } else {
-            // Try as Profile ID (PK)
-            final profileById = await client
-                .from('profiles')
-                .select('id')
-                .eq('id', identifier)
-                .maybeSingle();
-            
-            resolvedProfileId = profileById?['id'];
-            if (resolvedProfileId != null) {
-              debugPrint('✅ Verified identifier is a valid Profile ID: $resolvedProfileId');
-            }
-          }
-        }
-      } else {
-        // Fallback to current profile state
-        resolvedProfileId = state.value?.id;
-        if (resolvedProfileId != null) {
-          debugPrint('✅ Using Profile ID from current profile state: $resolvedProfileId');
-        }
-        
-        // If state is not loaded, try to fetch by current auth user id
-        if (resolvedProfileId == null && authUser != null) {
-          debugPrint('🔍 No identifier or state, fetching profile by Auth User ID: ${authUser.id}');
-          final profileData = await client
-              .from('profiles')
-              .select('id')
-              .eq('user_id', authUser.id)
-              .maybeSingle();
-          resolvedProfileId = profileData?['id'];
-          if (resolvedProfileId != null) {
-            debugPrint('✅ Resolved Profile ID for current user: $resolvedProfileId');
-          }
-        }
-      }
-
-      if (resolvedProfileId == null) {
-        debugPrint('❌ Cannot trigger trust calculation: Could not resolve Profile ID for $identifier');
-        return;
-      }
-
-      // 2. Execute calculation via Supabase RPC function
-      debugPrint('🚀 Triggering trust calculation via Supabase RPC for profile: $resolvedProfileId');
-
-      await Supabase.instance.client
-          .rpc('recalculate_trust_score', params: {
-            'p_profile_id': resolvedProfileId,
-          });
-
-      debugPrint('✅ Trust calculation triggered successfully');
+      debugPrint('✅ Trust score recalculated: $result');
       await refreshProfile();
     } catch (e) {
       debugPrint('❌ Error triggering trust calculation: $e');
