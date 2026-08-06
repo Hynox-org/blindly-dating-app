@@ -788,6 +788,7 @@ class _ChatConversationScreenState
     final categories = ["All", "AI ✨", "Playful", "Deep", "Quirky", "Hypothesis"];
     int selectedCategory = 0;
     bool isAiLoading = false;
+    bool aiFailed = false;
     IcebreakerResponse? aiResults;
     int selectedAiMode = 0; // 0: Both, 1: Recipient Only
 
@@ -805,6 +806,22 @@ class _ChatConversationScreenState
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
+            Future<void> loadAi({bool refresh = false}) async {
+              setModalState(() {
+                isAiLoading = true;
+                aiFailed = false;
+              });
+              final res = await IcebreakerService.fetchAiIcebreakers(
+                matchId: widget.matchId,
+                refresh: refresh,
+              );
+              setModalState(() {
+                if (res != null) aiResults = res;
+                aiFailed = res == null;
+                isAiLoading = false;
+              });
+            }
+
             return Container(
               height: MediaQuery.of(context).size.height * 0.75,
               decoration: const BoxDecoration(
@@ -854,15 +871,7 @@ class _ChatConversationScreenState
                               selectedCategory = index;
                             });
                             if (index == 1 && aiResults == null && !isAiLoading) {
-                              setModalState(() => isAiLoading = true);
-                              final res = await IcebreakerService.fetchAiIcebreakers(
-                                senderId: widget.myProfileId,
-                                recipientId: widget.otherProfileId,
-                              );
-                              setModalState(() {
-                                aiResults = res;
-                                isAiLoading = false;
-                              });
+                              await loadAi();
                             }
                           },
                         );
@@ -877,9 +886,12 @@ class _ChatConversationScreenState
                     child: selectedCategory == 1 
                       ? _buildAiIcebreakerSection(
                           isLoading: isAiLoading,
+                          failed: aiFailed,
                           results: aiResults,
                           selectedMode: selectedAiMode,
                           onModeChanged: (mode) => setModalState(() => selectedAiMode = mode),
+                          onRefresh: () => loadAi(refresh: true),
+                          onRetry: () => loadAi(),
                           onSelect: (text) => Navigator.pop(context, text),
                         )
                       : ListView.separated(
@@ -913,9 +925,12 @@ class _ChatConversationScreenState
 
   Widget _buildAiIcebreakerSection({
     required bool isLoading,
+    required bool failed,
     required IcebreakerResponse? results,
     required int selectedMode,
     required Function(int) onModeChanged,
+    required VoidCallback onRefresh,
+    required VoidCallback onRetry,
     required Function(String) onSelect,
   }) {
     if (isLoading) {
@@ -945,14 +960,14 @@ class _ChatConversationScreenState
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
-                  Icons.construction_rounded,
+                  Icons.cloud_off_rounded,
                   size: 44,
                   color: Color(0xFF3F472E),
                 ),
               ),
               const SizedBox(height: 16),
               const Text(
-                "Under Development",
+                "Couldn't load icebreakers",
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -961,13 +976,22 @@ class _ChatConversationScreenState
               ),
               const SizedBox(height: 8),
               Text(
-                "AI Icebreakers feature is currently under active development and will be available soon!",
+                failed
+                    ? "Something went wrong on our side. Give it another go."
+                    : "Tap below to generate openers from your profiles.",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey.shade600,
                   height: 1.4,
                 ),
+              ),
+              const SizedBox(height: 16),
+              TextButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh, size: 18),
+                label: Text(failed ? "Try again" : "Generate"),
+                style: TextButton.styleFrom(foregroundColor: const Color(0xFF3F472E)),
               ),
             ],
           ),
@@ -986,6 +1010,12 @@ class _ChatConversationScreenState
               _aiModeChip("Personalized", selectedMode == 0, () => onModeChanged(0)),
               const SizedBox(width: 8),
               _aiModeChip("Them only", selectedMode == 1, () => onModeChanged(1)),
+              const Spacer(),
+              IconButton(
+                tooltip: "Regenerate",
+                onPressed: onRefresh,
+                icon: const Icon(Icons.refresh, size: 20, color: Color(0xFF3F472E)),
+              ),
             ],
           ),
         ),
@@ -1730,11 +1760,9 @@ class _ChatConversationScreenState
       floatingActionButton: !_isSelectionMode
           ? AnimatedPadding(
               duration: const Duration(milliseconds: 200),
-              padding: EdgeInsets.only(
-                bottom:
-                    MediaQuery.of(context).viewInsets.bottom +
-                    (_replyingTo != null ? 110 : 70),
-              ),
+              // No viewInsets here: the Scaffold already shrinks its body for the
+              // keyboard, so adding it again lifts the FAB by a second keyboard.
+              padding: EdgeInsets.only(bottom: _replyingTo != null ? 110 : 70),
               child: FloatingActionButton(
                 backgroundColor: const Color(0xFF3F472E),
                 onPressed: _showIceBreakerSheet,
