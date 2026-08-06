@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:blindly_dating_app/features/onboarding/presentation/providers/onboarding_provider.dart';
 import '../../../../onboarding/data/repositories/onboarding_repository.dart';
@@ -28,6 +29,8 @@ class ProfilePromptsScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
   // State
   final List<ProfilePrompt> _selectedPrompts =
       []; // The actual saved user prompts
@@ -63,7 +66,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
 
     try {
       final userId = ref.read(authRepositoryProvider).currentUser?.id;
-      if (userId == null) throw Exception('User not logged in');
+      if (userId == null) throw Exception(l10n.userNotLoggedIn);
 
       final repo = ref.read(onboardingRepositoryProvider);
       final currentMode = ref.read(connectionModeProvider).toLowerCase();
@@ -119,7 +122,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _error = 'Failed to load prompts: $e';
+          _error = l10n.failedToLoadPrompts('$e');
         });
       }
     }
@@ -146,7 +149,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
         // Can only expand if < 3 selected OR if we are editing the one already selected
         final isAlreadySelected = _isTemplateSelected(template.id);
         if (_selectedPrompts.length >= 3 && !isAlreadySelected) {
-          showErrorPopup(context, 'You can only select up to 3 prompts.');
+          showErrorPopup(context, l10n.maxThreePrompts);
           return;
         }
 
@@ -199,8 +202,8 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Are you sure?'),
-        content: const Text('Want to remove this prompt?'),
+        title: Text(l10n.areYouSure),
+        content: Text(l10n.removeThisPrompt),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -211,7 +214,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
             style: TextButton.styleFrom(
               foregroundColor: Theme.of(context).colorScheme.error,
             ),
-            child: const Text('Yes'),
+            child: Text(l10n.yes),
           ),
         ],
       ),
@@ -240,18 +243,18 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
 
   Future<void> _handleNext() async {
     if (!widget.isEditMode && _selectedPrompts.length < 3) {
-      showErrorPopup(context, 'Please select 3 prompts to continue.');
+      showErrorPopup(context, l10n.selectThreePrompts);
       return;
     }
     if (widget.isEditMode && _selectedPrompts.isEmpty) {
-      showErrorPopup(context, 'Please select at least 1 prompt.');
+      showErrorPopup(context, l10n.selectOnePrompt);
       return;
     }
 
     setState(() => _isLoading = true);
     try {
       final user = ref.read(authRepositoryProvider).currentUser;
-      if (user == null) throw Exception('User not logged in');
+      if (user == null) throw Exception(l10n.userNotLoggedIn);
       final userId = user.id;
 
       // Re-assign display orders
@@ -290,7 +293,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        showErrorPopup(context, 'Error saving prompts: $e');
+        showErrorPopup(context, l10n.errorSavingPrompts('$e'));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -310,7 +313,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
     final primaryColor = colorScheme.primary;
 
     return BaseOnboardingStepScreen(
-      title: 'Choose Your Prompt',
+      title: l10n.chooseYourPrompt,
       showBackButton: widget.isEditMode, // Allow back if edit mode
       onBack: widget.isEditMode ? () => Navigator.pop(context) : null,
       showNextButton: false, // Custom footer used
@@ -320,7 +323,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
         children: [
           // Subtitle
           Text(
-            'Select up to 3 prompt to showing up your personality.',
+            l10n.selectUpTo3Prompts,
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurface.withValues(alpha: 0.6),
@@ -424,7 +427,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8.0),
                     child: Text(
-                      'Please select ${3 - _selectedPrompts.length} prompt to continue',
+                      l10n.selectNMorePrompts('${3 - _selectedPrompts.length}'),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
@@ -494,8 +497,8 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
         .toList();
 
     if (templates.isEmpty) {
-      return const Center(
-        child: Text('No prompts available for this category.'),
+      return Center(
+        child: Text(l10n.noPromptsForCategory),
       );
     }
 
@@ -592,7 +595,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
             maxLines: 4,
             maxLength: 300,
             decoration: InputDecoration(
-              hintText: 'Type your answer...',
+              hintText: l10n.typeYourAnswer,
               hintStyle: TextStyle(
                 color: Colors.black.withValues(alpha: 0.4),
                 fontSize: 14,
@@ -621,8 +624,8 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   elevation: 0,
                 ),
-                child: const Text(
-                  'Add Prompt',
+                child: Text(
+                  l10n.addPrompt,
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,

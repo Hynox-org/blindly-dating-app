@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -25,6 +26,8 @@ class AuthenticationScreen extends ConsumerStatefulWidget {
 }
 
 class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
   AuthMethod _currentMethod = AuthMethod.selection;
 
   // Controllers
@@ -70,11 +73,11 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
     if (error is AuthException) {
       if (error.statusCode == '429' ||
           (error.message.contains('Too many OTP attempts'))) {
-        return 'Too many attempts. Please wait a while before trying again.';
+        return l10n.errTooManyAttempts;
       }
       return error.message;
     }
-    return 'Error: ${error.toString()}';
+    return l10n.errGeneric(error.toString());
   }
 
   void _startResendTimer() {
@@ -182,7 +185,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
     // Check if empty
     if (phone.isEmpty) {
       if (phone.isEmpty) {
-        setState(() => _inlineError = 'Please enter your phone number');
+        setState(() => _inlineError = l10n.errEnterPhone);
         return;
       }
     }
@@ -190,20 +193,19 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
     // Check if contains only digits
     if (!RegExp(r'^[0-9]+$').hasMatch(phone)) {
       setState(() {
-        _inlineError = 'Phone number must contain only digits';
+        _inlineError = l10n.errPhoneDigitsOnly;
       });
       return;
     }
 
     // Validate based on country code
     if (!_isValidPhoneNumber(phone, _countryCode)) {
-      String message = 'Please enter a valid phone number';
+      String message = l10n.errInvalidPhone;
 
       if (_countryCode == '+91') {
-        message =
-            'Please enter a valid 10-digit Indian phone number starting with 6-9';
+        message = l10n.errInvalidPhoneIndia;
       } else if (_countryCode == '+1') {
-        message = 'Please enter a valid 10-digit phone number';
+        message = l10n.errInvalidPhone10Digit;
       }
 
       setState(() => _inlineError = message);
@@ -246,7 +248,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
     String otp = _otpControllers.map((c) => c.text).join();
 
     if (otp.length != 6) {
-      setState(() => _inlineError = 'Please enter complete OTP');
+      setState(() => _inlineError = l10n.errEnterCompleteOtp);
       return;
     }
 
@@ -286,7 +288,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
           if (mounted) {
             setState(() {
               _isLoading = false;
-              _inlineError = 'Failed to create profile: ${e.toString()}';
+              _inlineError = l10n.errCreateProfile(e.toString());
             });
           }
         }
@@ -306,13 +308,13 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
 
     // Check if fields are empty
     if (email.isEmpty) {
-      setState(() => _inlineError = 'Please enter your email');
+      setState(() => _inlineError = l10n.errEnterEmail);
       return;
     }
 
     // Validate email format
     if (!_isValidEmail(email)) {
-      setState(() => _inlineError = 'Please enter a valid email address');
+      setState(() => _inlineError = l10n.errInvalidEmail);
       return;
     }
 
@@ -345,7 +347,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
     String otp = _otpControllers.map((c) => c.text).join();
 
     if (otp.length != 6) {
-      setState(() => _inlineError = 'Please enter complete OTP');
+      setState(() => _inlineError = l10n.errEnterCompleteOtp);
       return;
     }
 
@@ -385,7 +387,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
           if (mounted) {
             setState(() {
               _isLoading = false;
-              _inlineError = 'Failed to create profile: ${e.toString()}';
+              _inlineError = l10n.errCreateProfile(e.toString());
             });
           }
         }
@@ -406,7 +408,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
       AppLogger.info('AUTH_SCREEN: Resending phone OTP to $_phoneNumber');
       await ref.read(authRepositoryProvider).signInWithPhone(_phoneNumber);
       if (mounted) {
-        setState(() => _inlineSuccess = 'OTP sent successfully');
+        setState(() => _inlineSuccess = l10n.otpSentSuccess);
       }
     } catch (e) {
       if (mounted) {
@@ -421,7 +423,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
       AppLogger.info('AUTH_SCREEN: Resending email OTP to $_email');
       await ref.read(authRepositoryProvider).signInWithEmail(_email);
       if (mounted) {
-        setState(() => _inlineSuccess = 'OTP sent successfully');
+        setState(() => _inlineSuccess = l10n.otpSentSuccess);
       }
     } catch (e) {
       if (mounted) {
@@ -436,19 +438,19 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
 
     // Check if fields are empty
     if (email.isEmpty || password.isEmpty) {
-      setState(() => _inlineError = 'Please fill all fields');
+      setState(() => _inlineError = l10n.errFillAllFields);
       return;
     }
 
     // Validate email format
     if (!_isValidEmail(email)) {
-      setState(() => _inlineError = 'Please enter a valid email address');
+      setState(() => _inlineError = l10n.errInvalidEmail);
       return;
     }
 
     // Validate password
     if (!_isValidPassword(password)) {
-      setState(() => _inlineError = 'Password must be at least 6 characters');
+      setState(() => _inlineError = l10n.errPasswordMin);
       return;
     }
 
@@ -509,7 +511,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _inlineError = 'Login failed: ${e.toString()}';
+          _inlineError = l10n.errLoginFailed(e.toString());
         });
       }
     }
@@ -568,15 +570,15 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
   String _getAppBarTitle() {
     switch (_currentMethod) {
       case AuthMethod.phone:
-        return 'Can I get your number?'; // Updated
+        return l10n.authTitlePhone;
       case AuthMethod.phoneOTP:
-        return 'Verify your number'; // Updated
+        return l10n.authTitleVerifyNumber;
       case AuthMethod.email:
-        return 'Login with Email';
+        return l10n.authTitleEmail;
       case AuthMethod.emailOTP:
-        return 'Verify your email';
+        return l10n.authTitleVerifyEmail;
       case AuthMethod.apple:
-        return 'Login with Apple'; // Updated
+        return l10n.authTitleApple;
       default:
         return 'Blindly';
     }
@@ -608,7 +610,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
           Column(children: [SizedBox(height: 40)]),
           Spacer(),
           Text(
-            'Login to a Lovely life',
+            l10n.loginTagline,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 26,
@@ -765,7 +767,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                             }
                             setState(() {
                               _isLoading = false;
-                              _inlineError = 'Google Sign-In failed: $e';
+                              _inlineError = l10n.errGoogleSignIn('$e');
                             });
                           }
                         }
@@ -812,7 +814,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                           ),
                           SizedBox(width: 12),
                           Text(
-                            'Continue with Google',
+                            l10n.continueWithGoogle,
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.onSurface,
                               fontSize: 16,
@@ -955,9 +957,9 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                       height: 1.4,
                     ),
                     children: [
-                      TextSpan(text: 'By signing up, you agree to our '),
+                      TextSpan(text: l10n.termsSignupPrefix),
                       TextSpan(
-                        text: 'terms',
+                        text: l10n.termsWord,
                         style: TextStyle(
                           color: Theme.of(
                             context,
@@ -965,9 +967,9 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      TextSpan(text: '. See how we use your data in our '),
+                      TextSpan(text: l10n.termsBridge),
                       TextSpan(
-                        text: 'privacy policy',
+                        text: l10n.privacyPolicyWord,
                         style: TextStyle(
                           color: Theme.of(
                             context,
@@ -975,7 +977,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      TextSpan(text: '.'),
+                      TextSpan(text: l10n.termsSuffix),
                     ],
                   ),
                 ),
@@ -995,7 +997,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'We only use phone numbers to make sure everyone on Blindly is real',
+            l10n.phoneRationale,
             style: TextStyle(
               fontSize: 14,
               color: Theme.of(context).colorScheme.onSurface, // Pure black
@@ -1006,7 +1008,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
           Row(
             children: [
               Text(
-                'Country',
+                l10n.countryLabel,
                 style: TextStyle(
                   fontSize: 14,
                   height: 1.4,
@@ -1015,7 +1017,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               ),
               SizedBox(width: 80),
               Text(
-                'Phone number',
+                l10n.phoneNumberLabel,
                 style: TextStyle(
                   fontSize: 14,
                   color: Theme.of(context).colorScheme.onSurface,
@@ -1070,7 +1072,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     color: Theme.of(context).colorScheme.onSurface,
                   ), // Dark grey text
                   decoration: InputDecoration(
-                    hintText: 'e.g. 9876543210',
+                    hintText: l10n.phoneHint,
                     hintStyle: TextStyle(
                       color: Theme.of(
                         context,
@@ -1110,9 +1112,9 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   height: 1.4,
                 ),
                 children: [
-                  TextSpan(text: 'By continuing, you agree to our '),
+                  TextSpan(text: l10n.termsContinuePrefix),
                   TextSpan(
-                    text: 'terms',
+                    text: l10n.termsWord,
                     style: TextStyle(
                       color: Theme.of(
                         context,
@@ -1120,9 +1122,9 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  TextSpan(text: '. See how we use your data in our '),
+                  TextSpan(text: l10n.termsBridge),
                   TextSpan(
-                    text: 'privacy policy',
+                    text: l10n.privacyPolicyWord,
                     style: TextStyle(
                       color: Theme.of(
                         context,
@@ -1130,7 +1132,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  TextSpan(text: '.'),
+                  TextSpan(text: l10n.termsSuffix),
                 ],
               ),
             ),
@@ -1192,7 +1194,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     size: 20,
                   )
                 : Text(
-                    'Continue',
+                    l10n.continueLabel,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -1220,7 +1222,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               ),
               children: [
                 TextSpan(
-                  text: 'Enter the code we\'ve sent by text to $_phoneNumber. ',
+                  text: l10n.otpSentPhone(_phoneNumber),
                 ),
                 WidgetSpan(
                   child: GestureDetector(
@@ -1228,7 +1230,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                       setState(() => _currentMethod = AuthMethod.phone);
                     },
                     child: Text(
-                      'Change number',
+                      l10n.changeNumber,
                       style: TextStyle(
                         decoration: TextDecoration.underline,
                         color: Theme.of(
@@ -1323,8 +1325,8 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   ),
                   child: Text(
                     _canResend
-                        ? 'Resend code'
-                        : 'The code should arrive within ${_resendTimer}s',
+                        ? l10n.resendCode
+                        : l10n.codeArrivesIn(_resendTimer),
                     style: TextStyle(
                       fontSize: 14,
                       color: _canResend
@@ -1403,7 +1405,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             child: _isLoading
                 ? AppLoader(strokeWidth: 2, color: Colors.white, size: 20)
                 : Text(
-                    'Continue',
+                    l10n.continueLabel,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -1424,7 +1426,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Please enter your login details below',
+            l10n.loginDetailsSubtitle,
             style: TextStyle(
               fontSize: 14,
               color: Theme.of(context).colorScheme.onSurface, // Pure black
@@ -1432,7 +1434,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
           ),
           SizedBox(height: 20),
           Text(
-            'Email',
+            l10n.emailLabel,
             style: TextStyle(
               fontSize: 14,
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
@@ -1450,7 +1452,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             ],
             style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
             decoration: InputDecoration(
-              hintText: 'Abcd@gmail.com',
+              hintText: l10n.emailHint,
               hintStyle: TextStyle(
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
               ),
@@ -1492,25 +1494,25 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   height: 1.4,
                 ),
                 children: [
-                  TextSpan(text: 'By continuing, you agree to our '),
+                  TextSpan(text: l10n.termsContinuePrefix),
                   TextSpan(
-                    text: 'terms',
+                    text: l10n.termsWord,
                     style: TextStyle(
                       color: Theme.of(
                         context,
                       ).colorScheme.onSurface, // Pure black
                     ),
                   ),
-                  TextSpan(text: '. See how we use your data in our '),
+                  TextSpan(text: l10n.termsBridge),
                   TextSpan(
-                    text: 'privacy policy',
+                    text: l10n.privacyPolicyWord,
                     style: TextStyle(
                       color: Theme.of(
                         context,
                       ).colorScheme.onSurface, // Pure black
                     ),
                   ),
-                  TextSpan(text: '.'),
+                  TextSpan(text: l10n.termsSuffix),
                 ],
               ),
             ),
@@ -1563,7 +1565,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     size: 20,
                   )
                 : Text(
-                    'Continue',
+                    l10n.continueLabel,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -1591,7 +1593,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               ),
               children: [
                 TextSpan(
-                  text: 'Enter the code we\'ve sent by email to\n$_email. ',
+                  text: l10n.otpSentEmail(_email),
                 ),
                 WidgetSpan(
                   child: GestureDetector(
@@ -1599,7 +1601,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                       setState(() => _currentMethod = AuthMethod.email);
                     },
                     child: Text(
-                      'Change email',
+                      l10n.changeEmail,
                       style: TextStyle(
                         decoration: TextDecoration.underline,
                         color: Theme.of(context).colorScheme.primary,
@@ -1693,8 +1695,8 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   ),
                   child: Text(
                     _canResend
-                        ? 'Resend code'
-                        : 'The code should arrive within ${_resendTimer}s',
+                        ? l10n.resendCode
+                        : l10n.codeArrivesIn(_resendTimer),
                     style: TextStyle(
                       fontSize: 14,
                       color: _canResend
@@ -1776,7 +1778,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     size: 20,
                   )
                 : Text(
-                    'Continue',
+                    l10n.continueLabel,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -1797,7 +1799,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Please enter your login details below',
+            l10n.loginDetailsSubtitle,
             style: TextStyle(
               fontSize: 14,
               color: Theme.of(context).colorScheme.onSurface, // Pure black
@@ -1805,7 +1807,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
           ),
           SizedBox(height: 20),
           Text(
-            'Email',
+            l10n.emailLabel,
             style: TextStyle(
               fontSize: 14,
               color: Theme.of(context).colorScheme.onSurface,
@@ -1817,7 +1819,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             decoration: InputDecoration(
-              hintText: 'Abcd@gmail.com',
+              hintText: l10n.emailHint,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
@@ -1842,7 +1844,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
           ),
           SizedBox(height: 16),
           Text(
-            'Password',
+            l10n.passwordLabel,
             style: TextStyle(
               fontSize: 14,
               color: Theme.of(context).colorScheme.onSurface,
@@ -1854,7 +1856,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             controller: _passwordController,
             obscureText: _obscurePassword,
             decoration: InputDecoration(
-              hintText: 'abc@123',
+              hintText: l10n.passwordHint,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
@@ -1891,7 +1893,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             child: TextButton(
               onPressed: () {},
               child: Text(
-                'Forgot your password?',
+                l10n.forgotPassword,
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurface, // Pure black
                   fontWeight: FontWeight.w500,
@@ -1913,25 +1915,25 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   height: 1.4,
                 ),
                 children: [
-                  TextSpan(text: 'By continuing, you agree to our '),
+                  TextSpan(text: l10n.termsContinuePrefix),
                   TextSpan(
-                    text: 'terms',
+                    text: l10n.termsWord,
                     style: TextStyle(
                       color: Theme.of(
                         context,
                       ).colorScheme.onSurface, // Pure black
                     ),
                   ),
-                  TextSpan(text: '. See how we use your data in our '),
+                  TextSpan(text: l10n.termsBridge),
                   TextSpan(
-                    text: 'privacy policy',
+                    text: l10n.privacyPolicyWord,
                     style: TextStyle(
                       color: Theme.of(
                         context,
                       ).colorScheme.onSurface, // Pure black
                     ),
                   ),
-                  TextSpan(text: '.'),
+                  TextSpan(text: l10n.termsSuffix),
                 ],
               ),
             ),
@@ -1984,7 +1986,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     size: 20,
                   )
                 : Text(
-                    'Continue',
+                    l10n.continueLabel,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,

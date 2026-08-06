@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:record/record.dart';
@@ -53,6 +54,9 @@ class ChatConversationScreen extends ConsumerStatefulWidget {
 
 class _ChatConversationScreenState
     extends ConsumerState<ChatConversationScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   final SupabaseClient _supabase = Supabase.instance.client;
 
   final TextEditingController _controller = TextEditingController();
@@ -403,7 +407,7 @@ class _ChatConversationScreenState
       return content;
     } catch (e) {
       debugPrint("❌ Decrypt failed for ${msgMap['id']}: $e");
-      return "🔒 Encrypted message";
+      return "🔒 ${l10n.encryptedMessage}";
     }
   }
 
@@ -570,7 +574,7 @@ class _ChatConversationScreenState
     final trimmedText = text.trim();
 
     if (!_isKeyReady) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Encryption key not loaded. Please wait.")));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.encryptionKeyNotLoaded)));
       return;
     }
 
@@ -578,9 +582,9 @@ class _ChatConversationScreenState
     // can inspect it. Covers new messages and edits alike.
     if (TextModerationService().check(trimmedText) != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            "This message may violate our community guidelines and wasn't sent.",
+            l10n.messageViolatesGuidelines,
           ),
           backgroundColor: Colors.redAccent,
         ),
@@ -684,7 +688,7 @@ class _ChatConversationScreenState
 
   Future<void> _sendMediaMessage(String url, String previewUrl, int width, int height, String type) async {
     if (!_isKeyReady) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Encryption key not loaded. Please wait.")));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.encryptionKeyNotLoaded)));
       return;
     }
 
@@ -801,7 +805,7 @@ class _ChatConversationScreenState
   }
 
   Future<void> _showIceBreakerSheet() async {
-    final categories = ["All", "AI ✨", "Playful", "Deep", "Quirky", "Hypothesis"];
+    final categories = [l10n.categoryAll, "AI ✨", l10n.categoryPlayful, l10n.categoryDeep, l10n.categoryQuirky, l10n.categoryHypothesis];
     int selectedCategory = 0;
     bool isAiLoading = false;
     bool aiFailed = false;
@@ -809,10 +813,10 @@ class _ChatConversationScreenState
     int selectedAiMode = 0; // 0: Both, 1: Recipient Only
 
     final icebreakers = [
-      "What’s a small thing that made you smile recently?",
-      "Two truths and a lie: Let’s go!",
-      "If you could have any superpower, what would it be?",
-      "What’s the most interesting thing you’ve learned lately?",
+      l10n.icebreakerSmile,
+      l10n.icebreakerTwoTruths,
+      l10n.superpowerPrompt,
+      l10n.icebreakerInteresting,
     ];
 
     final selectedText = await showModalBottomSheet<String>(
@@ -856,8 +860,8 @@ class _ChatConversationScreenState
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    "Icebreakers",
+                  Text(
+                    l10n.icebreakers,
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 16),
@@ -950,13 +954,13 @@ class _ChatConversationScreenState
     required Function(String) onSelect,
   }) {
     if (isLoading) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircularProgressIndicator(color: Color(0xFF3F472E)),
             SizedBox(height: 16),
-            Text("AI is analyzing your profiles...", style: TextStyle(color: Colors.grey)),
+            Text(l10n.aiAnalyzingProfiles, style: const TextStyle(color: Colors.grey)),
           ],
         ),
       );
@@ -982,8 +986,8 @@ class _ChatConversationScreenState
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
-                "Couldn't load icebreakers",
+              Text(
+                l10n.couldntLoadIcebreakers,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -993,7 +997,7 @@ class _ChatConversationScreenState
               const SizedBox(height: 8),
               Text(
                 failed
-                    ? "Something went wrong on our side. Give it another go."
+                    ? l10n.serverSideError
                     : "Tap below to generate openers from your profiles.",
                 textAlign: TextAlign.center,
                 style: TextStyle(
@@ -1006,7 +1010,7 @@ class _ChatConversationScreenState
               TextButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh, size: 18),
-                label: Text(failed ? "Try again" : "Generate"),
+                label: Text(failed ? l10n.tryAgain : l10n.generate),
                 style: TextButton.styleFrom(foregroundColor: const Color(0xFF3F472E)),
               ),
             ],
@@ -1023,12 +1027,16 @@ class _ChatConversationScreenState
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
-              _aiModeChip("Personalized", selectedMode == 0, () => onModeChanged(0)),
+              Flexible(
+                child: _aiModeChip(l10n.categoryPersonalized, selectedMode == 0, () => onModeChanged(0)),
+              ),
               const SizedBox(width: 8),
-              _aiModeChip("Them only", selectedMode == 1, () => onModeChanged(1)),
+              Flexible(
+                child: _aiModeChip(l10n.themOnly, selectedMode == 1, () => onModeChanged(1)),
+              ),
               const Spacer(),
               IconButton(
-                tooltip: "Regenerate",
+                tooltip: l10n.regenerate,
                 onPressed: onRefresh,
                 icon: const Icon(Icons.refresh, size: 20, color: Color(0xFF3F472E)),
               ),
@@ -1040,9 +1048,9 @@ class _ChatConversationScreenState
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             children: [
-              _aiIcebreakerCard("Question", data['question'] ?? "", Icons.question_answer_outlined, onSelect),
-              _aiIcebreakerCard("Observation", data['observation'] ?? "", Icons.remove_red_eye_outlined, onSelect),
-              _aiIcebreakerCard("Fun Fact", data['fun_fact'] ?? "", Icons.celebration_outlined, onSelect),
+              _aiIcebreakerCard(l10n.categoryQuestion, data['question'] ?? "", Icons.question_answer_outlined, onSelect),
+              _aiIcebreakerCard(l10n.categoryObservation, data['observation'] ?? "", Icons.remove_red_eye_outlined, onSelect),
+              _aiIcebreakerCard(l10n.categoryFunFact, data['fun_fact'] ?? "", Icons.celebration_outlined, onSelect),
             ],
           ),
         ),
@@ -1062,6 +1070,8 @@ class _ChatConversationScreenState
         ),
         child: Text(
           label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             color: isSelected ? const Color(0xFF3F472E) : Colors.grey.shade600,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -1153,8 +1163,8 @@ class _ChatConversationScreenState
     Clipboard.setData(ClipboardData(text: msg.text));
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Message copied"),
+      SnackBar(
+        content: Text(l10n.messageCopied),
         duration: Duration(seconds: 1),
       ),
     );
@@ -1185,7 +1195,7 @@ class _ChatConversationScreenState
             children: [
               ListTile(
                 leading: const Icon(Icons.delete_outline),
-                title: const Text("Delete for me"),
+                title: Text(l10n.deleteForMe),
                 onTap: () async {
                   Navigator.pop(context);
                   await _deleteForMe();
@@ -1194,7 +1204,7 @@ class _ChatConversationScreenState
               if (allMine && allRecent && !anyDeletedForEveryone)
                 ListTile(
                   leading: const Icon(Icons.delete, color: Colors.red),
-                  title: const Text("Delete for everyone"),
+                  title: Text(l10n.deleteForEveryone),
                   onTap: () async {
                     Navigator.pop(context);
                     await _deleteForEveryone();
@@ -1284,8 +1294,8 @@ class _ChatConversationScreenState
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Microphone permission denied'),
+            SnackBar(
+              content: Text(l10n.micPermissionDenied),
               backgroundColor: Colors.red,
             ),
           );
@@ -1484,7 +1494,7 @@ class _ChatConversationScreenState
               e.toString().contains('connection') ||
                       e.toString().contains('timeout') ||
                       e.toString().contains('abort')
-                  ? 'Network error. Please check your internet connection and try again.'
+                  ? l10n.networkErrorRetry
                   : 'Failed to send voice message: ${e.toString()}',
             ),
             actions: [
@@ -1579,7 +1589,7 @@ class _ChatConversationScreenState
     }
     if (message.messageType != 'text') {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Only text messages can be edited")),
+        SnackBar(content: Text(l10n.onlyTextEditable)),
       );
       return;
     }
@@ -1617,7 +1627,7 @@ class _ChatConversationScreenState
           Padding(
             padding: const EdgeInsets.only(right: 4),
             child: Text(
-              '(Edited)',
+              l10n.editedSuffix,
               style: TextStyle(
                 fontSize: 10,
                 color: statusColor,
@@ -1723,7 +1733,7 @@ class _ChatConversationScreenState
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  "End-to-end encrypted",
+                  l10n.endToEndEncrypted,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -1743,9 +1753,8 @@ class _ChatConversationScreenState
                   height: 1.4,
                 ),
                 children: [
-                  const TextSpan(
-                    text:
-                        "Messages and calls are end-to-end encrypted. No one outside of this chat, not even Blindly, can read or listen to them. ",
+                  TextSpan(
+                    text: l10n.e2eBanner,
                   ),
                   TextSpan(
                     text: "Tap to learn more.",
@@ -1798,7 +1807,7 @@ class _ChatConversationScreenState
                 onPressed: _clearSelection,
               ),
               title: Text(
-                "${_selectedMessageIds.length} selected",
+                l10n.nSelected('${_selectedMessageIds.length}'),
                 style: const TextStyle(
                   color: Colors.black,
                   fontSize: 18,
@@ -1904,38 +1913,38 @@ class _ChatConversationScreenState
                     // } else if (value == "clear_chat") {
                     // }
                   },
-                  itemBuilder: (context) => const [
+                  itemBuilder: (context) => [
                     PopupMenuItem(
                       value: "view_profile",
-                      child: Text("View Profile"),
+                      child: Text(l10n.viewProfile),
                     ),
                     PopupMenuItem(
                       value: "clear_chat",
-                      child: Text("Clear Chat"),
+                      child: Text(l10n.clearChat),
                     ),
                     PopupMenuItem(
                       value: "mute_notifications",
-                      child: Text("Mute Notifications"),
+                      child: Text(l10n.muteNotifications),
                     ),
                     PopupMenuItem(
                       value: "block_user",
-                      child: Text("Block User"),
+                      child: Text(l10n.blockUser),
                     ),
                     PopupMenuItem(
                       value: "report_user",
-                      child: Text("Report and Spam"),
+                      child: Text(l10n.reportAndSpam),
                     ),
                     PopupMenuItem(
                       value: "archive_chat",
-                      child: Text("Archive Chat"),
+                      child: Text(l10n.archiveChat),
                     ),
                     PopupMenuItem(
                       value: "Ice Breaker",
-                      child: Text("Ice Breaker"),
+                      child: Text(l10n.iceBreaker),
                     ),
                     PopupMenuItem(
                       value: "opening Move",
-                      child: Text("Opening Move"),
+                      child: Text(l10n.categoryOpeningMove),
                     ),
                   ],
                 ),
@@ -1964,9 +1973,9 @@ class _ChatConversationScreenState
                       children: [
                         const Icon(Icons.edit, size: 18, color: Colors.black54),
                         const SizedBox(width: 8),
-                        const Expanded(
+                        Expanded(
                           child: Text(
-                            "Editing message",
+                            l10n.editingMessage,
                             style: TextStyle(
                               color: Colors.black54,
                               fontWeight: FontWeight.w500,
@@ -2125,9 +2134,9 @@ class _ChatConversationScreenState
           Expanded(
             child: Text(
               _replyingTo!.messageType == 'image'
-                  ? ' Image message'
+                  ? l10n.imageMessage
                   : _replyingTo!.messageType == 'voice'
-                  ? ' Voice message'
+                  ? l10n.voiceMessage
                   : _replyingTo!.text,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -2344,7 +2353,7 @@ class _ChatConversationScreenState
             children: [
               ListTile(
                 leading: const Icon(Icons.camera_alt, color: Color(0xFF3F472E)),
-                title: const Text('Take Photo'),
+                title: Text(l10n.takePhoto),
                 onTap: () => Navigator.pop(context, ImageSource.camera),
               ),
               ListTile(
@@ -2352,7 +2361,7 @@ class _ChatConversationScreenState
                   Icons.photo_library,
                   color: Color(0xFF3F472E),
                 ),
-                title: const Text('Choose from Gallery'),
+                title: Text(l10n.chooseFromGallery),
                 onTap: () => Navigator.pop(context, ImageSource.gallery),
               ),
               const SizedBox(height: 10),
@@ -2396,7 +2405,7 @@ class _ChatConversationScreenState
     if (currentUser == null) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Please login first')));
+      ).showSnackBar(SnackBar(content: Text(l10n.pleaseLoginFirst)));
       return;
     }
 
@@ -2508,7 +2517,7 @@ class _ChatConversationScreenState
   void _pickAttachment() {
     // TODO: Implement file attachment picker
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Attachment picker coming soon')),
+      SnackBar(content: Text(l10n.attachmentComingSoon)),
     );
   }
 }
@@ -2565,6 +2574,9 @@ class SwipeableMessage extends StatefulWidget {
 }
 
 class _SwipeableMessageState extends State<SwipeableMessage> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   double _dragX = 0;
 
   // Voice playback
@@ -2639,8 +2651,8 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
       debugPrint('Error playing audio: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to play voice message'),
+          SnackBar(
+            content: Text(l10n.failedToPlayVoice),
             backgroundColor: Colors.red,
           ),
         );
@@ -2815,7 +2827,7 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
     } else if (_translated == null) {
       label = 'Translate';
     } else {
-      label = _showOriginal ? 'Show translation' : 'Show original';
+      label = _showOriginal ? l10n.showTranslation : l10n.showOriginal;
     }
 
     return GestureDetector(
@@ -2932,7 +2944,7 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Failed to load',
+                      l10n.failedToLoad,
                       style: TextStyle(
                         color: textColor.withOpacity(0.5),
                         fontSize: 12,
@@ -3065,7 +3077,7 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
     try {
       data = jsonDecode(widget.message.text);
     } catch (e) {
-      return Text('Error loading GIF', style: TextStyle(color: textColor));
+      return Text(l10n.errorLoadingGif, style: TextStyle(color: textColor));
     }
 
     final previewUrl = data['previewUrl'];
@@ -3140,7 +3152,7 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
     try {
       data = jsonDecode(widget.message.text);
     } catch (e) {
-      return Text('Error loading Sticker', style: TextStyle(color: textColor));
+      return Text(l10n.errorLoadingSticker, style: TextStyle(color: textColor));
     }
 
     final url = data['url'];
@@ -3210,7 +3222,7 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
 
     String previewText = widget.replyMessage?.text ?? '';
     if (isGif) previewText = 'GIF';
-    if (isSticker) previewText = 'Sticker';
+    if (isSticker) previewText = l10n.stickers;
     if (isVoice) previewText = 'Voice message';
 
     return Container(

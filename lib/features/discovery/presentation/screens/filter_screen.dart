@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/connection_mode_provider.dart';
 import '../../povider/filter_provider.dart';
 import '../../../onboarding/domain/models/interest_chip_model.dart';
+import '../../../../core/utils/vocab.dart';
 
 class FilterScreen extends ConsumerWidget {
   const FilterScreen({super.key});
@@ -10,12 +12,13 @@ class FilterScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final connectionMode = ref.watch(connectionModeProvider);
     final filterState = ref.watch(filterProvider);
     final filterNotifier = ref.read(filterProvider.notifier);
 
     final isDating = connectionMode.toLowerCase() == 'date';
-    final title = isDating ? 'Dating Preference' : 'BFF Preference';
+    final title = isDating ? l10n.datingPreference : l10n.bffPreference;
 
     final interestsAsync = ref.watch(interestsProvider);
 
@@ -51,7 +54,7 @@ class FilterScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionTitle('Who would you like to date?'),
+            _buildSectionTitle(l10n.whoWouldYouDate),
             const SizedBox(height: 12),
             _buildFilterCard(
               context,
@@ -59,7 +62,7 @@ class FilterScreen extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    filterState.genderPreference,
+                    vocabLabel(l10n, filterState.genderPreference),
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -76,7 +79,7 @@ class FilterScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 28),
 
-            _buildSectionTitle('Age range?'),
+            _buildSectionTitle(l10n.ageRange),
             const SizedBox(height: 12),
             _buildFilterCard(
               context,
@@ -84,7 +87,10 @@ class FilterScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${filterState.minAge.toInt()} - ${filterState.maxAge.toInt()} years old',
+                    l10n.yearsOldRange(
+                      '${filterState.minAge.toInt()}',
+                      '${filterState.maxAge.toInt()}',
+                    ),
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -115,7 +121,7 @@ class FilterScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 28),
 
-            _buildSectionTitle('How far away they are?'),
+            _buildSectionTitle(l10n.howFarAway),
             const SizedBox(height: 12),
             _buildFilterCard(
               context,
@@ -126,7 +132,7 @@ class FilterScreen extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '${filterState.distanceLimit.toInt()} kilometers away',
+                        l10n.kilometersAway('${filterState.distanceLimit.toInt()}'),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -157,17 +163,17 @@ class FilterScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 28),
 
-            _buildSectionTitle('Your interests?'),
+            _buildSectionTitle(l10n.yourInterests),
             const SizedBox(height: 12),
             interestsAsync.when(
               data: (interests) =>
                   _buildInterestsCard(context, ref, filterState, interests),
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Text('Error loading interests: $e'),
+              error: (e, _) => Text('${l10n.errorLoadingInterests}: $e'),
             ),
             const SizedBox(height: 28),
 
-            _buildSectionTitle('Which language do you know?'),
+            _buildSectionTitle(l10n.whichLanguages),
             const SizedBox(height: 12),
             _buildFilterCard(
               context,
@@ -177,8 +183,10 @@ class FilterScreen extends ConsumerWidget {
                   Expanded(
                     child: Text(
                       filterState.selectedLanguages.isEmpty
-                          ? 'Select languages'
-                          : filterState.selectedLanguages.join(', '),
+                          ? l10n.selectLanguages
+                          : filterState.selectedLanguages
+                                .map((v) => vocabLabel(l10n, v))
+                                .join(', '),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -197,7 +205,7 @@ class FilterScreen extends ConsumerWidget {
               onTap: () => _showMultiSelectPicker(
                 context,
                 ref,
-                title: 'Languages',
+                title: l10n.languagesTitle,
                 options: [
                   'English',
                   'Hindi',
@@ -219,7 +227,7 @@ class FilterScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 28),
 
-            _buildSectionTitle('Religion'),
+            _buildSectionTitle(l10n.religionQuestion),
             const SizedBox(height: 12),
             _buildFilterCard(
               context,
@@ -227,7 +235,9 @@ class FilterScreen extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    filterState.religion ?? 'Select religion',
+                    filterState.religion == null
+                        ? l10n.selectReligion
+                        : vocabLabel(l10n, filterState.religion!),
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -243,7 +253,7 @@ class FilterScreen extends ConsumerWidget {
               onTap: () => _showSingleSelectPicker(
                 context,
                 ref,
-                title: 'Religion',
+                title: l10n.religionQuestion,
                 options: [
                   'Hindu',
                   'Christian',
@@ -262,7 +272,7 @@ class FilterScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 28),
 
-            _buildSectionTitle('Relationship type?'),
+            _buildSectionTitle(l10n.relationshipTypeQuestion),
             const SizedBox(height: 12),
             _buildFilterCard(
               context,
@@ -270,7 +280,9 @@ class FilterScreen extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    filterState.relationshipType ?? 'Select type',
+                    filterState.relationshipType == null
+                        ? l10n.selectType
+                        : vocabLabel(l10n, filterState.relationshipType!),
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -286,7 +298,7 @@ class FilterScreen extends ConsumerWidget {
               onTap: () => _showSingleSelectPicker(
                 context,
                 ref,
-                title: 'Relationship Type',
+                title: l10n.relationshipTypeTitle,
                 options: [
                   'Monogamy',
                   'Polyamory',
@@ -300,7 +312,7 @@ class FilterScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 28),
 
-            _buildSectionTitle('Sexual orientation?'),
+            _buildSectionTitle(l10n.sexualOrientationQuestion),
             const SizedBox(height: 12),
             _buildFilterCard(
               context,
@@ -308,7 +320,9 @@ class FilterScreen extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    filterState.sexualOrientation ?? 'Select orientation',
+                    filterState.sexualOrientation == null
+                        ? l10n.selectOrientation
+                        : vocabLabel(l10n, filterState.sexualOrientation!),
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -324,7 +338,7 @@ class FilterScreen extends ConsumerWidget {
               onTap: () => _showSingleSelectPicker(
                 context,
                 ref,
-                title: 'Sexual Orientation',
+                title: l10n.sexualOrientationTitle,
                 options: [
                   'Straight',
                   'Gay',
@@ -342,7 +356,7 @@ class FilterScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 28),
 
-            _buildSectionTitle('Dating intention?'),
+            _buildSectionTitle(l10n.datingIntentionQuestion),
             const SizedBox(height: 12),
             _buildFilterCard(
               context,
@@ -350,7 +364,9 @@ class FilterScreen extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    filterState.datingIntention ?? 'Select intention',
+                    filterState.datingIntention == null
+                        ? l10n.selectIntention
+                        : vocabLabel(l10n, filterState.datingIntention!),
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -366,7 +382,7 @@ class FilterScreen extends ConsumerWidget {
               onTap: () => _showSingleSelectPicker(
                 context,
                 ref,
-                title: 'Dating Intention',
+                title: l10n.datingIntentionTitle,
                 options: [
                   'Fun, causal dates',
                   'Life partner',
@@ -385,7 +401,7 @@ class FilterScreen extends ConsumerWidget {
                   ref.read(filterProvider.notifier).reset();
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Text('Filters cleared successfully! ✨'),
+                      content: Text('${l10n.filtersCleared} ✨'),
                       behavior: SnackBarBehavior.floating,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -417,7 +433,7 @@ class FilterScreen extends ConsumerWidget {
                       ),
                       const SizedBox(width: 10),
                       Text(
-                        'Clear Filters',
+                        l10n.clearFilters,
                         style: TextStyle(
                           color: theme.colorScheme.primary,
                           fontWeight: FontWeight.w800,
@@ -601,7 +617,7 @@ class FilterScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Show me',
+                  AppLocalizations.of(context).showMe,
                   style: TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: 20,
@@ -674,7 +690,7 @@ class FilterScreen extends ConsumerWidget {
                         final isSelected = selectedValue == option;
                         return ListTile(
                           title: Text(
-                            option,
+                            vocabLabel(AppLocalizations.of(context), option),
                             style: TextStyle(
                               fontWeight: isSelected
                                   ? FontWeight.bold
@@ -761,7 +777,7 @@ class FilterScreen extends ConsumerWidget {
                         final isSelected = selectedValues.contains(option);
                         return ListTile(
                           title: Text(
-                            option,
+                            vocabLabel(AppLocalizations.of(context), option),
                             style: TextStyle(
                               fontWeight: isSelected
                                   ? FontWeight.bold
@@ -802,7 +818,7 @@ class FilterScreen extends ConsumerWidget {
     final isSelected = ref.read(filterProvider).genderPreference == option;
     return ListTile(
       title: Text(
-        option,
+        vocabLabel(AppLocalizations.of(context), option),
         style: TextStyle(
           fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
           color: isSelected ? Theme.of(context).colorScheme.primary : null,

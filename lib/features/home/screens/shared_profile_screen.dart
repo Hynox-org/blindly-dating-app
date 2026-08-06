@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/widgets/app_loader.dart';
 import '../../home/component/ProfileSwipeCard.dart';
@@ -16,6 +17,9 @@ class SharedProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _SharedProfileScreenState extends ConsumerState<SharedProfileScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   bool _isLoading = true;
   DiscoveryUser? _user;
   String? _errorMessage;
@@ -33,7 +37,7 @@ class _SharedProfileScreenState extends ConsumerState<SharedProfileScreen> {
 
       if (user == null) {
         setState(() {
-          _errorMessage = "Profile not found or no longer available.";
+          _errorMessage = l10n.profileUnavailable;
           _isLoading = false;
         });
         return;
@@ -48,7 +52,7 @@ class _SharedProfileScreenState extends ConsumerState<SharedProfileScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = "Failed to load profile. Please try again.";
+          _errorMessage = l10n.profileLoadFailed;
           _isLoading = false;
         });
       }
@@ -95,27 +99,27 @@ class _SharedProfileScreenState extends ConsumerState<SharedProfileScreen> {
 
     switch (_user!.relationship) {
       case RelationshipState.likedByMe:
-        message = "You already liked this profile.";
+        message = l10n.alreadyLikedProfile;
         icon = Icons.favorite;
         color = Colors.redAccent;
         break;
       case RelationshipState.likedMe:
-        message = "This person already liked you.";
+        message = l10n.personAlreadyLikedYou;
         icon = Icons.star;
         color = Colors.amber;
         break;
       case RelationshipState.matched:
-        message = "You are matched.";
+        message = l10n.youAreMatched;
         icon = Icons.auto_awesome;
         color = Colors.pinkAccent;
         break;
       case RelationshipState.chatStarted:
-        message = "You already started chatting.";
+        message = l10n.alreadyChatting;
         icon = Icons.chat;
         color = Colors.blueAccent;
         break;
       case RelationshipState.skippedByMe:
-        message = "Profile already skipped.";
+        message = l10n.profileAlreadySkipped;
         icon = Icons.block;
         color = Colors.grey;
         break;
@@ -177,7 +181,7 @@ class _SharedProfileScreenState extends ConsumerState<SharedProfileScreen> {
               const Icon(Icons.error_outline, size: 48, color: Colors.grey),
               const SizedBox(height: 16),
               Text(
-                _errorMessage ?? "Profile not found",
+                _errorMessage ?? l10n.profileNotFound,
                 style: const TextStyle(fontSize: 16),
               ),
               const SizedBox(height: 24),
@@ -239,9 +243,9 @@ class _SharedProfileScreenState extends ConsumerState<SharedProfileScreen> {
           icon: const Icon(Icons.close, color: Colors.black, size: 28),
           onPressed: _onDismiss,
         ),
-        title: const Text(
-            "Profile Preview", 
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)
+        title: Text(
+            l10n.profilePreview,
+            style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)
         ),
       ),
       body: Stack(

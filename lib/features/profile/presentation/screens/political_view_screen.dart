@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
+import '../../../../core/utils/vocab.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/repositories/profile_repository.dart';
 import '../../provider/profile_provider.dart';
@@ -14,6 +16,9 @@ class PoliticalViewScreen extends ConsumerStatefulWidget {
 }
 
 class _PoliticalViewScreenState extends ConsumerState<PoliticalViewScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   final List<String> _politicalOptions = [
     'Communist',
     'Socialist',
@@ -53,7 +58,7 @@ class _PoliticalViewScreenState extends ConsumerState<PoliticalViewScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update political view: $e')),
+          SnackBar(content: Text(l10n.errUpdateFailed('$e'))),
         );
       }
     }
@@ -68,8 +73,8 @@ class _PoliticalViewScreenState extends ConsumerState<PoliticalViewScreen> {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Political View',
+        title: Text(
+          l10n.politicalViewTitle,
           style: TextStyle(
             color: Colors.black,
             fontSize: 18,
@@ -82,8 +87,8 @@ class _PoliticalViewScreenState extends ConsumerState<PoliticalViewScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Skip',
+            child: Text(
+              l10n.skip,
               style: TextStyle(
                 color: Colors.black,
                 fontSize: 14,
@@ -126,7 +131,7 @@ class _PoliticalViewScreenState extends ConsumerState<PoliticalViewScreen> {
                           : Border.all(color: Colors.transparent),
                     ),
                     child: Text(
-                      option,
+                      vocabLabel(l10n, option),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -151,8 +156,8 @@ class _PoliticalViewScreenState extends ConsumerState<PoliticalViewScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Save',
+                child: Text(
+                  l10n.save,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,

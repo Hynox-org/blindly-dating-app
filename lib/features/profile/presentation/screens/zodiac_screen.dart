@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
+import '../../../../core/utils/vocab.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/repositories/profile_repository.dart';
 import '../../provider/profile_provider.dart';
@@ -13,6 +15,9 @@ class ZodiacScreen extends ConsumerStatefulWidget {
 }
 
 class _ZodiacScreenState extends ConsumerState<ZodiacScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   // List of zodiac options
   final List<String> _zodiacOptions = [
     'Aries',
@@ -66,7 +71,7 @@ class _ZodiacScreenState extends ConsumerState<ZodiacScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Failed to update zodiac: $e')));
+        ).showSnackBar(SnackBar(content: Text(l10n.errUpdateFailed('$e'))));
       }
     }
   }
@@ -84,8 +89,8 @@ class _ZodiacScreenState extends ConsumerState<ZodiacScreen> {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Zodiac Sign',
+        title: Text(
+          l10n.zodiacSignTitle,
           style: TextStyle(
             color: Colors.black,
             fontSize: 18,
@@ -99,8 +104,8 @@ class _ZodiacScreenState extends ConsumerState<ZodiacScreen> {
           TextButton(
             onPressed: () =>
                 Navigator.pop(context), // Skip acts as close/cancel
-            child: const Text(
-              'Skip',
+            child: Text(
+              l10n.skip,
               style: TextStyle(
                 color: Colors.black,
                 fontSize: 14,
@@ -149,7 +154,7 @@ class _ZodiacScreenState extends ConsumerState<ZodiacScreen> {
                       ),
                     ),
                     child: Text(
-                      option,
+                      vocabLabel(l10n, option),
                       style: TextStyle(
                         color: Colors.black, // Always black text as per design
                         fontSize: 14,

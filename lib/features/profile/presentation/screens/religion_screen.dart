@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
+import '../../../../core/utils/vocab.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/repositories/profile_repository.dart';
 import '../../provider/profile_provider.dart';
@@ -13,6 +15,9 @@ class ReligionScreen extends ConsumerStatefulWidget {
 }
 
 class _ReligionScreenState extends ConsumerState<ReligionScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   // List of religion options as per design
   final List<String> _religionOptions = [
     'Hindu',
@@ -63,7 +68,7 @@ class _ReligionScreenState extends ConsumerState<ReligionScreen> {
         }
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update religion: $e')),
+          SnackBar(content: Text(l10n.errUpdateFailed('$e'))),
         );
       }
     } else {
@@ -84,8 +89,8 @@ class _ReligionScreenState extends ConsumerState<ReligionScreen> {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Religion View',
+        title: Text(
+          l10n.religionViewTitle,
           style: TextStyle(
             color: Colors.black,
             fontSize: 18,
@@ -107,8 +112,8 @@ class _ReligionScreenState extends ConsumerState<ReligionScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "This is sensitive information that'll be on your profile. It's Totally optional.",
+                  Text(
+                    l10n.sensitiveInfoNote,
                     style: TextStyle(fontSize: 14, color: Colors.black87),
                   ),
                   const SizedBox(height: 24),
@@ -178,8 +183,8 @@ class _ReligionScreenState extends ConsumerState<ReligionScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Save',
+                child: Text(
+                  l10n.save,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 
 /// Shows a generic popup dialog.
 ///
@@ -61,10 +62,10 @@ void showErrorPopup(
 }) {
   showCustomPopup(
     context: context,
-    title: 'Error',
+    title: AppLocalizations.of(context).errorTitle,
     message: message,
     isError: true,
-    buttonText: onRetry != null ? (retryText ?? 'Retry') : 'OK',
+    buttonText: onRetry != null ? (retryText ?? AppLocalizations.of(context).retry) : 'OK',
     onPressed: onRetry,
   );
 }
@@ -73,9 +74,9 @@ void showErrorPopup(
 void showSuccessPopup(BuildContext context, String message) {
   showCustomPopup(
     context: context,
-    title: 'Success',
+    title: AppLocalizations.of(context).successTitle,
     message: message,
     isError: false,
-    buttonText: 'Great!',
+    buttonText: AppLocalizations.of(context).great,
   );
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/widgets/marquee_text.dart';
@@ -20,6 +21,9 @@ class LikedYouScreen extends ConsumerStatefulWidget {
 }
 
 class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   @override
   void initState() {
     super.initState();
@@ -53,7 +57,7 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
           },
         ),
         title: Text(
-          'Liked You',
+          l10n.likedYou,
           style: TextStyle(
             color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.w600,
@@ -123,7 +127,7 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "See Who's Interested",
+            l10n.seeWhosInterested,
             style: TextStyle(
               fontSize: 24, // Reduced from 32
               fontWeight: FontWeight.bold,
@@ -132,7 +136,7 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            "Match instantly without the wait. You have $likeCount+ likes waiting you",
+            l10n.matchInstantly('$likeCount'),
             style: TextStyle(
               fontSize: 16,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -192,13 +196,13 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
                     BoxShadow(color: Colors.black26, blurRadius: 4),
                   ],
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.star, color: Colors.white, size: 14),
                     SizedBox(width: 4),
                     Text(
-                      'Super Liked',
+                      l10n.superLiked,
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 11,
@@ -230,27 +234,36 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
             left: 10,
             right: 10,
             bottom: 10,
+            // Expanded, not intrinsic width: translated labels are longer than
+            // "Match"/"Pass" and used to overflow the card.
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _overlayActionButton(
-                  label: 'Match',
-                  onTap: () async {
-                    debugPrint('❤️ Tapped Match for profile: ${user.profileId}');
-                    await ref
-                        .read(likedYouProvider.notifier)
-                        .matchUser(user.profileId);
-                  },
+                Expanded(
+                  child: _overlayActionButton(
+                    label: l10n.matchLabel,
+                    onTap: () async {
+                      debugPrint(
+                        '❤️ Tapped Match for profile: ${user.profileId}',
+                      );
+                      await ref
+                          .read(likedYouProvider.notifier)
+                          .matchUser(user.profileId);
+                    },
+                  ),
                 ),
-
-                _overlayActionButton(
-                  label: 'Pass',
-                  onTap: () async {
-                    debugPrint('💔 Tapped Pass for profile: ${user.profileId}');
-                    await ref
-                        .read(likedYouProvider.notifier)
-                        .passUser(user.profileId);
-                  },
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _overlayActionButton(
+                    label: l10n.passLabel,
+                    onTap: () async {
+                      debugPrint(
+                        '💔 Tapped Pass for profile: ${user.profileId}',
+                      );
+                      await ref
+                          .read(likedYouProvider.notifier)
+                          .passUser(user.profileId);
+                    },
+                  ),
                 ),
               ],
             ),
@@ -294,7 +307,7 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
               TextSpan(
                 children: [
                   TextSpan(
-                    text: "No likes yet, but don't\n",
+                    text: l10n.noLikesYet,
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -307,7 +320,7 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
                     ),
                   ),
                   TextSpan(
-                    text: "buzz off!",
+                    text: l10n.buzzOff,
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -323,7 +336,7 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              "Keep swiping to find your honey.\nSomeone is bound to like you soon!",
+              l10n.keepSwipingBody,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
@@ -351,7 +364,7 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
                   ),
                 ),
                 child: Text(
-                  'Start Swiping',
+                  l10n.startSwiping,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -369,7 +382,7 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
                 );
               },
               child: Text(
-                'Improve Profile',
+                l10n.improveProfile,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -384,7 +397,7 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
   }
 
   Widget _buildErrorState() {
-    return const Center(child: Text('Failed to load likes'));
+    return Center(child: Text(l10n.failedToLoadLikes));
   }
 
   // --------------------------------------------------
@@ -406,8 +419,8 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          child: const Text(
-            'View more likes',
+          child: Text(
+            l10n.viewMoreLikes,
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),
@@ -431,17 +444,23 @@ Widget _overlayActionButton({
           onTap: onTap,
           borderRadius: BorderRadius.circular(20),
           child: Ink(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Text(
-              label,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
+            // scaleDown keeps a long label readable instead of clipping it.
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                maxLines: 1,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -16,6 +17,9 @@ class IncomingCallOverlay extends ConsumerStatefulWidget {
 }
 
 class _IncomingCallOverlayState extends ConsumerState<IncomingCallOverlay> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -94,8 +98,8 @@ class _IncomingCallOverlayState extends ConsumerState<IncomingCallOverlay> {
                         ),
                         Text(
                           isVideo
-                              ? "Incoming Video Call"
-                              : "Incoming Voice Call",
+                              ? l10n.incomingVideoCallTitle
+                              : l10n.incomingVoiceCallTitle,
                           style: const TextStyle(
                             color: Colors.white70,
                           ),

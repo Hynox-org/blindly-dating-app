@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/models/compatibility_report_model.dart';
@@ -28,7 +29,7 @@ class CompatibilityExplanationScreen extends ConsumerWidget {
         elevation: 0,
         foregroundColor: Colors.black,
         title: Text(
-          'You and $targetName',
+          AppLocalizations.of(context).youAndPerson(targetName),
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -53,14 +54,14 @@ class _Working extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           CircularProgressIndicator(),
           SizedBox(height: 16),
           Text(
-            'Working out what you have in common…',
+            AppLocalizations.of(context).workingOutCommon,
             style: TextStyle(color: Colors.black54),
           ),
         ],
@@ -91,7 +92,7 @@ class _Failed extends StatelessWidget {
               style: const TextStyle(color: Colors.black54),
             ),
             const SizedBox(height: 20),
-            OutlinedButton(onPressed: onRetry, child: const Text('Try again')),
+            OutlinedButton(onPressed: onRetry, child: Text(AppLocalizations.of(context).tryAgain)),
           ],
         ),
       ),
@@ -114,7 +115,7 @@ class _Report extends StatelessWidget {
         const SizedBox(height: 24),
 
         if (report.points.isNotEmpty) ...[
-          const _SectionTitle('Why'),
+          _SectionTitle(AppLocalizations.of(context).whyTitle),
           const SizedBox(height: 8),
           ...report.points.map(
             (point) => Padding(
@@ -140,7 +141,7 @@ class _Report extends StatelessWidget {
         ],
 
         if (report.dimensions.isNotEmpty) ...[
-          const _SectionTitle('Breakdown'),
+          _SectionTitle(AppLocalizations.of(context).breakdownTitle),
           const SizedBox(height: 8),
           ...report.dimensions.map((d) => _DimensionRow(dimension: d)),
           const SizedBox(height: 8),
@@ -313,13 +314,13 @@ class _MutualFit extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Does it go both ways?',
+                Text(
+                  AppLocalizations.of(context).goesBothWays,
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'You each fit what the other is looking for: ${band.label.toLowerCase()}.',
+                  AppLocalizations.of(context).eachFitsOther(band.label.toLowerCase()),
                   style: const TextStyle(
                     fontSize: 13,
                     color: Colors.black54,

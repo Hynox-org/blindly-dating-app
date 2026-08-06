@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
+import '../../../../core/utils/vocab.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/widgets/app_loader.dart';
 import '../../../auth/providers/auth_providers.dart';
@@ -15,6 +17,9 @@ class EducatedAtScreen extends ConsumerStatefulWidget {
 }
 
 class _EducatedAtScreenState extends ConsumerState<EducatedAtScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   final TextEditingController _schoolController = TextEditingController();
   final TextEditingController _yearController = TextEditingController();
   bool _isLoading = false;
@@ -39,7 +44,7 @@ class _EducatedAtScreenState extends ConsumerState<EducatedAtScreen> {
 
     if (school.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your institution name.')),
+        SnackBar(content: Text(l10n.enterInstitution)),
       );
       return;
     }
@@ -74,7 +79,7 @@ class _EducatedAtScreenState extends ConsumerState<EducatedAtScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error saving education: $e')));
+        ).showSnackBar(SnackBar(content: Text(l10n.errUpdateFailed('$e'))));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -91,8 +96,8 @@ class _EducatedAtScreenState extends ConsumerState<EducatedAtScreen> {
           icon: const Icon(Icons.arrow_back_ios, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Educated at', // Updated title
+        title: Text(
+          l10n.educatedAt, // Updated title
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
         ),
         centerTitle: true,
@@ -115,8 +120,8 @@ class _EducatedAtScreenState extends ConsumerState<EducatedAtScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Show your institution on your profile',
+            Text(
+              l10n.showInstitutionOnProfile,
               style: TextStyle(fontSize: 14, color: Colors.black54),
             ),
             const SizedBox(height: 24),
@@ -151,8 +156,8 @@ class _EducatedAtScreenState extends ConsumerState<EducatedAtScreen> {
             const SizedBox(height: 24),
 
             // Year Field
-            const Text(
-              'Graduation Year',
+            Text(
+              l10n.graduationYear,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,

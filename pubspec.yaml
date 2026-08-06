@@ -13,6 +13,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   country_code_picker: ^3.0.0
 
   # State Management
@@ -125,6 +127,7 @@ dependency_overrides:
 
 flutter:
   uses-material-design: true
+  generate: true # gen_l10n — see l10n.yaml
 
   assets:
     - .env.development
@@ -143,5 +146,3 @@ flutter:
     - family: Poppins
       fonts:
         - asset: assets/fonts/Poppins/Poppins-Regular.ttf
-flutter_intl:
-  enabled: true

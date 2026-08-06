@@ -1,5 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
+import '../../../../core/utils/vocab.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/repositories/profile_repository.dart';
 import '../../provider/profile_provider.dart';
@@ -14,6 +16,9 @@ class HeightScreen extends ConsumerStatefulWidget {
 }
 
 class _HeightScreenState extends ConsumerState<HeightScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   // Range: 90cm to 250cm
   final int _minHeight = 90;
   final int _maxHeight = 250;
@@ -64,7 +69,7 @@ class _HeightScreenState extends ConsumerState<HeightScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Failed to update height: $e')));
+        ).showSnackBar(SnackBar(content: Text(l10n.errUpdateFailed('$e'))));
       }
     }
   }
@@ -78,8 +83,8 @@ class _HeightScreenState extends ConsumerState<HeightScreen> {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'How tall are you?',
+        title: Text(
+          l10n.howTallAreYou,
           style: TextStyle(
             color: Colors.black,
             fontSize: 18,
@@ -92,8 +97,8 @@ class _HeightScreenState extends ConsumerState<HeightScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Skip',
+            child: Text(
+              l10n.skip,
               style: TextStyle(
                 color: Colors.black,
                 fontSize: 14,
@@ -105,7 +110,7 @@ class _HeightScreenState extends ConsumerState<HeightScreen> {
       ),
       body: Column(
         children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: Align(
               alignment: Alignment.centerLeft,
@@ -113,12 +118,12 @@ class _HeightScreenState extends ConsumerState<HeightScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'This will show on your profile',
+                    l10n.showsOnProfile,
                     style: TextStyle(fontSize: 14, color: Colors.black54),
                   ),
                   SizedBox(height: 24),
                   Text(
-                    'Your Height',
+                    l10n.yourHeight,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -155,7 +160,7 @@ class _HeightScreenState extends ConsumerState<HeightScreen> {
                     final isSelected = (_minHeight + index) == _selectedHeight;
                     return Center(
                       child: Text(
-                        '${_minHeight + index} cm',
+                        l10n.heightCm('${_minHeight + index}'),
                         style: TextStyle(
                           fontSize: isSelected ? 32 : 28, // Bigger font
                           fontWeight: isSelected
@@ -183,8 +188,8 @@ class _HeightScreenState extends ConsumerState<HeightScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Save',
+                child: Text(
+                  l10n.save,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,

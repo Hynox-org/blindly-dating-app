@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:blindly_dating_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
@@ -25,6 +26,8 @@ class VoiceIntroScreen extends ConsumerStatefulWidget {
 }
 
 class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
   // v5.2.0 uses AudioRecorder() class
   final AudioRecorder _audioRecorder = AudioRecorder();
   final AudioPlayer _audioPlayer = AudioPlayer();
@@ -98,11 +101,11 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
           _existingVoiceUrl = null;
         });
       } else {
-        setState(() => _errorMessage = 'Microphone permission denied');
+        setState(() => _errorMessage = l10n.micPermissionDenied);
       }
     } catch (e) {
       AppLogger.error('Start recording error', e);
-      setState(() => _errorMessage = 'Failed to start recording');
+      setState(() => _errorMessage = l10n.failedToStartRecording);
     }
   }
 
@@ -121,7 +124,7 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
         // Validate duration immediately (min 1 sec)
         if (_currentTimerSeconds < 1) {
           setState(() {
-            _errorMessage = 'Voice intro must be at least 1 second';
+            _errorMessage = l10n.voiceIntroTooShort;
             _recordedFilePath = null; // Discard
           });
         }
@@ -130,7 +133,7 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
       AppLogger.error('Stop recording error', e);
       setState(() {
         _isRecording = false;
-        _errorMessage = 'Failed to stop recording';
+        _errorMessage = l10n.failedToStopRecording;
       });
     }
   }
@@ -164,7 +167,7 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
       }
     } catch (e) {
       AppLogger.error('Play voice error', e);
-      setState(() => _errorMessage = 'Failed to play audio');
+      setState(() => _errorMessage = l10n.failedToPlayAudio);
     }
   }
 
@@ -192,13 +195,13 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
     }
 
     if (_recordedFilePath == null) {
-      setState(() => _errorMessage = 'Please record a voice intro');
+      setState(() => _errorMessage = l10n.recordVoiceIntroFirst);
       return;
     }
 
     if (_currentTimerSeconds < 1 || _currentTimerSeconds > 30) {
       setState(
-        () => _errorMessage = 'Recording must be between 1 and 30 seconds',
+        () => _errorMessage = l10n.recordingBetween1And30,
       );
       return;
     }
@@ -210,12 +213,12 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
 
     try {
       final user = ref.read(authRepositoryProvider).currentUser;
-      if (user == null) throw Exception('User not logged in');
+      if (user == null) throw Exception(l10n.userNotLoggedIn);
 
       final mediaRepo = ref.read(mediaRepositoryProvider);
       final profileId = await mediaRepo.getProfileId(user.id);
 
-      if (profileId == null) throw Exception('Profile not found');
+      if (profileId == null) throw Exception(l10n.profileNotFound);
 
       // Resolve profile_mode_id for 'date' mode
       final profileModeId = await mediaRepo.getProfileModeId(profileId, 'date');
@@ -263,7 +266,7 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
     } catch (e) {
       AppLogger.error('Upload voice error', e);
       setState(() {
-        _errorMessage = 'Failed to upload voice intro: ${e.toString()}';
+        _errorMessage = l10n.failedUploadVoice(e.toString());
       });
     } finally {
       if (mounted) {
@@ -293,12 +296,12 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
 
     final hasVoice = _recordedFilePath != null || _existingVoiceUrl != null;
 
-    // "Save & Continue" enabled if (not recording) AND (hasVoice or uploading isn't issue yet)
+    // l10n.saveAndContinue enabled if (not recording) AND (hasVoice or uploading isn't issue yet)
     // Actually, button triggers upload, so disable if uploading.
     final isSaveEnabled = !_isRecording && !_isUploading && hasVoice;
 
     return BaseOnboardingStepScreen(
-      title: 'Voice Intro',
+      title: l10n.voiceIntro,
       showBackButton: false, // Custom footer
       showNextButton: false, // Custom footer
       showSkipButton: false, // Custom footer
@@ -311,7 +314,7 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                 children: [
                   const SizedBox(height: 20),
                   Text(
-                    'Record a short intro',
+                    l10n.recordShortIntro,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: colorScheme.onSurface,
@@ -323,7 +326,7 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
                     child: Text(
-                      'Let your personality shine through. Record a 30 seconds short intro.',
+                      l10n.personalityShine,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurface.withValues(alpha: 0.6),
                         height: 1.4,
@@ -430,7 +433,7 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                           color: colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
                         label: Text(
-                          'Record Again',
+                          l10n.recordAgain,
                           style: TextStyle(
                             color: colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
@@ -451,7 +454,7 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                     child: Column(
                       children: [
                         Text(
-                          'Voice prompts help you stand out and make deeper connections. Share who you really are',
+                          l10n.voicePromptsHelp,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: colorScheme.onSurface.withValues(alpha: 0.6),
@@ -462,17 +465,17 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                         // Benefits
                         _buildBenefitItem(
                           primaryDarkColor,
-                          '3x more matches in voice record',
+                          l10n.threeXMatches,
                         ),
                         const SizedBox(height: 16),
                         _buildBenefitItem(
                           primaryDarkColor,
-                          'Start conversation naturally',
+                          l10n.startConversationNaturally,
                         ),
                         const SizedBox(height: 16),
                         _buildBenefitItem(
                           primaryDarkColor,
-                          'Show your personality',
+                          l10n.showYourPersonality,
                         ),
                       ],
                     ),
@@ -513,7 +516,7 @@ class _VoiceIntroScreenState extends ConsumerState<VoiceIntroScreen> {
                             ),
                           )
                         : Text(
-                            widget.isEditMode ? "Update" : "Save & Continue",
+                            widget.isEditMode ? "Update" : l10n.saveAndContinue,
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,

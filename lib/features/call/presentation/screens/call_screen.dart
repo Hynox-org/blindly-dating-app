@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -29,6 +30,9 @@ class CallScreen extends StatefulWidget {
 enum CallUIState { incoming, calling, ongoing, ended }
 
 class _CallScreenState extends State<CallScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   CallUIState _uiState = CallUIState.calling;
   bool _isMuted = false;
   bool _isSpeakerOn = true;
@@ -341,7 +345,7 @@ class _CallScreenState extends State<CallScreen> {
             debugPrint("📴 Showing End UI");
             _timer?.cancel();
             await _leaveAgora();
-            // No auto-pop - let user tap "Done"
+            // No auto-pop - let user tap l10n.done
           }
         });
   }
@@ -636,7 +640,7 @@ class _CallScreenState extends State<CallScreen> {
             ),
             const SizedBox(height: 10),
             Text(
-              widget.isVideo ? "Incoming video call" : "Incoming voice call",
+              widget.isVideo ? l10n.incomingVideoCall : l10n.incomingVoiceCall,
               style: const TextStyle(color: Colors.white70),
             ),
             const SizedBox(height: 60),
@@ -677,7 +681,7 @@ class _CallScreenState extends State<CallScreen> {
             ),
           ),
           const SizedBox(height: 10),
-          const Text("Ringing...", style: TextStyle(color: Colors.white70)),
+          Text(l10n.ringing, style: TextStyle(color: Colors.white70)),
           const SizedBox(height: 50),
           _circleButton(Icons.call_end, Colors.red, _endCall),
         ],
@@ -741,19 +745,19 @@ class _CallScreenState extends State<CallScreen> {
               children: [
                 _callControlButton(
                   icon: _isSpeakerOn ? Icons.volume_up : Icons.volume_off,
-                  label: "Speaker",
+                  label: l10n.speaker,
                   onTap: _toggleSpeaker,
                 ),
 
                 _callControlButton(
                   icon: _isMuted ? Icons.mic_off : Icons.mic,
-                  label: _isMuted ? "Unmute" : "Mute",
+                  label: _isMuted ? l10n.unmute : l10n.mute,
                   onTap: _toggleMute,
                 ),
 
                 _callControlButton(
                   icon: _isVideoEnabled ? Icons.videocam_off : Icons.videocam,
-                  label: _isVideoEnabled ? "Video Off" : "Video",
+                  label: _isVideoEnabled ? l10n.videoOff : l10n.video,
                   onTap: _toggleVideo,
                 ),
               ],
@@ -774,7 +778,7 @@ class _CallScreenState extends State<CallScreen> {
                 ),
               ),
               const SizedBox(height: 6),
-              const Text("Decline", style: TextStyle(color: Colors.black54)),
+              Text(l10n.decline, style: TextStyle(color: Colors.black54)),
             ],
           ),
 
@@ -804,9 +808,9 @@ class _CallScreenState extends State<CallScreen> {
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 10),
-          const Text("Call Ended", style: TextStyle(fontSize: 18)),
+          Text(l10n.callEnded, style: TextStyle(fontSize: 18)),
           const SizedBox(height: 30),
-          const Text("How was the call quality?"),
+          Text(l10n.howWasCallQuality),
           const SizedBox(height: 15),
 
           Row(
@@ -834,7 +838,7 @@ class _CallScreenState extends State<CallScreen> {
               backgroundColor: Colors.green.shade800,
               minimumSize: const Size(200, 50),
             ),
-            child: const Text("Done"),
+            child: Text(l10n.done),
           ),
         ],
       ),
@@ -944,7 +948,7 @@ class _CallScreenState extends State<CallScreen> {
                 children: [
                   _callControlButton(
                     icon: Icons.volume_up,
-                    label: "Speaker",
+                    label: l10n.speaker,
                     onTap: _toggleSpeaker,
                   ),
 
@@ -952,7 +956,7 @@ class _CallScreenState extends State<CallScreen> {
 
                   _callControlButton(
                     icon: Icons.mic_off,
-                    label: "Mute",
+                    label: l10n.mute,
                     onTap: _toggleMute,
                   ),
 
@@ -960,7 +964,7 @@ class _CallScreenState extends State<CallScreen> {
 
                   _callControlButton(
                     icon: _isVideoEnabled ? Icons.videocam_off : Icons.videocam,
-                    label: _isVideoEnabled ? "Video Off" : "Video",
+                    label: _isVideoEnabled ? l10n.videoOff : l10n.video,
                     onTap: _toggleVideo,
                   ),
 
@@ -968,7 +972,7 @@ class _CallScreenState extends State<CallScreen> {
 
                   _callControlButton(
                     icon: Icons.cameraswitch,
-                    label: "Flip",
+                    label: l10n.flip,
                     onTap: _switchCamera,
                   ),
 
@@ -1045,8 +1049,8 @@ class _CallScreenState extends State<CallScreen> {
       context: context,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
-        title: const Text("Switch to Video Call?"),
-        content: const Text("The other user wants to turn on video."),
+        title: Text(l10n.switchToVideoCall),
+        content: Text(l10n.otherWantsVideoOn),
         actions: [
           TextButton(
             onPressed: () async {
@@ -1060,7 +1064,7 @@ class _CallScreenState extends State<CallScreen> {
 
               debugPrint("❌ Video upgrade rejected");
             },
-            child: const Text("Reject"),
+            child: Text(l10n.reject),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -1078,7 +1082,7 @@ class _CallScreenState extends State<CallScreen> {
 
               debugPrint("✅ Video upgrade accepted");
             },
-            child: const Text("Accept"),
+            child: Text(l10n.accept),
           ),
         ],
       ),
@@ -1089,8 +1093,8 @@ class _CallScreenState extends State<CallScreen> {
     context: context,
     barrierDismissible: false,
     builder: (_) => AlertDialog(
-      title: const Text("Switch to Voice Call?"),
-      content: const Text("The other user wants to turn off video."),
+      title: Text(l10n.switchToVoiceCall),
+      content: Text(l10n.otherWantsVideoOff),
       actions: [
         TextButton(
           onPressed: () async {
@@ -1101,7 +1105,7 @@ class _CallScreenState extends State<CallScreen> {
               'video_downgrade_requested': false,
             }).eq('id', widget.callId);
           },
-          child: const Text("Reject"),
+          child: Text(l10n.reject),
         ),
         ElevatedButton(
           onPressed: () async {
@@ -1114,7 +1118,7 @@ class _CallScreenState extends State<CallScreen> {
               'video_enabled': false,
             }).eq('id', widget.callId);
           },
-          child: const Text("Accept"),
+          child: Text(l10n.accept),
         ),
       ],
     ),

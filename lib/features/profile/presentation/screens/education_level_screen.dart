@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
+import '../../../../core/utils/vocab.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/repositories/profile_repository.dart';
 import '../../provider/profile_provider.dart';
@@ -14,6 +16,9 @@ class EducationLevelScreen extends ConsumerStatefulWidget {
 }
 
 class _EducationLevelScreenState extends ConsumerState<EducationLevelScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   final List<String> _educationOptions = [
     'High school',
     'Grade School',
@@ -55,7 +60,7 @@ class _EducationLevelScreenState extends ConsumerState<EducationLevelScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update education level: $e')),
+          SnackBar(content: Text(l10n.errUpdateFailed('$e'))),
         );
       }
     }
@@ -70,8 +75,8 @@ class _EducationLevelScreenState extends ConsumerState<EducationLevelScreen> {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Education Level',
+        title: Text(
+          l10n.educationLevelTitle,
           style: TextStyle(
             color: Colors.black,
             fontSize: 18,
@@ -84,8 +89,8 @@ class _EducationLevelScreenState extends ConsumerState<EducationLevelScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Skip',
+            child: Text(
+              l10n.skip,
               style: TextStyle(
                 color: Colors.black,
                 fontSize: 14,
@@ -128,7 +133,7 @@ class _EducationLevelScreenState extends ConsumerState<EducationLevelScreen> {
                           : Border.all(color: Colors.transparent),
                     ),
                     child: Text(
-                      option,
+                      vocabLabel(l10n, option),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -153,8 +158,8 @@ class _EducationLevelScreenState extends ConsumerState<EducationLevelScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Save',
+                child: Text(
+                  l10n.save,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,

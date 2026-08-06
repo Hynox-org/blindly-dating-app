@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -19,6 +21,7 @@ import 'features/auth/screens/authentication_screen.dart';
 import 'features/home/screens/home_screen.dart';
 // Core
 import 'core/theme/app_theme.dart';
+import 'core/providers/locale_provider.dart';
 import 'core/utils/logging_navigator_observer.dart';
 import 'core/utils/nav_key.dart';
 import 'features/auth/providers/auth_state_listener.dart';
@@ -86,7 +89,14 @@ void main() async {
     ),
   ]);
 
-  runApp(const ProviderScope(child: MyApp()));
+  final prefs = await SharedPreferences.getInstance();
+
+  runApp(
+    ProviderScope(
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends ConsumerStatefulWidget {
@@ -111,11 +121,16 @@ class _MyAppState extends ConsumerState<MyApp> {
     // 🔥 START GLOBAL CALL LISTENER ONCE
     // ref.read(incomingCallProvider.notifier).start();
 
+    final locale = ref.watch(localeProvider);
+
     return MaterialApp(
       title: 'Blindly',
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.theme,
+      theme: AppTheme.themeFor(locale?.languageCode),
+      locale: locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
       initialRoute: '/',
       navigatorObservers: [LoggingNavigatorObserver()],
 

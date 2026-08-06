@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
+import '../../../../core/utils/vocab.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/repositories/profile_repository.dart';
 import 'package:blindly_dating_app/features/profile/provider/profile_provider.dart';
@@ -13,6 +15,9 @@ class PronounsScreen extends ConsumerStatefulWidget {
 }
 
 class _PronounsScreenState extends ConsumerState<PronounsScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   // Enum values as keys, display strings as values
   final Map<String, String> _pronounOptions = {
     'she_her': 'She/Her',
@@ -58,7 +63,7 @@ class _PronounsScreenState extends ConsumerState<PronounsScreen> {
         }
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update pronouns: $e')),
+          SnackBar(content: Text(l10n.errUpdateFailed('$e'))),
         );
       }
     } else {
@@ -75,8 +80,8 @@ class _PronounsScreenState extends ConsumerState<PronounsScreen> {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Pick Your Pronoun',
+        title: Text(
+          l10n.pickYourPronoun,
           style: TextStyle(
             color: Colors.black,
             fontSize: 18,
@@ -93,8 +98,8 @@ class _PronounsScreenState extends ConsumerState<PronounsScreen> {
               // Assuming skip means keep existing or do nothing
               Navigator.pop(context);
             },
-            child: const Text(
-              'Skip',
+            child: Text(
+              l10n.skip,
               style: TextStyle(
                 color: Colors.black,
                 fontSize: 16,
@@ -112,8 +117,8 @@ class _PronounsScreenState extends ConsumerState<PronounsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'What are your Pronouns? Pick 3 Pronouns you can remove this at anytime.',
+                  Text(
+                    l10n.pronounsBody,
                     style: TextStyle(fontSize: 14, color: Colors.black87),
                   ),
                   const SizedBox(height: 24),
@@ -173,9 +178,11 @@ class _PronounsScreenState extends ConsumerState<PronounsScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Show your pronoun on my profile',
-                      style: TextStyle(fontSize: 16, color: Colors.black),
+                    Expanded(
+                      child: Text(
+                        l10n.showPronounOnProfile,
+                        style: const TextStyle(fontSize: 16, color: Colors.black),
+                      ),
                     ),
                     Switch(
                       value: _showOnProfile,

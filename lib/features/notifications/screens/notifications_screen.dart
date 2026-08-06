@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/notification_db_service.dart';
 import '../models/notification_model.dart';
@@ -17,12 +18,12 @@ class NotificationsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: const Text('Notifications'),
+        title: Text(AppLocalizations.of(context).notifications),
         backgroundColor: backgroundColor,
         elevation: 0,
       ),
       body: userId == null
-          ? const Center(child: Text('Please log in to view notifications.'))
+          ? Center(child: Text(AppLocalizations.of(context).loginToViewNotifications))
           : StreamBuilder<List<AppNotification>>(
               stream: notificationService.streamNotifications(userId),
               builder: (context, snapshot) {
@@ -37,8 +38,8 @@ class NotificationsScreen extends StatelessWidget {
                 final notifications = snapshot.data ?? [];
 
                 if (notifications.isEmpty) {
-                  return const Center(
-                    child: Text('You have no notifications yet.'),
+                  return Center(
+                    child: Text(AppLocalizations.of(context).noNotificationsYet),
                   );
                 }
 

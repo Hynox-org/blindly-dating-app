@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
+import '../../core/utils/vocab.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'provider/profile_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -16,6 +18,9 @@ class ProfileLookingForScreen extends ConsumerStatefulWidget {
 
 class _ProfileLookingForScreenState
     extends ConsumerState<ProfileLookingForScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   List<String> _selectedOptions = [];
   bool _isLoading = false;
 
@@ -67,7 +72,7 @@ class _ProfileLookingForScreenState
           _selectedOptions.add(option);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('You can select up to 3 options')),
+            SnackBar(content: Text(l10n.maxThreeOptions)),
           );
         }
       }
@@ -83,7 +88,7 @@ class _ProfileLookingForScreenState
           .toLowerCase(); // 'date' or 'bff'
       final authId = Supabase.instance.client.auth.currentUser?.id;
 
-      if (authId == null) throw Exception('No authenticated user');
+      if (authId == null) throw Exception(l10n.userNotLoggedIn);
 
       // 1. Get profile ID
       final profileResponse = await Supabase.instance.client
@@ -114,7 +119,7 @@ class _ProfileLookingForScreenState
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error saving preferences: $e')));
+        ).showSnackBar(SnackBar(content: Text(l10n.errorSavingPreferences('$e'))));
       }
     } finally {
       if (mounted) {
@@ -150,7 +155,7 @@ class _ProfileLookingForScreenState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'What are you looking for?',
+                    l10n.whatLookingFor,
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -159,7 +164,7 @@ class _ProfileLookingForScreenState
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'You can select up to 3 options for the current mode ($currentMode).',
+                    l10n.maxThreeForMode(currentMode),
                     style: TextStyle(
                       fontSize: 16,
                       color: theme.colorScheme.onSurfaceVariant,
@@ -193,8 +198,8 @@ class _ProfileLookingForScreenState
                   borderRadius: BorderRadius.circular(30),
                 ),
               ),
-              child: const Text(
-                'Save',
+              child: Text(
+                l10n.save,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,

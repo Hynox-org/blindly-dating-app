@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 
 class DiscoverEmptyState extends StatelessWidget {
   const DiscoverEmptyState({super.key});
@@ -17,8 +18,8 @@ class DiscoverEmptyState extends StatelessWidget {
               fit: BoxFit.contain,
             ),
             const SizedBox(height: 32),
-            const Text(
-              "You've reached the end of the line!",
+            Text(
+              AppLocalizations.of(context).reachedEndOfLine,
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
@@ -28,7 +29,7 @@ class DiscoverEmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              "Check back soon for more people or try adjusting your filters to see more profiles.",
+              AppLocalizations.of(context).checkBackSoon,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.black.withValues(alpha: 0.7),
@@ -52,8 +53,8 @@ class DiscoverEmptyState extends StatelessWidget {
                   ),
                   elevation: 0,
                 ),
-                child: const Text(
-                  'See More Peoples',
+                child: Text(
+                  AppLocalizations.of(context).seeMorePeople,
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),

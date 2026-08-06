@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import '../../home/screens/connection_type_screen.dart';
 import '../../../../core/utils/navigation_utils.dart';
 import 'events_discover_screen.dart';
@@ -74,7 +75,7 @@ class _EventsHomeScreenState extends State<EventsHomeScreen> {
                   context: context,
                   selectedIcon: Icons.explore,
                   unselectedIcon: Icons.explore_outlined,
-                  label: 'Discover',
+                  label: AppLocalizations.of(context).discover,
                   index: 0,
                   isSelected: _selectedIndex == 0,
                 ),
@@ -82,7 +83,7 @@ class _EventsHomeScreenState extends State<EventsHomeScreen> {
                   context: context,
                   selectedIcon: Icons.confirmation_number,
                   unselectedIcon: Icons.confirmation_number_outlined,
-                  label: 'Booked',
+                  label: AppLocalizations.of(context).booked,
                   index: 1,
                   isSelected: _selectedIndex == 1,
                 ),
@@ -90,7 +91,7 @@ class _EventsHomeScreenState extends State<EventsHomeScreen> {
                   context: context,
                   selectedIcon: Icons.calendar_today,
                   unselectedIcon: Icons.calendar_today_outlined,
-                  label: 'Upcoming',
+                  label: AppLocalizations.of(context).upcoming,
                   index: 2,
                   isSelected: _selectedIndex == 2,
                 ),
@@ -146,7 +147,7 @@ class _EventsHomeScreenState extends State<EventsHomeScreen> {
   void _showModeMenu(BuildContext context) {
     NavigationUtils.navigateToWithSlide(
       context,
-      const ConnectionTypeScreen(initialMode: 'Events'),
+      ConnectionTypeScreen(initialMode: AppLocalizations.of(context).events),
     );
   }
 }

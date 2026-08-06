@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth/providers/auth_providers.dart';
+import 'presentation/screens/app_language_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: Colors
           .white, // User rule: "For backgrounds always use the white" - checking if this applies to scaffold or just containers. Usually scaffold.
@@ -18,8 +21,8 @@ class SettingsScreen extends ConsumerWidget {
           icon: Icon(Icons.arrow_back_ios, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Settings',
+        title: Text(
+          l10n.settingsTitle,
           style: TextStyle(
             color: Colors.black,
             fontSize: 20,
@@ -33,19 +36,19 @@ class SettingsScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSectionHeader('Connections'),
+              _buildSectionHeader(l10n.sectionConnections),
               _buildSectionContainer(
                 children: [
                   _buildSettingsTile(
                     icon: Icons
                         .hub_outlined, // Placeholder for "Type of connection" icon
-                    title: 'Type of connection',
+                    title: l10n.typeOfConnection,
                     onTap: () {},
                   ),
                   _buildDivider(),
                   _buildSettingsTile(
                     icon: Icons.favorite_border,
-                    title: 'Date mode',
+                    title: l10n.dateMode,
                     trailing: Switch(
                       value: true,
                       onChanged: (val) {},
@@ -57,110 +60,115 @@ class SettingsScreen extends ConsumerWidget {
                   _buildDivider(),
                   _buildSettingsTile(
                     icon: Icons.airplanemode_active,
-                    title: 'Travel',
+                    title: l10n.travel,
                     onTap: () {},
                   ),
                 ],
               ),
 
               const SizedBox(height: 24),
-              _buildSectionHeader('Account Settings'),
+              _buildSectionHeader(l10n.sectionAccountSettings),
               _buildSectionContainer(
                 children: [
                   _buildSettingsTile(
                     icon: Icons.person_outline,
-                    title: 'Profile & Verification',
+                    title: l10n.profileAndVerification,
                     onTap: () {},
                   ),
                   _buildDivider(),
                   _buildSettingsTile(
                     icon: Icons
                         .contact_mail_outlined, // Placeholder for Contact/Login
-                    title: 'Contact & Login info',
+                    title: l10n.contactAndLoginInfo,
                     onTap: () {},
                   ),
                   _buildDivider(),
                   _buildSettingsTile(
                     icon: Icons.stars_outlined, // Placeholder for Subscription
-                    title: 'Subscription Management',
+                    title: l10n.subscriptionManagement,
                     onTap: () {},
                   ),
                 ],
               ),
 
               const SizedBox(height: 24),
-              _buildSectionHeader('App Preference'),
+              _buildSectionHeader(l10n.sectionAppPreference),
               _buildSectionContainer(
                 children: [
                   _buildSettingsTile(
                     icon: Icons.notifications_none,
-                    title: 'Notifications setting',
+                    title: l10n.notificationsSetting,
                     onTap: () {},
                   ),
                   _buildDivider(),
                   _buildSettingsTile(
                     icon: Icons.privacy_tip_outlined,
-                    title: 'Privacy controls',
+                    title: l10n.privacyControls,
                     onTap: () {},
                   ),
                   _buildDivider(),
                   _buildSettingsTile(
                     icon: Icons.translate,
-                    title: 'Language',
-                    onTap: () {},
+                    title: l10n.settingsLanguage,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AppLanguageScreen(),
+                      ),
+                    ),
                   ),
                 ],
               ),
 
               const SizedBox(height: 24),
-              _buildSectionHeader('Security & Privacy'),
+              _buildSectionHeader(l10n.sectionSecurityPrivacy),
               _buildSectionContainer(
                 children: [
                   _buildSettingsTile(
                     icon: Icons.security,
-                    title: 'Account Management',
+                    title: l10n.accountManagement,
                     onTap: () {},
                   ),
                   _buildDivider(),
                   _buildSettingsTile(
                     icon: Icons.block,
-                    title: 'Blocked accounts',
+                    title: l10n.blockedAccounts,
                     onTap: () {},
                   ),
                   _buildDivider(),
                   _buildSettingsTile(
                     icon: Icons.location_on_outlined,
-                    title: 'Location service',
+                    title: l10n.locationService,
                     onTap: () {},
                   ),
                 ],
               ),
 
               const SizedBox(height: 24),
-              _buildSectionHeader('Support & Legal'),
+              _buildSectionHeader(l10n.sectionSupportLegal),
               _buildSectionContainer(
                 children: [
                   _buildSettingsTile(
                     icon: Icons.help_outline,
-                    title: 'Help center',
+                    title: l10n.helpCenter,
                     onTap: () {},
                   ),
                   _buildDivider(),
                   _buildSettingsTile(
                     icon: Icons.description_outlined,
-                    title: 'Privacy policy',
+                    title: l10n.privacyPolicyTitle,
                     onTap: () {},
                   ),
                   _buildDivider(),
                   _buildSettingsTile(
                     icon: Icons.article_outlined,
-                    title: 'Terms & Conditions',
+                    title: l10n.termsAndConditions,
                     onTap: () {},
                   ),
                   _buildDivider(),
                   _buildSettingsTile(
                     icon: Icons.info_outline,
-                    title: 'About',
+                    title: l10n.about,
                     onTap: () {},
                   ),
                 ],
@@ -248,6 +256,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildLogoutButton(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
@@ -262,8 +271,8 @@ class SettingsScreen extends ConsumerWidget {
           }
         },
         icon: const Icon(Icons.logout, color: Colors.white),
-        label: const Text(
-          'Logout',
+        label: Text(
+          l10n.logout,
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
@@ -283,6 +292,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildDeleteAccountButton(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
@@ -290,8 +300,8 @@ class SettingsScreen extends ConsumerWidget {
           // UI only as requested
         },
         icon: const Icon(Icons.delete_outline, color: Colors.white),
-        label: const Text(
-          'Delete account',
+        label: Text(
+          l10n.deleteAccount,
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -20,6 +21,9 @@ class HometownScreen extends ConsumerStatefulWidget {
 }
 
 class _HometownScreenState extends ConsumerState<HometownScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   final TextEditingController _searchController = TextEditingController();
   List<String> _filteredCities = [];
   bool _isSaving = false;
@@ -217,7 +221,7 @@ class _HometownScreenState extends ConsumerState<HometownScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error saving hometown: $e')));
+        ).showSnackBar(SnackBar(content: Text(l10n.errorSavingHometown('$e'))));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -259,7 +263,7 @@ class _HometownScreenState extends ConsumerState<HometownScreen> {
             TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Search city',
+                hintText: l10n.searchCity,
                 prefixIcon: const Icon(Icons.search, color: Colors.grey),
                 filled: true,
                 fillColor: const Color(0xFFF5F5F5),

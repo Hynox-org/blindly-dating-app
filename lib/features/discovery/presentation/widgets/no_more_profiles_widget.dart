@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 
 class NoMoreProfilesWidget extends StatelessWidget {
   final VoidCallback? onAdjustFilters;
@@ -49,7 +50,7 @@ class NoMoreProfilesWidget extends StatelessWidget {
 
                     // Title
                     Text(
-                      "Lets Discover!",
+                      AppLocalizations.of(context).letsDiscover,
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -60,7 +61,7 @@ class NoMoreProfilesWidget extends StatelessWidget {
 
                     // Description
                     Text(
-                      "You’re viewed all the profiles matching your current preference. Expand your search or check back soon for new peoples.",
+                      AppLocalizations.of(context).viewedAllProfiles,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,
@@ -85,7 +86,7 @@ class NoMoreProfilesWidget extends StatelessWidget {
                           elevation: 0,
                         ),
                         child: Text(
-                          "Adjust Your Filters",
+                          AppLocalizations.of(context).adjustYourFilters,
                           style: TextStyle(
                             color: colorScheme.onPrimary, // Goldish text
                             fontWeight: FontWeight.w600,
@@ -110,7 +111,7 @@ class NoMoreProfilesWidget extends StatelessWidget {
                           elevation: 0,
                         ),
                         child: Text(
-                          "Notify Me About New People",
+                          AppLocalizations.of(context).notifyMeNewPeople,
                           style: TextStyle(
                             color: colorScheme.onSurface,
                             fontWeight: FontWeight.w600,

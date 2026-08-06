@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import '../../../core/widgets/app_layout.dart';
 import '../home/component/ProfileSwipeCard.dart'; // For UserProfile model
 
@@ -17,6 +18,9 @@ class MatchScreen extends StatefulWidget {
 }
 
 class _MatchScreenState extends State<MatchScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   @override
   Widget build(BuildContext context) {
     return AppLayout(
@@ -43,7 +47,7 @@ class _MatchScreenState extends State<MatchScreen> {
                   const SizedBox(height: 32),
 
                   Text(
-                    "It's a Match!",
+                    l10n.itsAMatch,
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
@@ -54,7 +58,7 @@ class _MatchScreenState extends State<MatchScreen> {
                   const SizedBox(height: 12),
 
                   Text(
-                    'You and ${widget.matchedUserProfile.name} liked each other.',
+                    l10n.youAndThemLiked(widget.matchedUserProfile.name),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
@@ -83,8 +87,8 @@ class _MatchScreenState extends State<MatchScreen> {
                         ),
                         elevation: 0,
                       ),
-                      child: const Text(
-                        'Send a message',
+                      child: Text(
+                        l10n.sendAMessage,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -108,7 +112,7 @@ class _MatchScreenState extends State<MatchScreen> {
                         ),
                       ),
                       child: Text(
-                        'Keep swiping',
+                        l10n.keepSwiping,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,

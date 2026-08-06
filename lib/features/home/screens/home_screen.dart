@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
@@ -38,6 +39,9 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 // ✅ Added: with SingleTickerProviderStateMixin
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   final CardSwiperController _controller = CardSwiperController();
 
   // State Variables
@@ -206,18 +210,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                const Text(
-                  'Multi-Device Login',
+                Text(
+                  l10n.multiDeviceTitle,
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  'Your account is active on another device. For security, only one session is allowed.',
+                Text(
+                  l10n.multiDeviceBody,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 15,
                     color: Colors.black54,
                     height: 1.5,
@@ -238,10 +242,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       Navigator.pop(context);
                       final success = await PushNotificationService.instance.clearOtherDevices(currentToken);
                       if (success && mounted) {
-                        showSuccessPopup(context, 'Signed out other devices! 🔒');
+                        showSuccessPopup(context, l10n.signedOutOtherDevices);
                       }
                     },
-                    child: const Text('Sign Out Other Devices', style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: Text(l10n.signOutOtherDevices, style: const TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -261,7 +265,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         Navigator.of(context).pushNamedAndRemoveUntil('/auth', (route) => false);
                       }
                     },
-                    child: const Text('Log Out This Device'),
+                    child: Text(l10n.logOutThisDevice),
                   ),
                 ),
               ],
@@ -300,12 +304,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         age: user.age,
         distance: double.parse((user.distanceKm / 1000).toStringAsFixed(1)),
         location:
-            user.hometown ?? user.hometown ?? 'Nearby', // Dynamic Location
+            user.hometown ?? l10n.nearby, // Dynamic Location
         gender: genderStr,
         imageUrls: profileImages, // ✅ PASS THE LIST FROM DB
         bio: user.bio, // Use actual bio or empty
         subTitle: user.workTitle ?? '', // Fallback to empty if null
-        height: user.height != null ? '${user.height} cm' : '',
+        height: user.height != null ? l10n.heightCm('${user.height}') : '',
         activityLevel: user.exercise ?? '',
         education: user.education ?? '',
         school: user.school ?? '',
@@ -317,7 +321,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         kids: user.kids ?? '',
         hometown: user.hometown ?? '',
         workCompany: user.workCompany ?? '',
-        summary: user.bio.isNotEmpty ? user.bio : 'Swipe right to know more!',
+        summary: user.bio.isNotEmpty ? user.bio : l10n.swipeRightHint,
         lookingForModes: user.lookingForModes,
         quickestWay: '', // Add if available
         prompts: user.prompts, // ✅ Pass Prompts here
@@ -766,11 +770,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Location Required 📍', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text(
-          'We need your location to find amazing people near you.\n\n'
-          'Please tap "Settings" to enable location permissions, then hit "Retry".',
-          style: TextStyle(height: 1.4),
+        title: Text(l10n.locationRequiredTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: Text(
+          l10n.locationRequiredBody,
+          style: const TextStyle(height: 1.4),
         ),
         actions: [
           TextButton(
@@ -779,7 +782,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Geolocator.openAppSettings();
             },
             // Using app theme colors as per guidelines
-            child: Text('Settings', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+            child: Text(l10n.settingsTitle, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -791,7 +794,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Navigator.pop(context);
               ref.read(discoveryFeedProvider.notifier).refreshFeed();
             },
-            child: const Text('Retry', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: Text(l10n.retry, style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -805,7 +808,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       },
       onNotifyMe: () {
         debugPrint("Notify Me clicked");
-        showSuccessPopup(context, "We'll notify you when new people join! 🔔");
+        showSuccessPopup(context, l10n.notifyMeSnack);
       },
     );
   }

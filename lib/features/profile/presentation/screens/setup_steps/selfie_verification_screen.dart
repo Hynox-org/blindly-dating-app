@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
@@ -27,6 +28,8 @@ class SelfieVerificationScreen extends ConsumerStatefulWidget {
 
 class _SelfieVerificationScreenState
     extends ConsumerState<SelfieVerificationScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
   SelfieStep _currentStep = SelfieStep.instructions;
 
   // Camera & ML Kit
@@ -40,7 +43,7 @@ class _SelfieVerificationScreenState
   bool _isMatching = false;
   DateTime? _matchStartTime;
   double _matchProgress = 0.0; // 0.0 to 1.0
-  String _feedbackMessage = "Align yourself with the camera"; // UI Feedback
+  String? _feedbackMessage; // UI Feedback; null = show the default prompt
 
   // Theme Colors from Mockup
   // Removed hardcoded colors to use App Theme
@@ -64,7 +67,7 @@ class _SelfieVerificationScreenState
       if (mounted) {
         showErrorPopup(
           context,
-          'Camera permission is required for verification.',
+          l10n.cameraPermissionRequired,
         );
       }
       return;
@@ -81,7 +84,7 @@ class _SelfieVerificationScreenState
         _frontCamera = cameras.first;
       } else {
         if (mounted) {
-          showErrorPopup(context, 'No camera found on device.');
+          showErrorPopup(context, l10n.noCameraFound);
         }
         return;
       }
@@ -313,7 +316,7 @@ class _SelfieVerificationScreenState
 
       // 4. Get User ID
       final userId = Supabase.instance.client.auth.currentUser?.id;
-      if (userId == null) throw Exception("User not logged in");
+      if (userId == null) throw Exception(l10n.userNotLoggedIn);
 
       // 5. Upload & Verify
       debugPrint("SelfieVerification: Uploading to Supabase...");
@@ -388,9 +391,9 @@ class _SelfieVerificationScreenState
       return _buildStatusView(
         context,
         icon: Icons.access_time_filled_rounded,
-        title: "We're reviewing your photos",
+        title: l10n.reviewingYourPhotos,
         subtitle:
-            "Your profile verification is in progress. This usually takes a few seconds.",
+            l10n.verificationInProgress,
         buttonText: null, // No button while processing
         onPressed: null,
       );
@@ -401,9 +404,9 @@ class _SelfieVerificationScreenState
       return _buildStatusView(
         context,
         icon: Icons.check_circle_rounded,
-        title: "Verified Successfully!",
-        subtitle: "Profile verification successfully completed",
-        buttonText: "Got it",
+        title: l10n.verifiedSuccessfully,
+        subtitle: l10n.profileVerificationDone,
+        buttonText: l10n.gotIt,
         onPressed: _onVerifiedComplete,
         showSecondaryBackButton: true, // Show back button at bottom
       );
@@ -529,7 +532,7 @@ class _SelfieVerificationScreenState
                   // Icon removed as specificially requested
                   // const SizedBox(height: 16),
                   Text(
-                    _targetPose?.description ?? "Copy this pose",
+                    _targetPose?.description ?? l10n.copyThisPose,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: Colors.white,
@@ -587,7 +590,7 @@ class _SelfieVerificationScreenState
               left: 20,
               right: 20,
               child: Text(
-                _feedbackMessage,
+                _feedbackMessage ?? l10n.alignWithCamera,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: _isMatching ? Colors.greenAccent : Colors.white,
@@ -628,7 +631,7 @@ class _SelfieVerificationScreenState
     final textTheme = Theme.of(context).textTheme;
 
     return BaseOnboardingStepScreen(
-      title: 'Selfie Verification',
+      title: l10n.selfieVerification,
       showBackButton: false, // Custom implementation below
       onBack: _onBack,
       showNextButton: false,
@@ -648,7 +651,7 @@ class _SelfieVerificationScreenState
                   ),
                   const SizedBox(height: 32),
                   Text(
-                    "Prove You're the\nReal Deal",
+                    l10n.proveRealDeal,
                     textAlign: TextAlign.center,
                     style: textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
@@ -658,7 +661,7 @@ class _SelfieVerificationScreenState
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    "This quick helps takes keep our community safe and authentic",
+                    l10n.quickHelpsSafe,
                     textAlign: TextAlign.center,
                     style: textTheme.bodyLarge?.copyWith(
                       color: colorScheme.onSurfaceVariant,
@@ -667,29 +670,29 @@ class _SelfieVerificationScreenState
                   const SizedBox(height: 40),
                   _buildBenefitItem(
                     context,
-                    title: "Get a verified badge",
+                    title: l10n.getVerifiedBadge,
                     subtitle:
-                        "Build trust with other users and shown you're real.",
+                        l10n.buildTrustBody,
                     color: colorScheme.primary, // Used Theme
                   ),
                   const SizedBox(height: 24),
                   _buildBenefitItem(
                     context,
-                    title: "Keep the community safe",
-                    subtitle: "Help us weed out fake profiles and bots.",
+                    title: l10n.keepCommunitySafe,
+                    subtitle: l10n.weedOutFakes,
                     color: colorScheme.primary, // Used Theme
                   ),
                   const SizedBox(height: 24),
                   _buildBenefitItem(
                     context,
-                    title: "Copy a simple pose",
+                    title: l10n.copySimplePose,
                     subtitle:
-                        "You'll take quick selfie to confirm your identity",
+                        l10n.quickSelfieConfirm,
                     color: colorScheme.primary, // Used Theme
                   ),
                   const SizedBox(height: 32),
                   Text(
-                    "Note: Your selfie is only for verification and won't to be on your profile",
+                    l10n.selfieNotOnProfile,
                     textAlign: TextAlign.center,
                     style: textTheme.bodySmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
@@ -713,8 +716,8 @@ class _SelfieVerificationScreenState
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
-            child: const Text(
-              "Get verified",
+            child: Text(
+              l10n.getVerified,
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/widgets/app_loader.dart';
@@ -19,6 +20,9 @@ class ConnectionTypeScreen extends ConsumerStatefulWidget {
 }
 
 class _ConnectionTypeScreenState extends ConsumerState<ConnectionTypeScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   late String _selectedMode;
   bool _isSaving = false;
 
@@ -42,7 +46,7 @@ class _ConnectionTypeScreenState extends ConsumerState<ConnectionTypeScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Types of Connections',
+          l10n.typesOfConnections,
           style: TextStyle(
             color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.bold,
@@ -60,8 +64,8 @@ class _ConnectionTypeScreenState extends ConsumerState<ConnectionTypeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'What type of connection are you looking for on Blindly?',
+                    Text(
+                      l10n.connectionQuestion,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -70,7 +74,7 @@ class _ConnectionTypeScreenState extends ConsumerState<ConnectionTypeScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Dates and romances, new friends, or strictly business? You can change this any time.',
+                      l10n.connectionSubtitle,
                       style: TextStyle(
                         color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                         fontSize: 14,
@@ -80,20 +84,19 @@ class _ConnectionTypeScreenState extends ConsumerState<ConnectionTypeScreen> {
                     const SizedBox(height: 32),
                     _buildOptionCard(
                       title: 'Date',
-                      subtitle:
-                          'Find a relationship, something casual, or anything in-between',
+                      subtitle: l10n.modeDateSubtitle,
                       mode: 'Date',
                     ),
                     const SizedBox(height: 16),
                     _buildOptionCard(
                       title: 'BFF',
-                      subtitle: 'Make new friends and find your community',
+                      subtitle: l10n.modeBffSubtitle,
                       mode: 'BFF',
                     ),
                     const SizedBox(height: 16),
                     _buildOptionCard(
                       title: 'Events',
-                      subtitle: 'Find exciting events, book tickets, and more',
+                      subtitle: l10n.modeEventsSubtitle,
                       mode: 'Events',
                     ),
                   ],
@@ -122,7 +125,7 @@ class _ConnectionTypeScreenState extends ConsumerState<ConnectionTypeScreen> {
                           strokeWidth: 2,
                         )
                       : Text(
-                          'Continue with $_selectedMode',
+                          l10n.continueWithMode(_selectedMode),
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,

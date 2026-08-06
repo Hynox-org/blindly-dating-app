@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
+import '../../../../core/utils/vocab.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/repositories/profile_repository.dart';
 import '../../provider/profile_provider.dart';
@@ -13,6 +15,9 @@ class ProfessionScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfessionScreenState extends ConsumerState<ProfessionScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _companyController = TextEditingController();
 
@@ -64,7 +69,7 @@ class _ProfessionScreenState extends ConsumerState<ProfessionScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update profession: $e')),
+          SnackBar(content: Text(l10n.errUpdateFailed('$e'))),
         );
       }
     }
@@ -79,8 +84,8 @@ class _ProfessionScreenState extends ConsumerState<ProfessionScreen> {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Profession',
+        title: Text(
+          l10n.professionTitle,
           style: TextStyle(
             color: Colors.black,
             fontSize: 18,
@@ -93,8 +98,8 @@ class _ProfessionScreenState extends ConsumerState<ProfessionScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Skip',
+            child: Text(
+              l10n.skip,
               style: TextStyle(
                 color: Colors.black,
                 fontSize: 14,
@@ -112,16 +117,16 @@ class _ProfessionScreenState extends ConsumerState<ProfessionScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Show your profession on your profile',
+                  Text(
+                    l10n.showProfessionOnProfile,
                     style: TextStyle(fontSize: 14, color: Colors.black54),
                   ),
                   const SizedBox(height: 24),
-                  _buildLabel('Title'),
+                  _buildLabel(l10n.titleLabel),
                   const SizedBox(height: 8),
                   _buildTextField(_titleController, 'UI/UX Designer'),
                   const SizedBox(height: 24),
-                  _buildLabel('Company (Industry)'),
+                  _buildLabel(l10n.companyIndustry),
                   const SizedBox(height: 8),
                   _buildTextField(_companyController, 'Software development'),
                 ],
@@ -141,8 +146,8 @@ class _ProfessionScreenState extends ConsumerState<ProfessionScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Save',
+                child: Text(
+                  l10n.save,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,

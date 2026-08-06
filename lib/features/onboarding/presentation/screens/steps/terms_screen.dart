@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/onboarding_provider.dart';
 import 'base_onboarding_step_screen.dart';
@@ -11,6 +12,8 @@ class TermsScreen extends ConsumerStatefulWidget {
 }
 
 class _TermsScreenState extends ConsumerState<TermsScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
   final ScrollController _scrollController = ScrollController();
   bool _isScrolledToBottom = false;
 
@@ -47,8 +50,8 @@ class _TermsScreenState extends ConsumerState<TermsScreen> {
   Widget build(BuildContext context) {
     debugPrint('📜 TermsScreen: BUILD');
     return BaseOnboardingStepScreen(
-      title: 'Community guidelines',
-      nextLabel: 'Agree & Continue',
+      title: l10n.communityGuidelines,
+      nextLabel: l10n.agreeAndContinue,
       // Enable only if scrolled to bottom
       isNextEnabled: _isScrolledToBottom,
       onNext: () {
@@ -66,7 +69,7 @@ class _TermsScreenState extends ConsumerState<TermsScreen> {
               color: Theme.of(context).colorScheme.onSurface,
             ),
             children: [
-              const TextSpan(text: 'By Continue, you agree to our '),
+              TextSpan(text: l10n.termsByContinuePrefix),
               TextSpan(
                 text: 'terms',
                 style: TextStyle(
@@ -74,9 +77,9 @@ class _TermsScreenState extends ConsumerState<TermsScreen> {
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
-              const TextSpan(text: '. See how we use your data in our '),
+              TextSpan(text: l10n.termsBridge),
               TextSpan(
-                text: 'privacy policy',
+                text: l10n.privacyPolicyWord,
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   color: Theme.of(context).colorScheme.onSurface,
@@ -94,7 +97,7 @@ class _TermsScreenState extends ConsumerState<TermsScreen> {
           children: [
             const SizedBox(height: 12),
             Text(
-              'Welcome to our community! To ensure safe and positive experience for every one, we ask that you follow simple guidelines.',
+              l10n.guidelinesIntro,
               style: TextStyle(
                 fontSize: 13,
                 color: Theme.of(context).colorScheme.onSurface,
@@ -103,44 +106,44 @@ class _TermsScreenState extends ConsumerState<TermsScreen> {
             const SizedBox(height: 20),
             _buildGuidelineBox(
               context,
-              'Be kind and respectful',
-              'Treat others as you would like to be treated. We\'re all in together to create welcoming environment.',
+              l10n.beKindTitle,
+              l10n.beKindBody,
             ),
             const SizedBox(height: 12),
             _buildGuidelineBox(
               context,
-              'Stay authentic',
-              'Be genuine in your profile and interactions. We value authenticity and real connections.',
+              l10n.stayAuthenticTitle,
+              l10n.stayAuthenticBody,
             ),
             const SizedBox(height: 12),
             _buildGuidelineBox(
               context,
-              'Prioritize safety',
-              'Do not share sensitive and personal information. Protect your self and others in the community.',
+              l10n.prioritizeSafetyTitle,
+              l10n.prioritizeSafetyBody,
             ),
             const SizedBox(height: 12),
             _buildGuidelineBox(
               context,
-              'No hate speech',
-              'Harassment, bullying and illegal contents are not tolerate here. Help us keep in community safe.',
+              l10n.noHateTitle,
+              l10n.noHateBody,
             ),
             const SizedBox(height: 12),
             _buildGuidelineBox(
               context,
-              'Help keep us safe',
-              'If you see something that violate our guideline. Please report it. Your help is invaluable.',
+              l10n.helpKeepSafeTitle,
+              l10n.helpKeepSafeBody,
             ),
             const SizedBox(height: 12),
             _buildGuidelineBox(
               context,
-              'Date with genuine intentions',
-              'We\'re here for real connections. We don\'t allow catfish or coercion. We don\'t allow scams, impersonation, or any kind of manipulation for personal or financial gain.',
+              l10n.genuineIntentTitle,
+              l10n.genuineIntentBody,
             ),
             const SizedBox(height: 12),
             _buildGuidelineBox(
               context,
-              'Adults only',
-              'You must be 18 years of age or older to use Blindly. This also means we don\'t allow photos of unaccompanied or unclothed minors, including photos of your younger self--no matter how adorable you were back then.',
+              l10n.adultsOnlyTitle,
+              l10n.adultsOnlyBody,
             ),
             const SizedBox(height: 24),
             // Footer text moved to fixed param

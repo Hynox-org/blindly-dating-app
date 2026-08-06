@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../onboarding/domain/models/interest_chip_model.dart';
 import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
@@ -22,6 +23,8 @@ class InterestsSelectScreen extends ConsumerStatefulWidget {
 }
 
 class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
   bool _isLoading = true;
   List<InterestChip> _allChips = [];
   final Set<String> _selectedChipIds = {};
@@ -83,7 +86,7 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
     } catch (e) {
       debugPrint('❌ INTEREST_SCREEN: Error fetching chips: $e');
       setState(() {
-        _error = 'Failed to load interests. Please try again.';
+        _error = l10n.failedLoadInterests;
         _isLoading = false;
       });
     }
@@ -95,7 +98,7 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
         _selectedChipIds.remove(chipId);
       } else {
         if (_selectedChipIds.length >= 10) {
-          showErrorPopup(context, 'You can select up to 10 interests');
+          showErrorPopup(context, l10n.maxTenInterests);
           return;
         }
         _selectedChipIds.add(chipId);
@@ -106,7 +109,7 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
   Future<void> _onNext() async {
     // Validation: If any selected, must be at least 5. If 0, allowed to proceed (skip).
     if (_selectedChipIds.isNotEmpty && _selectedChipIds.length < 5) {
-      showErrorPopup(context, 'Please select at least 5 interests');
+      showErrorPopup(context, l10n.minFiveInterests);
       return;
     }
 
@@ -156,7 +159,7 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
         setState(() {
           _isLoading = false;
         });
-        showErrorPopup(context, 'Error saving interests: $e');
+        showErrorPopup(context, l10n.errorSavingInterests('$e'));
       }
     }
   }
@@ -206,7 +209,7 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
     final isNextEnabled = !_isLoading;
 
     return BaseOnboardingStepScreen(
-      title: 'Select Your Interests',
+      title: l10n.selectYourInterests,
       showBackButton: false,
       showNextButton: false,
       showSkipButton: false,
@@ -222,7 +225,7 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4.0),
                     child: Text(
-                      'Please select at least 5 interest. This helps us find your peoples',
+                      l10n.atLeast5Interests,
                       style: TextStyle(
                         color: colorScheme.onSurface.withValues(alpha: 0.6),
                         fontSize: 14,
@@ -240,7 +243,7 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
                     },
                     style: TextStyle(color: colorScheme.onSurface),
                     decoration: InputDecoration(
-                      hintText: 'Search for interest',
+                      hintText: l10n.searchForInterest,
                       hintStyle: TextStyle(
                         color: colorScheme.onSurface.withValues(alpha: 0.54),
                       ),
@@ -267,10 +270,10 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             if (grouped.isEmpty)
-                              const Padding(
+                              Padding(
                                 padding: EdgeInsets.all(20.0),
                                 child: Center(
-                                  child: Text("No interests found"),
+                                  child: Text(l10n.noInterestsFound),
                                 ),
                               ),
                             ...grouped.entries.map((entry) {

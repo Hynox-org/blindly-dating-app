@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/chat_providers.dart';
@@ -31,6 +32,9 @@ class ChatDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   bool _isLoading = false;
 
   /// -------------------------------------------------------------
@@ -71,7 +75,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     print('❌ INVALID IDs: matchId="${widget.matchId}", my=${widget.myProfileId}, other=${widget.otherProfileId}');
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Invalid match data. Please try again."), backgroundColor: Colors.red),
+        SnackBar(content: Text(l10n.invalidMatchData), backgroundColor: Colors.red),
       );
     }
     setState(() => _isLoading = false);
@@ -97,8 +101,8 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
     if (!success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("This match has expired."),
+        SnackBar(
+          content: Text(l10n.matchHasExpired),
           backgroundColor: Colors.red,
         ),
       );
@@ -160,8 +164,8 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const Text(
-                    'Online now',
+                  Text(
+                    l10n.onlineNow,
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                 ],
@@ -191,10 +195,10 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
                   const SizedBox(height: 24),
 
-                  const Align(
+                  Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      'Choose an option',
+                      l10n.chooseAnOption,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -204,17 +208,15 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
                   const SizedBox(height: 12),
 
-                  _buildOptionButton(
-                    'Me and the cushions I made.\nWhat do you think?',
-                  ),
+                  _buildOptionButton(l10n.openingMoveCushions),
 
                   const SizedBox(height: 10),
 
-                  _buildOptionButton('I bet you can\'t beat my 90s look'),
+                  _buildOptionButton(l10n.openingMove90s),
 
                   const SizedBox(height: 10),
 
-                  _buildOptionButton('Guess my pet\'s name?'),
+                  _buildOptionButton(l10n.openingMovePetName),
 
                   const SizedBox(height: 25),
 
@@ -230,8 +232,8 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                         borderRadius: BorderRadius.circular(30),
                       ),
                     ),
-                    child: const Text(
-                      'More opening moves',
+                    child: Text(
+                      l10n.moreOpeningMoves,
                       style: TextStyle(color: Colors.white),
                     ),
                   ),
@@ -273,7 +275,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
             Expanded(child: Text(text)),
             const SizedBox(width: 10),
             Text(
-              'Use',
+              l10n.use,
               style: TextStyle(
                 color: _isLoading ? Colors.grey : Colors.orange,
                 fontWeight: FontWeight.w600,
@@ -300,6 +302,9 @@ class OpenMovePopup extends StatefulWidget {
 }
 
 class _OpenMovePopupState extends State<OpenMovePopup> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   final TextEditingController _controller = TextEditingController();
 
   @override
@@ -340,7 +345,7 @@ class _OpenMovePopupState extends State<OpenMovePopup> {
                 const SizedBox(height: 20),
 
                 Text(
-                  'Send ${widget.name} a message',
+                  l10n.sendPersonMessage(widget.name),
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -353,7 +358,7 @@ class _OpenMovePopupState extends State<OpenMovePopup> {
                   controller: _controller,
                   maxLines: 4,
                   decoration: InputDecoration(
-                    hintText: 'Type your opening move...',
+                    hintText: l10n.typeOpeningMove,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -370,8 +375,8 @@ class _OpenMovePopupState extends State<OpenMovePopup> {
 
                       if (text.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Please enter a message'),
+                          SnackBar(
+                            content: Text(l10n.pleaseEnterMessage),
                           ),
                         );
                         return;
@@ -383,8 +388,8 @@ class _OpenMovePopupState extends State<OpenMovePopup> {
                       backgroundColor: const Color.fromRGBO(65, 72, 51, 1),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
-                    child: const Text(
-                      'Send message',
+                    child: Text(
+                      l10n.sendMessage,
                       style: TextStyle(color: Colors.white),
                     ),
                   ),

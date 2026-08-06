@@ -24,9 +24,15 @@ class TranslationService {
 
   Box get _box => Hive.box(boxName);
 
-  /// The language we translate *into* — the device UI language.
+  /// The user's chosen app language, kept in sync by `LocaleNotifier`.
+  /// Null means "follow the device".
+  static String? appLanguageCode;
+
+  /// The language we translate *into* — the app UI language, falling back to
+  /// the device language when the user hasn't picked one.
   TranslateLanguage? get deviceLanguage => BCP47Code.fromRawValue(
-        WidgetsBinding.instance.platformDispatcher.locale.languageCode,
+        appLanguageCode ??
+            WidgetsBinding.instance.platformDispatcher.locale.languageCode,
       );
 
   static String cacheKey(String messageId, TranslateLanguage target) =>

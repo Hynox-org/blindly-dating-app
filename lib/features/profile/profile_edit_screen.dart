@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
+import '../../core/utils/vocab.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'domain/models/profile_user_model.dart';
 import 'provider/profile_provider.dart';
@@ -54,6 +56,9 @@ class ProfileEditScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   final Set<int> _expandedPromptIndices = {};
   late final AudioPlayer _audioPlayer;
   @override
@@ -80,8 +85,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Edit profile',
+        title: Text(
+          l10n.editProfileTitle,
           style: TextStyle(
             color: Colors.black,
             fontSize: 18,
@@ -98,7 +103,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       body: profileAsync.when(
         data: (profile) => _buildBody(profile),
         loading: () => const Center(child: AppLoader()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
+        error: (err, stack) => Center(child: Text(l10n.errGeneric('$err'))),
       ),
     );
   }
@@ -148,8 +153,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'My causes and communities',
+          Text(
+            l10n.myCausesSection,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -157,8 +162,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Add up to 3 causes close to your heart.',
+          Text(
+            l10n.addUpTo3Causes,
             style: TextStyle(fontSize: 12, color: Colors.black),
           ),
           const SizedBox(height: 16),
@@ -182,13 +187,15 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
               child: profile.causesCommunities.isEmpty
                   ? Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
-                        Text(
-                          'Add your causes and communities',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            l10n.addYourCauses,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
                           ),
                         ),
                         Icon(
@@ -249,8 +256,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Qualities i value',
+          Text(
+            l10n.qualitiesIValue,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -258,8 +265,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Choose up to 3 qualities you value in a person',
+          Text(
+            l10n.chooseThreeQualitiesValue,
             style: TextStyle(fontSize: 12, color: Colors.black),
           ),
           const SizedBox(height: 16),
@@ -283,13 +290,15 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
               child: profile.qualities.isEmpty
                   ? Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
-                        Text(
-                          'Add qualities you value',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            l10n.addQualitiesYouValue,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
                           ),
                         ),
                         Icon(
@@ -349,8 +358,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'I am looking for',
+          Text(
+            l10n.iAmLookingFor,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -358,8 +367,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Let others know what you want to find',
+          Text(
+            l10n.letOthersKnowWant,
             style: TextStyle(fontSize: 12, color: Colors.black),
           ),
           const SizedBox(height: 16),
@@ -383,13 +392,15 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
               child: profile.lookingForModes.isEmpty
                   ? Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
-                        Text(
-                          'Add what you are looking for',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            l10n.addWhatLookingFor,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
                           ),
                         ),
                         Icon(
@@ -450,8 +461,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Prompts',
+          Text(
+            l10n.prompts,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -459,8 +470,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Let people know what it\'s like to date you.',
+          Text(
+            l10n.letPeopleKnowDate,
             style: TextStyle(fontSize: 12, color: Colors.black),
           ),
           const SizedBox(height: 16),
@@ -494,9 +505,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
+                  children: [
                     Text(
-                      'Add a prompt',
+                      l10n.addAPrompt,
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -551,7 +562,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    prompt.promptQuestion ?? 'Prompt',
+                    prompt.promptQuestion ?? l10n.prompt,
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -623,8 +634,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Pronouns',
+          Text(
+            l10n.pronounsLabel,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -632,15 +643,15 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Pick your pronouns',
+          Text(
+            l10n.pickYourPronouns,
             style: TextStyle(fontSize: 12, color: Colors.black),
           ),
           const SizedBox(height: 16),
           _buildGenericAddRow(
             title: profile.pronouns != null && profile.pronouns!.isNotEmpty
                 ? _formatPronouns(profile.pronouns!)
-                : 'Add your pronouns',
+                : l10n.addYourPronouns,
             onTap: () async {
               await Navigator.push(
                 context,
@@ -661,8 +672,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Connected accounts',
+          Text(
+            l10n.connectedAccounts,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -670,8 +681,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Show your favorite music',
+          Text(
+            l10n.showFavoriteMusic,
             style: TextStyle(fontSize: 12, color: Colors.black),
           ),
           const SizedBox(height: 16),
@@ -692,8 +703,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                       size: 24,
                     ), // Placeholder for Spotify Icon
                     const SizedBox(width: 8),
-                    const Text(
-                      'Connect my spotify',
+                    Text(
+                      l10n.connectMySpotify,
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -702,8 +713,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Show your top spotify artists on your profile and allow blindly to highlight who have in common with others.',
+                Text(
+                  l10n.spotifyNote,
                   style: TextStyle(fontSize: 12, color: Colors.black87),
                 ),
                 const SizedBox(height: 16),
@@ -737,8 +748,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Profile strength',
+          Text(
+            l10n.profileStrength,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -756,7 +767,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '$percent% complete',
+                  l10n.percentComplete('$percent'),
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -782,8 +793,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Voice Intro',
+          Text(
+            l10n.voiceIntro,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -791,8 +802,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Let people hear your voice.',
+          Text(
+            l10n.letPeopleHearVoice,
             style: TextStyle(fontSize: 12, color: Colors.black),
           ),
           const SizedBox(height: 16),
@@ -815,9 +826,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                   },
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
+                    children: [
                       Text(
-                        'Add a voice intro',
+                        l10n.addVoiceIntro,
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -850,11 +861,11 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                             final confirm = await showDialog<bool>(
                               context: context,
                               builder: (ctx) => AlertDialog(
-                                title: const Text('Delete Voice Intro?'),
-                                content: const Text('This will remove your voice intro from your profile.'),
+                                title: Text(l10n.deleteVoiceIntro),
+                                content: Text(l10n.removeVoiceIntroBody),
                                 actions: [
-                                  TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                                  TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+                                  TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.cancel)),
+                                  TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.deleteLabel, style: TextStyle(color: Colors.red))),
                                 ],
                               ),
                             );
@@ -888,7 +899,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                     ref.refresh(currentUserProfileProvider);
                       },
                       icon: const Icon(Icons.refresh),
-                      label: const Text('Re-record intro'),
+                      label: Text(l10n.reRecordIntro),
                     ),
                   ],
                 ),
@@ -904,8 +915,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Photos and videos',
+          Text(
+            l10n.photosAndVideos,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -913,8 +924,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Pick some that show the true you.',
+          Text(
+            l10n.pickSomeTrueYou,
             style: TextStyle(fontSize: 12, color: Colors.black),
           ),
           const SizedBox(height: 16),
@@ -971,8 +982,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             }),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Hold and drag media to reorder',
+          Text(
+            l10n.holdDragReorder,
             style: TextStyle(fontSize: 11, color: Colors.black),
           ),
           const SizedBox(height: 16),
@@ -984,7 +995,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
-              children: const [
+              children: [
                 Icon(
                   Icons.verified, // blue tick
                   size: 20,
@@ -993,7 +1004,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Best photo',
+                    l10n.bestPhoto,
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.black,
@@ -1036,9 +1047,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                         : Colors.black,
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Verification',
+                      l10n.verification,
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.black,
@@ -1049,8 +1060,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                   Text(
                     (profile.isVerified &&
                             profile.verificationLevel == 'full_verified')
-                        ? 'Verified'
-                        : 'Not Verified',
+                        ? l10n.verified
+                        : l10n.notVerified,
                     style: TextStyle(
                       fontSize: 13,
                       color:
@@ -1130,8 +1141,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Lifestyle',
+          Text(
+            l10n.lifestyle,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -1139,14 +1150,14 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Your habits and preferences.',
+          Text(
+            l10n.habitsAndPrefs,
             style: TextStyle(fontSize: 12, color: Colors.black),
           ),
           const SizedBox(height: 16),
           if (profile.lifestyleItems.isEmpty)
             _buildGenericAddRow(
-              title: 'Add your lifestyle preferences',
+              title: l10n.addLifestylePrefs,
               onTap: () async {
                 await Navigator.push(
                   context,
@@ -1208,8 +1219,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Interests',
+          Text(
+            l10n.interests,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -1217,8 +1228,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Get specific about the things you love.',
+          Text(
+            l10n.getSpecificThingsYouLove,
             style: TextStyle(fontSize: 12, color: Colors.black),
           ),
           const SizedBox(height: 16),
@@ -1243,9 +1254,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                     },
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
+                      children: [
                         Text(
-                          'Add your favorite interests',
+                          l10n.addFavoriteInterests,
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -1329,8 +1340,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Write a fun intro.',
+          Text(
+            l10n.writeFunIntro,
             style: TextStyle(fontSize: 12, color: Colors.black),
           ),
           const SizedBox(height: 16),
@@ -1358,7 +1369,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
-                profile.bio.isNotEmpty ? profile.bio : 'About you...',
+                profile.bio.isNotEmpty ? profile.bio : l10n.aboutYouHint,
                 style: TextStyle(
                   color: profile.bio.isNotEmpty ? Colors.black : Colors.black87,
                   fontSize: 14,
@@ -1377,8 +1388,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'About you',
+          Text(
+            l10n.aboutYouSection,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -1404,7 +1415,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           // ),
           _buildListTile(
             Icons.work_outline,
-            'Work',
+            l10n.workLabel,
             profile.workTitle ?? 'Designer', // Placeholder default as per image
             true,
             onTap: () async {
@@ -1420,7 +1431,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           ),
           _buildListTile(
             Icons.school_outlined,
-            'Educated at',
+            l10n.educatedAtLabel,
             [
                   if (profile.educatedAt != null &&
                       profile.educatedAt!.isNotEmpty)
@@ -1428,7 +1439,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                   if (profile.graduationYear != null)
                     profile.graduationYear!.toString(),
                 ].join(', ').isEmpty
-                ? 'Add'
+                ? l10n.add
                 : [
                     if (profile.educatedAt != null &&
                         profile.educatedAt!.isNotEmpty)
@@ -1451,7 +1462,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           ),
           _buildListTile(
             Icons.person_outline,
-            'Gender',
+            l10n.genderLabel,
             profile.gender,
             true,
             onTap: () async {
@@ -1472,11 +1483,11 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
               builder: (context, snapshot) {
                 final locationText = snapshot.hasData
                     ? snapshot.data!
-                    : (profile.city.isNotEmpty ? profile.city : 'Loading...');
+                    : (profile.city.isNotEmpty ? profile.city : l10n.loading);
 
                 return _buildListTile(
                   Icons.location_on_outlined,
-                  'Location',
+                  l10n.locationLabel,
                   locationText, // Display resolved District
                   false, // Disable arrow if we don't want them editing this manually?
                   // User said "current location will check latitude and longitude".
@@ -1494,15 +1505,15 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           else
             _buildListTile(
               Icons.location_on_outlined,
-              'Location',
-              profile.city.isNotEmpty ? profile.city : 'Nearby',
+              l10n.locationLabel,
+              profile.city.isNotEmpty ? profile.city : l10n.nearby,
               false,
               onTap: () {},
             ),
           _buildListTile(
             Icons.home_outlined,
-            'Hometown',
-            profile.hometown ?? 'Add',
+            l10n.hometownLabel,
+            profile.hometown ?? l10n.add,
             true,
             onTap: () async {
               await Navigator.push(
@@ -1524,8 +1535,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'More about you',
+          Text(
+            l10n.moreAboutYou,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -1535,8 +1546,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           const SizedBox(height: 16),
           _buildListTile(
             Icons.height,
-            'Height',
-            profile.height != null ? '${profile.height} cm' : 'Add',
+            l10n.heightLabel,
+            profile.height != null ? l10n.heightCm('${profile.height}') : l10n.add,
             true,
             onTap: () async {
               await Navigator.push(
@@ -1550,8 +1561,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           ),
           _buildListTile(
             Icons.fitness_center,
-            'Exercise',
-            profile.exercise ?? 'Add',
+            l10n.exerciseLabel,
+            profile.exercise ?? l10n.add,
             true,
             onTap: () async {
               await Navigator.push(
@@ -1565,8 +1576,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           ),
           _buildListTile(
             Icons.school_outlined,
-            'Education level',
-            profile.educationLevel ?? 'Add',
+            l10n.educationLevelLabel,
+            profile.educationLevel ?? l10n.add,
             true,
             onTap: () async {
               await Navigator.push(
@@ -1581,8 +1592,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           ),
           _buildListTile(
             Icons.local_bar,
-            'Drinking',
-            profile.drinking ?? 'Add',
+            l10n.drinkingLabel,
+            profile.drinking ?? l10n.add,
             true,
             onTap: () async {
               await Navigator.push(
@@ -1596,8 +1607,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           ),
           _buildListTile(
             Icons.smoking_rooms,
-            'Smoking',
-            profile.smoking ?? 'Add',
+            l10n.smokingLabel,
+            profile.smoking ?? l10n.add,
             true,
             onTap: () async {
               await Navigator.push(
@@ -1613,8 +1624,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             Icons.baby_changing_station,
             'Have kids',
             profile.haveKids == null
-                ? 'Add'
-                : (profile.haveKids! ? 'Yes' : 'No'),
+                ? l10n.add
+                : (profile.haveKids! ? l10n.yes : 'No'),
             true,
             onTap: () async {
               await Navigator.push(
@@ -1628,8 +1639,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           ),
           _buildListTile(
             Icons.child_care,
-            'Kids', // Keep label simple or 'Kids Preference' as per design
-            profile.kidsPreference ?? 'Add',
+            l10n.kidsLabel, // Keep label simple or l10n.kidsPreferenceLabel as per design
+            profile.kidsPreference ?? l10n.add,
             true,
             onTap: () async {
               await Navigator.push(
@@ -1645,7 +1656,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
           _buildListTile(
             Icons.nightlight_round,
-            'Zodiac',
+            l10n.zodiacLabel,
             profile.zodiac ?? 'Taurus',
             true,
             onTap: () async {
@@ -1660,8 +1671,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           ),
           _buildListTile(
             Icons.account_balance,
-            'Politics',
-            profile.politics ?? 'Add',
+            l10n.politicsLabel,
+            profile.politics ?? l10n.add,
             true,
             onTap: () async {
               await Navigator.push(
@@ -1676,8 +1687,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           ),
           _buildListTile(
             Icons.favorite_border,
-            'Relationship Type',
-            profile.relationshipType ?? 'Add',
+            l10n.relationshipTypeTitle,
+            profile.relationshipType ?? l10n.add,
             true,
             onTap: () async {
               await Navigator.push(
@@ -1692,8 +1703,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           ),
           _buildListTile(
             Icons.transgender, // Or another suitable icon
-            'Sexual Orientation',
-            profile.sexualOrientation ?? 'Add',
+            l10n.sexualOrientationTitle,
+            profile.sexualOrientation ?? l10n.add,
             true,
             onTap: () async {
               await Navigator.push(
@@ -1708,7 +1719,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           ),
           _buildListTile(
             Icons.self_improvement, // Updated icon to match
-            'Religion',
+            l10n.religionQuestion,
             profile.religion ?? 'Hindu',
             true,
             onTap: () async {
@@ -1732,8 +1743,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Languages',
+          Text(
+            l10n.languagesTitle,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -1762,14 +1773,15 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
               child: profile.languages.isEmpty
                   ? Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
-                        Text(
-                          'Add Languages you know', // Updated text
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color:
-                                Colors.black, // Or Colors.grey if placeholder
+                      children: [
+                        Expanded(
+                          child: Text(
+                            l10n.addLanguagesYouKnow,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
                           ),
                         ),
                         Icon(
@@ -1880,7 +1892,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
   Future<String> _resolveDistrictFromGeom(String ewkbHex) async {
     try {
-      if (ewkbHex.length < 50) return "Invalid Location";
+      if (ewkbHex.length < 50) return l10n.invalidLocation;
       final hex = ewkbHex;
       double hexToDouble(String hexString) {
         var bytes = <int>[];
@@ -1898,7 +1910,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       final lat = hexToDouble(yHex);
 
       final mapboxToken = dotenv.env['MAPBOX_ACCESS_TOKEN'];
-      if (mapboxToken == null) return "Location Found";
+      if (mapboxToken == null) return l10n.locationFound;
 
       final url = Uri.parse(
         'https://api.mapbox.com/geocoding/v5/mapbox.places/$lng,$lat.json?access_token=$mapboxToken&types=district,place&limit=1',
@@ -1914,7 +1926,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       }
       return "Nearby";
     } catch (e) {
-      return "Error";
+      return l10n.errorTitle;
     }
   }
 

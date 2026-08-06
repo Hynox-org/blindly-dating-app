@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
@@ -18,6 +19,8 @@ class LanguageSelectScreen extends ConsumerStatefulWidget {
 }
 
 class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
   // Using a Set to store multiple selected language codes
   final Set<String> _selectedLanguageCodes = {'en'}; // Default English selected
   bool _isSaving = false;
@@ -104,7 +107,7 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
           .completeStep('language_select');
     } catch (e) {
       if (mounted) {
-        showErrorPopup(context, 'Failed to save languages: $e');
+        showErrorPopup(context, l10n.errUpdateFailed('$e'));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -121,7 +124,7 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
       await ref.read(onboardingProvider.notifier).skipStep('language_select');
     } catch (e) {
       if (mounted) {
-        showErrorPopup(context, 'Failed to skip: $e');
+        showErrorPopup(context, l10n.errUpdateFailed('$e'));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -143,11 +146,11 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
     final bool isSearching = _searchQuery.isNotEmpty;
 
     return BaseOnboardingStepScreen(
-      title: 'Languages I know',
+      title: l10n.languagesIKnow,
       showBackButton: true, // As seen in UI reference
       nextLabel: widget.isEditMode
           ? 'Save'
-          : 'Save changes', // Matches UI reference button text style roughly
+          : l10n.saveChanges, // Matches UI reference button text style roughly
       isNextEnabled: _selectedLanguageCodes.isNotEmpty && !_isSaving,
       isLoading: _isSaving,
       isEditMode: widget.isEditMode,
@@ -163,7 +166,7 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
           TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'Search languages',
+              hintText: l10n.searchLanguages,
               prefixIcon: const Icon(Icons.search, color: Colors.grey),
               filled: true,
               fillColor: Colors.grey.shade100, // Light grey background
@@ -182,7 +185,7 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
               children: [
                 if (!isSearching) ...[
                   Text(
-                    'Suggested',
+                    l10n.suggested,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -196,7 +199,7 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'All languages',
+                    l10n.allLanguages,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,

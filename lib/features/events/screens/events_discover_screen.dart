@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 
 class EventsDiscoverScreen extends StatelessWidget {
   const EventsDiscoverScreen({super.key});
@@ -20,7 +21,7 @@ class EventsDiscoverScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              "No Events Found",
+              AppLocalizations.of(context).noEventsFound,
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -29,7 +30,7 @@ class EventsDiscoverScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              "There are no events happening nearby at the moment. Check back later or adjust your location.",
+              AppLocalizations.of(context).noEventsNearby,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
@@ -53,7 +54,7 @@ class EventsDiscoverScreen extends StatelessWidget {
                   elevation: 0,
                 ),
                 child: Text(
-                  "Refresh Events",
+                  AppLocalizations.of(context).refreshEvents,
                   style: TextStyle(
                     color: colorScheme.onPrimary,
                     fontWeight: FontWeight.bold,

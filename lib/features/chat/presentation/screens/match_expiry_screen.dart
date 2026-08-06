@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import './chat_detail_screen.dart';
 
 class MatchExpiryScreen extends StatefulWidget {
@@ -25,6 +26,9 @@ class MatchExpiryScreen extends StatefulWidget {
 }
 
 class _MatchExpiryScreenState extends State<MatchExpiryScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   late Duration _remaining;
   Timer? _timer;
 
@@ -89,8 +93,8 @@ class _MatchExpiryScreenState extends State<MatchExpiryScreen> {
                       color: const Color(0xFFE5C067),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text(
-                      "Expiring Soon",
+                    child: Text(
+                      l10n.expiringSoon,
                       style: TextStyle(
                           fontSize: 12, fontWeight: FontWeight.w600),
                     ),
@@ -106,7 +110,7 @@ class _MatchExpiryScreenState extends State<MatchExpiryScreen> {
                   const SizedBox(height: 25),
 
                   Text(
-                    "Don’t Let ${widget.userName}\nGet Away!",
+                    l10n.dontLetThemGetAway(widget.userName),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 22,
@@ -116,8 +120,8 @@ class _MatchExpiryScreenState extends State<MatchExpiryScreen> {
 
                   const SizedBox(height: 12),
 
-                  const Text(
-                    "You have limited time left to make a move. Send a message before the match disappears forever.",
+                  Text(
+                    l10n.limitedTimeBody,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
@@ -130,9 +134,9 @@ class _MatchExpiryScreenState extends State<MatchExpiryScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _timeBox(hours, "Hours"),
-                      _timeBox(minutes, "Minutes"),
-                      _timeBox(seconds, "Seconds"),
+                      _timeBox(hours, l10n.hoursLabel),
+                      _timeBox(minutes, l10n.minutesLabel),
+                      _timeBox(seconds, l10n.secondsLabel),
                     ],
                   ),
 
@@ -166,8 +170,8 @@ class _MatchExpiryScreenState extends State<MatchExpiryScreen> {
                       ),
                       child: Text(
                         _remaining.inSeconds == 0
-                            ? "Match Expired"
-                            : "Message ${widget.userName}",
+                            ? l10n.matchExpiredTitle
+                            : l10n.messagePerson(widget.userName),
                         style: const TextStyle(
                             fontWeight: FontWeight.w600),
                       ),
@@ -178,8 +182,8 @@ class _MatchExpiryScreenState extends State<MatchExpiryScreen> {
 
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Text(
-                      "Let them go",
+                    child: Text(
+                      l10n.letThemGo,
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.black87,

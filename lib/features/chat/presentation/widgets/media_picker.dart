@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -97,9 +98,9 @@ class _MediaPickerState extends State<MediaPicker> with SingleTickerProviderStat
             ),
             TabBar(
               controller: _tabController,
-              tabs: const [
-                Tab(text: 'GIFs'),
-                Tab(text: 'Stickers'),
+              tabs: [
+                Tab(text: AppLocalizations.of(context).gifs),
+                Tab(text: AppLocalizations.of(context).stickers),
               ],
               labelColor: Colors.black,
               indicatorColor: const Color(0xFF3F472E),
@@ -130,7 +131,7 @@ class _MediaPickerState extends State<MediaPicker> with SingleTickerProviderStat
           child: TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'Search GIPHY',
+              hintText: AppLocalizations.of(context).searchGiphy,
               prefixIcon: const Icon(Icons.search),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(30)),
               contentPadding: const EdgeInsets.symmetric(horizontal: 20),

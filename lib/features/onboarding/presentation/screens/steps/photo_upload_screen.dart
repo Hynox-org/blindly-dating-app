@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 // CHECK YOUR IMPORTS
@@ -21,6 +22,8 @@ class PhotoUploadScreen extends ConsumerStatefulWidget {
 }
 
 class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
   @override
   void initState() {
     super.initState();
@@ -123,21 +126,21 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Permission Required'),
+        title: Text(l10n.permissionRequired),
         content: Text(
-          'Please grant ${isCamera ? "Camera" : "Photos"} permission to upload photos for your profile.',
+          l10n.grantPermissionPhotos(isCamera ? l10n.camera : l10n.photoLibrary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
               openAppSettings();
             },
-            child: const Text('Settings'),
+            child: Text(l10n.settingsTitle),
           ),
         ],
       ),
@@ -157,7 +160,7 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.photo_library),
-              title: const Text('Gallery'),
+              title: Text(l10n.gallery),
               onTap: () {
                 Navigator.pop(ctx);
                 _checkPermissionAndPick(context, false, index);
@@ -165,7 +168,7 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.camera_alt),
-              title: const Text('Camera'),
+              title: Text(l10n.camera),
               onTap: () {
                 Navigator.pop(ctx);
                 _checkPermissionAndPick(context, true, index);
@@ -191,12 +194,12 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text("Photo Not Accepted"),
+            title: Text(l10n.photoNotAccepted),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("We could not verify your photo because:"),
+                Text(l10n.couldNotVerifyPhoto),
                 const SizedBox(height: 10),
                 // "next.error" contains the string from Lambda/Provider
                 // e.g., "Face too far away" or "Group photos not allowed"
@@ -208,13 +211,13 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                const Text("Please try uploading a different photo."),
+                Text(l10n.tryDifferentPhoto),
               ],
             ),
             actions: [
               ElevatedButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Try Again'),
+                child: Text(l10n.tryAgain),
               ),
             ],
           ),
@@ -227,7 +230,7 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
     return Stack(
       children: [
         BaseOnboardingStepScreen(
-          title: 'Add Photos',
+          title: l10n.addPhotos,
           showBackButton: true,
           nextLabel: 'Continue',
           isNextEnabled: canProceed,
@@ -242,7 +245,7 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
             children: [
               const SizedBox(height: 10),
               Text(
-                'Add at least 2 photos to get your matches! First one is main picture',
+                l10n.addAtLeast2Photos,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: Theme.of(
                     context,
@@ -253,7 +256,7 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Tap on an added photo to edit or remove it.',
+                l10n.tapPhotoToEdit,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: Theme.of(
                     context,
@@ -299,7 +302,7 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 16),
                   child: Text(
-                    'Please add one more photo',
+                    l10n.addOneMorePhoto,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: Theme.of(
                         context,
@@ -321,7 +324,7 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
                         _showImageSourceSheet(context, firstEmpty);
                       }
                     },
-                    child: const Text('Add more photos'),
+                    child: Text(l10n.addMorePhotos),
                   ),
                 ),
             ],
@@ -432,7 +435,7 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
                     ),
                     SizedBox(width: 2),
                     Text(
-                      'MAIN',
+                      l10n.mainPhotoBadge,
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.onSecondary,
                         fontSize: 10,
@@ -518,7 +521,7 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
             if (content.isLocal)
               ListTile(
                 leading: const Icon(Icons.crop),
-                title: const Text('Edit Photo'),
+                title: Text(l10n.editPhoto),
                 onTap: () async {
                   Navigator.pop(ctx);
                   final repo = ref.read(mediaRepositoryProvider);
@@ -542,7 +545,7 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
                 color: Theme.of(context).colorScheme.error,
               ),
               title: Text(
-                'Remove Photo',
+                l10n.removePhoto,
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
               onTap: () {

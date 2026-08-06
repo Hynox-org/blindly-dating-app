@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
+import '../../../../core/utils/vocab.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../provider/profile_provider.dart';
 import '../../domain/repositories/profile_repository.dart';
@@ -14,6 +16,9 @@ class QualitiesSelectionScreen extends ConsumerStatefulWidget {
 
 class _QualitiesSelectionScreenState
     extends ConsumerState<QualitiesSelectionScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   final List<String> _allQualities = [
     'Ambition',
     'Confidence',
@@ -54,8 +59,8 @@ class _QualitiesSelectionScreenState
           _selectedQualities.add(quality);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('You can select up to 3 qualities only.'),
+            SnackBar(
+              content: Text(l10n.maxThreeQualities),
               duration: Duration(seconds: 2),
             ),
           );
@@ -87,7 +92,7 @@ class _QualitiesSelectionScreenState
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error saving qualities: $e')));
+        ).showSnackBar(SnackBar(content: Text(l10n.errUpdateFailed('$e'))));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -105,8 +110,8 @@ class _QualitiesSelectionScreenState
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Person Qualities',
+        title: Text(
+          l10n.personQualities,
           style: TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.bold,
@@ -116,8 +121,8 @@ class _QualitiesSelectionScreenState
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Skip',
+            child: Text(
+              l10n.skip,
               style: TextStyle(
                 color: Colors.black,
                 fontWeight: FontWeight.bold,
@@ -133,8 +138,8 @@ class _QualitiesSelectionScreenState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
-            const Text(
-              'Choose 3 qualities that would make a connection that much stronger.',
+            Text(
+              l10n.chooseThreeQualities,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.black87,

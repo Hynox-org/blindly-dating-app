@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/providers/connection_mode_provider.dart';
 import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
@@ -20,6 +21,8 @@ class BioEntryScreen extends ConsumerStatefulWidget {
 }
 
 class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
   late final TextEditingController _controller;
   bool _isSaving = false;
 
@@ -102,7 +105,7 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
       }
     } catch (e) {
       if (mounted) {
-        showErrorPopup(context, 'Failed to save bio: $e');
+        showErrorPopup(context, l10n.failedToSaveBio('$e'));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -128,7 +131,7 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
     final isNextEnabled = _controller.text.trim().length >= 10 && !_isSaving;
 
     return BaseOnboardingStepScreen(
-      title: 'About You',
+      title: l10n.aboutYou,
       showBackButton: false,
       showNextButton: false,
       showSkipButton: false,
@@ -142,7 +145,7 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Don't be shy! This is your chance to share your personality with a short bio.",
+                    l10n.bioPrompt,
                     style: TextStyle(
                       fontSize: 14,
                       color: colorScheme.onSurface,
@@ -156,7 +159,7 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
                     maxLength: 300,
                     style: TextStyle(color: colorScheme.onSurface),
                     decoration: InputDecoration(
-                      hintText: 'Text Here.....',
+                      hintText: l10n.textHereHint,
                       hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
                       filled: true,
                       fillColor: colorScheme.surfaceContainerHighest

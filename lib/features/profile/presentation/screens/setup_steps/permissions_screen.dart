@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
@@ -14,6 +15,8 @@ class PermissionsScreen extends ConsumerStatefulWidget {
 
 class _PermissionsScreenState extends ConsumerState<PermissionsScreen>
     with WidgetsBindingObserver {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
   Map<Permission, PermissionStatus> _statuses = {};
   bool _isLoading = true;
 
@@ -73,21 +76,21 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen>
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Permission Required'),
-            content: const Text(
-              'This permission is required for the app to function correctly. Please enable it in settings.',
+            title: Text(l10n.permissionRequired),
+            content: Text(
+              l10n.permissionRequiredBody,
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
+                child: Text(l10n.cancel),
               ),
               TextButton(
                 onPressed: () {
                   Navigator.pop(ctx);
                   openAppSettings();
                 },
-                child: const Text('Settings'),
+                child: Text(l10n.settingsTitle),
               ),
             ],
           ),
@@ -116,27 +119,27 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen>
   }
 
   String _getTitleForPermission(Permission perm) {
-    if (perm == Permission.camera) return 'Camera Access';
-    if (perm == Permission.photos) return 'Photo Library';
-    if (perm == Permission.locationWhenInUse) return 'Location Access';
-    if (perm == Permission.notification) return 'Notification Access';
-    if (perm == Permission.microphone) return 'Microphone Access';
-    return 'Unknown Access';
+    if (perm == Permission.camera) return l10n.cameraAccess;
+    if (perm == Permission.photos) return l10n.photoLibrary;
+    if (perm == Permission.locationWhenInUse) return l10n.locationAccess;
+    if (perm == Permission.notification) return l10n.notificationAccess;
+    if (perm == Permission.microphone) return l10n.microphoneAccess;
+    return l10n.unknownAccess;
   }
 
   String _getDescriptionForPermission(Permission perm) {
     if (perm == Permission.camera) {
-      return 'To take profile photos and verify identity.';
+      return l10n.cameraReason;
     }
-    if (perm == Permission.photos) return 'To upload photos from your gallery.';
+    if (perm == Permission.photos) return l10n.photoReason;
     if (perm == Permission.locationWhenInUse) {
-      return 'To show you matches nearby.';
+      return l10n.locationReason;
     }
     if (perm == Permission.notification) {
-      return 'To alert you of new matches and messages.';
+      return l10n.notificationReason;
     }
     if (perm == Permission.microphone) {
-      return 'For voice and video interactions.';
+      return l10n.microphoneReason;
     }
     return '';
   }
@@ -144,9 +147,9 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen>
   @override
   Widget build(BuildContext context) {
     return BaseOnboardingStepScreen(
-      title: 'App Permissions',
+      title: l10n.appPermissions,
       showBackButton: true,
-      nextLabel: 'Continue',
+      nextLabel: l10n.continueLabel,
       onNext: () {
         ref.read(onboardingProvider.notifier).completeStep('permissions');
       },

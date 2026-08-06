@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veriff_flutter/veriff_flutter.dart';
@@ -21,6 +22,8 @@ class GovernmentIdVerificationScreen extends ConsumerStatefulWidget {
 
 class _GovernmentIdVerificationScreenState
     extends ConsumerState<GovernmentIdVerificationScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
   GovIdStep _currentStep = GovIdStep.instructions;
   final DocumentType _selectedDocType = DocumentType.drivers_license;
   bool _isLoading = false;
@@ -66,7 +69,7 @@ class _GovernmentIdVerificationScreenState
           });
           // 🔔 Show the specific message you asked for
           _showProfessionalToast(
-            "You have been already verified",
+            l10n.alreadyVerified,
             isError: false,
           );
         }
@@ -99,7 +102,7 @@ class _GovernmentIdVerificationScreenState
                     _currentStep = GovIdStep.verified;
                   });
                   _showProfessionalToast(
-                    "Verification Successful",
+                    l10n.verificationSuccessful,
                     isError: false,
                   );
                 }
@@ -111,7 +114,7 @@ class _GovernmentIdVerificationScreenState
                   setState(() => _isLoading = false);
                   // Don't change step, stay here to retry
                   _showFailureDialog(
-                    reason ?? "Document could not be verified.",
+                    reason ?? l10n.documentNotVerified,
                   );
                 }
               }
@@ -134,14 +137,14 @@ class _GovernmentIdVerificationScreenState
           children: [
             Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
             SizedBox(width: 10),
-            Text("Verification Failed"),
+            Text(l10n.verificationFailed),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("We could not verify your ID. Veriff provided this reason:"),
+            Text(l10n.veriffReason),
             SizedBox(height: 12),
             Container(
               padding: EdgeInsets.all(12),
@@ -160,14 +163,14 @@ class _GovernmentIdVerificationScreenState
               ),
             ),
             SizedBox(height: 12),
-            Text("Please try again with a clearer image."),
+            Text(l10n.tryClearerImage),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              "Try Again",
+              l10n.tryAgain,
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
@@ -210,7 +213,7 @@ class _GovernmentIdVerificationScreenState
 
     try {
       final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) throw Exception("User not logged in");
+      if (user == null) throw Exception(l10n.userNotLoggedIn);
 
       // A. Call Edge Function
       final response = await Supabase.instance.client.functions.invoke(
@@ -242,8 +245,8 @@ class _GovernmentIdVerificationScreenState
 
       if (result.status == Status.done) {
         // User finished. Keep spinner loading and poll for status update
-        print("Veriff finished. Waiting for webhook update...");
-        _showProfessionalToast("Verification Submitted! Reviewing your ID...", isError: false);
+        print(l10n.veriffWaiting);
+        _showProfessionalToast(l10n.verificationSubmitted, isError: false);
 
         // Fallback polling for instant update if webhook takes a moment
         Future.delayed(const Duration(seconds: 3), () async {
@@ -307,7 +310,7 @@ class _GovernmentIdVerificationScreenState
     final colorScheme = Theme.of(context).colorScheme;
 
     return BaseOnboardingStepScreen(
-      title: 'Verify Your Profile',
+      title: l10n.verifyYourProfile,
       showBackButton: false,
       onBack: _onBack,
       showNextButton: false,
@@ -341,8 +344,8 @@ class _GovernmentIdVerificationScreenState
                   const SizedBox(height: 24),
                   Text(
                     isVerified
-                        ? "You are Verified!"
-                        : "A quick check to keep you safe",
+                        ? l10n.youAreVerified
+                        : l10n.quickCheckSafe,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 24,
@@ -353,8 +356,8 @@ class _GovernmentIdVerificationScreenState
                   const SizedBox(height: 12),
                   Text(
                     isVerified
-                        ? "Your identity has been confirmed."
-                        : "To confirm your identity, we use Veriff for secure document scanning.",
+                        ? l10n.identityConfirmed
+                        : l10n.veriffExplainer,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
@@ -396,7 +399,7 @@ class _GovernmentIdVerificationScreenState
                                   CircularProgressIndicator(),
                                   SizedBox(height: 16),
                                   Text(
-                                    "Verifying Results...",
+                                    l10n.verifyingResults,
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -418,8 +421,8 @@ class _GovernmentIdVerificationScreenState
                                   const SizedBox(height: 16),
                                   Text(
                                     isVerified
-                                        ? "Verification Complete"
-                                        : "Tap to Scan Document",
+                                        ? l10n.verificationComplete
+                                        : l10n.tapToScanDocument,
                                     style: TextStyle(
                                       color: isVerified
                                           ? Colors.green.shade800
@@ -431,7 +434,7 @@ class _GovernmentIdVerificationScreenState
                                   if (!isVerified) ...[
                                     const SizedBox(height: 8),
                                     Text(
-                                      "Powered by Veriff",
+                                      l10n.poweredByVeriff,
                                       style: TextStyle(
                                         color: colorScheme.onSurfaceVariant
                                             .withValues(alpha: 0.5),
@@ -456,19 +459,19 @@ class _GovernmentIdVerificationScreenState
                           _buildGuidelineItem(
                             context,
                             Icons.circle,
-                            "Prepare your physical ID card",
+                            l10n.prepareIdCard,
                           ),
                           const SizedBox(height: 16),
                           _buildGuidelineItem(
                             context,
                             Icons.circle,
-                            "Ensure good lighting",
+                            l10n.ensureGoodLighting,
                           ),
                           const SizedBox(height: 16),
                           _buildGuidelineItem(
                             context,
                             Icons.circle,
-                            "Be ready for a quick selfie",
+                            l10n.readyForSelfie,
                           ),
                         ],
                       ),
@@ -495,15 +498,15 @@ class _GovernmentIdVerificationScreenState
                   ),
                 ),
                 child: _isLoading
-                    ? const Text(
-                        "Processing...",
+                    ? Text(
+                        l10n.processing,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                       )
                     : Text(
-                        isVerified ? "Verified ✅" : "Start Verification",
+                        isVerified ? "Verified ✅" : l10n.startVerification,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

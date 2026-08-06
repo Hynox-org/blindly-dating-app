@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
+import '../../core/utils/vocab.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // ✅ Added Riverpod
 
 import '../../core/widgets/app_layout.dart';
@@ -23,6 +25,9 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   @override
   void initState() {
     super.initState();
@@ -57,7 +62,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           },
         ),
         title: Text(
-          'Profile',
+          l10n.profileTitle,
           style: TextStyle(
             color: Theme.of(context).colorScheme.onSurface,
             fontSize: 20,
@@ -84,7 +89,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         child: userAsync.when(
           skipLoadingOnReload: true,
           loading: () => const Center(child: AppLoader()),
-          error: (err, stack) => Center(child: Text("Error loading profile")),
+          error: (err, stack) => Center(child: Text(l10n.errorLoadingProfile)),
           data: (user) {
             return Column(
               children: [
@@ -211,7 +216,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   border: Border.all(color: Colors.green.withValues(alpha: 0.5)),
                 ),
                 child: Text(
-                  '${user.trustScore}% Trust',
+                  l10n.percentTrust('${user.trustScore}'),
                   style: const TextStyle(
                     color: Colors.green,
                     fontSize: 10,
@@ -230,7 +235,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
-            percentInt == 100 ? 'Profile Completed' : 'Complete profile',
+            percentInt == 100 ? l10n.profileCompleted : l10n.completeProfile,
             style: TextStyle(
               fontSize: 12,
               color: Theme.of(context).colorScheme.onSurface,
@@ -239,7 +244,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ),
         const SizedBox(height: 16),
         Text(
-          'A higher score helps you get more\nauthentic matches',
+          l10n.higherScoreHelps,
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 14,
@@ -259,16 +264,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       name: user.name,
       age: user.age,
       distance: 0,
-      bio: user.bio.isNotEmpty ? user.bio : 'No bio added yet.',
+      bio: user.bio.isNotEmpty ? user.bio : l10n.noBioYet,
       // ✅ IMAGE LOGIC: This list will have 2 or 3 images based on provider fetch
       imageUrls: user.imageUrls,
-      height: user.height != null ? '${user.height} cm' : 'Ask me',
-      activityLevel: user.exercise ?? 'Active',
+      height: user.height != null ? l10n.heightCm('${user.height}') : l10n.askMe,
+      activityLevel: user.exercise ?? l10n.activeLabel,
       education: user.educationLevel ?? user.education,
       school: user.educatedAt ?? '',
       gender: user.gender,
-      religion: user.religion ?? 'Add Religion',
-      zodiac: user.zodiac ?? 'Add Zodiac',
+      religion: user.religion ?? l10n.addReligion,
+      zodiac: user.zodiac ?? l10n.addZodiac,
       drinking: user.drinking ?? 'Socially',
       smoking: user.smoking ?? 'Never',
       politics: user.politics ?? '',
@@ -281,10 +286,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       quickestWay: '',
       lifestyleItems: user.lifestyleItems, // ✅ Pass LifestyleChips directly
       causes: user.causesCommunities,
-      simplePleasure: 'Ask me',
+      simplePleasure: l10n.askMe,
       prompts: user.prompts, // ✅ Pass Prompts here
       languages: user.languages.isNotEmpty ? user.languages : ['English'],
-      location: user.city.isNotEmpty ? user.city : 'Nearby',
+      location: user.city.isNotEmpty ? user.city : l10n.nearby,
       spotifyArtists: [],
       isVerified: user.isVerified,
       verificationLevel: user.verificationLevel,
@@ -384,8 +389,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text(
-                  'PREMIUM',
+                Text(
+                  l10n.premium,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 24,
@@ -394,8 +399,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Get noticed sooner and\ngo on 3x as many dates',
+                Text(
+                  l10n.getNoticedSooner,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,
@@ -419,8 +424,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       vertical: 12,
                     ),
                   ),
-                  child: const Text(
-                    'Upgrade',
+                  child: Text(
+                    l10n.upgrade,
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -438,8 +443,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         Expanded(
           child: _buildActionCard(
             icon: Icons.cyclone,
-            title: 'Spot light',
-            subtitle: 'Stand out',
+            title: l10n.spotlight,
+            subtitle: l10n.standOut,
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
             iconColor: const Color(
               0xFF6B5E3C,
@@ -450,8 +455,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         Expanded(
           child: _buildActionCard(
             icon: Icons.star,
-            title: 'Super swipe',
-            subtitle: 'Get noticed',
+            title: l10n.superSwipe,
+            subtitle: l10n.getNoticed,
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
             iconColor: Theme.of(context).colorScheme.primary,
           ),
@@ -519,7 +524,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Score breakdown',
+          l10n.scoreBreakdown,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,
@@ -529,22 +534,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         const SizedBox(height: 12),
         _buildScoreItem(
           icon: Icons.person_outline,
-          title: 'Profile photo verified',
-          status: 'Completed', // Assuming verified for now
+          title: l10n.profilePhotoVerified,
+          status: l10n.completedLabel, // Assuming verified for now
           isCompleted: true,
         ),
         const SizedBox(height: 8),
         _buildScoreItem(
           icon: Icons.person_outline,
-          title: 'Profile details',
-          status: detailsComplete ? 'Completed' : 'Incomplete',
+          title: l10n.profileDetails,
+          status: detailsComplete ? l10n.completedLabel : l10n.incompleteLabel,
           isCompleted: detailsComplete,
         ),
         const SizedBox(height: 8),
         _buildScoreItem(
           icon: Icons.link,
-          title: 'Connect social accounts',
-          status: 'Incomplete',
+          title: l10n.connectSocialAccounts,
+          status: l10n.incompleteLabel,
           isCompleted: false,
         ),
       ],
@@ -590,7 +595,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Ways to improve',
+          l10n.waysToImprove,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,
@@ -600,14 +605,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         const SizedBox(height: 12),
         _buildImproveItem(
           icon: Icons.camera_alt_outlined,
-          title: 'Verify your photos',
-          subtitle: 'Prove you\'re real to other members',
+          title: l10n.verifyYourPhotos,
+          subtitle: l10n.proveYoureReal,
         ),
         const SizedBox(height: 8),
         _buildImproveItem(
           icon: Icons.check_circle_outline,
-          title: 'Complete your profile',
-          subtitle: 'Add prompts, interests and other details',
+          title: l10n.completeYourProfile,
+          subtitle: l10n.addPromptsInterests,
         ),
       ],
     );
@@ -658,14 +663,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           child: Text.rich(
             TextSpan(
               text:
-                  'You\'re verification data is handled secured and is not shared on your public profile. ',
+                  l10n.verificationDataSecure,
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 12,
               ),
               children: [
                 TextSpan(
-                  text: 'Learn more',
+                  text: l10n.learnMore,
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.bold,
@@ -699,8 +704,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
               elevation: 0,
             ),
-            child: const Text(
-              'Improve your Profile',
+            child: Text(
+              l10n.improveYourProfile,
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),

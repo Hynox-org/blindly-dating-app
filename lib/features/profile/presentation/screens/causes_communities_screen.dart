@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
+import '../../../../core/utils/vocab.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/repositories/profile_repository.dart';
 import '../../provider/profile_provider.dart';
@@ -15,6 +17,9 @@ class CausesCommunitiesScreen extends ConsumerStatefulWidget {
 
 class _CausesCommunitiesScreenState
     extends ConsumerState<CausesCommunitiesScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   final List<String> _options = [
     'Human Rights',
     'Disability Rights',
@@ -51,7 +56,7 @@ class _CausesCommunitiesScreenState
           _selectedCauses.add(cause);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('You can select up to 3 options')),
+            SnackBar(content: Text(l10n.maxThreeOptions)),
           );
         }
       }
@@ -82,7 +87,7 @@ class _CausesCommunitiesScreenState
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Failed to update causes: $e')));
+        ).showSnackBar(SnackBar(content: Text(l10n.errUpdateFailed('$e'))));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -98,8 +103,8 @@ class _CausesCommunitiesScreenState
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Causes & Communities',
+        title: Text(
+          l10n.causesTitle,
           style: TextStyle(
             color: Colors.black,
             fontSize: 18,
@@ -112,8 +117,8 @@ class _CausesCommunitiesScreenState
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Skip',
+            child: Text(
+              l10n.skip,
               style: TextStyle(
                 color: Colors.black,
                 fontSize: 14,
@@ -125,10 +130,10 @@ class _CausesCommunitiesScreenState
       ),
       body: Column(
         children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.all(16.0),
             child: Text(
-              'Select up to 3 options close to your hearts.',
+              l10n.selectUpTo3Causes,
               style: TextStyle(fontSize: 14, color: Colors.black),
             ),
           ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../providers/onboarding_provider.dart';
@@ -18,6 +19,8 @@ class GenderSelectScreen extends ConsumerStatefulWidget {
 }
 
 class _GenderSelectScreenState extends ConsumerState<GenderSelectScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
   String? _selectedGender; // 'male', 'female', 'non_binary'
   final bool _showOnProfile = false;
   bool _isSaving = false;
@@ -113,7 +116,7 @@ class _GenderSelectScreenState extends ConsumerState<GenderSelectScreen> {
     } catch (e) {
       debugPrint('Error saving gender: $e');
       if (mounted) {
-        showErrorPopup(context, 'Failed to save gender: $e');
+        showErrorPopup(context, l10n.failedToSaveGender('$e'));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -123,9 +126,9 @@ class _GenderSelectScreenState extends ConsumerState<GenderSelectScreen> {
   @override
   Widget build(BuildContext context) {
     return BaseOnboardingStepScreen(
-      title: "What's your Gender?",
+      title: l10n.whatsYourGender,
       showBackButton: true,
-      nextLabel: widget.isEditMode ? 'Update' : 'Continue',
+      nextLabel: widget.isEditMode ? l10n.update : l10n.continueLabel,
       isNextEnabled: _selectedGender != null && !_isSaving,
       isLoading: _isSaving,
       onNext: _handleNext,
@@ -133,7 +136,7 @@ class _GenderSelectScreenState extends ConsumerState<GenderSelectScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'This help us show you relevant profiles and find your matches',
+            l10n.genderHelpsMatches,
             style: TextStyle(
               fontSize: 14,
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54),

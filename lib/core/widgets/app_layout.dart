@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import '../../features/profile/profile.dart';
 import '../../features/home/screens/home_screen.dart';
@@ -84,7 +85,7 @@ class AppLayout extends StatelessWidget {
                 context: context,
                 selectedIcon: Icons.person,
                 unselectedIcon: Icons.person_outline,
-                label: 'Profile',
+                label: AppLocalizations.of(context).profileTitle,
                 index: 0,
                 isSelected: selectedIndex == 0,
               ),
@@ -92,7 +93,7 @@ class AppLayout extends StatelessWidget {
                 context: context,
                 selectedIcon: Icons.explore,
                 unselectedIcon: Icons.explore_outlined,
-                label: 'Discover',
+                label: AppLocalizations.of(context).discover,
                 index: 1,
                 isSelected: selectedIndex == 1,
               ),
@@ -100,7 +101,7 @@ class AppLayout extends StatelessWidget {
                 context: context,
                 selectedIcon: Icons.people,
                 unselectedIcon: Icons.people_outline,
-                label: 'Peoples',
+                label: AppLocalizations.of(context).peoples,
                 index: 2,
                 isSelected: selectedIndex == 2,
               ),
@@ -108,7 +109,7 @@ class AppLayout extends StatelessWidget {
                 context: context,
                 selectedIcon: Icons.favorite,
                 unselectedIcon: Icons.favorite_border,
-                label: 'Liked You',
+                label: AppLocalizations.of(context).navLikes,
                 index: 3,
                 isSelected: selectedIndex == 3,
               ),
@@ -116,7 +117,7 @@ class AppLayout extends StatelessWidget {
                 context: context,
                 selectedIcon: Icons.chat_bubble,
                 unselectedIcon: Icons.chat_bubble_outline,
-                label: 'Chat',
+                label: AppLocalizations.of(context).chatTab,
                 index: 4,
                 isSelected: selectedIndex == 4,
               ),
@@ -145,6 +146,7 @@ class AppLayout extends StatelessWidget {
           onTap: () => _handleNavigation(context, index),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 isSelected ? selectedIcon : unselectedIcon,
@@ -152,6 +154,8 @@ class AppLayout extends StatelessWidget {
                 size: 26,
               ),
               const SizedBox(height: 6),
+              // One line only: the bar is a fixed 60px and a translated label
+              // that wraps overflows it.
               AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 200),
                 style: TextStyle(
@@ -159,7 +163,15 @@ class AppLayout extends StatelessWidget {
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                   color: isSelected ? selectedColor : unselectedColor,
                 ),
-                child: Text(label),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
               ),
             ],
           ),

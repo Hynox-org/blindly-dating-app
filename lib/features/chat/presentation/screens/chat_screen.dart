@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 // For Uri.encodeComponent
 
@@ -17,6 +18,9 @@ class ChatScreen extends ConsumerStatefulWidget {
 }
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   @override
   void initState() {
     super.initState();
@@ -58,7 +62,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
-          title: const Text("Chats"),
+          title: Text(l10n.chats),
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
           titleTextStyle: TextStyle(
@@ -116,7 +120,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                       child: Text(
-                        'Recent matches',
+                        l10n.recentMatches,
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -189,7 +193,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                   vertical: 16.0,
                                 ),
                                 child: Text(
-                                  'Your new matches will appear here.',
+                                  l10n.newMatchesAppearHere,
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Theme.of(
@@ -307,7 +311,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                       child: Text(
-                        'Conversations',
+                        l10n.conversations,
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -330,7 +334,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                 ),
                                 const SizedBox(height: 32),
                                 Text(
-                                  "Ready to make the first\nmove?",
+                                  l10n.readyToMakeFirstMove,
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     fontSize: 20,
@@ -378,7 +382,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              subtitle: const Text("Tap to continue chatting"),
+                              subtitle: Text(l10n.tapToContinueChatting),
                               trailing: match['chat_started'] == true
                                   ? const Icon(
                                       Icons.chat_bubble_outline,

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
+import '../../../../core/utils/vocab.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/repositories/profile_repository.dart';
 import '../../provider/profile_provider.dart';
@@ -13,6 +15,9 @@ class HaveKidsScreen extends ConsumerStatefulWidget {
 }
 
 class _HaveKidsScreenState extends ConsumerState<HaveKidsScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   bool? _haveKids; // true = Have kids, false = Don't have kids
 
   @override
@@ -42,7 +47,7 @@ class _HaveKidsScreenState extends ConsumerState<HaveKidsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update have kids status: $e')),
+          SnackBar(content: Text(l10n.errUpdateFailed('$e'))),
         );
       }
     }
@@ -57,8 +62,8 @@ class _HaveKidsScreenState extends ConsumerState<HaveKidsScreen> {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Do you have kids?',
+        title: Text(
+          l10n.doYouHaveKids,
           style: TextStyle(
             color: Colors.black,
             fontSize: 18,
@@ -71,8 +76,8 @@ class _HaveKidsScreenState extends ConsumerState<HaveKidsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Skip',
+            child: Text(
+              l10n.skip,
               style: TextStyle(
                 color: Colors.black,
                 fontSize: 14,
@@ -109,8 +114,8 @@ class _HaveKidsScreenState extends ConsumerState<HaveKidsScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Save',
+                child: Text(
+                  l10n.save,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,

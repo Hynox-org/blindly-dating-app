@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/onboarding_provider.dart';
 import '../../../../core/widgets/app_loader.dart';
@@ -27,6 +28,9 @@ class OnboardingShell extends ConsumerStatefulWidget {
 }
 
 class _OnboardingShellState extends ConsumerState<OnboardingShell> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   @override
   void initState() {
     super.initState();
@@ -68,10 +72,10 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('Error: ${state.errorMessage}'),
+              Text(l10n.errGeneric('${state.errorMessage}')),
               ElevatedButton(
                 onPressed: () => ref.read(onboardingProvider.notifier).init(),
-                child: const Text('Retry'),
+                child: Text(l10n.retry),
               ),
             ],
           ),
@@ -109,7 +113,14 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
       //     ),
       //   ),
       // ),
-      body: getScreenForStep(stepConfig.stepKey, ref),
+      // First-run onboarding always renders in English — the user hasn't been
+      // near the language setting yet. The same step screens opened from
+      // Settings in edit mode are *not* wrapped, so those follow the app locale.
+      body: Localizations.override(
+        context: context,
+        locale: const Locale('en'),
+        child: getScreenForStep(stepConfig.stepKey, ref),
+      ),
     );
   }
 

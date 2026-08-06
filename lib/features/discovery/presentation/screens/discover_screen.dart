@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -23,6 +24,9 @@ class DiscoverScreen extends ConsumerStatefulWidget {
 }
 
 class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   Timer? _countdownTimer;
   final Map<String, String> _userInteractions =
       {}; // Track grid actions locally
@@ -126,7 +130,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           },
         ),
         title: Text(
-          'Discover',
+          l10n.discover,
           style: TextStyle(
             color: Theme.of(context).colorScheme.onSurface,
             fontSize: 24,
@@ -174,7 +178,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Text(
-                "You've reached the end\nof the line!",
+                l10n.reachedEndOfLine,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 28,
@@ -188,7 +192,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32.0),
               child: Text(
-                "Check back soon for more people or try adjusting your filters to see more profiles.",
+                l10n.checkBackSoon,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
@@ -222,8 +226,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                 ),
-                child: const Text(
-                  "See More Peoples",
+                child: Text(
+                  l10n.seeMorePeople,
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -240,18 +244,18 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         padding: const EdgeInsets.only(bottom: 20),
         children: [
           if (data.feeds['top_picks']?.isNotEmpty == true)
-            _buildSection('🔥 Top Picks For You', data.feeds['top_picks']!),
+            _buildSection('🔥 ${l10n.topPicksForYou}', data.feeds['top_picks']!),
           if (data.feeds['nearby']?.isNotEmpty == true)
-            _buildSection('📍 Nearby', data.feeds['nearby']!),
+            _buildSection('📍 ${l10n.nearby}', data.feeds['nearby']!),
           if (data.feeds['shared_interests']?.isNotEmpty == true)
             _buildSection(
-              '🤝 Shared Interests',
+              '🤝 ${l10n.sharedInterests}',
               data.feeds['shared_interests']!,
             ),
           if (data.feeds['new_faces']?.isNotEmpty == true)
-            _buildSection('👋 New Faces', data.feeds['new_faces']!),
+            _buildSection('👋 ${l10n.newFaces}', data.feeds['new_faces']!),
           if (data.feeds['recently_active']?.isNotEmpty == true)
-            _buildSection('⏱️ Recently Active', data.feeds['recently_active']!),
+            _buildSection('⏱️ ${l10n.recentlyActive}', data.feeds['recently_active']!),
         ],
       ),
     );
@@ -280,7 +284,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     // Navigate to see all
                   },
                   child: Text(
-                    'See all',
+                    l10n.seeAll,
                     style: TextStyle(
                       color: Theme.of(context).primaryColor,
                       fontWeight: FontWeight.w600,
@@ -478,7 +482,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          '${user.distanceKm.toStringAsFixed(1)} km away',
+                          l10n.kmAway(user.distanceKm.toStringAsFixed(1)),
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 11,

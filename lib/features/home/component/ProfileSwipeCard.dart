@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../../core/widgets/voice_playback_widget.dart';
 import '../../onboarding/domain/models/lifestyle_chip_model.dart';
@@ -135,6 +136,9 @@ class ProfileSwipeCard extends StatefulWidget {
 }
 
 class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   final ScrollController _scrollController = ScrollController();
 
   /// Check if section data is empty
@@ -350,7 +354,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Voice Intro',
+            l10n.voiceIntro,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -409,7 +413,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Bio',
+            l10n.bioTitle,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -420,7 +424,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
           Text(
             widget.profile.bio.isNotEmpty
                 ? widget.profile.bio
-                : "Ask me about my bio!", // ✅ Dynamic Bio
+                : l10n.askAboutMyBio, // ✅ Dynamic Bio
             style: TextStyle(
               fontSize: 14,
               color: colorScheme.onSurfaceVariant,
@@ -451,7 +455,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
               ),
               const SizedBox(width: 12),
               Text(
-                'Kudos',
+                l10n.kudos,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -485,7 +489,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              prompt.promptQuestion ?? 'A prompt',
+              prompt.promptQuestion ?? l10n.aPrompt,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -559,7 +563,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
               ),
               const SizedBox(width: 12),
               Text(
-                'Kudos',
+                l10n.kudos,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -716,13 +720,13 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                     if (widget.profile.isVerified &&
                         widget.profile.verificationLevel ==
                             'full_verified') ...[
-                      verifiedTag("Profile Verified", Colors.blue, scaleFactor),
+                      verifiedTag(l10n.profileVerified, Colors.blue, scaleFactor),
                       SizedBox(height: 4 * scaleFactor),
                       // Verified "Photo Verified" is blue, as requested ("show the two badges in bluue colour profile verified and photo verified")
-                      verifiedTag("Photo Verified", Colors.blue, scaleFactor),
+                      verifiedTag(l10n.photoVerified, Colors.blue, scaleFactor),
                     ] else ...[
                       // "if they are noot verified the show a black badge mentioning not verified"
-                      verifiedTag("Not Verified", Colors.black, scaleFactor),
+                      verifiedTag(l10n.notVerified, Colors.black, scaleFactor),
                     ],
                     if (widget.profile.trustScore > 0) ...[
                       SizedBox(height: 4 * scaleFactor),
@@ -773,7 +777,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                         ),
                         SizedBox(width: 4 * scaleFactor),
                         Text(
-                          "${widget.profile.distance.toStringAsFixed(1)} miles away",
+                          l10n.milesAway(widget.profile.distance.toStringAsFixed(1)),
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 11 * scaleFactor,
@@ -869,7 +873,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
           ),
           SizedBox(width: 4 * scaleFactor),
           Text(
-            "Trust Score: ${widget.profile.trustScore}%",
+            l10n.trustScore('${widget.profile.trustScore}'),
             style: TextStyle(
               color: Colors.white,
               fontSize: 10 * scaleFactor,
@@ -918,7 +922,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
             // per-pair calculation now, so it lives behind the button below
             // the card rather than being asserted on every card.
             Text(
-              "Trust Score: ${widget.profile.trustScore}%",
+              l10n.trustScore('${widget.profile.trustScore}'),
               style: TextStyle(
                 fontSize: 10 * scaleFactor,
                 fontWeight: FontWeight.w600,
@@ -945,9 +949,9 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
           ),
         ),
         icon: const Icon(Icons.insights_outlined, size: 20),
-        label: const Text(
-          'See how you two match',
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        label: Text(
+          l10n.seeHowYouMatch,
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),
         style: OutlinedButton.styleFrom(
           foregroundColor: const Color(0xFF414833),
@@ -1047,7 +1051,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'About Me',
+            l10n.aboutMe,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -1131,7 +1135,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "I'm looking for",
+            l10n.imLookingFor,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -1169,7 +1173,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'The quickest way to my heart is',
+            l10n.quickestWayToHeart,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -1220,7 +1224,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'My Interests',
+            l10n.myInterests,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -1296,7 +1300,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'My Lifestyle',
+            l10n.myLifestyle,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -1330,13 +1334,13 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                     chip.label == 'Sometimes' ||
                     chip.label == 'Socially') {
                   if (cName.contains('smok')) {
-                    displayText = 'Smokes: ${chip.label}';
+                    displayText = l10n.smokesLabel(chip.label);
                   }
                   if (cName.contains('drink')) {
-                    displayText = 'Drinks: ${chip.label}';
+                    displayText = l10n.drinksLabel(chip.label);
                   }
                   if (cName.contains('workout')) {
-                    displayText = 'Works out: ${chip.label}';
+                    displayText = l10n.worksOutLabel(chip.label);
                   }
                 }
               }
@@ -1374,7 +1378,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'My causes and communites',
+            l10n.myCauses,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -1416,7 +1420,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Languages',
+            l10n.languagesTitle,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -1457,7 +1461,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'My location',
+            l10n.myLocation,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -1477,7 +1481,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                 child: Text(
                   widget.profile.location.isNotEmpty
                       ? widget.profile.location
-                      : 'Nearby',
+                      : l10n.nearby,
                   style: TextStyle(
                     fontSize: 16,
                     color: colorScheme.onSurface,
@@ -1516,7 +1520,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'My top artist on spotify',
+            l10n.myTopArtist,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -1550,7 +1554,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
               color: Theme.of(context).colorScheme.onPrimary,
             ),
             label: Text(
-              'Edit Profile',
+              l10n.editProfile,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -1597,7 +1601,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
               const Text('❤️', style: TextStyle(fontSize: 24)),
               const SizedBox(width: 8),
               Text(
-                "You liked them!",
+                l10n.youLikedThem,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -1619,7 +1623,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
               color: Theme.of(context).colorScheme.onSurface,
             ),
             label: Text(
-              "Undo 'Not for me'",
+              l10n.undoNotForMe,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -1777,9 +1781,9 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
       children: [
         TextButton(
           onPressed: () {},
-          child: const Text(
-            'Block',
-            style: TextStyle(
+          child: Text(
+            l10n.block,
+            style: const TextStyle(
               color: Colors.black,
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -1789,9 +1793,9 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         const SizedBox(height: 8),
         TextButton(
           onPressed: () {},
-          child: const Text(
-            'Report',
-            style: TextStyle(
+          child: Text(
+            l10n.report,
+            style: const TextStyle(
               color: Colors.black,
               fontSize: 16,
               fontWeight: FontWeight.w600,

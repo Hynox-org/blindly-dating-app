@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
+import '../../../../core/utils/vocab.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/discovery_user_model.dart';
 import '../../../home/component/ProfileSwipeCard.dart';
@@ -21,6 +23,9 @@ class DiscoveryProfileDetailScreen extends ConsumerStatefulWidget {
 
 class _DiscoveryProfileDetailScreenState
     extends ConsumerState<DiscoveryProfileDetailScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   // Local state to track the interaction on this specific card
   late String _swipeState;
 
@@ -43,18 +48,19 @@ class _DiscoveryProfileDetailScreenState
               ? 'Male'
               : (user.gender.startsWith('F') ? 'Female' : 'Male'))
         : 'Male';
+    final genderLabel = vocabLabel(l10n, genderStr);
 
     return UserProfile(
       id: user.profileId,
       name: user.displayName,
       age: user.age,
       distance: double.parse((user.distanceKm / 1000).toStringAsFixed(1)),
-      location: user.hometown ?? 'Nearby',
-      gender: genderStr,
+      location: user.hometown ?? l10n.nearby,
+      gender: genderLabel,
       imageUrls: profileImages,
       bio: user.bio,
       subTitle: user.workTitle ?? '',
-      height: user.height != null ? '${user.height} cm' : '',
+      height: user.height != null ? l10n.heightCm('${user.height}') : '',
       activityLevel: user.exercise ?? '',
       education: user.education ?? '',
       school: user.school ?? '',
@@ -66,7 +72,7 @@ class _DiscoveryProfileDetailScreenState
       kids: user.kids ?? '',
       hometown: user.hometown ?? '',
       workCompany: user.workCompany ?? '',
-      summary: user.bio.isNotEmpty ? user.bio : 'Swipe right to know more!',
+      summary: user.bio.isNotEmpty ? user.bio : l10n.swipeRightHint,
       lookingForModes: user.lookingForModes,
       quickestWay: '',
       prompts: user.prompts, // ✅ Pass fetched Prompts here

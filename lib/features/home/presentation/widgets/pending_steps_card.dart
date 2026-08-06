@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../onboarding/data/repositories/onboarding_repository.dart';
 import '../../../auth/providers/auth_providers.dart';
@@ -82,7 +83,7 @@ class _PendingStepsCardState extends ConsumerState<PendingStepsCard> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Complete your profile',
+                  AppLocalizations.of(context).completeYourProfile,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: Theme.of(context).colorScheme.secondary,
                     fontWeight: FontWeight.bold,
@@ -92,7 +93,7 @@ class _PendingStepsCardState extends ConsumerState<PendingStepsCard> {
             ),
             const SizedBox(height: 12),
             Text(
-              'You skipped some steps. Complete them to get the most out of the app.',
+              AppLocalizations.of(context).completeYourProfileBody,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 12),
@@ -153,7 +154,7 @@ class _PendingStepsCardState extends ConsumerState<PendingStepsCard> {
       default:
         return Scaffold(
           appBar: AppBar(title: Text(_formatStepName(stepKey))),
-          body: const Center(child: Text("This step is not yet available.")),
+          body: Center(child: Text(AppLocalizations.of(context).stepNotAvailable)),
         );
     }
   }

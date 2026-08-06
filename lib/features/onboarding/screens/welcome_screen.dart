@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import '../../auth/screens/authentication_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
@@ -38,7 +39,7 @@ class WelcomeScreen extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
                 child: Text(
-                  'Real connections start here!',
+                  AppLocalizations.of(context).realConnectionsStartHere,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 26,
@@ -97,7 +98,7 @@ class WelcomeScreen extends StatelessWidget {
                           ),
                         ),
                     child: Text(
-                      'Create an account',
+                      AppLocalizations.of(context).createAnAccount,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -152,7 +153,7 @@ class WelcomeScreen extends StatelessWidget {
                           ),
                         ),
                     child: Text(
-                      'I have an account',
+                      AppLocalizations.of(context).iHaveAnAccount,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -174,9 +175,9 @@ class WelcomeScreen extends StatelessWidget {
                           height: 1.4,
                         ),
                         children: [
-                          TextSpan(text: 'By signing up, '),
+                          TextSpan(text: AppLocalizations.of(context).termsSignupPrefix),
                           TextSpan(
-                            text: 'you agree to our terms',
+                            text: AppLocalizations.of(context).agreeToOurTerms,
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.onSurface,
                               fontWeight: FontWeight.bold,
@@ -185,7 +186,7 @@ class WelcomeScreen extends StatelessWidget {
                           TextSpan(text: '. See how we use your\n'),
                           TextSpan(text: 'data in our '),
                           TextSpan(
-                            text: 'privacy policy',
+                            text: AppLocalizations.of(context).privacyPolicyWord,
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.onSurface,
                               fontWeight: FontWeight.bold,

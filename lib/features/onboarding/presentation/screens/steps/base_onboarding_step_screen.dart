@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/onboarding_provider.dart';
@@ -9,8 +10,8 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
   final VoidCallback? onNext;
   final VoidCallback? onSkip;
   final VoidCallback? onBack;
-  final String nextLabel;
-  final String skipLabel;
+  final String? nextLabel;
+  final String? skipLabel;
   final bool showNextButton;
   final bool showSkipButton;
   final bool showBackButton;
@@ -28,8 +29,8 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
     this.onNext,
     this.onSkip,
     this.onBack,
-    this.nextLabel = 'Continue',
-    this.skipLabel = 'Skip',
+    this.nextLabel,
+    this.skipLabel,
     this.showNextButton = true,
     this.showSkipButton = false,
     this.showBackButton = false,
@@ -76,7 +77,7 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
                     TextButton(
                       onPressed: onSkip,
                       child: Text(
-                        skipLabel,
+                        skipLabel ?? AppLocalizations.of(context).skip,
                         style: TextStyle(color: theme.colorScheme.onSurface),
                       ),
                     ),
@@ -148,7 +149,12 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
                                 ),
                               )
                             : Text(
-                                isEditMode ? 'Update' : nextLabel,
+                                isEditMode
+                                    ? AppLocalizations.of(context).update
+                                    : nextLabel ??
+                                          AppLocalizations.of(
+                                            context,
+                                          ).continueLabel,
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,

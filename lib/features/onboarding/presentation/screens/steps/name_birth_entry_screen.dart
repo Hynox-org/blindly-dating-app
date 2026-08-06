@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/onboarding_provider.dart';
@@ -19,6 +20,8 @@ class NameBirthEntryScreen extends ConsumerStatefulWidget {
 }
 
 class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
   final _nameController = TextEditingController();
   final _dayController = TextEditingController();
   final _monthController = TextEditingController();
@@ -165,7 +168,7 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
       }
     } catch (e) {
       if (mounted) {
-        showErrorPopup(context, 'Failed to save data: $e');
+        showErrorPopup(context, l10n.failedToSaveData('$e'));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -183,9 +186,9 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
     bool isNextEnabled = nameValid && dateValid && !_isSaving;
 
     return BaseOnboardingStepScreen(
-      title: "Let's introduce you!",
+      title: l10n.letsIntroduceYou,
       showBackButton: true,
-      nextLabel: widget.isEditMode ? 'Update' : 'Continue',
+      nextLabel: widget.isEditMode ? l10n.update : l10n.continueLabel,
       isNextEnabled: isNextEnabled,
       isLoading: _isSaving,
       onNext: _handleNext,
@@ -195,7 +198,7 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
           children: [
             // Subtitle 1
             Text(
-              'We need your Name to create your profile',
+              l10n.needNameForProfile,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: Theme.of(
                   context,
@@ -206,7 +209,7 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
 
             // Name Label
             Text(
-              'Name',
+              l10n.nameLabel,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -222,7 +225,7 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
               controller: _nameController,
               textCapitalization: TextCapitalization.words,
               decoration: InputDecoration(
-                hintText: 'Enter Your Name',
+                hintText: l10n.enterYourName,
                 hintStyle: TextStyle(
                   color: Theme.of(
                     context,
@@ -259,7 +262,7 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
 
             // Subtitle 2
             Text(
-              'We need your DOB to create your profile',
+              l10n.needDobForProfile,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: Theme.of(
                   context,
@@ -270,7 +273,7 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
 
             // DOB Label
             Text(
-              'Date of birth',
+              l10n.dateOfBirth,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -323,7 +326,7 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
 
             const SizedBox(height: 16),
             Text(
-              'Your birthday is used to calculate your age and will be shown on your profile. Your full name will not be public',
+              l10n.birthdayNote,
               style: TextStyle(
                 fontSize: 12,
                 color: Theme.of(

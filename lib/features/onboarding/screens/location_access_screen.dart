@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -15,6 +16,8 @@ class LocationAccessScreen extends ConsumerStatefulWidget {
 }
 
 class _LocationAccessScreenState extends ConsumerState<LocationAccessScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
   bool _isLoading = false;
 
   Future<void> _requestLocationPermission() async {
@@ -81,8 +84,8 @@ class _LocationAccessScreenState extends ConsumerState<LocationAccessScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 16),
-              const Text(
-                'Location Access',
+              Text(
+                l10n.locationAccess,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -106,8 +109,8 @@ class _LocationAccessScreenState extends ConsumerState<LocationAccessScreen> {
                 ),
               ),
               const SizedBox(height: 48),
-              const Text(
-                'Find People Near You',
+              Text(
+                l10n.findPeopleNearYou,
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -115,8 +118,8 @@ class _LocationAccessScreenState extends ConsumerState<LocationAccessScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
-                "To show you potential matches in your area. We need to\nknow your location. This also help us verify your\ngeneral location for authenticity and safety. Don't\nworry, your exact location is never shared",
+              Text(
+                l10n.locationAccessBody,
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 14, color: Colors.grey, height: 1.5),
               ),
@@ -144,7 +147,7 @@ class _LocationAccessScreenState extends ConsumerState<LocationAccessScreen> {
                           ),
                         )
                       : Text(
-                          'Allow location access',
+                          l10n.allowLocationAccess,
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,

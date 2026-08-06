@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
 import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
@@ -24,6 +25,8 @@ class LifestylePrefsScreen extends ConsumerStatefulWidget {
 }
 
 class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
   bool _isLoading = true;
   List<LifestyleCategory> _categories = [];
   // Map of Category ID -> Selected Chip ID
@@ -70,7 +73,7 @@ class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = 'Failed to load lifestyle options. Please try again.';
+        _error = l10n.failedLoadLifestyle;
         _isLoading = false;
       });
     }
@@ -117,7 +120,7 @@ class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
       if (_selections.isNotEmpty && _selections.length < _categories.length) {
         showErrorPopup(
           context,
-          'Please select an option for each category, or clear all to skip.',
+          l10n.selectEachCategory,
         );
       }
       return;
@@ -185,7 +188,7 @@ class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
         setState(() {
           _isLoading = false;
         });
-        showErrorPopup(context, 'Error saving preferences: $e');
+        showErrorPopup(context, l10n.errorSavingPreferences('$e'));
       }
     }
   }
@@ -206,7 +209,7 @@ class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
     final isNextEnabled = !_isLoading && _isFormValid;
 
     return BaseOnboardingStepScreen(
-      title: 'Life Style',
+      title: l10n.lifeStyle,
       showBackButton: widget.isEditMode, // Show back button in edit mode
       isEditMode: widget.isEditMode,
       // In edit mode we rely on BaseOnboardingStepScreen's button or custom one?
@@ -228,7 +231,7 @@ class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4.0),
                     child: Text(
-                      'Tell us more about your habits. Pick what fits you best.',
+                      l10n.lifestylePrompt,
                       style: TextStyle(
                         color: colorScheme.onSurface.withValues(alpha: 0.54),
                         fontSize: 14,
@@ -243,7 +246,7 @@ class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
                   else if (_categories.isEmpty)
                     Center(
                       child: Text(
-                        "No lifestyle options available",
+                        l10n.noLifestyleOptions,
                         style: TextStyle(color: colorScheme.onSurface),
                       ),
                     )

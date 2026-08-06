@@ -1,6 +1,7 @@
 import 'dart:async'; // For debounce
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart'; // To access .env
@@ -21,6 +22,8 @@ class LocationSetScreen extends ConsumerStatefulWidget {
 }
 
 class _LocationSetScreenState extends ConsumerState<LocationSetScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
   final TextEditingController _searchController = TextEditingController();
   List<String> _filteredCities = [];
   bool _isSaving = false;
@@ -232,7 +235,7 @@ class _LocationSetScreenState extends ConsumerState<LocationSetScreen> {
     } catch (e) {
       debugPrint('Error saving location: $e');
       if (mounted) {
-        showErrorPopup(context, 'Failed to save location: $e');
+        showErrorPopup(context, l10n.errorSavingLocation('$e'));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -242,7 +245,7 @@ class _LocationSetScreenState extends ConsumerState<LocationSetScreen> {
   @override
   Widget build(BuildContext context) {
     return BaseOnboardingStepScreen(
-      title: 'Find your current city',
+      title: l10n.findYourCity,
       showBackButton: true,
       // We hide the button because selection happens on tap of a list item
       nextLabel: '',
@@ -252,7 +255,7 @@ class _LocationSetScreenState extends ConsumerState<LocationSetScreen> {
           TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'Search city',
+              hintText: l10n.searchCity,
               prefixIcon: const Icon(Icons.search, color: Colors.grey),
               filled: true,
               fillColor: Colors.white,

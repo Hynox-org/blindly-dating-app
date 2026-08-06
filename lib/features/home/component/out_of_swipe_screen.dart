@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'dart:async';
 
 class OutOfSwipeScreen extends StatefulWidget {
@@ -9,14 +10,17 @@ class OutOfSwipeScreen extends StatefulWidget {
 }
 
 class _OutOfSwipeScreenState extends State<OutOfSwipeScreen> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   int selectedPlanIndex = 0;
   late Timer _timer;
   Duration timeLeft = Duration(hours: 12, minutes: 4, seconds: 3);
 
   final List<Map<String, String>> plans = [
-    {'duration': '12 months', 'price': '\$107.88', 'perMonth': '\$8.99/month', 'badge': 'most popular'},
-    {'duration': '6 months', 'price': '\$77.88', 'perMonth': '\$12.99/month', 'badge': 'best value'},
-    {'duration': '1 months', 'price': '\$24.88', 'perMonth': '', 'badge': ''},
+    {'months': '12', 'price': '\$107.88', 'perMonth': '\$8.99/month', 'badge': 'most_popular'},
+    {'months': '6', 'price': '\$77.88', 'perMonth': '\$12.99/month', 'badge': 'best_value'},
+    {'months': '1', 'price': '\$24.88', 'perMonth': '', 'badge': ''},
   ];
 
   @override
@@ -75,7 +79,7 @@ class _OutOfSwipeScreenState extends State<OutOfSwipeScreen> {
                     ),
                     SizedBox(height: 16),
                     Text(
-                      'Out of swipes for\ntoday',
+                      l10n.outOfSwipesToday,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 30,
@@ -85,7 +89,7 @@ class _OutOfSwipeScreenState extends State<OutOfSwipeScreen> {
                     ),
                     SizedBox(height: 8),
                     Text(
-                      'More swipes in',
+                      l10n.moreSwipesIn,
                       style: TextStyle(
                         fontSize: 16,
                         color: Color.fromRGBO(0, 0, 0, 1),
@@ -109,18 +113,18 @@ class _OutOfSwipeScreenState extends State<OutOfSwipeScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            _buildTimeLabel('Hours'),
+                            _buildTimeLabel(l10n.hoursLabel),
                             SizedBox(width: 72),
-                            _buildTimeLabel('Minutes'),
+                            _buildTimeLabel(l10n.minutesLabel),
                             SizedBox(width: 72),
-                            _buildTimeLabel('Seconds'),
+                            _buildTimeLabel(l10n.secondsLabel),
                           ],
                         ),
                       ],
                     ),
                     SizedBox(height: 16),
                     Text(
-                      'Sent and see all\nthe likes you want',
+                      l10n.sendAndSeeLikes,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 26,
@@ -139,19 +143,19 @@ class _OutOfSwipeScreenState extends State<OutOfSwipeScreen> {
                   padding: EdgeInsets.only(bottom: 12),
                   child: _buildPlanOption(
                     index,
-                    plan['duration']!,
+                    l10n.monthsPlan(plan['months']!),
                     plan['price']!,
                     plan['perMonth']!,
-                    plan['badge']!,
+                    _badgeText(plan['badge']!),
                   ),
                 );
               }),
               SizedBox(height: 24),
               // Features with outlined icons
-              _buildFeature(Icons.all_inclusive_outlined, 'Send unlimited swipes'),
-              _buildFeature(Icons.filter_alt_outlined, 'Advanced search filter'),
-              _buildFeature(Icons.favorite_outline, 'See everyone who like you'),
-              _buildFeature(Icons.phone_outlined, 'Set more dating preference'),
+              _buildFeature(Icons.all_inclusive_outlined, l10n.sendUnlimitedSwipes),
+              _buildFeature(Icons.filter_alt_outlined, l10n.advancedSearchFilter),
+              _buildFeature(Icons.favorite_outline, l10n.seeEveryoneWhoLikes),
+              _buildFeature(Icons.phone_outlined, l10n.setMoreDatingPrefs),
               SizedBox(height: 24),
               // CTA Button
               SizedBox(
@@ -166,7 +170,10 @@ class _OutOfSwipeScreenState extends State<OutOfSwipeScreen> {
                     ),
                   ),
                   child: Text(
-                    'Get with ${plans[selectedPlanIndex]['duration']!} for ${plans[selectedPlanIndex]['price']!}',
+                    l10n.getWithPlan(
+                      l10n.monthsPlan(plans[selectedPlanIndex]['months']!),
+                      plans[selectedPlanIndex]['price']!,
+                    ),
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
@@ -177,7 +184,9 @@ class _OutOfSwipeScreenState extends State<OutOfSwipeScreen> {
               ),
               SizedBox(height: 12),
               Text(
-                'Offers ends in ${timeLeft.inHours}:${(timeLeft.inMinutes % 60).toString().padLeft(2, '0')}:${(timeLeft.inSeconds % 60).toString().padLeft(2, '0')}',
+                l10n.offerEndsIn(
+                  '${timeLeft.inHours}:${(timeLeft.inMinutes % 60).toString().padLeft(2, '0')}:${(timeLeft.inSeconds % 60).toString().padLeft(2, '0')}',
+                ),
                 style: TextStyle(
                   fontSize: 12,
                   color: Color.fromRGBO(0, 0, 0, 1),
@@ -192,6 +201,12 @@ class _OutOfSwipeScreenState extends State<OutOfSwipeScreen> {
   }
 
   // Time box - numbers only
+  String _badgeText(String key) => switch (key) {
+    'most_popular' => l10n.mostPopular,
+    'best_value' => l10n.bestValue,
+    _ => '',
+  };
+
   Widget _buildTimeBoxNumber(String value) {
     return Container(
       width: 60,
