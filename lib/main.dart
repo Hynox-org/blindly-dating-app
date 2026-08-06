@@ -32,6 +32,7 @@ import 'features/call/global_call_initializer.dart';
 import 'core/services/deep_link_service.dart'
     as import_deep_links; // deep link setup
 import 'core/services/translation_service.dart';
+import 'core/services/text_moderation_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,6 +40,7 @@ void main() async {
   await Hive.openBox('chat_cache');
   await Hive.openBox('match_keys');
   await Hive.openBox(TranslationService.boxName);
+  await TextModerationService().load();
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,

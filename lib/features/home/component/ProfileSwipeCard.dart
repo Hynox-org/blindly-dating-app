@@ -6,6 +6,7 @@ import '../../onboarding/domain/models/profile_prompt_model.dart'; // ✅ Added 
 import 'package:cached_network_image/cached_network_image.dart'; // ✅ Added
 import 'dart:ui';
 import '../../../../core/utils/share_utils.dart'; // Add ShareUtils
+import '../../discovery/presentation/screens/compatibility_explanation_screen.dart';
 
 class UserProfile {
   final String id;
@@ -298,6 +299,16 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                         const SizedBox(height: 16),
                       ],
                       const SizedBox(height: 16),
+                      // ============ COMPATIBILITY ============
+                      // Scoring a pair costs an LLM call, so it sits behind a
+                      // button rather than running for every profile shown.
+                      if (widget.mode != ProfileCardMode.preview) ...[
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: compatibilityButton(),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                       // ============ ACTION BUTTONS ============
                       _buildActionButtons(),
                       const SizedBox(height: 32),
@@ -903,14 +914,9 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         fit: BoxFit.scaleDown,
         child: Column(
           children: [
-            Text(
-              "Compatibility Score: 70%",
-              style: TextStyle(
-                fontSize: 10 * scaleFactor,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            SizedBox(height: 2 * scaleFactor),
+            // Compatibility used to be hardcoded to 70% here. It is a real
+            // per-pair calculation now, so it lives behind the button below
+            // the card rather than being asserted on every card.
             Text(
               "Trust Score: ${widget.profile.trustScore}%",
               style: TextStyle(
@@ -919,6 +925,37 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// Entry point to the compatibility result. Tapping it is what triggers the
+  /// scoring; nothing is computed for profiles the user never asks about.
+  Widget compatibilityButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => CompatibilityExplanationScreen(
+              targetProfileId: widget.profile.id,
+              targetName: widget.profile.name,
+            ),
+          ),
+        ),
+        icon: const Icon(Icons.insights_outlined, size: 20),
+        label: const Text(
+          'See how you two match',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        ),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: const Color(0xFF414833),
+          side: const BorderSide(color: Color(0xFF414833)),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
         ),
       ),
     );

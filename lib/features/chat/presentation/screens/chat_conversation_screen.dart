@@ -24,6 +24,7 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:uuid/uuid.dart';
 import '../../data/icebreaker_service.dart';
 import '../../../../core/services/translation_service.dart';
+import '../../../../core/services/text_moderation_service.dart';
 
 class ChatConversationScreen extends ConsumerStatefulWidget {
   final String matchId;
@@ -567,9 +568,23 @@ class _ChatConversationScreenState
   Future<void> _send(String text) async {
     if (text.trim().isEmpty) return;
     final trimmedText = text.trim();
-    
+
     if (!_isKeyReady) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Encryption key not loaded. Please wait.")));
+      return;
+    }
+
+    // Moderation runs before encryption — once encrypted, nothing downstream
+    // can inspect it. Covers new messages and edits alike.
+    if (TextModerationService().check(trimmedText) != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "This message may violate our community guidelines and wasn't sent.",
+          ),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
       return;
     }
 
