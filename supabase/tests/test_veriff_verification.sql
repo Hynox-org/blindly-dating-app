@@ -210,6 +210,37 @@ BEGIN
   SELECT is_verified INTO v_row FROM profiles WHERE id = me_profile;
   ASSERT v_row.is_verified, '10g. a late submitted event revoked the badge';
 
+  ---------------------------------------------------------------------------
+  -- 11. The decision payload is the only place the real rejection detail
+  --     lives. A thinner later write must not erase it, or the user can never
+  --     be told why they were rejected.
+  ---------------------------------------------------------------------------
+  UPDATE veriff_verifications
+  SET status = 'created', created_at = now(), attempt_count = 1,
+      meta_payload = '{}'::jsonb, fail_reason = NULL
+  WHERE veriff_session_id = sess;
+
+  PERFORM public.update_veriff_session(
+    sess, 'declined', 0.91, 'Face does not match the document', 9102,
+    '["face_mismatch"]'::jsonb,
+    '{"verification":{"status":"declined","reason":"Face does not match the document","comments":[{"comment":"selfie"}]}}'::jsonb);
+
+  SELECT * INTO v_row FROM veriff_verifications WHERE veriff_session_id = sess;
+  ASSERT v_row.meta_payload->'verification'->>'reason' = 'Face does not match the document',
+    '11a. the decision payload was not stored';
+
+  -- A lifecycle write carries no decision; it must leave the detail alone.
+  PERFORM public.update_veriff_session(sess, 'submitted', NULL, NULL, NULL,
+    '[]'::jsonb, '{"source":"veriff-decision","sessionState":"submitted"}'::jsonb);
+
+  SELECT * INTO v_row FROM veriff_verifications WHERE veriff_session_id = sess;
+  ASSERT v_row.meta_payload->'verification'->>'reason' = 'Face does not match the document',
+    '11b. a thin payload erased the rejection detail';
+  ASSERT v_row.fail_reason = 'Face does not match the document',
+    '11c. fail_reason was blanked by a write that carried none';
+  ASSERT v_row.decision_code = 9102, '11d. decision_code was blanked';
+  ASSERT jsonb_array_length(v_row.risk_labels) = 1, '11e. risk_labels were blanked';
+
   RAISE NOTICE 'veriff verification checks passed';
 END $$;
 

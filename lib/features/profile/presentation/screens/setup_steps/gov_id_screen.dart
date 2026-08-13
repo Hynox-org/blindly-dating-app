@@ -170,8 +170,39 @@ class _GovernmentIdVerificationScreenState
     // again -- a resubmission deliberately reuses the original session.
     if (_retryableStatuses.contains(status)) {
       _setState(_VerifyState.idle);
-      _showFailureDialog(row['fail_reason'] ?? l10n.documentNotVerified);
+      _showFailureDialog(_failureReason(row), code: row['decision_code']);
     }
+  }
+
+  /// Veriff's own words for why this failed. `fail_reason` is the column the
+  /// webhook fills, but Veriff leaves `reason` null on plenty of decisions and
+  /// puts the detail in the decision payload instead -- so fall back to it
+  /// before giving up and showing something generic.
+  String _failureReason(Map<String, dynamic> row) {
+    final direct = (row['fail_reason'] as String?)?.trim();
+    if (direct != null && direct.isNotEmpty) return direct;
+
+    final payload = row['meta_payload'];
+    if (payload is Map) {
+      final verification = payload['verification'];
+      if (verification is Map) {
+        for (final key in const ['reason', 'reasonCode', 'decisionReason']) {
+          final value = verification[key]?.toString().trim();
+          if (value != null && value.isNotEmpty) return value;
+        }
+        // Per-document notes, when Veriff attached any.
+        final comments = verification['comments'];
+        if (comments is List && comments.isNotEmpty) {
+          final texts = comments
+              .map((c) => c is Map ? c['comment']?.toString() : c?.toString())
+              .whereType<String>()
+              .where((c) => c.trim().isNotEmpty);
+          if (texts.isNotEmpty) return texts.join('\n');
+        }
+      }
+    }
+
+    return l10n.documentNotVerified;
   }
 
   /// Asks Veriff for this user's decision directly instead of waiting on the
@@ -583,7 +614,7 @@ class _GovernmentIdVerificationScreenState
 
   // ------------------------------------------------------------- feedback UI
 
-  void _showFailureDialog(String reason) {
+  void _showFailureDialog(String reason, {int? code}) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -614,12 +645,31 @@ class _GovernmentIdVerificationScreenState
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.orange.shade200),
               ),
-              child: Text(
-                reason,
-                style: TextStyle(
-                  color: Colors.brown.shade800,
-                  fontWeight: FontWeight.w600,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    reason,
+                    style: TextStyle(
+                      color: Colors.brown.shade800,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  // Veriff's own code, so support can match this screen to the
+                  // session without asking the user to describe it.
+                  if (code != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        '#$code',
+                        style: TextStyle(
+                          color: Colors.brown.shade400,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
             const SizedBox(height: 12),
