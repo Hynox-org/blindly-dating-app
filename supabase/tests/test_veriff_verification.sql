@@ -10,6 +10,7 @@ DO $$
 DECLARE
   me_profile   uuid;
   sess         text := 'test-session-' || gen_random_uuid()::text;
+  sess2        text := 'test-session-' || gen_random_uuid()::text;
   res          json;
   raised       boolean := false;
   v_attempts   int;
@@ -240,6 +241,37 @@ BEGIN
     '11c. fail_reason was blanked by a write that carried none';
   ASSERT v_row.decision_code = 9102, '11d. decision_code was blanked';
   ASSERT jsonb_array_length(v_row.risk_labels) = 1, '11e. risk_labels were blanked';
+
+  ---------------------------------------------------------------------------
+  -- 12. Multiple sessions per profile is normal: a Veriff session is
+  --     single-use, so every retry after a decline is a new row. The newest
+  --     ATTEMPT decides the badge -- and a retried webhook for an older
+  --     attempt must not be able to revoke it.
+  ---------------------------------------------------------------------------
+  DELETE FROM veriff_verifications WHERE profile_id = me_profile;
+
+  INSERT INTO veriff_verifications (profile_id, veriff_session_id, session_url, status, created_at)
+  VALUES (me_profile, sess, 'https://example.invalid/first', 'created', now() - interval '10 minutes'),
+         (me_profile, sess2, 'https://example.invalid/second', 'created', now() - interval '5 minutes');
+
+  PERFORM public.update_veriff_session(sess, 'declined', 0.9, 'Fraudulent attempt', 9102);
+  res := public.update_veriff_session(sess2, 'approved', 0.01, NULL, 9001);
+  ASSERT (res->>'is_verified')::boolean,
+    '12a. a later approval on a new session did not verify the user';
+
+  -- Veriff retries webhooks for hours. Replaying the first decision writes to
+  -- the OLD row, bumping its updated_at above the approval.
+  PERFORM public.update_veriff_session(sess, 'declined', 0.9, 'Fraudulent attempt', 9102);
+
+  SELECT is_verified INTO v_row FROM profiles WHERE id = me_profile;
+  ASSERT v_row.is_verified,
+    '12b. a replayed webhook for an older attempt revoked a legitimate badge';
+
+  -- ...but a genuinely newer attempt that fails still takes the badge away.
+  UPDATE veriff_verifications SET created_at = now() WHERE veriff_session_id = sess;
+  res := public.update_veriff_session(sess, 'declined', 0.9, 'Fraudulent attempt', 9102);
+  ASSERT NOT (res->>'is_verified')::boolean,
+    '12c. a newer decline failed to revoke the badge';
 
   RAISE NOTICE 'veriff verification checks passed';
 END $$;
