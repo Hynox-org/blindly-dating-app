@@ -29,12 +29,19 @@ BEGIN
          - (res->'breakdown'->>'safety_penalty')::int,
     'breakdown does not sum to total: ' || res::text;
 
-  -- is_verified is derived from the verifications table, never from the score.
-  ASSERT (res->>'is_verified')::boolean = EXISTS (
-           SELECT 1 FROM verifications
+  -- is_verified is derived from the latest conclusive Veriff decision, never
+  -- from the score. One Veriff decision covers document + face match +
+  -- liveness, so it is worth all 40 verification points or none.
+  ASSERT (res->>'is_verified')::boolean = COALESCE((
+           SELECT status = 'approved' FROM veriff_verifications
            WHERE profile_id = me_profile
-             AND verification_type = 'liveness' AND status = 'verified'),
-    'is_verified is not derived from verifications: ' || res::text;
+             AND status IN ('approved','declined','expired','abandoned')
+           ORDER BY updated_at DESC LIMIT 1), false),
+    'is_verified is not derived from veriff_verifications: ' || res::text;
+
+  ASSERT (res->'breakdown'->>'verification')::int
+           = CASE WHEN (res->>'is_verified')::boolean THEN 40 ELSE 0 END,
+    'verification points are not all-or-nothing: ' || res::text;
 
   -- An authenticated caller may not recalculate someone else's profile.
   IF other_profile IS NOT NULL THEN

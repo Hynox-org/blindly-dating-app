@@ -16,7 +16,6 @@ import '../../../profile/presentation/screens/setup_steps/interests_select_scree
 import '../../../profile/presentation/screens/setup_steps/lifestyle_prefs_screen.dart';
 import '../../../profile/presentation/screens/setup_steps/voice_intro_screen.dart';
 import '../../../profile/presentation/screens/setup_steps/profile_prompts_screen.dart';
-import '../../../profile/presentation/screens/setup_steps/selfie_verification_screen.dart';
 import '../../../profile/presentation/screens/setup_steps/gov_id_screen.dart';
 import '../../../profile/presentation/screens/setup_steps/language_select_screen.dart';
 
@@ -135,8 +134,6 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
         return const GenderSelectScreen();
       case 'photo_upload':
         return const PhotoUploadScreen();
-      case 'selfie_capture':
-        return const SelfieVerificationScreen();
       case 'gov_id_optional':
         return const GovernmentIdVerificationScreen();
       case 'bio_entry':
