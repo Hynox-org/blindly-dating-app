@@ -14,6 +14,17 @@ const DECISION_STATUSES = [
   'abandoned',
 ]
 
+// Lifecycle events (no decision attached). 'submitted' is the one that matters:
+// without it a session in manual review is indistinguishable from one the user
+// never opened, and the app offers "Start verification" over an in-flight
+// attempt. Veriff also sends 'started' and, on some plans, 'approved'/'declined'
+// as event actions -- those are ignored here and taken from the decision
+// payload instead, which carries the reason and risk data.
+const EVENT_ACTIONS: Record<string, string> = {
+  started: 'started',
+  submitted: 'submitted',
+}
+
 async function isSignatureValid(rawBody: string, signature: string | null, secret: string) {
   if (!signature) return false
 
@@ -60,12 +71,36 @@ Deno.serve(async (req) => {
 
     const payload = JSON.parse(rawBody)
 
-    // Decisions carry a `verification` object; events carry `action`
-    // (started/submitted) and no decision. Events tell us nothing the client
-    // stream doesn't already know, so they are acknowledged and dropped.
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    )
+
+    // Decisions carry a `verification` object; lifecycle events carry `action`
+    // and a top-level session `id`.
     const verification = payload.verification
     if (!verification) {
-      console.log(`ℹ️ Ignoring non-decision payload (action=${payload.action ?? 'unknown'})`)
+      const lifecycle = EVENT_ACTIONS[payload.action]
+      if (!lifecycle || !payload.id) {
+        console.log(`ℹ️ Ignoring event (action=${payload.action ?? 'unknown'})`)
+        return new Response(JSON.stringify({ received: true }), { status: 200 })
+      }
+
+      const { data, error } = await supabaseAdmin.rpc('update_veriff_session', {
+        p_session_id: payload.id,
+        p_status: lifecycle,
+        p_payload: payload,
+        p_attempt_id: payload.attemptId ?? null,
+      })
+
+      if (error) {
+        // 500 so Veriff retries. A dropped 'submitted' leaves the app showing
+        // "Start verification" over an attempt that is already in review.
+        console.error('❌ Database RPC Error (event):', error)
+        return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      }
+
+      console.log(`✅ Recorded '${lifecycle}' for session ${payload.id}:`, JSON.stringify(data))
       return new Response(JSON.stringify({ received: true }), { status: 200 })
     }
 
@@ -74,11 +109,6 @@ Deno.serve(async (req) => {
       console.log(`⚠️ Unhandled decision status '${status}' — acknowledged, not stored`)
       return new Response(JSON.stringify({ received: true }), { status: 200 })
     }
-
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    )
 
     // riskScore is a float 0.0-1.0 on the decision; older payloads nest it.
     const riskScore = typeof verification.riskScore === 'number'

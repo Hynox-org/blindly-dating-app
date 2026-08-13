@@ -175,6 +175,41 @@ BEGIN
   ASSERT public.get_active_veriff_session(v_auth_id) IS NULL,
     '9e. a declined session was reused';
 
+  ---------------------------------------------------------------------------
+  -- 10. Lifecycle events. A submitted session must be distinguishable from an
+  --     untouched one, or the app offers "Start verification" over an attempt
+  --     already in manual review.
+  ---------------------------------------------------------------------------
+  UPDATE veriff_verifications
+  SET status = 'created', created_at = now(), attempt_count = 1
+  WHERE veriff_session_id = sess;
+
+  res := public.update_veriff_session(sess, 'submitted');
+  SELECT status, attempt_count INTO v_row
+  FROM veriff_verifications WHERE veriff_session_id = sess;
+  ASSERT v_row.status = 'submitted', '10a. submitted was not recorded';
+  ASSERT v_row.attempt_count = 1,
+    '10b. a lifecycle event counted as an attempt (would trip the reuse cap)';
+  ASSERT NOT (res->>'is_verified')::boolean, '10c. submitted verified the user';
+
+  -- Spent session: reusing its URL would strand the user on an erroring SDK.
+  ASSERT public.get_active_veriff_session(v_auth_id) IS NULL,
+    '10d. a submitted session was handed back for reuse';
+
+  -- Lifecycle must not walk backwards over a later state.
+  PERFORM public.update_veriff_session(sess, 'started');
+  SELECT status INTO v_row FROM veriff_verifications WHERE veriff_session_id = sess;
+  ASSERT v_row.status = 'submitted', '10e. a late started event un-submitted the session';
+
+  -- ...nor over a decision.
+  PERFORM public.update_veriff_session(sess, 'approved', 0.05, NULL, 9001);
+  PERFORM public.update_veriff_session(sess, 'submitted');
+  SELECT status INTO v_row FROM veriff_verifications WHERE veriff_session_id = sess;
+  ASSERT v_row.status = 'approved', '10f. a late submitted event erased a verdict';
+
+  SELECT is_verified INTO v_row FROM profiles WHERE id = me_profile;
+  ASSERT v_row.is_verified, '10g. a late submitted event revoked the badge';
+
   RAISE NOTICE 'veriff verification checks passed';
 END $$;
 

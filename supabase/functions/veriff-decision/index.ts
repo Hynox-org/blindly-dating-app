@@ -22,6 +22,11 @@ const DECISION_STATUSES = [
   'abandoned',
 ]
 
+// Session states that are not verdicts. Only these two are worth recording:
+// 'created' is already the row's default, and every other value is a decision
+// handled above.
+const LIFECYCLE_STATUSES = ['started', 'submitted']
+
 async function hmac(payload: string, secret: string) {
   const key = await crypto.subtle.importKey(
     'raw',
@@ -34,6 +39,34 @@ async function hmac(payload: string, secret: string) {
   return Array.from(new Uint8Array(mac))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('')
+}
+
+/// Lifecycle state of the session itself, as opposed to its decision. Returns
+/// null when Veriff is unreachable or reports anything we do not track -- a
+/// best-effort enrichment must never fail the caller's request.
+async function fetchSessionState(
+  sessionId: string,
+  apiKey: string,
+  signature: string,
+): Promise<string | null> {
+  try {
+    const res = await fetch(`https://stationapi.veriff.com/v1/sessions/${sessionId}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-AUTH-CLIENT': apiKey,
+        'X-HMAC-SIGNATURE': signature,
+      },
+    })
+    if (!res.ok) {
+      console.error(`Veriff session API ${res.status}`)
+      return null
+    }
+    const state = (await res.json())?.verification?.status
+    return LIFECYCLE_STATUSES.includes(state) ? state : null
+  } catch (e) {
+    console.error('Veriff session API unreachable:', e)
+    return null
+  }
 }
 
 Deno.serve(async (req) => {
@@ -141,8 +174,23 @@ Deno.serve(async (req) => {
       if (attempt < 4) await new Promise((r) => setTimeout(r, 2000))
     }
 
-    console.log(`No decision yet for session ${sessionId}`)
-    return json({ status: 'pending' })
+    // No verdict yet. Ask what state the session itself is in, so a submitted
+    // session in manual review stops looking like one the user never opened --
+    // otherwise the app offers "Start verification" over an in-flight attempt
+    // and reopening it only errors. This is the only path that learns about a
+    // submission when the portal's webhook URL is unset, so it is not optional.
+    const lifecycle = await fetchSessionState(sessionId, apiKey, signature)
+    if (lifecycle) {
+      const { error } = await supabaseAdmin.rpc('update_veriff_session', {
+        p_session_id: sessionId,
+        p_status: lifecycle,
+        p_payload: { source: 'veriff-decision', sessionState: lifecycle },
+      })
+      if (error) console.error('Database RPC Error (lifecycle):', error)
+    }
+
+    console.log(`No decision yet for session ${sessionId} (state=${lifecycle ?? 'unknown'})`)
+    return json({ status: lifecycle ?? 'pending' })
   } catch (error) {
     console.error('Error:', error.message)
     return json({ error: error.message }, 400)

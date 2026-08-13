@@ -20,6 +20,10 @@ const Set<String> _retryableStatuses = {
   'abandoned',
 };
 
+/// Submitted, no verdict yet. Manual review at Veriff can take hours, and the
+/// session cannot be reopened, so the only honest thing to show is "waiting".
+const Set<String> _pendingStatuses = {'submitted', 'review'};
+
 /// The four states this screen can be in. One enum instead of a step plus two
 /// booleans: the states are mutually exclusive, and every visual on the screen
 /// is a function of exactly this value.
@@ -27,7 +31,10 @@ enum _VerifyState {
   /// Nothing in flight. The only state where verification can be started.
   idle,
 
-  /// Creating the session or inside the Veriff SDK.
+  /// Creating the session, inside the Veriff SDK, or -- on entry -- still
+  /// working out whether an earlier attempt is in flight. The screen opens
+  /// here: offering "Start verification" before that is known lets the user
+  /// mint a second session on top of one already in review.
   busy,
 
   /// Submitted; Veriff has not returned a verdict (or has it in manual review).
@@ -50,7 +57,7 @@ class _GovernmentIdVerificationScreenState
     extends ConsumerState<GovernmentIdVerificationScreen> {
   AppLocalizations get l10n => AppLocalizations.of(context);
 
-  _VerifyState _state = _VerifyState.idle;
+  _VerifyState _state = _VerifyState.busy;
 
   /// Last decision rendered, as `status@updated_at`. The timestamp matters: a
   /// retry that ends on the same verdict as the previous one must still be
@@ -66,10 +73,19 @@ class _GovernmentIdVerificationScreenState
   void initState() {
     super.initState();
     _watchDecision();
-    // Covers every way the SDK result can be lost: app killed mid-flow, SDK
-    // reporting 'canceled' after a real submission, or a webhook that never
-    // arrived. Cheap no-op when there is nothing to pull.
-    _pullDecision();
+    _resolveExistingAttempt();
+  }
+
+  /// Asks Veriff about any earlier attempt before the screen becomes usable.
+  /// Covers every way a result can be lost: app killed mid-flow, SDK reporting
+  /// 'canceled' after a real submission, or a webhook that never arrived --
+  /// the last of which leaves the row on 'created' indefinitely while the
+  /// attempt sits in manual review.
+  Future<void> _resolveExistingAttempt() async {
+    await _pullDecision();
+    // Anything conclusive arrived through the stream and already moved us on.
+    // Still busy means there is nothing in flight, so let the user start.
+    if (_state == _VerifyState.busy) _setState(_VerifyState.idle);
   }
 
   @override
@@ -116,7 +132,12 @@ class _GovernmentIdVerificationScreenState
           .order('created_at', ascending: false)
           .limit(1)
           .listen((rows) {
-            if (rows.isEmpty || !mounted) return;
+            if (!mounted) return;
+            // No session ever created: nothing to wait on.
+            if (rows.isEmpty) {
+              if (_state == _VerifyState.busy) _setState(_VerifyState.idle);
+              return;
+            }
             _handleDecision(rows.first);
           });
     } catch (e) {
@@ -137,9 +158,9 @@ class _GovernmentIdVerificationScreenState
       return;
     }
 
-    // Manual review at Veriff's end. Nothing the user can do; the stream stays
-    // open and fires again on the final decision.
-    if (status == 'review') {
+    // Submitted, or in manual review at Veriff's end. Nothing the user can do;
+    // the stream stays open and fires again on the final decision.
+    if (_pendingStatuses.contains(status)) {
       _setState(_VerifyState.pending);
       _showToast(l10n.verificationSubmitted);
       return;
@@ -157,19 +178,21 @@ class _GovernmentIdVerificationScreenState
   /// webhook, whose URL lives in Veriff's Customer Portal and is therefore a
   /// single point of failure outside this codebase. Writes the same row.
   ///
-  /// Never awaited: the user is free to leave, and Veriff delays a resubmission
-  /// verdict by ~5 min for SDK sessions.
-  void _pullDecision() {
-    unawaited(() async {
-      try {
-        final r = await Supabase.instance.client.functions.invoke(
-          'veriff-decision',
-        );
-        debugPrint('gov_id: veriff-decision -> ${r.data}');
-      } catch (e) {
-        debugPrint('gov_id: veriff-decision failed, webhook will cover it: $e');
-      }
-    }());
+  /// Also records whether the session was merely opened or actually submitted,
+  /// which is the only way that is learnt when the portal's webhook URL is
+  /// unset. Takes ~10s: it polls, since Veriff does not decide instantly.
+  ///
+  /// Left unawaited after the SDK returns -- the user is free to leave, and
+  /// Veriff delays a resubmission verdict by ~5 min for SDK sessions.
+  Future<void> _pullDecision() async {
+    try {
+      final r = await Supabase.instance.client.functions.invoke(
+        'veriff-decision',
+      );
+      debugPrint('gov_id: veriff-decision -> ${r.data}');
+    } catch (e) {
+      debugPrint('gov_id: veriff-decision failed, webhook will cover it: $e');
+    }
   }
 
   // ------------------------------------------------------------- veriff flow
@@ -195,12 +218,12 @@ class _GovernmentIdVerificationScreenState
         case Status.done:
           _setState(_VerifyState.pending);
           _showToast(l10n.verificationSubmitted);
-          _pullDecision();
+          unawaited(_pullDecision());
         case Status.canceled:
           // 'canceled' is not proof nothing was submitted -- the SDK reports it
           // when the user dismisses the final screen too. Ask Veriff either way.
           _setState(_VerifyState.idle);
-          _pullDecision();
+          unawaited(_pullDecision());
         default:
           debugPrint('gov_id: Veriff SDK error: ${result.error}');
           _setState(_VerifyState.idle);
