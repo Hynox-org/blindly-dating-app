@@ -79,74 +79,18 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
         }
       }
 
-      // 1. Get ordered list of ALL steps (including optional ones)
-      final allSteps = await _repo.getAllSteps();
-      AppLogger.info(
-        'DEBUG: Fetched ${allSteps.length} steps from DB: ${allSteps.map((s) => s.stepKey).toList()}',
+      // Where the user actually is, derived from their progress rather than
+      // trusted from the onboarding_status flag -- a flag can say 'complete'
+      // while a step is still unanswered.
+      final nextStep = nextIncompleteStep(
+        await _repo.getAllSteps(),
+        parseStepProgress(profile['steps_progress']),
       );
 
-      // 2. Get user's progress map
-      // Map<String, dynamic> stepsProgress = {};
-      final rawProgress = profile['steps_progress'];
-      final Map<String, dynamic> stepsProgress = (rawProgress != null)
-          ? Map<String, dynamic>.from(rawProgress)
-          : {};
-
-      AppLogger.info('DEBUG: User steps_progress map: $stepsProgress');
-
-      // Check if fresh user (empty progress) AND hasn't dismissed welcome yet
-      bool isFreshUser = stepsProgress.isEmpty;
-      // Alternatively, check strictly if NO steps are marked 'completed' or 'skipped'
-      if (!isFreshUser) {
-        // Double check deep just in case key exists but values are null?
-        // Actually simplest is: if map is empty, they are fresh.
-      }
-
-      // if (isFreshUser && !_hasDismissedWelcome) {
-      //   state = state.copyWith(
-      //     isLoading: false,
-      //     currentStepKey: 'pre_onboarding',
-      //     // No config for this, it's a special state
-      //     currentStepConfig: null,
-      //   );
-      //   return;
-      // }
-
-      // 3. Determine current step
-      // Find the first step that is NOT 'completed'.
-      // (Optionally: also skip 'skipped' steps so they don't block progress)
-      OnboardingStep? nextStep;
-
-      AppLogger.info(
-        'DEBUG: Evaluating ${allSteps.length} steps for next step...',
-      );
-      for (final step in allSteps) {
-        final status = stepsProgress[step.stepKey];
-        AppLogger.info('DEBUG: Step "${step.stepKey}" has status: "$status"');
-        // If status is NOT completed and NOT skipped, this is our next step.
-        // Or if we want to FORCE users to revisit skipped steps before finishing?
-        // Requirement: "user can access app because all mandatory fields completed... skipped steps... in home page"
-        // So 'skipped' means we moved PAST it.
-
-        if (status != 'completed' && status != 'skipped') {
-          nextStep = step;
-          break;
-        }
-      }
-
-      // High-level check
-      // final status = profile['onboarding_status'] as String? ?? 'in_progress';
-
-      // STRICT VERIFICATION:
-      // Even if DB says "complete", if we found a 'nextStep' (meaning a step is NOT completed/skipped),
-      // we force the user to that step.
       if (nextStep == null) {
-        // No incomplete steps found -> Truly complete
         state = state.copyWith(isLoading: false, currentStepKey: 'complete');
       } else {
-        AppLogger.info(
-          'Derived Step: ${nextStep.stepName} (${nextStep.stepKey})',
-        );
+        AppLogger.info('Onboarding step: ${nextStep.stepKey}');
         state = state.copyWith(
           isLoading: false,
           currentStepConfig: nextStep,
@@ -163,6 +107,13 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     state = state.copyWith(isLoading: true);
     try {
       final step = await _repo.getStepConfig(stepKey);
+      if (step == null) {
+        // Unknown step. Stay where we are rather than moving the key while the
+        // shell still holds the old config -- that renders the wrong screen.
+        AppLogger.error('No config for step $stepKey; staying put');
+        state = state.copyWith(isLoading: false);
+        return;
+      }
       state = state.copyWith(
         isLoading: false,
         currentStepConfig: step,
@@ -229,27 +180,21 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     state = state.copyWith(currentStepKey: 'complete');
   }
 
-  Future<void> goToPreviousStep() async {
-    // 1. Get current list of steps
-    // Ideally should be cached, but fetching is fine
+  /// Steps back one position. Returns false when there is nothing behind the
+  /// current step, which is how the shell knows to let a system back press
+  /// leave the app instead of swallowing it.
+  Future<bool> goToPreviousStep() async {
     try {
       final allSteps = await _repo.getAllSteps();
-      final currentIndex = allSteps.indexWhere(
+      final index = allSteps.indexWhere(
         (s) => s.stepKey == state.currentStepKey,
       );
-
-      if (currentIndex > 0) {
-        final prevStep = allSteps[currentIndex - 1];
-        await jumpToStep(prevStep.stepKey);
-      } else if (state.currentStepKey == 'pre_onboarding') {
-        // Can't go back from pre-onboarding
-      } else {
-        // If index is 0, check if we came from pre-onboarding?
-        // Or if we are at the very first step, maybe go to pre-onboarding?
-        // For now, assume if index 0, back does nothing or we control it elsewhere.
-      }
+      if (index <= 0) return false;
+      await jumpToStep(allSteps[index - 1].stepKey);
+      return true;
     } catch (e) {
       AppLogger.error('Failed to go back', e);
+      return false;
     }
   }
 }

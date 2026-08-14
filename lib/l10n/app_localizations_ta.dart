@@ -2569,4 +2569,52 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get navLikes => 'லைக்ஸ்';
+
+  @override
+  String get photoReasonNoFace =>
+      'தெளிவான முகம் கிடைக்கவில்லை. முகம் தெரியும் படத்தைப் பயன்படுத்தவும்.';
+
+  @override
+  String get photoReasonGroupPhoto =>
+      'இந்தப் படத்தில் ஒருவருக்கு மேல் உள்ளனர். தனிப் படத்தைப் பயன்படுத்தவும்.';
+
+  @override
+  String get photoReasonFaceTooSmall =>
+      'இந்தப் படத்தில் உங்கள் முகம் மிகச் சிறியதாக உள்ளது. அருகில் எடுக்கவும்.';
+
+  @override
+  String get photoReasonUnsafe =>
+      'இந்தப் படம் எங்கள் விதிமுறைகளுக்கு உட்படவில்லை.';
+
+  @override
+  String get photoReasonBadImage =>
+      'இந்தக் கோப்பைப் படிக்க முடியவில்லை. JPG அல்லது PNG முயற்சிக்கவும்.';
+
+  @override
+  String get photoReasonTooLarge =>
+      'இந்தப் படம் மிகப் பெரியது. சிறிய படத்தை முயற்சிக்கவும்.';
+
+  @override
+  String get photoReasonUnavailable =>
+      'தற்போது இந்தப் படத்தைச் சரிபார்க்க முடியவில்லை.';
+
+  @override
+  String get photoTryAgainLater =>
+      'இணைப்பைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get photoLoadFailed => 'உங்கள் படங்களை ஏற்ற முடியவில்லை.';
+
+  @override
+  String get photoSaveFailed =>
+      'படங்களைச் சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String photosNotAdded(int count) {
+    return '$count படங்களைச் சேர்க்க முடியவில்லை:';
+  }
+
+  @override
+  String get photosExpired =>
+      'சில படங்களின் கால அவகாசம் முடிந்ததால் நீக்கப்பட்டன. மீண்டும் சேர்க்கவும்.';
 }

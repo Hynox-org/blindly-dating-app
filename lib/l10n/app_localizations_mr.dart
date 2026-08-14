@@ -2537,4 +2537,49 @@ class AppLocalizationsMr extends AppLocalizations {
 
   @override
   String get navLikes => 'लाईक';
+
+  @override
+  String get photoReasonNoFace =>
+      'स्पष्ट चेहरा आढळला नाही. चेहरा दिसेल असा फोटो वापरा.';
+
+  @override
+  String get photoReasonGroupPhoto =>
+      'या फोटोमध्ये एकापेक्षा जास्त व्यक्ती आहेत. एकट्याचा फोटो वापरा.';
+
+  @override
+  String get photoReasonFaceTooSmall =>
+      'या फोटोमध्ये तुमचा चेहरा फार लहान आहे. जवळून घ्या किंवा क्रॉप करा.';
+
+  @override
+  String get photoReasonUnsafe =>
+      'हा फोटो आमच्या मार्गदर्शक तत्त्वांनुसार नाही.';
+
+  @override
+  String get photoReasonBadImage =>
+      'ही फाईल वाचता आली नाही. JPG किंवा PNG वापरा.';
+
+  @override
+  String get photoReasonTooLarge => 'हा फोटो फार मोठा आहे. लहान फोटो वापरा.';
+
+  @override
+  String get photoReasonUnavailable => 'आत्ता हा फोटो तपासता आला नाही.';
+
+  @override
+  String get photoTryAgainLater => 'कृपया कनेक्शन तपासून पुन्हा प्रयत्न करा.';
+
+  @override
+  String get photoLoadFailed => 'तुमचे फोटो लोड करता आले नाहीत.';
+
+  @override
+  String get photoSaveFailed =>
+      'फोटो सेव्ह करता आले नाहीत. पुन्हा प्रयत्न करा.';
+
+  @override
+  String photosNotAdded(int count) {
+    return '$count फोटो जोडता आले नाहीत:';
+  }
+
+  @override
+  String get photosExpired =>
+      'काही फोटोंची मुदत संपल्याने ते काढले गेले. कृपया ते पुन्हा जोडा.';
 }

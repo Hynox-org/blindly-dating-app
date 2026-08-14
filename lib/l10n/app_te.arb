@@ -1,10 +1,8 @@
 {
   "@@locale": "te",
-
   "settingsLanguage": "భాష",
   "appLanguageTitle": "యాప్ భాష",
   "systemDefault": "సిస్టమ్ డిఫాల్ట్",
-
   "authTitlePhone": "మీ నంబర్‌ను తెలియజేయండి",
   "authTitleVerifyNumber": "మీ నంబర్‌ను ధృవీకరించండి",
   "authTitleEmail": "ఇమెయిల్‌తో లాగిన్ చేయండి",
@@ -13,19 +11,16 @@
   "loginTagline": "ఒక అందమైన జీవితంలోకి లాగిన్ అవ్వండి",
   "continueWithGoogle": "Google తో కొనసాగండి",
   "continueLabel": "కొనసాగించు",
-
   "termsSignupPrefix": "సైన్ అప్ చేయడం ద్వారా, మీరు మా ",
   "termsContinuePrefix": "కొనసాగించడం ద్వారా, మీరు మా ",
   "termsWord": "నిబంధనలకు",
   "termsBridge": " అంగీకరిస్తున్నారు. మేము మీ డేటాను ఎలా ఉపయోగిస్తామో మా ",
   "privacyPolicyWord": "గోప్యతా విధానంలో",
   "termsSuffix": " చూడండి.",
-
   "phoneRationale": "Blindly లో ప్రతి ఒక్కరూ నిజమైనవారని నిర్ధారించుకోవడానికే మేము ఫోన్ నంబర్‌లను ఉపయోగిస్తాము",
   "countryLabel": "దేశం",
   "phoneNumberLabel": "ఫోన్ నంబర్",
   "phoneHint": "ఉదా. 9876543210",
-
   "otpSentPhone": "{phone} కి మేము పంపిన కోడ్‌ను నమోదు చేయండి. ",
   "changeNumber": "నంబర్ మార్చు",
   "otpSentEmail": "{email} కి ఇమెయిల్‌లో పంపిన కోడ్‌ను నమోదు చేయండి. ",
@@ -33,14 +28,12 @@
   "resendCode": "కోడ్‌ను మళ్లీ పంపండి",
   "codeArrivesIn": "కోడ్ {seconds} సెకన్లలో వస్తుంది",
   "otpSentSuccess": "OTP పంపబడింది",
-
   "loginDetailsSubtitle": "దయచేసి మీ లాగిన్ వివరాలను క్రింద నమోదు చేయండి",
   "emailLabel": "ఇమెయిల్",
   "emailHint": "Abcd@gmail.com",
   "passwordLabel": "పాస్‌వర్డ్",
   "passwordHint": "abc@123",
   "forgotPassword": "పాస్‌వర్డ్ మర్చిపోయారా?",
-
   "errEnterPhone": "దయచేసి మీ ఫోన్ నంబర్ నమోదు చేయండి",
   "errPhoneDigitsOnly": "ఫోన్ నంబర్‌లో అంకెలు మాత్రమే ఉండాలి",
   "errInvalidPhone": "దయచేసి చెల్లుబాటు అయ్యే ఫోన్ నంబర్ నమోదు చేయండి",
@@ -56,7 +49,6 @@
   "errGoogleSignIn": "Google సైన్-ఇన్ విఫలమైంది: {error}",
   "errLoginFailed": "లాగిన్ విఫలమైంది: {error}",
   "errGeneric": "లోపం: {error}",
-
   "save": "సేవ్ చేయి",
   "skip": "దాటవేయి",
   "add": "జోడించు",
@@ -75,7 +67,6 @@
   "somethingWentWrong": "ఏదో తప్పు జరిగింది",
   "userNotLoggedIn": "వినియోగదారు లాగిన్ కాలేదు",
   "unknown": "తెలియదు",
-
   "typesOfConnections": "కనెక్షన్ రకాలు",
   "connectionQuestion": "Blindly లో మీరు ఎలాంటి కనెక్షన్ కోసం చూస్తున్నారు?",
   "connectionSubtitle": "డేటింగ్ మరియు ప్రేమ, కొత్త స్నేహితులు, లేదా కేవలం వ్యాపారమా? దీన్ని మీరు ఎప్పుడైనా మార్చుకోవచ్చు.",
@@ -109,7 +100,6 @@
   "goBack": "వెనుకకు వెళ్లు",
   "profilePreview": "ప్రొఫైల్ ప్రివ్యూ",
   "profileTitle": "ప్రొఫైల్",
-
   "voiceIntro": "వాయిస్ పరిచయం",
   "bioTitle": "బయో",
   "askAboutMyBio": "నా బయో గురించి అడగండి!",
@@ -154,7 +144,6 @@
   "bestValue": "అత్యుత్తమ విలువ",
   "getWithPlan": "{plan} ను {price} కు పొందండి",
   "offerEndsIn": "ఆఫర్ ముగియడానికి {time}",
-
   "chats": "చాట్‌లు",
   "conversations": "సంభాషణలు",
   "recentMatches": "ఇటీవలి మ్యాచ్‌లు",
@@ -233,7 +222,6 @@
   "gifs": "GIF",
   "stickers": "స్టిక్కర్లు",
   "searchGiphy": "GIPHY లో వెతకండి",
-
   "themOnly": "వారు మాత్రమే",
   "tryAgain": "మళ్లీ ప్రయత్నించు",
   "icebreakerSmile": "ఇటీవల ఏ చిన్న విషయం మిమ్మల్ని నవ్వించింది?",
@@ -242,9 +230,7 @@
   "openingMoveCushions": "నేను, నేను చేసిన కుషన్లు.\nఎలా ఉన్నాయి?",
   "openingMove90s": "నా 90s లుక్‌ను మీరు ఓడించలేరు",
   "openingMovePetName": "నా పెంపుడు జంతువు పేరు ఊహించగలరా?",
-
   "viewProfile": "ప్రొఫైల్ చూడు",
-
   "likedYou": "మిమ్మల్ని లైక్ చేశారు",
   "matchLabel": "మ్యాచ్",
   "passLabel": "వదిలేయి",
@@ -285,7 +271,6 @@
   "breakdownTitle": "వివరణ",
   "goesBothWays": "ఇది రెండు వైపులా ఉందా?",
   "eachFitsOther": "మీరిద్దరూ ఒకరికొకరు వెతుకుతున్నదానికి సరిపోతారు: {band}.",
-
   "sectionConnections": "కనెక్షన్‌లు",
   "typeOfConnection": "కనెక్షన్ రకం",
   "dateMode": "డేట్ మోడ్",
@@ -308,7 +293,6 @@
   "about": "గురించి",
   "logout": "లాగ్ అవుట్",
   "deleteAccount": "ఖాతాను తొలగించు",
-
   "vEnglish": "ఇంగ్లీష్",
   "vHindi": "హిందీ",
   "vTamil": "తమిళం",
@@ -368,7 +352,6 @@
   "vEveryone": "అందరూ",
   "vMale": "పురుషుడు",
   "vFemale": "స్త్రీ",
-
   "vFunCasualDates": "సరదా, సాధారణ డేట్‌లు",
   "vLifePartner": "జీవిత భాగస్వామి",
   "vLongTermRelationship": "దీర్ఘకాలిక సంబంధం",
@@ -416,7 +399,6 @@
   "vOpenToKids": "పిల్లలకు సిద్ధం",
   "vNotSure": "ఖచ్చితంగా తెలియదు",
   "vPreferNotToSay": "చెప్పడం ఇష్టం లేదు",
-
   "vAries": "మేషం",
   "vTaurus": "వృషభం",
   "vGemini": "మిథునం",
@@ -457,7 +439,6 @@
   "vGratitude": "కృతజ్ఞత",
   "vCuriosity": "కుతూహలం",
   "vEmotionalIntelligence": "భావోద్వేగ మేధస్సు",
-
   "datingPreference": "డేటింగ్ ప్రాధాన్యత",
   "bffPreference": "BFF ప్రాధాన్యత",
   "whoWouldYouDate": "మీరు ఎవరితో డేట్ చేయాలనుకుంటున్నారు?",
@@ -484,7 +465,6 @@
   "clearFilters": "ఫిల్టర్‌లను తొలగించు",
   "filterByInterests": "మీ ఆసక్తుల ఆధారంగా ఫిల్టర్ చేయండి",
   "showMe": "నాకు చూపించు",
-
   "errUpdateFailed": "నవీకరణ విఫలమైంది: {error}",
   "religionViewTitle": "మత దృక్పథం",
   "sensitiveInfoNote": "ఇది మీ ప్రొఫైల్‌లో కనిపించే సున్నితమైన సమాచారం. ఇది పూర్తిగా ఐచ్ఛికం.",
@@ -526,7 +506,6 @@
   "searchLanguages": "భాషలను వెతకండి",
   "suggested": "సూచించినవి",
   "allLanguages": "అన్ని భాషలు",
-
   "errorLoadingProfile": "ప్రొఫైల్ లోడ్ కాలేదు",
   "percentTrust": "{percent}% విశ్వాసం",
   "profileCompleted": "ప్రొఫైల్ పూర్తయింది",
@@ -559,7 +538,6 @@
   "improveYourProfile": "మీ ప్రొఫైల్‌ను మెరుగుపరచు",
   "errorSavingHometown": "స్వస్థలాన్ని సేవ్ చేయడంలో లోపం: {error}",
   "searchCity": "నగరాన్ని వెతకండి",
-
   "aboutYou": "మీ గురించి",
   "bioPrompt": "సిగ్గుపడకండి! చిన్న బయోలో మీ వ్యక్తిత్వాన్ని పంచుకోవడానికి ఇదే అవకాశం.",
   "textHereHint": "ఇక్కడ రాయండి.....",
@@ -606,7 +584,6 @@
   "addPrompt": "ప్రాంప్ట్ జోడించు",
   "failedToLoadPrompts": "ప్రాంప్ట్‌లు లోడ్ కాలేదు: {error}",
   "errorSavingPrompts": "ప్రాంప్ట్‌లను సేవ్ చేయడంలో లోపం: {error}",
-
   "communityGuidelines": "కమ్యూనిటీ మార్గదర్శకాలు",
   "agreeAndContinue": "అంగీకరించి కొనసాగించు",
   "termsByContinuePrefix": "కొనసాగించడం ద్వారా, మీరు మా ",
@@ -669,7 +646,6 @@
   "ticketsAndReservations": "మీ టికెట్లు మరియు రిజర్వేషన్లు",
   "upcomingEvents": "రాబోయే ఈవెంట్‌లు",
   "eventsYouAreInterested": "మీకు ఆసక్తి ఉన్న ఈవెంట్‌లు",
-
   "incomingVideoCall": "ఇన్‌కమింగ్ వీడియో కాల్",
   "incomingVoiceCall": "ఇన్‌కమింగ్ వాయిస్ కాల్",
   "ringing": "రింగ్ అవుతోంది...",
@@ -695,7 +671,6 @@
   "great": "బాగుంది!",
   "peoples": "వ్యక్తులు",
   "chatTab": "చాట్",
-
   "editProfileTitle": "ప్రొఫైల్ సవరించు",
   "percentComplete": "{percent}% పూర్తి",
   "profileStrength": "ప్రొఫైల్ బలం",
@@ -757,7 +732,6 @@
   "verified": "ధృవీకరించబడింది",
   "invalidLocation": "చెల్లని లొకేషన్",
   "locationFound": "లొకేషన్ కనుగొనబడింది",
-
   "alreadyVerified": "మీరు ఇప్పటికే ధృవీకరించబడ్డారు",
   "verificationSuccessful": "ధృవీకరణ విజయవంతం",
   "documentNotVerified": "పత్రం ధృవీకరించబడలేదు.",
@@ -815,6 +789,24 @@
   "failedToStartRecording": "రికార్డింగ్ ప్రారంభం కాలేదు",
   "failedToStopRecording": "రికార్డింగ్ ఆపలేకపోయాము",
   "failedToPlayAudio": "ఆడియో ప్లే కాలేదు",
-
-  "navLikes": "లైక్‌లు"
+  "navLikes": "లైక్‌లు",
+  "photoReasonNoFace": "స్పష్టమైన ముఖం కనబడలేదు. ముఖం కనబడే ఫోటోను వాడండి.",
+  "photoReasonGroupPhoto": "ఈ ఫోటోలో ఒకరికంటే ఎక్కువ మంది ఉన్నారు. ఒంటరి ఫోటో వాడండి.",
+  "photoReasonFaceTooSmall": "ఈ ఫోటోలో మీ ముఖం చాలా చిన్నగా ఉంది. దగ్గరగా తీయండి.",
+  "photoReasonUnsafe": "ఈ ఫోటో మా మార్గదర్శకాలకు అనుగుణంగా లేదు.",
+  "photoReasonBadImage": "ఈ ఫైల్‌ను చదవలేకపోయాం. JPG లేదా PNG ప్రయత్నించండి.",
+  "photoReasonTooLarge": "ఈ ఫోటో చాలా పెద్దది. చిన్న ఫోటో వాడండి.",
+  "photoReasonUnavailable": "ఇప్పుడు ఈ ఫోటోను తనిఖీ చేయలేకపోయాం.",
+  "photoTryAgainLater": "కనెక్షన్ చెక్ చేసి మళ్లీ ప్రయత్నించండి.",
+  "photoLoadFailed": "మీ ఫోటోలను లోడ్ చేయలేకపోయాం.",
+  "photoSaveFailed": "ఫోటోలను సేవ్ చేయలేకపోయాం. మళ్లీ ప్రయత్నించండి.",
+  "photosNotAdded": "{count} ఫోటోలను జోడించలేకపోయాం:",
+  "@photosNotAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "photosExpired": "కొన్ని ఫోటోల గడువు ముగియడంతో తొలగించబడ్డాయి. దయచేసి మళ్లీ జోడించండి."
 }

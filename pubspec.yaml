@@ -30,6 +30,7 @@ dependencies:
   firebase_messaging: ^16.1.2
   firebase_app_check: ^0.4.1+4
   http: ^1.6.0
+  path: ^1.9.1
 
   # Utils
   fpdart: ^1.1.0

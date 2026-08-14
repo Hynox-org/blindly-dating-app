@@ -2536,4 +2536,51 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get navLikes => 'Likes';
+
+  @override
+  String get photoReasonNoFace =>
+      'We could not find a clear face. Use a photo where your face is visible.';
+
+  @override
+  String get photoReasonGroupPhoto =>
+      'This photo has more than one person. Use a solo photo.';
+
+  @override
+  String get photoReasonFaceTooSmall =>
+      'Your face is too small in this photo. Move closer or crop in.';
+
+  @override
+  String get photoReasonUnsafe =>
+      'This photo does not meet our content guidelines.';
+
+  @override
+  String get photoReasonBadImage =>
+      'We could not read this file. Try a JPG or PNG photo.';
+
+  @override
+  String get photoReasonTooLarge =>
+      'This photo is too large. Try a smaller one.';
+
+  @override
+  String get photoReasonUnavailable =>
+      'We could not check this photo right now.';
+
+  @override
+  String get photoTryAgainLater =>
+      'Please check your connection and try again.';
+
+  @override
+  String get photoLoadFailed => 'Could not load your photos.';
+
+  @override
+  String get photoSaveFailed => 'Could not save your photos. Please try again.';
+
+  @override
+  String photosNotAdded(int count) {
+    return '$count photos could not be added:';
+  }
+
+  @override
+  String get photosExpired =>
+      'Some photos expired and were removed. Please add them again.';
 }

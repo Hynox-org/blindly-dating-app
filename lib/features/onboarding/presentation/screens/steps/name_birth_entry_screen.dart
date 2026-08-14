@@ -9,6 +9,41 @@ import 'base_onboarding_step_screen.dart';
 import '../../../../../core/utils/custom_popups.dart';
 import 'package:blindly_dating_app/features/profile/provider/profile_provider.dart';
 
+/// Whole years elapsed between [birthDate] and [now].
+int ageOn(DateTime birthDate, DateTime now) {
+  final hadBirthday =
+      now.month > birthDate.month ||
+      (now.month == birthDate.month && now.day >= birthDate.day);
+  return now.year - birthDate.year - (hadBirthday ? 0 : 1);
+}
+
+/// The date these three fields describe, or null if they do not describe a
+/// real date that belongs to someone eligible to be here.
+///
+/// Dart's DateTime rolls invalid dates forward rather than rejecting them --
+/// DateTime(2000, 2, 30) is the 1st of March -- so the parts are compared back
+/// against what was typed. Without that, "31/02/2000" was silently stored as a
+/// birthday in March.
+DateTime? parseBirthDate(
+  String day,
+  String month,
+  String year, {
+  required DateTime now,
+}) {
+  final d = int.tryParse(day);
+  final m = int.tryParse(month);
+  final y = int.tryParse(year);
+  if (d == null || m == null || y == null) return null;
+  if (y < 1900) return null;
+
+  final date = DateTime(y, m, d);
+  if (date.year != y || date.month != m || date.day != d) return null;
+  if (date.isAfter(now)) return null;
+  if (ageOn(date, now) < 18) return null;
+
+  return date;
+}
+
 class NameBirthEntryScreen extends ConsumerStatefulWidget {
   final bool isEditMode;
 
@@ -87,37 +122,12 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
     super.dispose();
   }
 
-  /// Validates inputs and returns the derived DateTime if valid and age >= 18
-  DateTime? _getValidDate() {
-    final day = int.tryParse(_dayController.text);
-    final month = int.tryParse(_monthController.text);
-    final year = int.tryParse(_yearController.text);
-
-    if (day == null || month == null || year == null) return null;
-    if (month < 1 || month > 12) return null;
-    if (day < 1 || day > 31) return null;
-
-    try {
-      final date = DateTime(year, month, day);
-      // Check age
-      final now = DateTime.now();
-      final age =
-          now.year -
-          date.year -
-          ((now.month < date.month ||
-                  (now.month == date.month && now.day < date.day))
-              ? 1
-              : 0);
-
-      if (age < 18) return null; // Underage
-      if (date.isAfter(now)) return null; // Future date
-      if (year < 1900) return null; // Too old
-
-      return date;
-    } catch (e) {
-      return null; // Invalid date (e.g. Feb 30)
-    }
-  }
+  DateTime? _getValidDate() => parseBirthDate(
+    _dayController.text,
+    _monthController.text,
+    _yearController.text,
+    now: DateTime.now(),
+  );
 
   Future<void> _handleNext() async {
     final name = _nameController.text.trim();
@@ -143,17 +153,9 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
         if (mounted) {
           final currentProfile = ref.read(currentUserProfileProvider).value;
           if (currentProfile != null) {
-            // Calculate age for local state update
-            final now = DateTime.now();
-            int age = now.year - validDate.year;
-            if (now.month < validDate.month ||
-                (now.month == validDate.month && now.day < validDate.day)) {
-              age--;
-            }
-
             final updatedProfile = currentProfile.copyWith(
               name: name,
-              age: age,
+              age: ageOn(validDate, DateTime.now()),
             );
             ref
                 .read(currentUserProfileProvider.notifier)

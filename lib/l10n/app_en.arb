@@ -1,10 +1,8 @@
 {
   "@@locale": "en",
-
   "settingsLanguage": "Language",
   "appLanguageTitle": "App language",
   "systemDefault": "System default",
-
   "authTitlePhone": "Can I get your number?",
   "authTitleVerifyNumber": "Verify your number",
   "authTitleEmail": "Login with Email",
@@ -13,43 +11,50 @@
   "loginTagline": "Login to a Lovely life",
   "continueWithGoogle": "Continue with Google",
   "continueLabel": "Continue",
-
   "termsSignupPrefix": "By signing up, you agree to our ",
   "termsContinuePrefix": "By continuing, you agree to our ",
   "termsWord": "terms",
   "termsBridge": ". See how we use your data in our ",
   "privacyPolicyWord": "privacy policy",
   "termsSuffix": ".",
-
   "phoneRationale": "We only use phone numbers to make sure everyone on Blindly is real",
   "countryLabel": "Country",
   "phoneNumberLabel": "Phone number",
   "phoneHint": "e.g. 9876543210",
-
   "otpSentPhone": "Enter the code we've sent by text to {phone}. ",
   "@otpSentPhone": {
-    "placeholders": { "phone": { "type": "String" } }
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
   },
   "changeNumber": "Change number",
   "otpSentEmail": "Enter the code we've sent by email to\n{email}. ",
   "@otpSentEmail": {
-    "placeholders": { "email": { "type": "String" } }
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
   },
   "changeEmail": "Change email",
   "resendCode": "Resend code",
   "codeArrivesIn": "The code should arrive within {seconds}s",
   "@codeArrivesIn": {
-    "placeholders": { "seconds": { "type": "int" } }
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
   },
   "otpSentSuccess": "OTP sent successfully",
-
   "loginDetailsSubtitle": "Please enter your login details below",
   "emailLabel": "Email",
   "emailHint": "Abcd@gmail.com",
   "passwordLabel": "Password",
   "passwordHint": "abc@123",
   "forgotPassword": "Forgot your password?",
-
   "errEnterPhone": "Please enter your phone number",
   "errPhoneDigitsOnly": "Phone number must contain only digits",
   "errInvalidPhone": "Please enter a valid phone number",
@@ -63,21 +68,36 @@
   "errTooManyAttempts": "Too many attempts. Please wait a while before trying again.",
   "errCreateProfile": "Failed to create profile: {error}",
   "@errCreateProfile": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "errGoogleSignIn": "Google Sign-In failed: {error}",
   "@errGoogleSignIn": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "errLoginFailed": "Login failed: {error}",
   "@errLoginFailed": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "errGeneric": "Error: {error}",
   "@errGeneric": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
-
   "save": "Save",
   "skip": "Skip",
   "add": "Add",
@@ -96,7 +116,6 @@
   "somethingWentWrong": "Something went wrong",
   "userNotLoggedIn": "User not logged in",
   "unknown": "Unknown",
-
   "typesOfConnections": "Types of Connections",
   "connectionQuestion": "What type of connection are you looking for on Blindly?",
   "connectionSubtitle": "Dates and romances, new friends, or strictly business? You can change this any time.",
@@ -104,7 +123,13 @@
   "modeBffSubtitle": "Make new friends and find your community",
   "modeEventsSubtitle": "Find exciting events, book tickets, and more",
   "continueWithMode": "Continue with {mode}",
-  "@continueWithMode": {"placeholders": {"mode": {"type": "String"}}},
+  "@continueWithMode": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      }
+    }
+  },
   "multiDeviceTitle": "Multi-Device Login",
   "multiDeviceBody": "Your account is active on another device. For security, only one session is allowed.",
   "signedOutOtherDevices": "Signed out other devices!",
@@ -117,7 +142,13 @@
   "notifyMeSnack": "We'll notify you when new people join!",
   "nearby": "Nearby",
   "heightCm": "{value} cm",
-  "@heightCm": {"placeholders": {"value": {"type": "String"}}},
+  "@heightCm": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "completeYourProfile": "Complete your profile",
   "completeYourProfileBody": "You skipped some steps. Complete them to get the most out of the app.",
   "stepNotAvailable": "This step is not yet available.",
@@ -132,7 +163,6 @@
   "goBack": "Go Back",
   "profilePreview": "Profile Preview",
   "profileTitle": "Profile",
-
   "voiceIntro": "Voice Intro",
   "bioTitle": "Bio",
   "askAboutMyBio": "Ask me about my bio!",
@@ -142,9 +172,21 @@
   "photoVerified": "Photo Verified",
   "notVerified": "Not Verified",
   "milesAway": "{distance} miles away",
-  "@milesAway": {"placeholders": {"distance": {"type": "String"}}},
+  "@milesAway": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
   "trustScore": "Trust Score: {score}%",
-  "@trustScore": {"placeholders": {"score": {"type": "String"}}},
+  "@trustScore": {
+    "placeholders": {
+      "score": {
+        "type": "String"
+      }
+    }
+  },
   "seeHowYouMatch": "See how you two match",
   "aboutMe": "About Me",
   "imLookingFor": "I'm looking for",
@@ -152,11 +194,29 @@
   "myInterests": "My Interests",
   "myLifestyle": "My Lifestyle",
   "smokesLabel": "Smokes: {value}",
-  "@smokesLabel": {"placeholders": {"value": {"type": "String"}}},
+  "@smokesLabel": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "drinksLabel": "Drinks: {value}",
-  "@drinksLabel": {"placeholders": {"value": {"type": "String"}}},
+  "@drinksLabel": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "worksOutLabel": "Works out: {value}",
-  "@worksOutLabel": {"placeholders": {"value": {"type": "String"}}},
+  "@worksOutLabel": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "myCauses": "My causes and communities",
   "languagesTitle": "Languages",
   "myLocation": "My location",
@@ -178,14 +238,34 @@
   "seeEveryoneWhoLikes": "See everyone who like you",
   "setMoreDatingPrefs": "Set more dating preference",
   "monthsPlan": "{count} months",
-  "@monthsPlan": {"placeholders": {"count": {"type": "String"}}},
+  "@monthsPlan": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "mostPopular": "most popular",
   "bestValue": "best value",
   "getWithPlan": "Get with {plan} for {price}",
-  "@getWithPlan": {"placeholders": {"plan": {"type": "String"}, "price": {"type": "String"}}},
+  "@getWithPlan": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "offerEndsIn": "Offers ends in {time}",
-  "@offerEndsIn": {"placeholders": {"time": {"type": "String"}}},
-
+  "@offerEndsIn": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "chats": "Chats",
   "conversations": "Conversations",
   "recentMatches": "Recent matches",
@@ -201,7 +281,13 @@
   "imageMessage": " Image message",
   "voiceMessage": " Voice message",
   "nSelected": "{count} selected",
-  "@nSelected": {"placeholders": {"count": {"type": "String"}}},
+  "@nSelected": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "editedSuffix": "(Edited)",
   "editingMessage": "Editing message",
   "onlyTextEditable": "Only text messages can be edited",
@@ -252,7 +338,13 @@
   "onlineNow": "Online now",
   "pleaseEnterMessage": "Please enter a message",
   "sendPersonMessage": "Send {name} a message",
-  "@sendPersonMessage": {"placeholders": {"name": {"type": "String"}}},
+  "@sendPersonMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "sendMessage": "Send message",
   "matchHasExpired": "This match has expired.",
   "typeOpeningMove": "Type your opening move...",
@@ -260,15 +352,26 @@
   "expiringSoon": "Expiring Soon",
   "matchExpiredTitle": "Match Expired",
   "dontLetThemGetAway": "Don't Let {name}\nGet Away!",
-  "@dontLetThemGetAway": {"placeholders": {"name": {"type": "String"}}},
+  "@dontLetThemGetAway": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "limitedTimeBody": "You have limited time left to make a move. Send a message before the match disappears forever.",
   "letThemGo": "Let them go",
   "messagePerson": "Message {name}",
-  "@messagePerson": {"placeholders": {"name": {"type": "String"}}},
+  "@messagePerson": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "gifs": "GIFs",
   "stickers": "Stickers",
   "searchGiphy": "Search GIPHY",
-
   "themOnly": "Them only",
   "tryAgain": "Try again",
   "icebreakerSmile": "What's a small thing that made you smile recently?",
@@ -277,9 +380,7 @@
   "openingMoveCushions": "Me and the cushions I made.\nWhat do you think?",
   "openingMove90s": "I bet you can't beat my 90s look",
   "openingMovePetName": "Guess my pet's name?",
-
   "viewProfile": "View Profile",
-
   "likedYou": "Liked You",
   "matchLabel": "Match",
   "passLabel": "Pass",
@@ -293,11 +394,23 @@
   "viewMoreLikes": "View more likes",
   "seeWhosInterested": "See Who's Interested",
   "matchInstantly": "Match instantly without the wait. You have {count}+ likes waiting you",
-  "@matchInstantly": {"placeholders": {"count": {"type": "String"}}},
+  "@matchInstantly": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "superLiked": "Super Liked",
   "itsAMatch": "It's a Match!",
   "youAndThemLiked": "You and {name} liked each other.",
-  "@youAndThemLiked": {"placeholders": {"name": {"type": "String"}}},
+  "@youAndThemLiked": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "sendAMessage": "Send a message",
   "notifications": "Notifications",
   "loginToViewNotifications": "Please log in to view notifications.",
@@ -312,20 +425,37 @@
   "recentlyActive": "Recently Active",
   "seeAll": "See all",
   "kmAway": "{distance} km away",
-  "@kmAway": {"placeholders": {"distance": {"type": "String"}}},
+  "@kmAway": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
   "letsDiscover": "Lets Discover!",
   "viewedAllProfiles": "You're viewed all the profiles matching your current preference. Expand your search or check back soon for new peoples.",
   "adjustYourFilters": "Adjust Your Filters",
   "notifyMeNewPeople": "Notify Me About New People",
   "youAndPerson": "You and {name}",
-  "@youAndPerson": {"placeholders": {"name": {"type": "String"}}},
+  "@youAndPerson": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "workingOutCommon": "Working out what you have in common…",
   "whyTitle": "Why",
   "breakdownTitle": "Breakdown",
   "goesBothWays": "Does it go both ways?",
   "eachFitsOther": "You each fit what the other is looking for: {band}.",
-  "@eachFitsOther": {"placeholders": {"band": {"type": "String"}}},
-
+  "@eachFitsOther": {
+    "placeholders": {
+      "band": {
+        "type": "String"
+      }
+    }
+  },
   "sectionConnections": "Connections",
   "typeOfConnection": "Type of connection",
   "dateMode": "Date mode",
@@ -348,7 +478,6 @@
   "about": "About",
   "logout": "Logout",
   "deleteAccount": "Delete account",
-
   "vEnglish": "English",
   "vHindi": "Hindi",
   "vTamil": "Tamil",
@@ -408,7 +537,6 @@
   "vEveryone": "Everyone",
   "vMale": "Male",
   "vFemale": "Female",
-
   "vFunCasualDates": "Fun, causal dates",
   "vLifePartner": "Life partner",
   "vLongTermRelationship": "Long-term relationship",
@@ -456,7 +584,6 @@
   "vOpenToKids": "Open to kids",
   "vNotSure": "Not Sure",
   "vPreferNotToSay": "Prefer not to say",
-
   "vAries": "Aries",
   "vTaurus": "Taurus",
   "vGemini": "Gemini",
@@ -497,16 +624,30 @@
   "vGratitude": "Gratitude",
   "vCuriosity": "Curiosity",
   "vEmotionalIntelligence": "Emotional Intelligence",
-
   "datingPreference": "Dating Preference",
   "bffPreference": "BFF Preference",
   "whoWouldYouDate": "Who would you like to date?",
   "ageRange": "Age range?",
   "yearsOldRange": "{min} - {max} years old",
-  "@yearsOldRange": {"placeholders": {"min": {"type": "String"}, "max": {"type": "String"}}},
+  "@yearsOldRange": {
+    "placeholders": {
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
   "howFarAway": "How far away they are?",
   "kilometersAway": "{distance} kilometers away",
-  "@kilometersAway": {"placeholders": {"distance": {"type": "String"}}},
+  "@kilometersAway": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
   "yourInterests": "Your interests?",
   "errorLoadingInterests": "Error loading interests",
   "whichLanguages": "Which language do you know?",
@@ -526,9 +667,14 @@
   "clearFilters": "Clear Filters",
   "filterByInterests": "Filter by your interests",
   "showMe": "Show me",
-
   "errUpdateFailed": "Update failed: {error}",
-  "@errUpdateFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@errUpdateFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "religionViewTitle": "Religion View",
   "sensitiveInfoNote": "This is sensitive information that'll be on your profile. It's Totally optional.",
   "zodiacSignTitle": "Zodiac Sign",
@@ -563,18 +709,35 @@
   "maxThreeLanguages": "You can select up to 3 languages",
   "whatLookingFor": "What are you looking for?",
   "maxThreeForMode": "You can select up to 3 options for the current mode ({mode}).",
-  "@maxThreeForMode": {"placeholders": {"mode": {"type": "String"}}},
+  "@maxThreeForMode": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      }
+    }
+  },
   "errorSavingPreferences": "Error saving preferences: {error}",
-  "@errorSavingPreferences": {"placeholders": {"error": {"type": "String"}}},
+  "@errorSavingPreferences": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "languagesIKnow": "Languages I know",
   "saveChanges": "Save changes",
   "searchLanguages": "Search languages",
   "suggested": "Suggested",
   "allLanguages": "All languages",
-
   "errorLoadingProfile": "Error loading profile",
   "percentTrust": "{percent}% Trust",
-  "@percentTrust": {"placeholders": {"percent": {"type": "String"}}},
+  "@percentTrust": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
   "profileCompleted": "Profile Completed",
   "completeProfile": "Complete profile",
   "higherScoreHelps": "A higher score helps you get more\nauthentic matches",
@@ -604,14 +767,25 @@
   "learnMore": "Learn more",
   "improveYourProfile": "Improve your Profile",
   "errorSavingHometown": "Error saving hometown: {error}",
-  "@errorSavingHometown": {"placeholders": {"error": {"type": "String"}}},
+  "@errorSavingHometown": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "searchCity": "Search city",
-
   "aboutYou": "About You",
   "bioPrompt": "Don't be shy! This is your chance to share your personality with a short bio.",
   "textHereHint": "Text Here.....",
   "failedToSaveBio": "Failed to save bio: {error}",
-  "@failedToSaveBio": {"placeholders": {"error": {"type": "String"}}},
+  "@failedToSaveBio": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "selectYourInterests": "Select Your Interests",
   "atLeast5Interests": "Please select at least 5 interest. This helps us find your peoples",
   "searchForInterest": "Search for interest",
@@ -620,7 +794,13 @@
   "maxTenInterests": "You can select up to 10 interests",
   "minFiveInterests": "Please select at least 5 interests",
   "errorSavingInterests": "Error saving interests: {error}",
-  "@errorSavingInterests": {"placeholders": {"error": {"type": "String"}}},
+  "@errorSavingInterests": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "lifeStyle": "Life Style",
   "lifestylePrompt": "Tell us more about your habits. Pick what fits you best.",
   "noLifestyleOptions": "No lifestyle options available",
@@ -628,7 +808,13 @@
   "selectEachCategory": "Please select an option for each category, or clear all to skip.",
   "findYourCity": "Find your current city",
   "errorSavingLocation": "Error saving location: {error}",
-  "@errorSavingLocation": {"placeholders": {"error": {"type": "String"}}},
+  "@errorSavingLocation": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "permissionRequired": "Permission Required",
   "permissionRequiredBody": "This permission is required for the app to function correctly. Please enable it in settings.",
   "cameraAccess": "Camera Access",
@@ -651,15 +837,32 @@
   "selectThreePrompts": "Please select 3 prompts to continue.",
   "selectOnePrompt": "Please select at least 1 prompt.",
   "selectNMorePrompts": "Please select {count} prompt to continue",
-  "@selectNMorePrompts": {"placeholders": {"count": {"type": "String"}}},
+  "@selectNMorePrompts": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "noPromptsForCategory": "No prompts available for this category.",
   "typeYourAnswer": "Type your answer...",
   "addPrompt": "Add Prompt",
   "failedToLoadPrompts": "Failed to load prompts: {error}",
-  "@failedToLoadPrompts": {"placeholders": {"error": {"type": "String"}}},
+  "@failedToLoadPrompts": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "errorSavingPrompts": "Error saving prompts: {error}",
-  "@errorSavingPrompts": {"placeholders": {"error": {"type": "String"}}},
-
+  "@errorSavingPrompts": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "communityGuidelines": "Community guidelines",
   "agreeAndContinue": "Agree & Continue",
   "termsByContinuePrefix": "By Continue, you agree to our ",
@@ -686,15 +889,33 @@
   "dateOfBirth": "Date of birth",
   "birthdayNote": "Your birthday is used to calculate your age and will be shown on your profile. Your full name will not be public",
   "failedToSaveData": "Failed to save data: {error}",
-  "@failedToSaveData": {"placeholders": {"error": {"type": "String"}}},
+  "@failedToSaveData": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "whatsYourGender": "What's your Gender?",
   "genderHelpsMatches": "This help us show you relevant profiles and find your matches",
   "vNonBinary": "Non-Binary",
   "vPreferNot": "Prefer Not",
   "failedToSaveGender": "Failed to save gender: {error}",
-  "@failedToSaveGender": {"placeholders": {"error": {"type": "String"}}},
+  "@failedToSaveGender": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "grantPermissionPhotos": "Please grant {permission} permission to upload photos for your profile.",
-  "@grantPermissionPhotos": {"placeholders": {"permission": {"type": "String"}}},
+  "@grantPermissionPhotos": {
+    "placeholders": {
+      "permission": {
+        "type": "String"
+      }
+    }
+  },
   "gallery": "Gallery",
   "camera": "Camera",
   "photoNotAccepted": "Photo Not Accepted",
@@ -725,7 +946,6 @@
   "ticketsAndReservations": "Your tickets and reservations",
   "upcomingEvents": "Upcoming Events",
   "eventsYouAreInterested": "Events you are interested in",
-
   "incomingVideoCall": "Incoming video call",
   "incomingVoiceCall": "Incoming voice call",
   "ringing": "Ringing...",
@@ -751,10 +971,15 @@
   "great": "Great!",
   "peoples": "Peoples",
   "chatTab": "Chat",
-
   "editProfileTitle": "Edit profile",
   "percentComplete": "{percent}% complete",
-  "@percentComplete": {"placeholders": {"percent": {"type": "String"}}},
+  "@percentComplete": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
   "profileStrength": "Profile strength",
   "photosAndVideos": "Photos and videos",
   "pickSomeTrueYou": "Pick some that show the true you.",
@@ -814,7 +1039,6 @@
   "verified": "Verified",
   "invalidLocation": "Invalid Location",
   "locationFound": "Location Found",
-
   "alreadyVerified": "You have been already verified",
   "verificationSuccessful": "Verification Successful",
   "documentNotVerified": "Document could not be verified.",
@@ -869,10 +1093,34 @@
   "showYourPersonality": "Show your personality",
   "saveAndContinue": "Save & Continue",
   "failedUploadVoice": "Failed to upload voice intro: {error}",
-  "@failedUploadVoice": {"placeholders": {"error": {"type": "String"}}},
+  "@failedUploadVoice": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "failedToStartRecording": "Failed to start recording",
   "failedToStopRecording": "Failed to stop recording",
   "failedToPlayAudio": "Failed to play audio",
-
-  "navLikes": "Likes"
+  "navLikes": "Likes",
+  "photoReasonNoFace": "We could not find a clear face. Use a photo where your face is visible.",
+  "photoReasonGroupPhoto": "This photo has more than one person. Use a solo photo.",
+  "photoReasonFaceTooSmall": "Your face is too small in this photo. Move closer or crop in.",
+  "photoReasonUnsafe": "This photo does not meet our content guidelines.",
+  "photoReasonBadImage": "We could not read this file. Try a JPG or PNG photo.",
+  "photoReasonTooLarge": "This photo is too large. Try a smaller one.",
+  "photoReasonUnavailable": "We could not check this photo right now.",
+  "photoTryAgainLater": "Please check your connection and try again.",
+  "photoLoadFailed": "Could not load your photos.",
+  "photoSaveFailed": "Could not save your photos. Please try again.",
+  "photosNotAdded": "{count} photos could not be added:",
+  "@photosNotAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "photosExpired": "Some photos expired and were removed. Please add them again."
 }

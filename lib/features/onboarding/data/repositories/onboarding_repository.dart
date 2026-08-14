@@ -63,22 +63,6 @@ class OnboardingRepository {
     }
   }
 
-  Future<OnboardingStep?> getStepByPosition(int position) async {
-    try {
-      final response = await _supabase
-          .from('onboarding_steps')
-          .select()
-          .eq('step_position', position)
-          .maybeSingle();
-
-      if (response == null) return null;
-      return OnboardingStep.fromJson(response);
-    } catch (e) {
-      AppLogger.info('Error fetching step by position: $e');
-      return null;
-    }
-  }
-
   Future<List<OnboardingStep>> getAllSteps() async {
     try {
       final response = await _supabase
@@ -86,40 +70,19 @@ class OnboardingRepository {
           .select()
           .order('step_position', ascending: true);
 
-      final List<dynamic> data = response as List;
-      final List<OnboardingStep> steps = [];
-
-      for (var item in data) {
+      final steps = <OnboardingStep>[];
+      for (final item in response as List) {
+        // One malformed row must not strand the user on a blank shell, so bad
+        // rows are logged and skipped rather than thrown.
         try {
-          AppLogger.info('DEBUG: Parsing step raw: $item');
-          final step = OnboardingStep.fromJson(item);
-          steps.add(step);
-          AppLogger.info('DEBUG: Parsed step successfully: ${step.stepKey}');
+          steps.add(OnboardingStep.fromJson(item));
         } catch (e) {
-          AppLogger.info('ERROR parsing onboarding step: $item, Error: $e');
+          AppLogger.error('Skipping unparseable onboarding step: $item', e);
         }
       }
-      AppLogger.info(
-        'Fetched ${steps.length} valid steps from DB out of ${data.length}',
-      );
       return steps;
     } catch (e) {
       AppLogger.info('Error fetching all steps: $e');
-      return [];
-    }
-  }
-
-  Future<List<OnboardingStep>> getMandatorySteps() async {
-    try {
-      final response = await _supabase
-          .from('onboarding_steps')
-          .select()
-          .eq('is_mandatory', true)
-          .order('step_position', ascending: true);
-
-      return (response as List).map((e) => OnboardingStep.fromJson(e)).toList();
-    } catch (e) {
-      AppLogger.info('Error fetching mandatory steps: $e');
       return [];
     }
   }
@@ -199,39 +162,23 @@ class OnboardingRepository {
       if (profile == null) return false;
 
       final status = profile['onboarding_status'] as String? ?? 'in_progress';
-      final rawProgress = profile['steps_progress'];
-      final Map<String, dynamic> stepsProgress = (rawProgress != null)
-          ? Map<String, dynamic>.from(rawProgress)
-          : {};
+      if (status != 'complete') return false;
 
-      if (status == 'complete') {
-        // STRICT CHECK: Ensure ALL known steps are present in progress map
-        final allSteps = await getAllSteps();
+      // The flag says complete; check it against the progress map before
+      // believing it, and demote it if a step is still open.
+      final unfinished = nextIncompleteStep(
+        await getAllSteps(),
+        parseStepProgress(profile['steps_progress']),
+      );
+      if (unfinished == null) return true;
 
-        bool hasMissingSteps = false;
-        for (final step in allSteps) {
-          final s = stepsProgress[step.stepKey];
-          if (s != 'completed' && s != 'skipped') {
-            hasMissingSteps = true;
-            AppLogger.info(
-              'Strict Check: Step ${step.stepKey} is missing/incomplete. Revoking complete status.',
-            );
-            break;
-          }
-        }
-
-        if (hasMissingSteps || stepsProgress.isEmpty) {
-          // Revert status to in_progress so SplashScreen sends them to OnboardingShell
-          await _supabase
-              .from('profiles')
-              .update({'onboarding_status': 'in_progress'})
-              .eq('user_id', userId);
-
-          return false;
-        }
-      }
-
-      return status == 'complete';
+      AppLogger.info('Onboarding marked complete but ${unfinished.stepKey} is '
+          'not done -- reverting to in_progress');
+      await _supabase
+          .from('profiles')
+          .update({'onboarding_status': 'in_progress'})
+          .eq('user_id', userId);
+      return false;
     } catch (e) {
       AppLogger.info('Error validating onboarding status: $e');
       return false;

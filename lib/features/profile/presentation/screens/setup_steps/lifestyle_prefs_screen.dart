@@ -14,6 +14,16 @@ import '../../../provider/profile_provider.dart';
 import '../../../domain/models/profile_user_model.dart';
 import '../../../../onboarding/domain/models/lifestyle_chip_model.dart';
 
+/// Lifestyle answers are all or nothing: a half-filled set reads worse on a
+/// profile than an empty one, and Skip is there for people who want none.
+bool lifestyleIsValid({
+  required int answered,
+  required int categoryCount,
+}) {
+  if (categoryCount == 0) return false;
+  return answered == 0 || answered == categoryCount;
+}
+
 class LifestylePrefsScreen extends ConsumerStatefulWidget {
   final bool isEditMode;
 
@@ -96,41 +106,28 @@ class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
     return text[0].toUpperCase() + text.substring(1).toLowerCase();
   }
 
-  bool get _isFormValid {
-    if (_categories.isEmpty) return false;
-    // If nothing selected at all -> valid (can skip/empty save)
-    if (_selections.isEmpty) return true;
-
-    // If at least one selected -> MUST select for ALL categories
-    for (var cat in _categories) {
-      if (!_selections.containsKey(cat.id)) {
-        return false;
-      }
-    }
-    return true;
-  }
+  bool get _isFormValid => lifestyleIsValid(
+    answered: _categories.where((c) => _selections.containsKey(c.id)).length,
+    categoryCount: _categories.length,
+  );
 
   Future<void> _onNext() async {
-    // Logic:
-    // If selections empty -> proceed (save empty/skip).
-    // If selections not empty -> must correspond to all categories (checked by _isFormValid).
-
     if (!_isFormValid) {
-      // Should check specifically if we have partial selection
-      if (_selections.isNotEmpty && _selections.length < _categories.length) {
-        showErrorPopup(
-          context,
-          l10n.selectEachCategory,
-        );
+      if (_selections.isNotEmpty) {
+        showErrorPopup(context, l10n.selectEachCategory);
       }
       return;
     }
 
+    // Bail before the spinner goes up: returning after it with nothing to save
+    // against would leave the button dead.
+    final user = ref.read(authRepositoryProvider).currentUser;
+    if (user == null) return;
+
     setState(() => _isLoading = true);
 
     try {
-      final user = ref.read(authRepositoryProvider).currentUser;
-      if (user != null) {
+      {
         final allSelectedChipIds = _selections.values.toList();
         final currentMode = ref.read(connectionModeProvider).toLowerCase();
         await ref
@@ -173,7 +170,7 @@ class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
                   .read(currentUserProfileProvider.notifier)
                   .triggerTrustCalculation();
             }
-            Navigator.pop(context);
+            if (mounted) Navigator.pop(context);
           }
         } else {
           if (mounted) {
@@ -206,7 +203,13 @@ class _LifestylePrefsScreenState extends ConsumerState<LifestylePrefsScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     // Valid state for button: not loading AND form logic satisfied
-    final isNextEnabled = !_isLoading && _isFormValid;
+    // Same rule as the interests step: Continue commits answers, Skip is how
+    // you move on without any. Edit mode has no Skip, so it must still allow
+    // clearing every answer.
+    final isNextEnabled =
+        !_isLoading &&
+        _isFormValid &&
+        (widget.isEditMode || _selections.isNotEmpty);
 
     return BaseOnboardingStepScreen(
       title: l10n.lifeStyle,

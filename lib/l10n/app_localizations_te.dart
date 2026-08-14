@@ -2548,4 +2548,48 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String get navLikes => 'లైక్‌లు';
+
+  @override
+  String get photoReasonNoFace =>
+      'స్పష్టమైన ముఖం కనబడలేదు. ముఖం కనబడే ఫోటోను వాడండి.';
+
+  @override
+  String get photoReasonGroupPhoto =>
+      'ఈ ఫోటోలో ఒకరికంటే ఎక్కువ మంది ఉన్నారు. ఒంటరి ఫోటో వాడండి.';
+
+  @override
+  String get photoReasonFaceTooSmall =>
+      'ఈ ఫోటోలో మీ ముఖం చాలా చిన్నగా ఉంది. దగ్గరగా తీయండి.';
+
+  @override
+  String get photoReasonUnsafe => 'ఈ ఫోటో మా మార్గదర్శకాలకు అనుగుణంగా లేదు.';
+
+  @override
+  String get photoReasonBadImage =>
+      'ఈ ఫైల్‌ను చదవలేకపోయాం. JPG లేదా PNG ప్రయత్నించండి.';
+
+  @override
+  String get photoReasonTooLarge => 'ఈ ఫోటో చాలా పెద్దది. చిన్న ఫోటో వాడండి.';
+
+  @override
+  String get photoReasonUnavailable => 'ఇప్పుడు ఈ ఫోటోను తనిఖీ చేయలేకపోయాం.';
+
+  @override
+  String get photoTryAgainLater => 'కనెక్షన్ చెక్ చేసి మళ్లీ ప్రయత్నించండి.';
+
+  @override
+  String get photoLoadFailed => 'మీ ఫోటోలను లోడ్ చేయలేకపోయాం.';
+
+  @override
+  String get photoSaveFailed =>
+      'ఫోటోలను సేవ్ చేయలేకపోయాం. మళ్లీ ప్రయత్నించండి.';
+
+  @override
+  String photosNotAdded(int count) {
+    return '$count ఫోటోలను జోడించలేకపోయాం:';
+  }
+
+  @override
+  String get photosExpired =>
+      'కొన్ని ఫోటోల గడువు ముగియడంతో తొలగించబడ్డాయి. దయచేసి మళ్లీ జోడించండి.';
 }

@@ -2532,4 +2532,47 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get navLikes => 'লাইক';
+
+  @override
+  String get photoReasonNoFace =>
+      'কোনো স্পষ্ট মুখ পাওয়া যায়নি। মুখ দেখা যায় এমন ছবি দিন।';
+
+  @override
+  String get photoReasonGroupPhoto =>
+      'এই ছবিতে একাধিক ব্যক্তি আছেন। একার ছবি দিন।';
+
+  @override
+  String get photoReasonFaceTooSmall =>
+      'এই ছবিতে আপনার মুখ খুব ছোট। কাছে থেকে তুলুন বা ক্রপ করুন।';
+
+  @override
+  String get photoReasonUnsafe => 'এই ছবি আমাদের নির্দেশিকা মেনে চলে না।';
+
+  @override
+  String get photoReasonBadImage =>
+      'ফাইলটি পড়া যায়নি। JPG বা PNG দিয়ে চেষ্টা করুন।';
+
+  @override
+  String get photoReasonTooLarge => 'ছবিটি খুব বড়। ছোট ছবি দিন।';
+
+  @override
+  String get photoReasonUnavailable => 'এই মুহূর্তে ছবিটি যাচাই করা যায়নি।';
+
+  @override
+  String get photoTryAgainLater => 'কানেকশন পরীক্ষা করে আবার চেষ্টা করুন।';
+
+  @override
+  String get photoLoadFailed => 'আপনার ছবি লোড করা যায়নি।';
+
+  @override
+  String get photoSaveFailed => 'ছবি সেভ করা যায়নি। আবার চেষ্টা করুন।';
+
+  @override
+  String photosNotAdded(int count) {
+    return '$countটি ছবি যোগ করা যায়নি:';
+  }
+
+  @override
+  String get photosExpired =>
+      'কিছু ছবির মেয়াদ শেষ হয়ে যাওয়ায় সরিয়ে ফেলা হয়েছে। অনুগ্রহ করে আবার যোগ করুন।';
 }

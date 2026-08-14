@@ -1,10 +1,8 @@
 {
   "@@locale": "hi",
-
   "settingsLanguage": "भाषा",
   "appLanguageTitle": "ऐप की भाषा",
   "systemDefault": "सिस्टम डिफ़ॉल्ट",
-
   "authTitlePhone": "अपना नंबर बताएं",
   "authTitleVerifyNumber": "अपना नंबर सत्यापित करें",
   "authTitleEmail": "ईमेल से लॉगिन करें",
@@ -13,19 +11,16 @@
   "loginTagline": "एक प्यारी ज़िंदगी में लॉगिन करें",
   "continueWithGoogle": "Google से जारी रखें",
   "continueLabel": "जारी रखें",
-
   "termsSignupPrefix": "साइन अप करके, आप हमारी ",
   "termsContinuePrefix": "जारी रखकर, आप हमारी ",
   "termsWord": "शर्तों",
   "termsBridge": " से सहमत हैं। हम आपका डेटा कैसे उपयोग करते हैं, यह देखें हमारी ",
   "privacyPolicyWord": "गोपनीयता नीति",
   "termsSuffix": " में।",
-
   "phoneRationale": "हम फ़ोन नंबर सिर्फ़ यह पक्का करने के लिए इस्तेमाल करते हैं कि Blindly पर हर कोई असली है",
   "countryLabel": "देश",
   "phoneNumberLabel": "फ़ोन नंबर",
   "phoneHint": "जैसे 9876543210",
-
   "otpSentPhone": "हमने {phone} पर मैसेज से भेजा कोड डालें। ",
   "changeNumber": "नंबर बदलें",
   "otpSentEmail": "हमने {email} पर ईमेल से भेजा कोड डालें। ",
@@ -33,14 +28,12 @@
   "resendCode": "कोड फिर भेजें",
   "codeArrivesIn": "कोड {seconds} सेकंड में आ जाना चाहिए",
   "otpSentSuccess": "OTP भेज दिया गया",
-
   "loginDetailsSubtitle": "कृपया नीचे अपने लॉगिन विवरण डालें",
   "emailLabel": "ईमेल",
   "emailHint": "Abcd@gmail.com",
   "passwordLabel": "पासवर्ड",
   "passwordHint": "abc@123",
   "forgotPassword": "पासवर्ड भूल गए?",
-
   "errEnterPhone": "कृपया अपना फ़ोन नंबर डालें",
   "errPhoneDigitsOnly": "फ़ोन नंबर में सिर्फ़ अंक होने चाहिए",
   "errInvalidPhone": "कृपया एक मान्य फ़ोन नंबर डालें",
@@ -56,7 +49,6 @@
   "errGoogleSignIn": "Google साइन-इन विफल: {error}",
   "errLoginFailed": "लॉगिन विफल: {error}",
   "errGeneric": "त्रुटि: {error}",
-
   "save": "सहेजें",
   "skip": "छोड़ें",
   "add": "जोड़ें",
@@ -75,7 +67,6 @@
   "somethingWentWrong": "कुछ गलत हो गया",
   "userNotLoggedIn": "उपयोगकर्ता लॉग इन नहीं है",
   "unknown": "अज्ञात",
-
   "typesOfConnections": "कनेक्शन के प्रकार",
   "connectionQuestion": "आप Blindly पर किस तरह का कनेक्शन ढूंढ रहे हैं?",
   "connectionSubtitle": "डेट और रोमांस, नए दोस्त, या सिर्फ़ बिज़नेस? आप इसे कभी भी बदल सकते हैं।",
@@ -109,7 +100,6 @@
   "goBack": "वापस जाएं",
   "profilePreview": "प्रोफ़ाइल झलक",
   "profileTitle": "प्रोफ़ाइल",
-
   "voiceIntro": "वॉइस परिचय",
   "bioTitle": "बायो",
   "askAboutMyBio": "मेरे बायो के बारे में पूछें!",
@@ -154,7 +144,6 @@
   "bestValue": "सबसे फ़ायदेमंद",
   "getWithPlan": "{plan} पाएं {price} में",
   "offerEndsIn": "ऑफ़र खत्म होने में {time}",
-
   "chats": "चैट",
   "conversations": "बातचीत",
   "recentMatches": "हाल के मैच",
@@ -233,7 +222,6 @@
   "gifs": "GIF",
   "stickers": "स्टिकर",
   "searchGiphy": "GIPHY खोजें",
-
   "themOnly": "सिर्फ़ उनके लिए",
   "tryAgain": "फिर कोशिश करें",
   "icebreakerSmile": "हाल में किस छोटी सी बात ने आपको मुस्कुराया?",
@@ -242,9 +230,7 @@
   "openingMoveCushions": "मैं और मेरे बनाए कुशन।\nआपको कैसे लगे?",
   "openingMove90s": "शर्त लगा लें, मेरा 90s लुक कोई नहीं हरा सकता",
   "openingMovePetName": "मेरे पालतू का नाम बताइए?",
-
   "viewProfile": "प्रोफ़ाइल देखें",
-
   "likedYou": "आपको पसंद किया",
   "matchLabel": "मैच",
   "passLabel": "छोड़ें",
@@ -285,7 +271,6 @@
   "breakdownTitle": "विवरण",
   "goesBothWays": "क्या यह दोनों तरफ़ से है?",
   "eachFitsOther": "आप दोनों एक-दूसरे की तलाश पर खरे उतरते हैं: {band}।",
-
   "sectionConnections": "कनेक्शन",
   "typeOfConnection": "कनेक्शन का प्रकार",
   "dateMode": "डेट मोड",
@@ -308,7 +293,6 @@
   "about": "ऐप के बारे में",
   "logout": "लॉग आउट",
   "deleteAccount": "खाता हटाएं",
-
   "vEnglish": "अंग्रेज़ी",
   "vHindi": "हिन्दी",
   "vTamil": "तमिल",
@@ -368,7 +352,6 @@
   "vEveryone": "सभी",
   "vMale": "पुरुष",
   "vFemale": "महिला",
-
   "vFunCasualDates": "मज़ेदार, हल्की-फुल्की डेट",
   "vLifePartner": "जीवनसाथी",
   "vLongTermRelationship": "दीर्घकालिक रिश्ता",
@@ -416,7 +399,6 @@
   "vOpenToKids": "बच्चों के लिए तैयार",
   "vNotSure": "पक्का नहीं",
   "vPreferNotToSay": "बताना नहीं चाहूँगा/चाहूँगी",
-
   "vAries": "मेष",
   "vTaurus": "वृषभ",
   "vGemini": "मिथुन",
@@ -457,7 +439,6 @@
   "vGratitude": "कृतज्ञता",
   "vCuriosity": "जिज्ञासा",
   "vEmotionalIntelligence": "भावनात्मक समझ",
-
   "datingPreference": "डेटिंग पसंद",
   "bffPreference": "BFF पसंद",
   "whoWouldYouDate": "आप किसे डेट करना चाहेंगे?",
@@ -484,7 +465,6 @@
   "clearFilters": "फ़िल्टर हटाएं",
   "filterByInterests": "अपनी रुचियों से फ़िल्टर करें",
   "showMe": "मुझे दिखाएं",
-
   "errUpdateFailed": "अपडेट नहीं हो सका: {error}",
   "religionViewTitle": "धार्मिक विचार",
   "sensitiveInfoNote": "यह संवेदनशील जानकारी है जो आपकी प्रोफ़ाइल पर दिखेगी। यह पूरी तरह वैकल्पिक है।",
@@ -526,7 +506,6 @@
   "searchLanguages": "भाषाएँ खोजें",
   "suggested": "सुझाए गए",
   "allLanguages": "सभी भाषाएँ",
-
   "errorLoadingProfile": "प्रोफ़ाइल लोड नहीं हो सकी",
   "percentTrust": "{percent}% भरोसा",
   "profileCompleted": "प्रोफ़ाइल पूरी",
@@ -559,7 +538,6 @@
   "improveYourProfile": "अपनी प्रोफ़ाइल बेहतर करें",
   "errorSavingHometown": "गृहनगर सहेजने में गड़बड़ी: {error}",
   "searchCity": "शहर खोजें",
-
   "aboutYou": "आपके बारे में",
   "bioPrompt": "शर्माइए मत! यह मौका है एक छोटे बायो में अपनी शख्सियत दिखाने का।",
   "textHereHint": "यहाँ लिखें.....",
@@ -606,7 +584,6 @@
   "addPrompt": "प्रॉम्प्ट जोड़ें",
   "failedToLoadPrompts": "प्रॉम्प्ट लोड नहीं हो सके: {error}",
   "errorSavingPrompts": "प्रॉम्प्ट सहेजने में गड़बड़ी: {error}",
-
   "communityGuidelines": "समुदाय दिशानिर्देश",
   "agreeAndContinue": "सहमत हूँ और आगे बढ़ें",
   "termsByContinuePrefix": "आगे बढ़कर, आप हमारी ",
@@ -669,7 +646,6 @@
   "ticketsAndReservations": "आपके टिकट और बुकिंग",
   "upcomingEvents": "आने वाले इवेंट",
   "eventsYouAreInterested": "जिन इवेंट में आपकी दिलचस्पी है",
-
   "incomingVideoCall": "आने वाली वीडियो कॉल",
   "incomingVoiceCall": "आने वाली वॉइस कॉल",
   "ringing": "घंटी बज रही है...",
@@ -695,7 +671,6 @@
   "great": "बढ़िया!",
   "peoples": "लोग",
   "chatTab": "चैट",
-
   "editProfileTitle": "प्रोफ़ाइल संपादित करें",
   "percentComplete": "{percent}% पूरा",
   "profileStrength": "प्रोफ़ाइल की मज़बूती",
@@ -757,7 +732,6 @@
   "verified": "सत्यापित",
   "invalidLocation": "गलत लोकेशन",
   "locationFound": "लोकेशन मिल गई",
-
   "alreadyVerified": "आप पहले ही सत्यापित हो चुके हैं",
   "verificationSuccessful": "सत्यापन सफल",
   "documentNotVerified": "दस्तावेज़ सत्यापित नहीं हो सका।",
@@ -815,6 +789,24 @@
   "failedToStartRecording": "रिकॉर्डिंग शुरू नहीं हो सकी",
   "failedToStopRecording": "रिकॉर्डिंग रोकी नहीं जा सकी",
   "failedToPlayAudio": "ऑडियो नहीं चल सका",
-
-  "navLikes": "लाइक"
+  "navLikes": "लाइक",
+  "photoReasonNoFace": "हमें स्पष्ट चेहरा नहीं मिला। ऐसी फोटो लगाएं जिसमें आपका चेहरा दिखे।",
+  "photoReasonGroupPhoto": "इस फोटो में एक से ज़्यादा लोग हैं। अकेले की फोटो लगाएं।",
+  "photoReasonFaceTooSmall": "इस फोटो में आपका चेहरा बहुत छोटा है। पास से लें या क्रॉप करें।",
+  "photoReasonUnsafe": "यह फोटो हमारे दिशानिर्देशों के अनुरूप नहीं है।",
+  "photoReasonBadImage": "यह फ़ाइल पढ़ी नहीं जा सकी। JPG या PNG आज़माएं।",
+  "photoReasonTooLarge": "यह फोटो बहुत बड़ी है। छोटी फोटो आज़माएं।",
+  "photoReasonUnavailable": "अभी यह फोटो जाँची नहीं जा सकी।",
+  "photoTryAgainLater": "कृपया अपना कनेक्शन जाँचें और फिर से कोशिश करें।",
+  "photoLoadFailed": "आपकी फोटो लोड नहीं हो सकीं।",
+  "photoSaveFailed": "फोटो सेव नहीं हो सकीं। फिर से कोशिश करें।",
+  "photosNotAdded": "{count} फोटो जोड़ी नहीं जा सकीं:",
+  "@photosNotAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "photosExpired": "कुछ फोटो की समय-सीमा समाप्त हो गई और वे हटा दी गईं। कृपया उन्हें फिर से जोड़ें।"
 }

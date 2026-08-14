@@ -41,6 +41,9 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
     bool isCamera,
     int index,
   ) async {
+    // Read before awaiting: the context may not be worth much afterwards.
+    final theme = Theme.of(context);
+
     PermissionStatus status;
     if (Platform.isAndroid && !isCamera) {
       status = await Permission.photos.request();
@@ -54,65 +57,29 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
     if (status.isGranted || status.isLimited) {
       final repo = ref.read(mediaRepositoryProvider);
       final notifier = ref.read(mediaProvider.notifier);
-      final mediaState = ref.read(mediaProvider);
-      final theme = Theme.of(context);
+
+      // One source of truth for the limit, whichever way the photo arrives.
+      final room = ref.read(mediaProvider).freeSlots(index);
+      if (room <= 0) return;
 
       try {
-        List<File> filesToProcess = [];
+        final picked = isCamera
+            ? [await repo.pickImageFromCamera()].nonNulls
+            : await repo.pickImagesFromGallery(maxImages: room);
 
-        if (isCamera) {
-          // Check limit for camera (1 photo)
-          if (mediaState.validPhotoCount >= 6 &&
-              mediaState.selectedPhotos[index] == null) {
-            // Although technically we shouldn't have enabled the button, double check.
-            return;
-          }
-
-          final xFile = await repo.pickImageFromCamera();
-          if (xFile != null) {
-            final file = File(xFile.path);
-            final cropped = await repo.cropImage(
-              file,
-              toolbarColor: theme.primaryColor,
-              toolbarWidgetColor: theme.colorScheme.onPrimary,
-              activeControlsWidgetColor: theme.primaryColor,
-            );
-            if (cropped != null) {
-              filesToProcess.add(cropped);
-            }
-          }
-        } else {
-          // Gallery
-          final currentValidCount = mediaState.validPhotoCount;
-          final isTargetOccupied = mediaState.selectedPhotos[index] != null;
-          final maxToPick = 6 - currentValidCount + (isTargetOccupied ? 1 : 0);
-
-          if (maxToPick <= 0) return;
-
-          final images = await repo.pickImagesFromGallery(maxImages: maxToPick);
-
-          for (final xFile in images) {
-            final file = File(xFile.path);
-            final cropped = await repo.cropImage(
-              file,
-              toolbarColor: theme.primaryColor,
-              toolbarWidgetColor: theme.colorScheme.onPrimary,
-              activeControlsWidgetColor: theme.primaryColor,
-            );
-            if (cropped != null) {
-              filesToProcess.add(cropped);
-            }
-          }
+        final files = <File>[];
+        for (final xFile in picked.take(room)) {
+          final cropped = await repo.cropImage(
+            File(xFile.path),
+            toolbarColor: theme.primaryColor,
+            toolbarWidgetColor: theme.colorScheme.onPrimary,
+            activeControlsWidgetColor: theme.primaryColor,
+          );
+          if (cropped != null) files.add(cropped);
         }
 
-        if (filesToProcess.isNotEmpty) {
-          await notifier.processAndAddFiles(filesToProcess, index);
-        }
+        await notifier.processAndAddFiles(files, index);
       } catch (e) {
-        // Handle error? or just let it fail silently/log?
-        // MediaNotifier stores error in state, but we are doing picking here.
-        // We should probably set error in state if picking fails, but Notifier.pickImages did that.
-        // Let's just catch and ignore or print for now as UI feedback comes from State.
         debugPrint("Error picking/cropping: $e");
       }
     } else if (status.isPermanentlyDenied) {
@@ -185,42 +152,14 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
     final mediaState = ref.watch(mediaProvider);
     final theme = Theme.of(context);
 
-    // -----------------------------------------------------------
-    // ✅ DIALOG LOGIC: Displays the specific Reason from Lambda
-    // -----------------------------------------------------------
+    // A rejected photo and a failed request are different problems and get
+    // different messages: one asks for another photo, the other for a retry.
     ref.listen(mediaProvider, (previous, next) {
-      // If there is an error, and it's a NEW error (not the same as before)
-      if (next.error != null && next.error != previous?.error) {
-        showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: Text(l10n.photoNotAccepted),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(l10n.couldNotVerifyPhoto),
-                const SizedBox(height: 10),
-                // "next.error" contains the string from Lambda/Provider
-                // e.g., "Face too far away" or "Group photos not allowed"
-                Text(
-                  "• ${next.error}",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.error,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(l10n.tryDifferentPhoto),
-              ],
-            ),
-            actions: [
-              ElevatedButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text(l10n.tryAgain),
-              ),
-            ],
-          ),
+      if (next.rejections.isNotEmpty) {
+        _showRejectionDialog(next.rejections);
+      } else if (next.error != null && next.error != previous?.error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_errorText(next.error!))),
         );
       }
     });
@@ -352,30 +291,98 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
     );
   }
 
-  Future<void> _handleNext(String userId) async {
-    await ref.read(mediaProvider.notifier).submitMedia(userId);
-    if (mounted) {
-      if (ref.read(mediaProvider).error == null) {
-        if (widget.isEditMode) {
-          final currentProfile = ref.read(currentUserProfileProvider).value;
-          if (currentProfile != null) {
-            final mediaState = ref.read(mediaProvider);
-            final newUrls = mediaState.selectedPhotos
-                .where((m) => m != null && !m.isLocal)
-                .map((m) => m!.url!)
-                .toList();
+  /// Turns a moderation code into something the user can act on.
+  String _reasonText(String code) => switch (code) {
+    'no_face' => l10n.photoReasonNoFace,
+    'group_photo' => l10n.photoReasonGroupPhoto,
+    'face_too_small' => l10n.photoReasonFaceTooSmall,
+    'unsafe' => l10n.photoReasonUnsafe,
+    'bad_image' => l10n.photoReasonBadImage,
+    'image_too_large' => l10n.photoReasonTooLarge,
+    _ => l10n.photoReasonUnavailable,
+  };
 
-            final updatedProfile = currentProfile.copyWith(imageUrls: newUrls);
-            ref
-                .read(currentUserProfileProvider.notifier)
-                .updateProfile(updatedProfile);
-          }
-          Navigator.pop(context);
-        } else {
-          ref.read(onboardingProvider.notifier).completeStep('photo_upload');
-        }
-      }
+  String _errorText(String code) => switch (code) {
+    'need_two_photos' => l10n.addOneMorePhoto,
+    'photos_expired' => l10n.photosExpired,
+    'load_failed' => l10n.photoLoadFailed,
+    _ => l10n.photoSaveFailed,
+  };
+
+  void _showRejectionDialog(List<PhotoRejection> rejections) {
+    // The same reason twice is one line, not two.
+    final reasons = rejections.map((r) => _reasonText(r.code)).toSet().toList();
+    final retryable = rejections.every((r) => r.retryable);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.photoNotAccepted),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              rejections.length == 1
+                  ? l10n.couldNotVerifyPhoto
+                  : l10n.photosNotAdded(rejections.length),
+            ),
+            const SizedBox(height: 10),
+            ...reasons.map(
+              (reason) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  "• $reason",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(retryable ? l10n.photoTryAgainLater : l10n.tryDifferentPhoto),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(l10n.tryAgain),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleNext(String userId) async {
+    final notifier = ref.read(mediaProvider.notifier);
+    await notifier.submitMedia(userId);
+    if (!mounted || ref.read(mediaProvider).error != null) return;
+
+    if (!widget.isEditMode) {
+      ref.read(onboardingProvider.notifier).completeStep('photo_upload');
+      return;
     }
+
+    // Re-read what was just saved: the photos are signed URLs now, including
+    // the ones added in this session, which the old code dropped.
+    await notifier.loadUserMedia(userId);
+    if (!mounted) return;
+
+    final profile = ref.read(currentUserProfileProvider).value;
+    if (profile != null) {
+      final urls = ref
+          .read(mediaProvider)
+          .selectedPhotos
+          .nonNulls
+          .map((m) => m.url)
+          .nonNulls
+          .toList();
+      ref
+          .read(currentUserProfileProvider.notifier)
+          .updateProfile(profile.copyWith(imageUrls: urls));
+    }
+    Navigator.pop(context);
   }
 
   Widget _buildPhotoSlot(
@@ -533,9 +540,10 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
                     activeControlsWidgetColor: theme.colorScheme.primary,
                   );
                   if (cropped != null && context.mounted) {
+                    // A re-crop is a new photo, so it is moderated again.
                     ref
                         .read(mediaProvider.notifier)
-                        .updateImage(index, cropped);
+                        .replaceImage(index, cropped);
                   }
                 },
               ),

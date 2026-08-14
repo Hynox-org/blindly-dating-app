@@ -150,28 +150,6 @@ class MediaRepository {
     }
   }
 
-  /// Uploads an image to Supabase Storage and returns the storage path (userId/filename.jpg)
-  Future<String> uploadImage(File file, String userId) async {
-    try {
-      final String extension = p.extension(file.path);
-      final String fileName = '${const Uuid().v4()}$extension';
-      final String filePath = '$userId/$fileName';
-
-      await _supabase.storage
-          .from('user_photos')
-          .upload(
-            filePath,
-            file,
-            fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
-          );
-
-      // Return path instead of public URL
-      return filePath;
-    } catch (e) {
-      throw Exception('Failed to upload image: $e');
-    }
-  }
-
   /// Uploads a voice intro and returns the storage path
   Future<String> uploadVoice(File file, String userId) async {
     try {
@@ -203,6 +181,39 @@ class MediaRepository {
     }
   }
 
+  /// Swaps this mode's photo rows for [rows]. Voice intro rows are untouched.
+  ///
+  /// ponytail: delete-then-insert, so a failure between the two leaves the user
+  /// with no photo rows until they submit again. A Postgres function would make
+  /// it atomic -- worth doing if this ever fails in the wild.
+  Future<void> replacePhotos(
+    String profileModeId,
+    List<Map<String, dynamic>> rows,
+  ) async {
+    try {
+      await _supabase
+          .from('profile_mode_media')
+          .delete()
+          .eq('profile_mode_id', profileModeId)
+          .eq('media_type', 'photo');
+      await saveMedia(rows);
+    } catch (e) {
+      throw Exception('Failed to save photos: $e');
+    }
+  }
+
+  /// Removes photos the user dropped, so storage does not accumulate files no
+  /// row points at. Best effort: a leftover file costs pennies, and failing the
+  /// save over one would cost the user their edit.
+  Future<void> deletePhotos(Iterable<String> paths) async {
+    if (paths.isEmpty) return;
+    try {
+      await _supabase.storage.from('user_photos').remove(paths.toList());
+    } catch (e) {
+      debugPrint('Failed to remove discarded photos: $e');
+    }
+  }
+
   /// Deletes existing voice intro entries for a user from DB.
   Future<void> deleteUserVoiceIntro(String profileModeId) async {
     try {
@@ -216,12 +227,22 @@ class MediaRepository {
     }
   }
 
-  /// Deletes an image from Supabase Storage
-  Future<void> deleteImage(String path) async {
+  /// Signs [paths] in one call and returns path -> URL. Paths storage cannot
+  /// sign are simply absent: the file is gone, which is a normal outcome once
+  /// the orphan sweep has run.
+  Future<Map<String, String>> signPhotoPaths(List<String> paths) async {
+    if (paths.isEmpty) return {};
     try {
-      await _supabase.storage.from('user_photos').remove([path]);
+      final signed = await _supabase.storage
+          .from('user_photos')
+          .createSignedUrls(paths, 60 * 60);
+      return {
+        for (final s in signed)
+          if (s.signedUrl.isNotEmpty) s.path: s.signedUrl,
+      };
     } catch (e) {
-      throw Exception('Failed to delete image: $e');
+      debugPrint('Failed to sign photo paths: $e');
+      return {};
     }
   }
 
@@ -244,28 +265,32 @@ class MediaRepository {
           .eq('media_type', 'photo')
           .order('display_order');
 
-      final List<Map<String, dynamic>> data = List<Map<String, dynamic>>.from(
-        response,
+      final data = List<Map<String, dynamic>>.from(response);
+      if (data.isEmpty) return [];
+
+      // `media_url` holds the storage path (older rows may hold a full URL).
+      // Keep it as `storage_path` -- that is what gets written back on save --
+      // and sign the whole set in one call rather than one round trip each.
+      for (final item in data) {
+        item['storage_path'] = extractPathFromUrl(
+          item['media_url'] as String,
+          'user_photos',
+        );
+      }
+
+      final byPath = await signPhotoPaths(
+        data.map((i) => i['storage_path'] as String).toList(),
       );
-
-      final List<Map<String, dynamic>> validData = [];
-
-      // Transform "media_url" (which might be a path or old URL) to a fresh Signed URL
-      for (var item in data) {
-        try {
-          final rawUrl = item['media_url'] as String;
-          final path = extractPathFromUrl(rawUrl, 'user_photos');
-          // Generate signed URL (valid for 1 hour)
-          final signedUrl = await _supabase.storage
-              .from('user_photos')
-              .createSignedUrl(path, 60 * 60);
-
-          item['media_url'] = signedUrl;
-          validData.add(item);
-        } catch (e) {
-          debugPrint('Failed to sign URL for item ${item['id']}: $e');
-          // Skip this item if signing fails (e.g. object not found)
+      final validData = <Map<String, dynamic>>[];
+      for (final item in data) {
+        final url = byPath[item['storage_path']];
+        // Skip anything storage could not sign -- the file is gone.
+        if (url == null) {
+          debugPrint('No signed URL for ${item['storage_path']}');
+          continue;
         }
+        item['media_url'] = url;
+        validData.add(item);
       }
 
       return validData;
@@ -323,7 +348,7 @@ class MediaRepository {
         if (path.contains('?')) {
           path = path.split('?').first;
         }
-        return AsyncUri.decodeComponent(path); // Ensure decoded
+        return Uri.decodeComponent(path);
       }
     }
     // If it doesn't look like a URL (no http), assume it is the path
@@ -332,11 +357,5 @@ class MediaRepository {
     }
     // Fallback: return as is, though likely won't work for signing
     return url;
-  }
-}
-
-class AsyncUri {
-  static String decodeComponent(String encodedComponent) {
-    return Uri.decodeComponent(encodedComponent);
   }
 }

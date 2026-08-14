@@ -22,7 +22,6 @@ class _GenderSelectScreenState extends ConsumerState<GenderSelectScreen> {
   AppLocalizations get l10n => AppLocalizations.of(context);
 
   String? _selectedGender; // 'male', 'female', 'non_binary'
-  final bool _showOnProfile = false;
   bool _isSaving = false;
 
   final List<Map<String, String>> _genderOptions = [

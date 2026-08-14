@@ -10,6 +10,13 @@ import '../../../../../core/utils/custom_popups.dart';
 import '../../../../../core/widgets/app_loader.dart';
 import '../../../provider/profile_provider.dart';
 
+/// A bio worth showing: long enough to say something, short enough to read.
+/// The 300 ceiling matches the input's maxLength and the column.
+bool bioIsValid(String text) {
+  final length = text.trim().length;
+  return length >= 10 && length <= 300;
+}
+
 class BioEntryScreen extends ConsumerStatefulWidget {
   final bool isEditMode;
   final String? initialBio;
@@ -128,7 +135,7 @@ class _BioEntryScreenState extends ConsumerState<BioEntryScreen> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isNextEnabled = _controller.text.trim().length >= 10 && !_isSaving;
+    final isNextEnabled = bioIsValid(_controller.text) && !_isSaving;
 
     return BaseOnboardingStepScreen(
       title: l10n.aboutYou,

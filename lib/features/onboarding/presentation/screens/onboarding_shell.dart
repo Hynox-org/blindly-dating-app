@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/onboarding_provider.dart';
@@ -82,49 +83,37 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
       );
     }
 
-    // if (state.currentStepKey == 'pre_onboarding') {
-    //   return const Scaffold(body: PreOnboardingWelcomeScreen());
-    // }
-
     if (stepConfig == null) {
       return const Scaffold(body: AppLoader());
     }
 
-    return Scaffold(
-      // appBar: AppBar(
-      //   title: Text(stepConfig.stepName),
-      //   leading: stepConfig.isSkippable
-      //       ? IconButton(
-      //           icon: const Icon(Icons.arrow_back),
-      //           onPressed: () {
-      //             if (Navigator.canPop(context)) Navigator.pop(context);
-      //           },
-      //         )
-      //       : null,
-      //   bottom: PreferredSize(
-      //     preferredSize: const Size.fromHeight(4.0),
-      //     child: LinearProgressIndicator(
-      //       value: (stepConfig.stepPosition) / 20.0, // approx total steps
-      //       backgroundColor: Colors.grey[200],
-      //       valueColor: AlwaysStoppedAnimation<Color>(
-      //         Theme.of(context).primaryColor,
-      //       ),
-      //     ),
-      //   ),
-      // ),
-      // First-run onboarding always renders in English — the user hasn't been
-      // near the language setting yet. The same step screens opened from
-      // Settings in edit mode are *not* wrapped, so those follow the app locale.
-      body: Localizations.override(
-        context: context,
-        locale: const Locale('en'),
-        child: getScreenForStep(stepConfig.stepKey, ref),
+    // System back walks the flow backwards like the on-screen arrow does.
+    // Popping is never right here: the shell is the only route, so letting the
+    // pop through would empty the navigator. At the first step there is nothing
+    // behind us, and back means leave.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final movedBack = await ref
+            .read(onboardingProvider.notifier)
+            .goToPreviousStep();
+        if (!movedBack) SystemNavigator.pop();
+      },
+      child: Scaffold(
+        // First-run onboarding always renders in English — the user hasn't been
+        // near the language setting yet. The same step screens opened from
+        // Settings in edit mode are *not* wrapped, so those follow the app locale.
+        body: Localizations.override(
+          context: context,
+          locale: const Locale('en'),
+          child: getScreenForStep(stepConfig.stepKey, ref),
+        ),
       ),
     );
   }
 
   Widget getScreenForStep(String stepKey, WidgetRef ref) {
-    debugPrint('🚦 OnboardingShell: getScreenForStep $stepKey');
     switch (stepKey) {
       case 'terms_accept':
         return const TermsScreen();

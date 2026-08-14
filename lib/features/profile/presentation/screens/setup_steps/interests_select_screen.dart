@@ -12,6 +12,15 @@ import '../../../../../core/widgets/app_loader.dart';
 import '../../../../../core/providers/connection_mode_provider.dart';
 import 'package:blindly_dating_app/features/profile/provider/profile_provider.dart';
 
+/// Interests are all-or-a-real-handful: none is fine (Skip covers that), but
+/// once the user starts picking they commit to at least five, and no more than
+/// ten so the profile stays readable.
+const int minInterests = 5;
+const int maxInterests = 10;
+
+bool interestsAreValid(int count) =>
+    count == 0 || (count >= minInterests && count <= maxInterests);
+
 class InterestsSelectScreen extends ConsumerStatefulWidget {
   final bool isEditMode;
 
@@ -35,7 +44,6 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
   @override
   void initState() {
     super.initState();
-    debugPrint('➡️ INTEREST_SCREEN: initState');
     _fetchChips();
   }
 
@@ -46,11 +54,9 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
   }
 
   Future<void> _fetchChips() async {
-    debugPrint('➡️ INTEREST_SCREEN: _fetchChips started');
     try {
       final repo = ref.read(onboardingRepositoryProvider);
       final rawChips = await repo.getInterestChips();
-      debugPrint('➡️ INTEREST_SCREEN: Raw chips fetched: ${rawChips.length}');
 
       if (!mounted) return;
 
@@ -76,7 +82,6 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
           // Skip invalid chips silently or log if needed
         }
       }
-      debugPrint('➡️ INTEREST_SCREEN: Valid chips count: ${validChips.length}');
 
       setState(() {
         _allChips = validChips;
@@ -97,7 +102,7 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
       if (_selectedChipIds.contains(chipId)) {
         _selectedChipIds.remove(chipId);
       } else {
-        if (_selectedChipIds.length >= 10) {
+        if (_selectedChipIds.length >= maxInterests) {
           showErrorPopup(context, l10n.maxTenInterests);
           return;
         }
@@ -107,58 +112,48 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
   }
 
   Future<void> _onNext() async {
-    // Validation: If any selected, must be at least 5. If 0, allowed to proceed (skip).
-    if (_selectedChipIds.isNotEmpty && _selectedChipIds.length < 5) {
+    if (!interestsAreValid(_selectedChipIds.length)) {
       showErrorPopup(context, l10n.minFiveInterests);
       return;
     }
 
+    // Bail before the spinner goes up: returning after it with nothing to save
+    // against would leave the button dead.
+    final user = ref.read(authRepositoryProvider).currentUser;
+    if (user == null) return;
+
     setState(() => _isLoading = true);
 
     try {
-      final user = ref.read(authRepositoryProvider).currentUser;
-      if (user != null) {
-        final currentMode = ref.read(connectionModeProvider).toLowerCase();
-        await ref
-            .read(onboardingRepositoryProvider)
-            .saveUserInterests(
-              user.id,
-              _selectedChipIds.toList(),
-              mode: currentMode,
-            );
+      await ref
+          .read(onboardingRepositoryProvider)
+          .saveUserInterests(
+            user.id,
+            _selectedChipIds.toList(),
+            mode: ref.read(connectionModeProvider).toLowerCase(),
+          );
+      if (!mounted) return;
 
-        if (widget.isEditMode) {
-          if (mounted) {
-            final currentProfile = ref.read(currentUserProfileProvider).value;
-            if (currentProfile != null) {
-              final updatedProfile = currentProfile.copyWith(
-                interests: _selectedChipIds.toList(),
-              );
-              ref
-                  .read(currentUserProfileProvider.notifier)
-                  .updateProfile(updatedProfile);
-
-              // Trigger trust calculation
-              await ref
-                  .read(currentUserProfileProvider.notifier)
-                  .triggerTrustCalculation();
-            }
-            Navigator.pop(context);
-          }
-          return;
-        }
-
-        if (mounted) {
+      if (widget.isEditMode) {
+        final currentProfile = ref.read(currentUserProfileProvider).value;
+        if (currentProfile != null) {
           ref
-              .read(onboardingProvider.notifier)
-              .completeStep('interests_select');
+              .read(currentUserProfileProvider.notifier)
+              .updateProfile(
+                currentProfile.copyWith(interests: _selectedChipIds.toList()),
+              );
+          await ref
+              .read(currentUserProfileProvider.notifier)
+              .triggerTrustCalculation();
         }
+        if (mounted) Navigator.pop(context);
+        return;
       }
+
+      ref.read(onboardingProvider.notifier).completeStep('interests_select');
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
         showErrorPopup(context, l10n.errorSavingInterests('$e'));
       }
     }
@@ -196,17 +191,14 @@ class _InterestsSelectScreenState extends ConsumerState<InterestsSelectScreen> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint(
-      '➡️ INTEREST_SCREEN: build calls. isLoading: $_isLoading, chips: ${_allChips.length}',
-    );
     final grouped = _groupedChips;
     final colorScheme = Theme.of(context).colorScheme;
 
-    // Check if "Continue" should be enabled based on validation
-    // User Requirement: "disable the continue btn when no interests are selected."
-    // Logic: Enabled ONLY if selected > 0.
-    final hasSelection = _selectedChipIds.isNotEmpty;
-    final isNextEnabled = !_isLoading;
+    // Continue commits a selection; Skip is how you move on without one, so
+    // Continue stays disabled until something is picked. Edit mode has no Skip
+    // button, so it must still allow clearing every interest.
+    final isNextEnabled =
+        !_isLoading && (widget.isEditMode || _selectedChipIds.isNotEmpty);
 
     return BaseOnboardingStepScreen(
       title: l10n.selectYourInterests,

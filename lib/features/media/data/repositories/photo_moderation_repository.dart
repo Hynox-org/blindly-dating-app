@@ -1,116 +1,127 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:http/http.dart' as http;
+
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-// CHECK YOUR IMPORTS:
 import '../../../../core/utils/app_logger.dart';
-import '../../../../core/utils/image_utils.dart'; // <--- Critical: Import the helper
 
-// 1. Define the possible outcomes
-enum ModerationDecision { allow, review, block, error }
+enum PhotoDecision {
+  /// Passed, and already in storage at [PhotoModerationResult.path].
+  allow,
 
-// 2. Create a Result Class to hold both Decision AND Reason
-class ModerationResult {
-  final ModerationDecision decision;
-  final String? reason; // The user-friendly message from Lambda
+  /// The photo itself is the problem. The user has to pick a different one.
+  reject,
 
-  ModerationResult(this.decision, {this.reason});
+  /// Something on our side went wrong. Worth retrying with the same photo.
+  failure,
+}
+
+/// One verdict, for one photo.
+///
+/// [code] is a stable identifier the screen turns into localized copy -- the
+/// service never sends prose, because the app speaks six languages and it
+/// speaks none of them.
+class PhotoModerationResult {
+  final PhotoDecision decision;
+  final String code;
+
+  /// Storage path inside the `user_photos` bucket. Only ever set on [allow]:
+  /// the service uploads what it accepts, so a rejected photo has no path and
+  /// nothing to hand to the database later.
+  final String? path;
+
+  const PhotoModerationResult(this.decision, this.code, {this.path});
+
+  const PhotoModerationResult.failure(this.code)
+    : decision = PhotoDecision.failure,
+      path = null;
 }
 
 class PhotoModerationRepository {
-  // Get URL from env
-  String get _apiUrl =>
-      dotenv.env['AWS_MODERATION_URL'] ??
-      "https://2v97f9v05m.execute-api.ap-south-1.amazonaws.com/prod/moderate-photo";
+  static const int maxPhotos = 6;
 
-  // CHANGED: Returns ModerationResult instead of just the Enum
-  Future<ModerationResult> moderateImage({
-    required File imageFile,
-    required String source, // 'profile', 'verification', or 'chat'
-  }) async {
+  /// Six photos, two Rekognition calls each, plus the uploads. Generous, but
+  /// finite -- the old code had no timeout and could hang behind the loader
+  /// until the user killed the app.
+  static const Duration _timeout = Duration(seconds: 45);
+
+  String? get _apiUrl => dotenv.env['AWS_MODERATION_URL'];
+
+  /// Moderates [files] in one request and returns one result per file, in
+  /// order. Never throws and never returns a short list: callers can always
+  /// zip the results back onto their photos.
+  Future<List<PhotoModerationResult>> moderate(List<File> files) async {
+    assert(files.length <= maxPhotos);
+
+    List<PhotoModerationResult> allFailed(String code) =>
+        List.generate(files.length, (_) => PhotoModerationResult.failure(code));
+
+    final url = _apiUrl;
+    if (url == null || url.isEmpty) {
+      AppLogger.error('Moderation: AWS_MODERATION_URL is not configured');
+      return allFailed('unavailable');
+    }
+
+    final token = Supabase.instance.client.auth.currentSession?.accessToken;
+    if (token == null) {
+      return allFailed('unauthorized');
+    }
+
     try {
-      AppLogger.info("🔄 Compressing and sending image...");
-
-      // 3. COMPRESS & CONVERT (Fixes 6MB Limit / 500 Error)
-      final String? base64Image = await ImageUtils.compressAndConvert(
-        imageFile,
-      );
-
-      if (base64Image == null) {
-        AppLogger.error('❌ Moderation Error: Image compression failed');
-        return ModerationResult(
-          ModerationDecision.error,
-          reason: "Could not process image.",
-        );
+      final images = <String>[];
+      for (final file in files) {
+        images.add(base64Encode(await file.readAsBytes()));
       }
 
-      // 4. Prepare the JSON Body
-      final body = jsonEncode({
-        "images": [base64Image],
-        "source": source,
-      });
-
-      // 5. Send POST Request to AWS
-      final response = await http.post(
-        Uri.parse(_apiUrl),
-        headers: {"Content-Type": "application/json"},
-        body: body,
-      );
+      final response = await http
+          .post(
+            Uri.parse(url),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+            body: jsonEncode({'images': images}),
+          )
+          .timeout(_timeout);
 
       if (response.statusCode != 200) {
-        AppLogger.error('❌ Moderation API Error: ${response.body}');
-        return ModerationResult(
-          ModerationDecision.error,
-          reason: "Server Error: ${response.statusCode}",
+        AppLogger.error('Moderation: HTTP ${response.statusCode}');
+        return allFailed(
+          response.statusCode == 401 ? 'unauthorized' : 'unavailable',
         );
       }
 
-      // 6. Parse the Result
-      final List<dynamic> jsonResponse = jsonDecode(response.body);
-      if (jsonResponse.isEmpty) {
-        return ModerationResult(
-          ModerationDecision.error,
-          reason: "Empty response from server.",
-        );
+      final results =
+          (jsonDecode(response.body) as Map<String, dynamic>)['results']
+              as List<dynamic>;
+      if (results.length != files.length) {
+        AppLogger.error('Moderation: expected ${files.length} results');
+        return allFailed('unavailable');
       }
 
-      final result = jsonResponse[0];
-      final String decisionStr = result['decision'] ?? 'BLOCK';
-
-      // CAPTURE THE REASON (This comes from your Lambda)
-      final String? reasonStr = result['reason'];
-
-      if (decisionStr == 'BLOCK') {
-        AppLogger.info('❌ BLOCKED: $reasonStr');
-      } else {
-        AppLogger.info('✅ ALLOWED');
-      }
-
-      // 7. Map String to Enum
-      ModerationDecision decisionEnum;
-      switch (decisionStr) {
-        case 'ALLOW':
-          decisionEnum = ModerationDecision.allow;
-          break;
-        case 'REVIEW':
-          decisionEnum = ModerationDecision.review;
-          break;
-        case 'BLOCK':
-          decisionEnum = ModerationDecision.block;
-          break;
-        default:
-          decisionEnum = ModerationDecision.block;
-      }
-
-      // 8. Return the full result object
-      return ModerationResult(decisionEnum, reason: reasonStr);
+      return results.map(_parse).toList();
     } catch (e) {
-      AppLogger.error('Moderation Exception', e);
-      return ModerationResult(
-        ModerationDecision.error,
-        reason: "Connection failed. Please check internet.",
-      );
+      AppLogger.error('Moderation request failed', e);
+      return allFailed('unavailable');
+    }
+  }
+
+  PhotoModerationResult _parse(dynamic raw) {
+    final result = raw as Map<String, dynamic>;
+    final code = result['code'] as String? ?? 'unavailable';
+    switch (result['decision']) {
+      case 'ALLOW':
+        final path = result['path'] as String?;
+        // An acceptance without a path is not an acceptance -- there is
+        // nothing to save.
+        if (path == null) return const PhotoModerationResult.failure('unavailable');
+        return PhotoModerationResult(PhotoDecision.allow, code, path: path);
+      case 'REJECT':
+        return PhotoModerationResult(PhotoDecision.reject, code);
+      default:
+        return PhotoModerationResult.failure(code);
     }
   }
 }

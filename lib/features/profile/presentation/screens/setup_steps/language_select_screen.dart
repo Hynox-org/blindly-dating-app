@@ -8,6 +8,9 @@ import '../../../../onboarding/data/repositories/onboarding_repository.dart';
 import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
 import '../../../../../core/utils/custom_popups.dart';
 
+/// At least one language, or there is nothing to match people on.
+bool languagesAreValid(int count) => count > 0;
+
 class LanguageSelectScreen extends ConsumerStatefulWidget {
   final bool isEditMode;
 
@@ -151,7 +154,7 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
       nextLabel: widget.isEditMode
           ? 'Save'
           : l10n.saveChanges, // Matches UI reference button text style roughly
-      isNextEnabled: _selectedLanguageCodes.isNotEmpty && !_isSaving,
+      isNextEnabled: languagesAreValid(_selectedLanguageCodes.length) && !_isSaving,
       isLoading: _isSaving,
       isEditMode: widget.isEditMode,
       onNext: _handleNext,

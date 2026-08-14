@@ -1,10 +1,8 @@
 {
   "@@locale": "ta",
-
   "settingsLanguage": "மொழி",
   "appLanguageTitle": "ஆப்ஸ் மொழி",
   "systemDefault": "சாதன இயல்புநிலை",
-
   "authTitlePhone": "உங்கள் எண்ணைச் சொல்லுங்கள்",
   "authTitleVerifyNumber": "உங்கள் எண்ணைச் சரிபார்க்கவும்",
   "authTitleEmail": "மின்னஞ்சல் மூலம் உள்நுழைக",
@@ -13,19 +11,16 @@
   "loginTagline": "அழகான வாழ்க்கைக்குள் நுழையுங்கள்",
   "continueWithGoogle": "Google மூலம் தொடரவும்",
   "continueLabel": "தொடரவும்",
-
   "termsSignupPrefix": "பதிவு செய்வதன் மூலம், நீங்கள் எங்கள் ",
   "termsContinuePrefix": "தொடர்வதன் மூலம், நீங்கள் எங்கள் ",
   "termsWord": "விதிமுறைகளை",
   "termsBridge": " ஏற்கிறீர்கள். உங்கள் தரவை நாங்கள் எவ்வாறு பயன்படுத்துகிறோம் என்பதை எங்கள் ",
   "privacyPolicyWord": "தனியுரிமைக் கொள்கையில்",
   "termsSuffix": " பார்க்கவும்.",
-
   "phoneRationale": "Blindly-இல் உள்ள அனைவரும் உண்மையானவர்கள் என்பதை உறுதிசெய்யவே தொலைபேசி எண்ணைப் பயன்படுத்துகிறோம்",
   "countryLabel": "நாடு",
   "phoneNumberLabel": "தொலைபேசி எண்",
   "phoneHint": "எ.கா. 9876543210",
-
   "otpSentPhone": "{phone} க்கு நாங்கள் அனுப்பிய குறியீட்டை உள்ளிடவும். ",
   "changeNumber": "எண்ணை மாற்று",
   "otpSentEmail": "{email} க்கு மின்னஞ்சலில் அனுப்பிய குறியீட்டை உள்ளிடவும். ",
@@ -33,14 +28,12 @@
   "resendCode": "குறியீட்டை மீண்டும் அனுப்பு",
   "codeArrivesIn": "குறியீடு {seconds} வினாடிகளில் வரும்",
   "otpSentSuccess": "OTP அனுப்பப்பட்டது",
-
   "loginDetailsSubtitle": "உங்கள் உள்நுழைவு விவரங்களை கீழே உள்ளிடவும்",
   "emailLabel": "மின்னஞ்சல்",
   "emailHint": "Abcd@gmail.com",
   "passwordLabel": "கடவுச்சொல்",
   "passwordHint": "abc@123",
   "forgotPassword": "கடவுச்சொல்லை மறந்துவிட்டீர்களா?",
-
   "errEnterPhone": "உங்கள் தொலைபேசி எண்ணை உள்ளிடவும்",
   "errPhoneDigitsOnly": "தொலைபேசி எண்ணில் இலக்கங்கள் மட்டுமே இருக்க வேண்டும்",
   "errInvalidPhone": "சரியான தொலைபேசி எண்ணை உள்ளிடவும்",
@@ -56,7 +49,6 @@
   "errGoogleSignIn": "Google உள்நுழைவு தோல்வி: {error}",
   "errLoginFailed": "உள்நுழைவு தோல்வி: {error}",
   "errGeneric": "பிழை: {error}",
-
   "save": "சேமி",
   "skip": "தவிர்",
   "add": "சேர்",
@@ -75,7 +67,6 @@
   "somethingWentWrong": "ஏதோ தவறு நடந்தது",
   "userNotLoggedIn": "பயனர் உள்நுழையவில்லை",
   "unknown": "தெரியவில்லை",
-
   "typesOfConnections": "தொடர்பு வகைகள்",
   "connectionQuestion": "Blindly-இல் எந்த வகையான தொடர்பைத் தேடுகிறீர்கள்?",
   "connectionSubtitle": "டேட்டிங் மற்றும் காதல், புதிய நண்பர்கள், அல்லது வணிகம் மட்டுமா? இதை எப்போது வேண்டுமானாலும் மாற்றலாம்.",
@@ -109,7 +100,6 @@
   "goBack": "பின் செல்",
   "profilePreview": "சுயவிவர முன்னோட்டம்",
   "profileTitle": "சுயவிவரம்",
-
   "voiceIntro": "குரல் அறிமுகம்",
   "bioTitle": "சுயவிவரக் குறிப்பு",
   "askAboutMyBio": "என் சுயவிவரக் குறிப்பைப் பற்றிக் கேளுங்கள்!",
@@ -154,7 +144,6 @@
   "bestValue": "சிறந்த மதிப்பு",
   "getWithPlan": "{plan} ஐ {price} க்கு பெறுங்கள்",
   "offerEndsIn": "சலுகை முடிய {time}",
-
   "chats": "அரட்டைகள்",
   "conversations": "உரையாடல்கள்",
   "recentMatches": "சமீபத்திய பொருத்தங்கள்",
@@ -233,7 +222,6 @@
   "gifs": "GIF",
   "stickers": "ஸ்டிக்கர்கள்",
   "searchGiphy": "GIPHY இல் தேடு",
-
   "themOnly": "அவர் மட்டும்",
   "tryAgain": "மீண்டும் முயற்சி",
   "icebreakerSmile": "சமீபத்தில் எந்தச் சிறிய விஷயம் உங்களைப் புன்னகைக்க வைத்தது?",
@@ -242,9 +230,7 @@
   "openingMoveCushions": "நானும் நான் செய்த மெத்தைகளும்.\nஎப்படி இருக்கு?",
   "openingMove90s": "என் 90s தோற்றத்தை உங்களால் வெல்ல முடியாது",
   "openingMovePetName": "என் செல்லப்பிராணியின் பெயரை யூகிக்கிறீர்களா?",
-
   "viewProfile": "சுயவிவரத்தைப் பார்",
-
   "likedYou": "உங்களை விரும்பியவர்கள்",
   "matchLabel": "பொருத்தம்",
   "passLabel": "தவிர்",
@@ -285,7 +271,6 @@
   "breakdownTitle": "விவரம்",
   "goesBothWays": "இது இருபுறமும் பொருந்துகிறதா?",
   "eachFitsOther": "நீங்கள் ஒருவருக்கொருவர் தேடுவதற்குப் பொருந்துகிறீர்கள்: {band}.",
-
   "sectionConnections": "தொடர்புகள்",
   "typeOfConnection": "தொடர்பு வகை",
   "dateMode": "டேட் பயன்முறை",
@@ -308,7 +293,6 @@
   "about": "பற்றி",
   "logout": "வெளியேறு",
   "deleteAccount": "கணக்கை நீக்கு",
-
   "vEnglish": "ஆங்கிலம்",
   "vHindi": "இந்தி",
   "vTamil": "தமிழ்",
@@ -368,7 +352,6 @@
   "vEveryone": "அனைவரும்",
   "vMale": "ஆண்",
   "vFemale": "பெண்",
-
   "vFunCasualDates": "சுவாரஸ்யமான, சாதாரண டேட்",
   "vLifePartner": "வாழ்க்கைத் துணை",
   "vLongTermRelationship": "நீண்ட கால உறவு",
@@ -416,7 +399,6 @@
   "vOpenToKids": "குழந்தைகளுக்குத் தயார்",
   "vNotSure": "உறுதியாகத் தெரியவில்லை",
   "vPreferNotToSay": "சொல்ல விரும்பவில்லை",
-
   "vAries": "மேஷம்",
   "vTaurus": "ரிஷபம்",
   "vGemini": "மிதுனம்",
@@ -457,7 +439,6 @@
   "vGratitude": "நன்றியுணர்வு",
   "vCuriosity": "ஆர்வம்",
   "vEmotionalIntelligence": "உணர்ச்சி நுண்ணறிவு",
-
   "datingPreference": "டேட்டிங் விருப்பம்",
   "bffPreference": "BFF விருப்பம்",
   "whoWouldYouDate": "யாருடன் டேட் செய்ய விரும்புகிறீர்கள்?",
@@ -484,7 +465,6 @@
   "clearFilters": "வடிகட்டிகளை அழி",
   "filterByInterests": "உங்கள் ஆர்வங்களால் வடிகட்டு",
   "showMe": "எனக்குக் காட்டு",
-
   "errUpdateFailed": "புதுப்பிக்க முடியவில்லை: {error}",
   "religionViewTitle": "மதப் பார்வை",
   "sensitiveInfoNote": "இது உங்கள் சுயவிவரத்தில் தோன்றும் முக்கியமான தகவல். இது முற்றிலும் விருப்பத்தேர்வு.",
@@ -526,7 +506,6 @@
   "searchLanguages": "மொழிகளைத் தேடு",
   "suggested": "பரிந்துரைக்கப்பட்டவை",
   "allLanguages": "அனைத்து மொழிகளும்",
-
   "errorLoadingProfile": "சுயவிவரத்தை ஏற்ற முடியவில்லை",
   "percentTrust": "{percent}% நம்பிக்கை",
   "profileCompleted": "சுயவிவரம் நிறைவு",
@@ -559,7 +538,6 @@
   "improveYourProfile": "உங்கள் சுயவிவரத்தை மேம்படுத்து",
   "errorSavingHometown": "சொந்த ஊரைச் சேமிப்பதில் பிழை: {error}",
   "searchCity": "நகரத்தைத் தேடு",
-
   "aboutYou": "உங்களைப் பற்றி",
   "bioPrompt": "கூச்சப்பட வேண்டாம்! ஒரு சிறு குறிப்பில் உங்கள் ஆளுமையைப் பகிர இதுவே வாய்ப்பு.",
   "textHereHint": "இங்கே எழுதுங்கள்.....",
@@ -606,7 +584,6 @@
   "addPrompt": "கேள்வியைச் சேர்",
   "failedToLoadPrompts": "கேள்விகளை ஏற்ற முடியவில்லை: {error}",
   "errorSavingPrompts": "கேள்விகளைச் சேமிப்பதில் பிழை: {error}",
-
   "communityGuidelines": "சமூக வழிகாட்டுதல்கள்",
   "agreeAndContinue": "ஏற்று தொடரவும்",
   "termsByContinuePrefix": "தொடர்வதன் மூலம், நீங்கள் எங்கள் ",
@@ -669,7 +646,6 @@
   "ticketsAndReservations": "உங்கள் டிக்கெட்டுகளும் முன்பதிவுகளும்",
   "upcomingEvents": "வரவிருக்கும் நிகழ்வுகள்",
   "eventsYouAreInterested": "நீங்கள் ஆர்வம் காட்டிய நிகழ்வுகள்",
-
   "incomingVideoCall": "உள்வரும் காணொலி அழைப்பு",
   "incomingVoiceCall": "உள்வரும் குரல் அழைப்பு",
   "ringing": "ஒலிக்கிறது...",
@@ -695,7 +671,6 @@
   "great": "நன்று!",
   "peoples": "நபர்கள்",
   "chatTab": "அரட்டை",
-
   "editProfileTitle": "சுயவிவரத்தைத் திருத்து",
   "percentComplete": "{percent}% நிறைவு",
   "profileStrength": "சுயவிவர வலிமை",
@@ -757,7 +732,6 @@
   "verified": "சரிபார்க்கப்பட்டது",
   "invalidLocation": "தவறான இருப்பிடம்",
   "locationFound": "இருப்பிடம் கண்டறியப்பட்டது",
-
   "alreadyVerified": "நீங்கள் ஏற்கனவே சரிபார்க்கப்பட்டுள்ளீர்கள்",
   "verificationSuccessful": "சரிபார்ப்பு வெற்றி",
   "documentNotVerified": "ஆவணத்தைச் சரிபார்க்க முடியவில்லை.",
@@ -815,6 +789,24 @@
   "failedToStartRecording": "பதிவைத் தொடங்க முடியவில்லை",
   "failedToStopRecording": "பதிவை நிறுத்த முடியவில்லை",
   "failedToPlayAudio": "ஒலியை இயக்க முடியவில்லை",
-
-  "navLikes": "லைக்ஸ்"
+  "navLikes": "லைக்ஸ்",
+  "photoReasonNoFace": "தெளிவான முகம் கிடைக்கவில்லை. முகம் தெரியும் படத்தைப் பயன்படுத்தவும்.",
+  "photoReasonGroupPhoto": "இந்தப் படத்தில் ஒருவருக்கு மேல் உள்ளனர். தனிப் படத்தைப் பயன்படுத்தவும்.",
+  "photoReasonFaceTooSmall": "இந்தப் படத்தில் உங்கள் முகம் மிகச் சிறியதாக உள்ளது. அருகில் எடுக்கவும்.",
+  "photoReasonUnsafe": "இந்தப் படம் எங்கள் விதிமுறைகளுக்கு உட்படவில்லை.",
+  "photoReasonBadImage": "இந்தக் கோப்பைப் படிக்க முடியவில்லை. JPG அல்லது PNG முயற்சிக்கவும்.",
+  "photoReasonTooLarge": "இந்தப் படம் மிகப் பெரியது. சிறிய படத்தை முயற்சிக்கவும்.",
+  "photoReasonUnavailable": "தற்போது இந்தப் படத்தைச் சரிபார்க்க முடியவில்லை.",
+  "photoTryAgainLater": "இணைப்பைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.",
+  "photoLoadFailed": "உங்கள் படங்களை ஏற்ற முடியவில்லை.",
+  "photoSaveFailed": "படங்களைச் சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
+  "photosNotAdded": "{count} படங்களைச் சேர்க்க முடியவில்லை:",
+  "@photosNotAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "photosExpired": "சில படங்களின் கால அவகாசம் முடிந்ததால் நீக்கப்பட்டன. மீண்டும் சேர்க்கவும்."
 }

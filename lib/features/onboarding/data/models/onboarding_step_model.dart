@@ -1,3 +1,28 @@
+/// A step is behind the user once it is finished or deliberately skipped.
+bool isStepDone(Object? status) => status == 'completed' || status == 'skipped';
+
+/// Reads the `steps_progress` column, which is null for a user who has not
+/// started and a JSON object after that.
+Map<String, dynamic> parseStepProgress(Object? raw) =>
+    raw == null ? {} : Map<String, dynamic>.from(raw as Map);
+
+/// The first step the user still has to face, or null when none are left.
+///
+/// The shell asks this to decide where to send the user, and the completion
+/// check asks it to decide whether a 'complete' flag is telling the truth.
+/// Same question, so it lives in one place.
+OnboardingStep? nextIncompleteStep(
+  List<OnboardingStep> steps,
+  Map<String, dynamic> progress,
+) {
+  final ordered = [...steps]
+    ..sort((a, b) => a.stepPosition.compareTo(b.stepPosition));
+  for (final step in ordered) {
+    if (!isStepDone(progress[step.stepKey])) return step;
+  }
+  return null;
+}
+
 class OnboardingStep {
   final String id;
   final String stepKey;

@@ -1,10 +1,8 @@
 {
   "@@locale": "bn",
-
   "settingsLanguage": "ভাষা",
   "appLanguageTitle": "অ্যাপের ভাষা",
   "systemDefault": "সিস্টেম ডিফল্ট",
-
   "authTitlePhone": "আপনার নম্বরটি দিন",
   "authTitleVerifyNumber": "আপনার নম্বর যাচাই করুন",
   "authTitleEmail": "ইমেইল দিয়ে লগইন করুন",
@@ -13,19 +11,16 @@
   "loginTagline": "একটি সুন্দর জীবনে লগইন করুন",
   "continueWithGoogle": "Google দিয়ে চালিয়ে যান",
   "continueLabel": "চালিয়ে যান",
-
   "termsSignupPrefix": "সাইন আপ করে, আপনি আমাদের ",
   "termsContinuePrefix": "চালিয়ে গিয়ে, আপনি আমাদের ",
   "termsWord": "শর্তাবলীতে",
   "termsBridge": " সম্মত হচ্ছেন। আমরা আপনার ডেটা কীভাবে ব্যবহার করি তা দেখুন আমাদের ",
   "privacyPolicyWord": "গোপনীয়তা নীতিতে",
   "termsSuffix": "।",
-
   "phoneRationale": "Blindly-তে সবাই আসল কিনা তা নিশ্চিত করতেই আমরা ফোন নম্বর ব্যবহার করি",
   "countryLabel": "দেশ",
   "phoneNumberLabel": "ফোন নম্বর",
   "phoneHint": "যেমন 9876543210",
-
   "otpSentPhone": "{phone} নম্বরে পাঠানো কোডটি লিখুন। ",
   "changeNumber": "নম্বর পরিবর্তন করুন",
   "otpSentEmail": "{email} ঠিকানায় ইমেইলে পাঠানো কোডটি লিখুন। ",
@@ -33,14 +28,12 @@
   "resendCode": "কোড আবার পাঠান",
   "codeArrivesIn": "কোডটি {seconds} সেকেন্ডের মধ্যে আসবে",
   "otpSentSuccess": "OTP পাঠানো হয়েছে",
-
   "loginDetailsSubtitle": "অনুগ্রহ করে নিচে আপনার লগইন তথ্য দিন",
   "emailLabel": "ইমেইল",
   "emailHint": "Abcd@gmail.com",
   "passwordLabel": "পাসওয়ার্ড",
   "passwordHint": "abc@123",
   "forgotPassword": "পাসওয়ার্ড ভুলে গেছেন?",
-
   "errEnterPhone": "অনুগ্রহ করে আপনার ফোন নম্বর লিখুন",
   "errPhoneDigitsOnly": "ফোন নম্বরে শুধু সংখ্যা থাকতে হবে",
   "errInvalidPhone": "অনুগ্রহ করে একটি বৈধ ফোন নম্বর লিখুন",
@@ -56,7 +49,6 @@
   "errGoogleSignIn": "Google সাইন-ইন ব্যর্থ: {error}",
   "errLoginFailed": "লগইন ব্যর্থ: {error}",
   "errGeneric": "ত্রুটি: {error}",
-
   "save": "সংরক্ষণ করুন",
   "skip": "এড়িয়ে যান",
   "add": "যোগ করুন",
@@ -75,7 +67,6 @@
   "somethingWentWrong": "কিছু ভুল হয়েছে",
   "userNotLoggedIn": "ব্যবহারকারী লগইন করেননি",
   "unknown": "অজানা",
-
   "typesOfConnections": "সংযোগের ধরন",
   "connectionQuestion": "Blindly-তে আপনি কী ধরনের সংযোগ খুঁজছেন?",
   "connectionSubtitle": "ডেট ও রোমান্স, নতুন বন্ধু, নাকি শুধুই ব্যবসা? আপনি যেকোনো সময় এটি বদলাতে পারেন।",
@@ -109,7 +100,6 @@
   "goBack": "ফিরে যান",
   "profilePreview": "প্রোফাইল প্রিভিউ",
   "profileTitle": "প্রোফাইল",
-
   "voiceIntro": "ভয়েস পরিচিতি",
   "bioTitle": "বায়ো",
   "askAboutMyBio": "আমার বায়ো নিয়ে জিজ্ঞেস করুন!",
@@ -154,7 +144,6 @@
   "bestValue": "সেরা মূল্য",
   "getWithPlan": "{plan} নিন {price}-এ",
   "offerEndsIn": "অফার শেষ হবে {time}-এ",
-
   "chats": "চ্যাট",
   "conversations": "কথোপকথন",
   "recentMatches": "সাম্প্রতিক ম্যাচ",
@@ -233,7 +222,6 @@
   "gifs": "GIF",
   "stickers": "স্টিকার",
   "searchGiphy": "GIPHY-তে খুঁজুন",
-
   "themOnly": "শুধু তাদের",
   "tryAgain": "আবার চেষ্টা করুন",
   "icebreakerSmile": "সম্প্রতি কোন ছোট বিষয় আপনাকে হাসিয়েছে?",
@@ -242,9 +230,7 @@
   "openingMoveCushions": "আমি আর আমার বানানো কুশন।\nকেমন লাগল?",
   "openingMove90s": "বাজি ধরে বলছি, আমার 90s লুক আপনি হারাতে পারবেন না",
   "openingMovePetName": "আমার পোষ্যের নাম বলতে পারেন?",
-
   "viewProfile": "প্রোফাইল দেখুন",
-
   "likedYou": "আপনাকে লাইক করেছে",
   "matchLabel": "ম্যাচ",
   "passLabel": "পাস",
@@ -285,7 +271,6 @@
   "breakdownTitle": "বিশ্লেষণ",
   "goesBothWays": "এটা কি দুদিক থেকেই?",
   "eachFitsOther": "আপনারা দুজনেই একে অপরের খোঁজের সাথে মেলেন: {band}।",
-
   "sectionConnections": "সংযোগ",
   "typeOfConnection": "সংযোগের ধরন",
   "dateMode": "ডেট মোড",
@@ -308,7 +293,6 @@
   "about": "সম্পর্কে",
   "logout": "লগ আউট",
   "deleteAccount": "অ্যাকাউন্ট মুছুন",
-
   "vEnglish": "ইংরেজি",
   "vHindi": "হিন্দি",
   "vTamil": "তামিল",
@@ -368,7 +352,6 @@
   "vEveryone": "সবাই",
   "vMale": "পুরুষ",
   "vFemale": "নারী",
-
   "vFunCasualDates": "মজার, হালকা ডেট",
   "vLifePartner": "জীবনসঙ্গী",
   "vLongTermRelationship": "দীর্ঘমেয়াদি সম্পর্ক",
@@ -416,7 +399,6 @@
   "vOpenToKids": "সন্তানে আপত্তি নেই",
   "vNotSure": "নিশ্চিত নই",
   "vPreferNotToSay": "বলতে চাই না",
-
   "vAries": "মেষ",
   "vTaurus": "বৃষ",
   "vGemini": "মিথুন",
@@ -457,7 +439,6 @@
   "vGratitude": "কৃতজ্ঞতা",
   "vCuriosity": "কৌতূহল",
   "vEmotionalIntelligence": "আবেগীয় বুদ্ধিমত্তা",
-
   "datingPreference": "ডেটিং পছন্দ",
   "bffPreference": "BFF পছন্দ",
   "whoWouldYouDate": "আপনি কার সাথে ডেট করতে চান?",
@@ -484,7 +465,6 @@
   "clearFilters": "ফিল্টার মুছুন",
   "filterByInterests": "আপনার আগ্রহ দিয়ে ফিল্টার করুন",
   "showMe": "আমাকে দেখান",
-
   "errUpdateFailed": "আপডেট করা যায়নি: {error}",
   "religionViewTitle": "ধর্মীয় দৃষ্টিভঙ্গি",
   "sensitiveInfoNote": "এটি স্পর্শকাতর তথ্য যা আপনার প্রোফাইলে দেখা যাবে। এটি সম্পূর্ণ ঐচ্ছিক।",
@@ -526,7 +506,6 @@
   "searchLanguages": "ভাষা খুঁজুন",
   "suggested": "প্রস্তাবিত",
   "allLanguages": "সব ভাষা",
-
   "errorLoadingProfile": "প্রোফাইল লোড করা যায়নি",
   "percentTrust": "{percent}% ট্রাস্ট",
   "profileCompleted": "প্রোফাইল সম্পূর্ণ",
@@ -559,7 +538,6 @@
   "improveYourProfile": "আপনার প্রোফাইল উন্নত করুন",
   "errorSavingHometown": "নিজ শহর সংরক্ষণে সমস্যা: {error}",
   "searchCity": "শহর খুঁজুন",
-
   "aboutYou": "আপনার সম্পর্কে",
   "bioPrompt": "লজ্জা পাবেন না! ছোট্ট একটা বায়োতে নিজের ব্যক্তিত্ব তুলে ধরার এটাই সুযোগ।",
   "textHereHint": "এখানে লিখুন.....",
@@ -606,7 +584,6 @@
   "addPrompt": "প্রম্পট যোগ করুন",
   "failedToLoadPrompts": "প্রম্পট লোড করা যায়নি: {error}",
   "errorSavingPrompts": "প্রম্পট সংরক্ষণে সমস্যা: {error}",
-
   "communityGuidelines": "কমিউনিটি নির্দেশিকা",
   "agreeAndContinue": "সম্মত ও চালিয়ে যান",
   "termsByContinuePrefix": "চালিয়ে গিয়ে, আপনি আমাদের ",
@@ -669,7 +646,6 @@
   "ticketsAndReservations": "আপনার টিকিট ও রিজার্ভেশন",
   "upcomingEvents": "আসন্ন ইভেন্ট",
   "eventsYouAreInterested": "আপনার আগ্রহের ইভেন্ট",
-
   "incomingVideoCall": "আসন্ন ভিডিও কল",
   "incomingVoiceCall": "আসন্ন ভয়েস কল",
   "ringing": "রিং হচ্ছে...",
@@ -695,7 +671,6 @@
   "great": "দারুণ!",
   "peoples": "মানুষ",
   "chatTab": "চ্যাট",
-
   "editProfileTitle": "প্রোফাইল সম্পাদনা",
   "percentComplete": "{percent}% সম্পূর্ণ",
   "profileStrength": "প্রোফাইলের শক্তি",
@@ -757,7 +732,6 @@
   "verified": "যাচাইকৃত",
   "invalidLocation": "অবৈধ লোকেশন",
   "locationFound": "লোকেশন পাওয়া গেছে",
-
   "alreadyVerified": "আপনি ইতিমধ্যে যাচাইকৃত",
   "verificationSuccessful": "যাচাইকরণ সফল",
   "documentNotVerified": "নথি যাচাই করা যায়নি।",
@@ -815,6 +789,24 @@
   "failedToStartRecording": "রেকর্ডিং শুরু করা যায়নি",
   "failedToStopRecording": "রেকর্ডিং থামানো যায়নি",
   "failedToPlayAudio": "অডিও চালানো যায়নি",
-
-  "navLikes": "লাইক"
+  "navLikes": "লাইক",
+  "photoReasonNoFace": "কোনো স্পষ্ট মুখ পাওয়া যায়নি। মুখ দেখা যায় এমন ছবি দিন।",
+  "photoReasonGroupPhoto": "এই ছবিতে একাধিক ব্যক্তি আছেন। একার ছবি দিন।",
+  "photoReasonFaceTooSmall": "এই ছবিতে আপনার মুখ খুব ছোট। কাছে থেকে তুলুন বা ক্রপ করুন।",
+  "photoReasonUnsafe": "এই ছবি আমাদের নির্দেশিকা মেনে চলে না।",
+  "photoReasonBadImage": "ফাইলটি পড়া যায়নি। JPG বা PNG দিয়ে চেষ্টা করুন।",
+  "photoReasonTooLarge": "ছবিটি খুব বড়। ছোট ছবি দিন।",
+  "photoReasonUnavailable": "এই মুহূর্তে ছবিটি যাচাই করা যায়নি।",
+  "photoTryAgainLater": "কানেকশন পরীক্ষা করে আবার চেষ্টা করুন।",
+  "photoLoadFailed": "আপনার ছবি লোড করা যায়নি।",
+  "photoSaveFailed": "ছবি সেভ করা যায়নি। আবার চেষ্টা করুন।",
+  "photosNotAdded": "{count}টি ছবি যোগ করা যায়নি:",
+  "@photosNotAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "photosExpired": "কিছু ছবির মেয়াদ শেষ হয়ে যাওয়ায় সরিয়ে ফেলা হয়েছে। অনুগ্রহ করে আবার যোগ করুন।"
 }

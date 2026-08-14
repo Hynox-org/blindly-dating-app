@@ -42,6 +42,20 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
     this.footer,
   });
 
+  /// Where back goes when a step does not say.
+  ///
+  /// Opened from Settings, these screens sit on top of something and popping is
+  /// right. During onboarding the shell is pushed with `pushAndRemoveUntil`, so
+  /// it is the only route -- popping it empties the navigator and leaves a
+  /// black screen. There, back means the previous step.
+  void _goBack(BuildContext context, WidgetRef ref) {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      ref.read(onboardingProvider.notifier).goToPreviousStep();
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final onboardingState = ref.watch(onboardingProvider);
@@ -67,7 +81,7 @@ class BaseOnboardingStepScreen extends ConsumerWidget {
                 children: [
                   if (showBackButton)
                     IconButton(
-                      onPressed: onBack ?? () => Navigator.of(context).pop(),
+                      onPressed: onBack ?? () => _goBack(context, ref),
                       icon: const Icon(Icons.arrow_back),
                     ),
                   const Spacer(),

@@ -4845,6 +4845,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Likes'**
   String get navLikes;
+
+  /// No description provided for @photoReasonNoFace.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not find a clear face. Use a photo where your face is visible.'**
+  String get photoReasonNoFace;
+
+  /// No description provided for @photoReasonGroupPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'This photo has more than one person. Use a solo photo.'**
+  String get photoReasonGroupPhoto;
+
+  /// No description provided for @photoReasonFaceTooSmall.
+  ///
+  /// In en, this message translates to:
+  /// **'Your face is too small in this photo. Move closer or crop in.'**
+  String get photoReasonFaceTooSmall;
+
+  /// No description provided for @photoReasonUnsafe.
+  ///
+  /// In en, this message translates to:
+  /// **'This photo does not meet our content guidelines.'**
+  String get photoReasonUnsafe;
+
+  /// No description provided for @photoReasonBadImage.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not read this file. Try a JPG or PNG photo.'**
+  String get photoReasonBadImage;
+
+  /// No description provided for @photoReasonTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'This photo is too large. Try a smaller one.'**
+  String get photoReasonTooLarge;
+
+  /// No description provided for @photoReasonUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not check this photo right now.'**
+  String get photoReasonUnavailable;
+
+  /// No description provided for @photoTryAgainLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Please check your connection and try again.'**
+  String get photoTryAgainLater;
+
+  /// No description provided for @photoLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load your photos.'**
+  String get photoLoadFailed;
+
+  /// No description provided for @photoSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save your photos. Please try again.'**
+  String get photoSaveFailed;
+
+  /// No description provided for @photosNotAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} photos could not be added:'**
+  String photosNotAdded(int count);
+
+  /// No description provided for @photosExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Some photos expired and were removed. Please add them again.'**
+  String get photosExpired;
 }
 
 class _AppLocalizationsDelegate

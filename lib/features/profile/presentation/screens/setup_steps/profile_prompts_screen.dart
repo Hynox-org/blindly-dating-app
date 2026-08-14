@@ -13,6 +13,13 @@ import '../../../../../core/widgets/app_loader.dart';
 import '../../../../../core/providers/connection_mode_provider.dart';
 import 'package:blindly_dating_app/features/profile/provider/profile_provider.dart';
 
+/// Onboarding asks for exactly three prompts. Editing later is looser -- the
+/// user may keep fewer, but not none, or the section would render empty.
+const int requiredPrompts = 3;
+
+bool promptsAreValid(int count, {required bool isEditMode}) =>
+    isEditMode ? count > 0 : count == requiredPrompts;
+
 class ProfilePromptsScreen extends ConsumerStatefulWidget {
   final bool isEditMode;
   final String? initialTemplateId;
@@ -148,7 +155,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
       } else {
         // Can only expand if < 3 selected OR if we are editing the one already selected
         final isAlreadySelected = _isTemplateSelected(template.id);
-        if (_selectedPrompts.length >= 3 && !isAlreadySelected) {
+        if (_selectedPrompts.length >= requiredPrompts && !isAlreadySelected) {
           showErrorPopup(context, l10n.maxThreePrompts);
           return;
         }
@@ -394,9 +401,10 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
                   height: 56,
                   child: ElevatedButton(
                     onPressed:
-                        (widget.isEditMode
-                            ? _selectedPrompts.isNotEmpty
-                            : _selectedPrompts.length == 3)
+                        promptsAreValid(
+                          _selectedPrompts.length,
+                          isEditMode: widget.isEditMode,
+                        )
                         ? _handleNext
                         : null,
                     style: ElevatedButton.styleFrom(
