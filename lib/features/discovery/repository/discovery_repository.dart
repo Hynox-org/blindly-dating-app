@@ -23,43 +23,54 @@ class DiscoveryRepository {
   /// Dev mode hides some auth-screen affordances (see authentication_screen.dart)
   static const bool kDevMode = true;
 
+  /// Storage URLs are signed for a week. An hour used to be enough for one
+  /// screen, but a deck loaded before the app went to the background came back
+  /// to dead image links. Nothing here is cached longer than a week anyway —
+  /// every fetch re-signs.
+  static const int _signedUrlTtl = 60 * 60 * 24 * 7;
+
   // --------------------------------------------------
   // 📸 HELPER: SIGN IMAGES
   // --------------------------------------------------
+  /// One round trip for the whole batch. Signing them one at a time meant
+  /// ~60 sequential calls for a 20-profile deck, which is most of the wait
+  /// the user sees on first load.
   Future<List<String>> _signImages(List<dynamic> rawPaths) async {
-    final List<String> signedUrls = [];
     const String bucketName = 'user_photos';
 
-    for (var item in rawPaths) {
+    // Already-public URLs pass straight through; the rest become storage keys.
+    final List<String> ready = [];
+    final List<String> toSign = [];
+
+    for (final item in rawPaths) {
       String path = item.toString();
-      if (path.isNotEmpty) {
-        try {
-          if (path.startsWith('http')) {
-            if (path.contains('/$bucketName/')) {
-              final parts = path.split('/$bucketName/');
-              if (parts.length > 1) {
-                path = parts.last.split('?').first;
-                path = Uri.decodeComponent(path);
-              }
-            } else {
-              signedUrls.add(path);
-              continue;
-            }
-          }
+      if (path.isEmpty) continue;
 
-          if (path.startsWith('/')) path = path.substring(1);
-
-          final signedUrl = await _supabase.storage
-              .from(bucketName)
-              .createSignedUrl(path, 60 * 60);
-          signedUrls.add(signedUrl);
-        } catch (e) {
-          debugPrint('Error signing image: $path, $e');
-          signedUrls.add(path);
+      if (path.startsWith('http')) {
+        if (!path.contains('/$bucketName/')) {
+          ready.add(path);
+          continue;
         }
+        path = Uri.decodeComponent(path.split('/$bucketName/').last.split('?').first);
       }
+      if (path.startsWith('/')) path = path.substring(1);
+      toSign.add(path);
     }
-    return signedUrls;
+
+    if (toSign.isEmpty) return ready;
+
+    try {
+      final signed = await _supabase.storage
+          .from(bucketName)
+          .createSignedUrls(toSign, _signedUrlTtl);
+      return [
+        ...ready,
+        for (final s in signed) s.signedUrl,
+      ];
+    } catch (e) {
+      debugPrint('Error signing images: $e');
+      return [...ready, ...toSign];
+    }
   }
 
   // --------------------------------------------------
@@ -72,9 +83,6 @@ class DiscoveryRepository {
     try {
       final authUser = _supabase.auth.currentUser;
       if (authUser == null) throw Exception('User not logged in');
-
-      // 🛡️ Ensure the profile mode exists and is active before querying
-      await ensureProfileMode(currentMode);
 
       // Swiped/blocked profiles are excluded server-side, so every call returns
       // the next unseen batch — no offset needed.
@@ -108,7 +116,7 @@ class DiscoveryRepository {
             if (voicePath.startsWith('/')) voicePath = voicePath.substring(1);
             final signedVoiceUrl = await _supabase.storage
                 .from('user_voices')
-                .createSignedUrl(voicePath, 3600);
+                .createSignedUrl(voicePath, _signedUrlTtl);
             data['voice_intro_url'] = signedVoiceUrl;
           } catch (e) {
             debugPrint('⚠️ Voice intro sign failed: $e');
@@ -182,7 +190,7 @@ class DiscoveryRepository {
               try {
                 profileData['voice_intro_url'] = await _supabase.storage
                     .from('user_voices')
-                    .createSignedUrl(rawVoicePath, 3600);
+                    .createSignedUrl(rawVoicePath, _signedUrlTtl);
               } catch (_) {}
             }
           }
@@ -213,19 +221,6 @@ class DiscoveryRepository {
     } catch (e) {
       debugPrint('Error fetching smart discovery feed: $e');
       rethrow;
-    }
-  }
-
-  // --------------------------------------------------
-  // ⏪ UNDO LAST SWIPE
-  // --------------------------------------------------
-  Future<bool> undoLastSwipe() async {
-    try {
-      final response = await _supabase.rpc('undo_last_swipe');
-      return response as bool;
-    } catch (e) {
-      debugPrint('❌ Undo RPC failed: $e');
-      return false;
     }
   }
 
@@ -375,6 +370,45 @@ class DiscoveryRepository {
   }
 
   // --------------------------------------------------
+  // ⚡ SINGLE PROFILE, ONE ROUND TRIP
+  // --------------------------------------------------
+  /// Full card data for one profile via `hydrate_discovery_profiles` — one
+  /// RPC plus one batched signing call. The likes screen uses this instead of
+  /// [getProfileWithRelationship], whose seven sequential queries were the
+  /// visible lag when opening a card.
+  Future<DiscoveryUser?> getDiscoveryUser(
+    String profileId, {
+    required String mode,
+  }) async {
+    final List<dynamic>? rows = await _supabase.rpc(
+      'hydrate_discovery_profiles',
+      params: {
+        'payload': {
+          'p_ids': [profileId],
+          'p_mode': mode.toLowerCase(),
+        },
+      },
+    );
+
+    if (rows == null || rows.isEmpty) return null;
+
+    final data = Map<String, dynamic>.from(rows.first);
+    data['image_urls'] =
+        await _signImages(List<dynamic>.from(data['image_urls'] ?? []));
+
+    final voice = data['voice_intro_url']?.toString() ?? '';
+    if (voice.isNotEmpty && !voice.startsWith('http')) {
+      try {
+        data['voice_intro_url'] = await _supabase.storage
+            .from('user_voices')
+            .createSignedUrl(voice, _signedUrlTtl);
+      } catch (_) {}
+    }
+
+    return DiscoveryUser.fromJson(data);
+  }
+
+  // --------------------------------------------------
   // 🤝 RELATIONSHIP STATUS (FOR DEEP LINKS)
   // --------------------------------------------------
   Future<DiscoveryUser?> getProfileWithRelationship(String targetProfileId) async {
@@ -448,7 +482,7 @@ class DiscoveryRepository {
          if (path.isNotEmpty && !path.startsWith('http')) {
             try {
               if (path.startsWith('/')) path = path.substring(1);
-              final url = await _supabase.storage.from('user_photos').createSignedUrl(path, 3600);
+              final url = await _supabase.storage.from('user_photos').createSignedUrl(path, _signedUrlTtl);
               signedUrls.add(url);
             } catch (_) {}
          } else if (path.isNotEmpty) {

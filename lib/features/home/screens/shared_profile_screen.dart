@@ -255,8 +255,6 @@ class _SharedProfileScreenState extends ConsumerState<SharedProfileScreen> {
               padding: const EdgeInsets.all(8.0),
               child: ProfileSwipeCard(
                 profile: profile,
-                horizontalThreshold: 0,
-                verticalThreshold: 0,
                 mode: _user!.relationship == RelationshipState.none 
                     ? ProfileCardMode.swipe // Show buttons if no relationship
                     : ProfileCardMode.preview, // Hide defaults if relationship exists

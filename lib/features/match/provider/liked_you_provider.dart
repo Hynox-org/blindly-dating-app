@@ -4,44 +4,36 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/models/liked_you_user_model.dart';
 import '../repository/liked_you_repository.dart';
+import '../../discovery/repository/swipe_repository.dart';
 
 // ======================================================
 // ❤️ Liked You Notifier (With Realtime Support)
 // ======================================================
 class LikedYouNotifier extends StateNotifier<AsyncValue<List<LikedYouUser>>> {
   final LikedYouRepository _repository;
+  final SwipeRepository _swipes;
 
-  // Keep track of the realtime subscription
   RealtimeChannel? _likesChannel;
 
-  LikedYouNotifier(this._repository) : super(const AsyncLoading()) {
-    // 1. Initial Load (Show Spinner)
+  LikedYouNotifier(this._repository, this._swipes)
+      : super(const AsyncLoading()) {
     _loadLikedYou(forceLoading: true);
-
-    // 2. Start Listening for new Likes
     _subscribeToNewLikes();
   }
 
   // --------------------------------------------------
   // 🔥 LOAD USERS WHO LIKED ME
   // --------------------------------------------------
-  // ✅ ADDED: forceLoading parameter for silent updates
   Future<void> _loadLikedYou({bool forceLoading = true}) async {
     try {
-      // Only show loading spinner if forced (initial load)
-      if (forceLoading) {
-        state = const AsyncLoading();
-      }
+      if (forceLoading) state = const AsyncLoading();
 
       final users = await _repository.getUsersWhoLikedMe();
-
-      if (mounted) {
-        state = AsyncData(users);
-      }
+      if (mounted) state = AsyncData(users);
     } catch (e, st) {
-      if (mounted) {
-        state = AsyncError(e, st);
-      }
+      // Keep whatever list we have; only show the error screen when there is
+      // nothing better to show.
+      if (mounted && state.valueOrNull == null) state = AsyncError(e, st);
     }
   }
 
@@ -49,48 +41,32 @@ class LikedYouNotifier extends StateNotifier<AsyncValue<List<LikedYouUser>>> {
   // 📡 SUBSCRIBE TO NEW LIKES (Realtime)
   // --------------------------------------------------
   Future<void> _subscribeToNewLikes() async {
-    final client = Supabase.instance.client;
-    final authId = client.auth.currentUser?.id;
-
-    if (authId == null) return;
-
     try {
-      // A. Get My Profile ID first (needed to filter swipes targeting ME)
-      // We do this lightweight fetch to ensure we subscribe to the right ID
+      final client = Supabase.instance.client;
+      final authId = client.auth.currentUser?.id;
+      if (authId == null) return;
+
       final profileData = await client
           .from('profiles')
           .select('id')
           .eq('user_id', authId)
           .maybeSingle();
+      if (profileData == null || !mounted) return;
 
-      if (profileData == null) return;
-      final myProfileId = profileData['id'];
-
-      debugPrint('📡 Subscribing to likes for profile: $myProfileId');
-
-      final realtimeTarget = client.realtime;
-
-      // B. Listen to INSERT events on the 'swipes' table
-      _likesChannel = realtimeTarget
-          .channel('public:swipes:$myProfileId')
+      _likesChannel = client.realtime
+          .channel('public:swipes:${profileData['id']}')
           .onPostgresChanges(
             event: PostgresChangeEvent.insert,
             schema: 'public',
             table: 'swipes',
-            // ✅ FILTER: Only notify if I am the target
             filter: PostgresChangeFilter(
               type: PostgresChangeFilterType.eq,
               column: 'target_id',
-              value: myProfileId,
+              value: profileData['id'],
             ),
             callback: (payload) {
-              final newRecord = payload.newRecord;
-
-              // ✅ CHECK: Is it a Like?
-              if (newRecord['action_type'] == 'like' ||
-                  newRecord['action_type'] == 'superlike') {
-                debugPrint('🔔 New Like Detected! Updating list silently...');
-                // Refresh list without loading spinner
+              final action = payload.newRecord['action_type'];
+              if (action == 'like' || action == 'super_like') {
                 _loadLikedYou(forceLoading: false);
               }
             },
@@ -104,45 +80,39 @@ class LikedYouNotifier extends StateNotifier<AsyncValue<List<LikedYouUser>>> {
   // --------------------------------------------------
   // 🔁 PUBLIC REFRESH
   // --------------------------------------------------
-  Future<void> refresh({bool forceLoading = false}) async {
-    await _loadLikedYou(forceLoading: forceLoading);
-  }
+  Future<void> refresh({bool forceLoading = false}) =>
+      _loadLikedYou(forceLoading: forceLoading);
 
   // --------------------------------------------------
-  // ⏯ PASS USER
+  // 🤝 MATCH / ⏯ PASS — one path, same verb as the deck
   // --------------------------------------------------
-  Future<void> passUser(String fromProfileId) async {
+  /// Match = I like them back; the swipe trigger creates the match and
+  /// settles their row. Pass = ordinary pass; the trigger rejects their like.
+  /// Optimistic: the card leaves at once and returns if the write fails.
+  ///
+  /// Returns true when the answer produced a match, so the screen can
+  /// celebrate it. A failed write returns false and restores the card.
+  Future<bool> respond(LikedYouUser user, {required bool match}) async {
+    final before = state.valueOrNull;
+    if (before != null) {
+      state = AsyncData([
+        for (final u in before)
+          if (u.profileId != user.profileId) u,
+      ]);
+    }
+
     try {
-      await _repository.ignoreLike(fromProfileId);
-      // Refresh to remove card
-      await _loadLikedYou(forceLoading: false);
-    } catch (e, st) {
-      state = AsyncError(e, st);
+      return await _swipes.recordSwipe(
+        targetProfileId: user.profileId,
+        action: match ? 'like' : 'pass',
+      );
+    } catch (e) {
+      debugPrint('❌ Liked-you ${match ? 'match' : 'pass'} failed: $e');
+      if (mounted && before != null) state = AsyncData(before);
+      return false;
     }
   }
 
-  // --------------------------------------------------
-  // 🤝 MATCH USER
-  // --------------------------------------------------
-  // Future<void> matchUser(String otherProfileId) async {
-  //   try {
-  //     await _repository.matchUser(otherProfileId: otherProfileId);
-  //     // Refresh to remove card (it moved to matches)
-  //     await _loadLikedYou(forceLoading: false);
-  //   } catch (e) {
-  //     rethrow;
-  //   }
-  // }
-  Future<bool> matchUser(String otherProfileId) async {
-    final success = await _repository.matchUser(
-      otherProfileId: otherProfileId,
-    );
-
-    if (success) {
-      await _loadLikedYou(forceLoading: false);
-    }
-    return success;
-  }
   // --------------------------------------------------
   // 🗑️ DISPOSE
   // --------------------------------------------------
@@ -162,6 +132,8 @@ final likedYouProvider =
     StateNotifierProvider<LikedYouNotifier, AsyncValue<List<LikedYouUser>>>((
       ref,
     ) {
-      final repository = ref.watch(likedYouRepositoryProvider);
-      return LikedYouNotifier(repository);
+      return LikedYouNotifier(
+        ref.watch(likedYouRepositoryProvider),
+        ref.watch(swipeRepositoryProvider),
+      );
     });

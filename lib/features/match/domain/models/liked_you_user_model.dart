@@ -2,29 +2,15 @@ import 'package:flutter/foundation.dart';
 
 @immutable
 class LikedYouUser {
-  // --------------------------------------------------
-  // 🔑 CORE IDENTIFIERS
-  // --------------------------------------------------
   final String profileId;
-
-  // --------------------------------------------------
-  // 👤 PROFILE INFO
-  // --------------------------------------------------
   final String displayName;
   final int age;
 
-  // --------------------------------------------------
-  // 🖼️ MEDIA
-  // --------------------------------------------------
-  /// Signed URL or null if user has no photo
+  /// Signed URL, or null if the user has no showable photo.
   final String? imageUrl;
 
-  // --------------------------------------------------
-  // ❤️ LIKE METADATA
-  // --------------------------------------------------
   final DateTime likedAt;
-  final String actionType;
-  final int totalLikes;
+  final String actionType; // 'like' | 'super_like'
 
   const LikedYouUser({
     required this.profileId,
@@ -33,7 +19,6 @@ class LikedYouUser {
     required this.imageUrl,
     required this.likedAt,
     this.actionType = 'like',
-    required this.totalLikes,
   });
 
   factory LikedYouUser.fromJson(Map<String, dynamic> json) {
@@ -44,37 +29,9 @@ class LikedYouUser {
       imageUrl: json['image_url'] as String?,
       likedAt: DateTime.parse(json['liked_at'] as String),
       actionType: (json['action_type'] as String?) ?? 'like',
-      totalLikes: (json['total_likes'] as int?) ?? 0,
     );
   }
 
-  // --------------------------------------------------
-  // 🔄 TO JSON (OPTIONAL / FUTURE USE)
-  // --------------------------------------------------
-  Map<String, dynamic> toJson() {
-    return {
-      'profile_id': profileId,
-      'display_name': displayName,
-      'age': age,
-      'image_path': imageUrl,
-      'liked_at': likedAt.toIso8601String(),
-      'total_likes': totalLikes,
-    };
-  }
-
-  // --------------------------------------------------
-  // 🧠 UI HELPERS
-  // --------------------------------------------------
-
-  /// First name only (nice for UI)
-  String get firstName {
-    if (displayName.isEmpty) return '';
-    return displayName.split(' ').first;
-  }
-
-  /// Safe age display
-  String get ageLabel => age > 0 ? age.toString() : '';
-
-  /// Whether profile has a usable photo
+  bool get isSuperLike => actionType == 'super_like';
   bool get hasImage => imageUrl != null && imageUrl!.isNotEmpty;
 }

@@ -321,8 +321,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     borderRadius: BorderRadius.circular(20),
                     child: ProfileSwipeCard(
                       profile: realProfile, // ✅ Passing the real data
-                      horizontalThreshold: 0,
-                      verticalThreshold: 0,
                       mode: ProfileCardMode.preview, // ✅ Preview Mode
                       onEdit: () {
                         Navigator.pop(context); // Close popup first

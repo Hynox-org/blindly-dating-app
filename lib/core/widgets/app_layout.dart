@@ -3,7 +3,7 @@ import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import '../../features/profile/profile.dart';
 import '../../features/home/screens/home_screen.dart';
-import '../../features/match/liked_you_screen.dart';
+import '../../features/match/presentation/screens/liked_you_screen.dart';
 import '../../features/discovery/presentation/screens/discover_screen.dart';
 import '../../features/chat/presentation/screens/chat_screen.dart';
 

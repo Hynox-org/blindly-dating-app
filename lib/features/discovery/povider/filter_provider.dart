@@ -125,11 +125,17 @@ class FilterNotifier extends StateNotifier<FilterState> {
     }
   }
 
+  Future<void>? _pendingSave;
+
   void _saveFilters() {
     if (_repository != null && _currentMode != null) {
-      _repository.saveDiscoveryFilters(_currentMode, state.toJson());
+      _pendingSave = _repository.saveDiscoveryFilters(_currentMode, state.toJson());
     }
   }
+
+  /// The deck reads filters from the database, so it has to wait for the last
+  /// keystroke to land before refetching.
+  Future<void> flush() async => _pendingSave;
 
   void setState(FilterState newState) {
     state = newState;

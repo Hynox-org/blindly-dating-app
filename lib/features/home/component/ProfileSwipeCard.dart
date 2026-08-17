@@ -97,8 +97,6 @@ enum ProfileCardMode { swipe, discovery, preview }
 
 class ProfileSwipeCard extends StatefulWidget {
   final UserProfile profile;
-  final double horizontalThreshold;
-  final double verticalThreshold;
 
   // ✅ Mode determines button layout & interactions
   final ProfileCardMode mode;
@@ -115,13 +113,18 @@ class ProfileSwipeCard extends StatefulWidget {
   // Track the result of an action ('none', 'liked', 'passed')
   final String swipeState;
 
+  /// Discovery-mode button labels. The likes screen opens this same card but
+  /// asks a different question, so it relabels them "Pass" / "Match".
+  final String? passText;
+  final String? likeText;
+
   const ProfileSwipeCard({
     super.key,
     required this.profile,
-    required this.horizontalThreshold,
-    required this.verticalThreshold,
     this.mode = ProfileCardMode.swipe, // Default to Swipe
     this.swipeState = 'none',
+    this.passText,
+    this.likeText,
     this.onBlock,
     this.onReport,
     this.onLike,
@@ -172,12 +175,8 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Transform(
-      alignment: Alignment.bottomCenter,
-      transform: Matrix4.identity()
-        ..setEntry(3, 2, 0.001)
-        ..rotateZ(widget.horizontalThreshold * 0.001),
-      child: Container(
+    // Tilt and translation belong to the deck; the card just draws itself.
+    return Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           color: Colors
@@ -330,7 +329,6 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
             );
           },
         ),
-      ),
     );
   }
 
@@ -371,25 +369,6 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
     );
   }
 
-  // ... (Other build methods remain unchanged: _buildBioSection, _buildRelationshipSection, etc.)
-
-  // ... (Keep existing helper methods like _buildImageSection, _buildTag, etc. UNCHANGED until _buildActionButtons)
-
-  // ... (Re-inserting unmodified methods to maintain context if needed, but I will skip to _buildActionButtons for the replacement)
-
-  // NOTE: I am relying on the tool to replace the block correctly.
-  // I will just replace the build method and the _buildActionButtons method.
-  // Wait, the tool requires me to replace a contiguous block.
-  // The provided StartLine 78 covers the class definition.
-  // I need to be careful not to delete the methods in between.
-  // The 'replacement content' must match the target content logic.
-  // Actually, rewriting the WHOLE class is safer given the StartLine/EndLine constraint if I want to change the constructor AND the build method AND the action buttons.
-  // But that is huge.
-  // Let's try to do it in chunks? No, tool says "Use this tool ONLY when you are making a SINGLE CONTIGUOUS block of edits".
-  // The class fields + constructor are at the top.
-  // The _buildActionButtons is at the bottom.
-  // I'll use `multi_replace_file_content` instead to change multiple parts safely.
-  // Changing tool to multi_replace_file_content.
 
   Widget _buildBioSection() {
     final colorScheme = Theme.of(context).colorScheme;
@@ -777,7 +756,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                         ),
                         SizedBox(width: 4 * scaleFactor),
                         Text(
-                          l10n.milesAway(widget.profile.distance.toStringAsFixed(1)),
+                          l10n.kmAway(widget.profile.distance.toStringAsFixed(1)),
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 11 * scaleFactor,
@@ -1650,7 +1629,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
               // NOT FOR ME (Pass)
               Expanded(
                 child: _buildDiscoveryButton(
-                  text: "Not for me",
+                  text: widget.passText ?? "Not for me",
                   textColor: Colors.black87,
                   backgroundColor: Colors.white,
                   borderColor: Colors.grey.shade300,
@@ -1661,7 +1640,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
               // LIKE
               Expanded(
                 child: _buildDiscoveryButton(
-                  text: "Like",
+                  text: widget.likeText ?? "Like",
                   textColor: Theme.of(context).colorScheme.onPrimary,
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   borderColor: Colors.transparent,

@@ -32,15 +32,14 @@ class SwipeRepository {
   // --------------------------------------------------
   // 👍 RECORD SWIPE (like / pass / super_like)
   // --------------------------------------------------
-  Future<void> recordSwipe({
+  /// Returns true when this swipe produced a match — the backend knows,
+  /// because the trigger that creates the match runs inside the same call.
+  /// A replayed swipe reports false, so a match is only ever celebrated once.
+  Future<bool> recordSwipe({
     required String targetProfileId,
     required String action, // like | pass | super_like
   }) async {
     try {
-      debugPrint('👉 RECORD SWIPE');
-      debugPrint('TARGET: $targetProfileId');
-      debugPrint('ACTION: $action');
-
       final response = await _supabase.rpc(
         'record_swipe',
         params: {
@@ -49,49 +48,36 @@ class SwipeRepository {
         },
       );
 
-      // We need to parse the response to see if success = true
-      if (response != null && response is Map<String, dynamic>) {
-        if (response['success'] == false) {
-          final code = response['code'] ?? 'UNKNOWN_ERROR';
-          debugPrint('❌ RECORD SWIPE REJECTED BY BACKEND: $code');
-          if (code == 'LIKE_LIMIT_REACHED') {
-            throw SwipeException('LIKE_LIMIT_REACHED');
-          }
-          throw SwipeException('Backend rejected swipe: $code');
-        }
+      if (response is Map && response['success'] == false) {
+        throw SwipeException(
+          'Backend rejected swipe: ${response['code'] ?? 'UNKNOWN_ERROR'}',
+        );
       }
 
-      // If no exception → success
-      debugPrint('✅ Swipe recorded successfully');
+      return response is Map && response['matched'] == true;
     } catch (e) {
-      debugPrint('❌ RECORD SWIPE ERROR: $e');
-
       if (e is SwipeException) rethrow;
-
-      // Ignore duplicate swipe (unique constraint)
-      if (e.toString().contains('unique_swipe_per_actor_target')) {
-        debugPrint('⚠️ Duplicate swipe ignored');
-        return;
-      }
-
+      debugPrint('❌ RECORD SWIPE ERROR: $e');
       throw SwipeException('Failed to record swipe: $e');
     }
   }
 
   // --------------------------------------------------
-  // ↩️ UNDO LAST SWIPE
+  // ↩️ UNDO A SWIPE
   // --------------------------------------------------
-  Future<bool> undoLastSwipe() async {
+  /// With [targetProfileId] the swipe on that exact profile is reverted —
+  /// which is what the deck wants, since it knows which card it put back.
+  /// Without it the backend falls back to the caller's most recent swipe.
+  ///
+  /// Returns false when there was nothing to undo, or when the pair already
+  /// has a chat going and the match can no longer be taken back.
+  Future<bool> undoLastSwipe({String? targetProfileId}) async {
     try {
-      debugPrint('↩️ UNDO LAST SWIPE');
-
-      final result = await _supabase.rpc('undo_last_swipe');
-
-      // undo_last_swipe RETURNS boolean
-      final success = result == true;
-
-      debugPrint('🧪 UNDO RESULT: $success');
-      return success;
+      final result = await _supabase.rpc(
+        'undo_last_swipe',
+        params: {'p_target_profile_id': targetProfileId},
+      );
+      return result == true;
     } catch (e) {
       debugPrint('❌ UNDO ERROR: $e');
       throw SwipeException('Failed to undo swipe');

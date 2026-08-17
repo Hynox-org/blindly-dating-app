@@ -16,7 +16,9 @@ class ConnectionModeNotifier extends StateNotifier<String> {
   Future<void> _loadModeFromDb() async {
     try {
       final dbMode = await _repository.fetchCurrentMode();
-      state = dbMode;
+      // Same mode in different casing would still count as a change and take
+      // every dependent provider (the deck included) down with it.
+      if (dbMode.toLowerCase() != state.toLowerCase()) state = dbMode;
     } catch (e) {
       debugPrint('⚠️ Failed to load connection mode from DB: $e');
     }

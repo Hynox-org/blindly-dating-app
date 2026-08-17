@@ -148,9 +148,17 @@ class _DiscoveryProfileDetailScreenState
                     profile: uiProfile,
                     mode: ProfileCardMode
                         .discovery, // Preserve discovery mode for action buttons
+                    // Someone who already liked you isn't being rated, they're
+                    // being answered — so the buttons say Match / Pass.
+                    likeText:
+                        widget.user.relationship == RelationshipState.likedMe
+                            ? l10n.matchLabel
+                            : null,
+                    passText:
+                        widget.user.relationship == RelationshipState.likedMe
+                            ? l10n.passLabel
+                            : null,
                     swipeState: _swipeState, // ✅ Pass down the state
-                    horizontalThreshold: 0,
-                    verticalThreshold: 0,
                     onLike: () => _handleAction('like'),
                     onBlock: () => _handleAction('pass'),
                     onUndo: _handleUndo, // ✅ Pass down the undo handler
