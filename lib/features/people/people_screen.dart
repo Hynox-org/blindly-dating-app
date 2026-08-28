@@ -24,7 +24,7 @@ import '../../../../core/widgets/match_dialog.dart';
 import 'package:blindly_dating_app/features/people/widgets/no_more_people_widget.dart';
 import '../../../../core/utils/navigation_utils.dart';
 import 'package:blindly_dating_app/features/matching/presentation/screens/connection_type_screen.dart';
-import 'package:blindly_dating_app/features/people/screens/filter_screen.dart';
+import 'package:blindly_dating_app/features/matching/presentation/screens/filter_screen.dart';
 import 'package:blindly_dating_app/features/notifications/screens/notifications_screen.dart';
 import 'package:blindly_dating_app/features/notifications/services/push_notification_service.dart';
 

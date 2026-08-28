@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:blindly_dating_app/features/matching/domain/models/match_profile.dart';
 import 'package:blindly_dating_app/features/matching/presentation/widgets/profile_swipe_card.dart';
 import 'package:blindly_dating_app/features/matching/provider/swipe_provider.dart';
+import 'package:blindly_dating_app/core/widgets/match_dialog.dart';
 
 class DiscoveryProfileDetailScreen extends ConsumerStatefulWidget {
   final MatchProfile user;
@@ -28,6 +29,11 @@ class _DiscoveryProfileDetailScreenState
 
   // Local state to track the interaction on this specific card
   late String _swipeState;
+
+  /// Blocks a second tap while a swipe or undo is in flight. This screen is a
+  /// full-page sheet, not an animating card, so it can afford to wait for the
+  /// write instead of guessing — the deck deliberately does the opposite.
+  bool _busy = false;
 
   @override
   void initState() {
@@ -54,7 +60,7 @@ class _DiscoveryProfileDetailScreenState
       id: user.profileId,
       name: user.displayName,
       age: user.age,
-      distance: double.parse((user.distanceKm / 1000).toStringAsFixed(1)),
+      distance: double.parse(user.distanceKm.toStringAsFixed(1)),
       location: user.hometown ?? l10n.nearby,
       gender: genderLabel,
       imageUrls: profileImages,
@@ -89,31 +95,60 @@ class _DiscoveryProfileDetailScreenState
     );
   }
 
-  void _handleAction(String action) {
-    // 1. Trigger the backend API call asynchronously
-    ref
-        .read(swipeProvider.notifier)
-        .swipe(targetProfileId: widget.user.profileId, action: action)
-        .then((_) => debugPrint('✅ Action $action successful'))
-        .catchError((e) => debugPrint('❌ Swipe action $action failed: $e'));
-
-    // 2. Optimistic UI update - return state back to grid immediately
-    Navigator.pop(context, action == 'like' ? 'liked' : 'passed');
+  void _toast(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  void _handleUndo() {
-    // 1. Trigger the backend undo API
-    ref
-        .read(swipeProvider.notifier)
-        .undo()
-        .then(
-          (success) =>
-              debugPrint(success ? '✅ Undo complete' : '❌ Undo failed'),
-        )
-        .catchError((e) => debugPrint('❌ Undo err: $e'));
+  /// Waits for the write before popping, so the grid is never told about a
+  /// like the server rejected. A match is celebrated here, while this route
+  /// still has a context to show it in.
+  Future<void> _handleAction(String action) async {
+    if (_busy) return;
+    setState(() => _busy = true);
 
-    // 2. Return state back to grid
-    Navigator.pop(context, 'none');
+    try {
+      final matched = await ref
+          .read(swipeProvider.notifier)
+          .swipe(targetProfileId: widget.user.profileId, action: action);
+
+      if (!mounted) return;
+      if (matched) await showMatchDialog(context, widget.user.displayName);
+      if (!mounted) return;
+      Navigator.pop(context, action == 'like' ? 'liked' : 'passed');
+    } catch (e) {
+      debugPrint('❌ Swipe action $action failed: $e');
+      if (!mounted) return;
+      setState(() => _busy = false);
+      _toast(l10n.somethingWentWrong);
+    }
+  }
+
+  Future<void> _handleUndo() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+
+    try {
+      // Naming the profile matters: without it the backend reverts whatever
+      // this user swiped most recently, anywhere in the app.
+      final success = await ref
+          .read(swipeProvider.notifier)
+          .undo(targetProfileId: widget.user.profileId);
+
+      if (!mounted) return;
+      if (!success) {
+        setState(() => _busy = false);
+        _toast(l10n.somethingWentWrong);
+        return;
+      }
+      Navigator.pop(context, 'none');
+    } catch (e) {
+      debugPrint('❌ Undo err: $e');
+      if (!mounted) return;
+      setState(() => _busy = false);
+      _toast(l10n.somethingWentWrong);
+    }
   }
 
   @override
@@ -159,9 +194,9 @@ class _DiscoveryProfileDetailScreenState
                             ? l10n.passLabel
                             : null,
                     swipeState: _swipeState, // ✅ Pass down the state
-                    onLike: () => _handleAction('like'),
-                    onBlock: () => _handleAction('pass'),
-                    onUndo: _handleUndo, // ✅ Pass down the undo handler
+                    onLike: _busy ? null : () => _handleAction('like'),
+                    onBlock: _busy ? null : () => _handleAction('pass'),
+                    onUndo: _busy ? null : _handleUndo, // ✅ Pass down the undo handler
                     onReport: () {
                       // Report Logic (Placeholder)
                       Navigator.pop(context);
