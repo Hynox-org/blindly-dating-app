@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../../core/widgets/voice_playback_widget.dart';
-import '../../onboarding/domain/models/lifestyle_chip_model.dart';
-import '../../onboarding/domain/models/profile_prompt_model.dart'; // ✅ Added Prompts
+import 'package:blindly_dating_app/features/onboarding/domain/models/lifestyle_chip_model.dart';
+import 'package:blindly_dating_app/features/onboarding/domain/models/profile_prompt_model.dart'; // ✅ Added Prompts
 import 'package:cached_network_image/cached_network_image.dart'; // ✅ Added
 import 'dart:ui';
 import '../../../../core/utils/share_utils.dart'; // Add ShareUtils
-import '../../discovery/presentation/screens/compatibility_explanation_screen.dart';
+import 'package:blindly_dating_app/features/matching/compatibility/compatibility_explanation_screen.dart';
 
 class UserProfile {
   final String id;
@@ -988,7 +988,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
     }
 
     addTag(profile.height, Icons.height);
-    addTag(profile.activityLevel, FontAwesomeIcons.dumbbell);
+    addTag(profile.activityLevel, FontAwesomeIcons.dumbbell.data);
     addTag(profile.education, Icons.school_outlined);
     addTag(profile.school, Icons.school);
 
@@ -1000,8 +1000,8 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
     }
 
     addTag(profile.gender, Icons.face);
-    addTag(profile.religion, FontAwesomeIcons.handsPraying);
-    addTag(profile.zodiac, FontAwesomeIcons.solidSun);
+    addTag(profile.religion, FontAwesomeIcons.handsPraying.data);
+    addTag(profile.zodiac, FontAwesomeIcons.solidSun.data);
 
     // The following tags are removed as per instruction: smoking, drinking, kids, politics, hometown.
     // addTag(profile.smoking, FontAwesomeIcons.smoking);
@@ -1249,7 +1249,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
       return Icons.restaurant;
     }
     if (l.contains('gym') || l.contains('workout') || l.contains('fitness')) {
-      return FontAwesomeIcons.dumbbell;
+      return FontAwesomeIcons.dumbbell.data;
     }
 
     return Icons.loyalty; // default fallback
@@ -1306,7 +1306,7 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                 else if (cName.contains('diet'))
                   icon = Icons.restaurant;
                 else if (cName.contains('workout'))
-                  icon = FontAwesomeIcons.dumbbell;
+                  icon = FontAwesomeIcons.dumbbell.data;
 
                 // Prepend category if it's ambiguous like "Never" or "Sometimes"
                 if (chip.label == 'Never' ||

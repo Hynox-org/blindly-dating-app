@@ -10,22 +10,22 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
 // import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 // import 'package:permission_handler/permission_handler.dart';
-import '../../../call/presentation/screens/call_screen.dart';
+import 'package:blindly_dating_app/features/call/presentation/screens/call_screen.dart';
 import 'dart:async';
-import '../../domain/models/message_model.dart';
-import '../../../../core/services/chat_cache_service.dart';
-import '../../../../core/security/encryption_service.dart';
-import '../../../../core/security/key_security.dart';
-import '../../../../core/utils/app_state.dart';
+import 'package:blindly_dating_app/features/chat/domain/models/message_model.dart';
+import 'package:blindly_dating_app/core/services/chat_cache_service.dart';
+import 'package:blindly_dating_app/core/security/encryption_service.dart';
+import 'package:blindly_dating_app/core/security/key_security.dart';
+import 'package:blindly_dating_app/core/utils/app_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:blindly_dating_app/features/chat/presentation/widgets/media_picker.dart';
 import 'dart:convert';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:uuid/uuid.dart';
-import '../../data/icebreaker_service.dart';
-import '../../../../core/services/translation_service.dart';
-import '../../../../core/services/text_moderation_service.dart';
+import 'package:blindly_dating_app/features/chat/data/icebreaker_service.dart';
+import 'package:blindly_dating_app/core/services/translation_service.dart';
+import 'package:blindly_dating_app/core/services/text_moderation_service.dart';
 
 class ChatConversationScreen extends ConsumerStatefulWidget {
   final String matchId;
@@ -976,7 +976,7 @@ class _ChatConversationScreenState
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF3F472E).withOpacity(0.1),
+                  color: const Color(0xFF3F472E).withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -1064,7 +1064,7 @@ class _ChatConversationScreenState
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF3F472E).withOpacity(0.1) : Colors.transparent,
+          color: isSelected ? const Color(0xFF3F472E).withValues(alpha: 0.1) : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: isSelected ? const Color(0xFF3F472E) : Colors.grey.shade300),
         ),
@@ -1089,7 +1089,7 @@ class _ChatConversationScreenState
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 4)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8, offset: const Offset(0, 4)),
         ],
       ),
       child: InkWell(
@@ -1618,7 +1618,7 @@ class _ChatConversationScreenState
   // }
 
   Widget _buildMessageStatus(Message message) {
-    Color statusColor = (message.senderProfileId == _myProfileId ? Colors.white : Colors.black).withOpacity(0.5);
+    Color statusColor = (message.senderProfileId == _myProfileId ? Colors.white : Colors.black).withValues(alpha: 0.5);
     
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -1713,10 +1713,10 @@ class _ChatConversationScreenState
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         width: MediaQuery.of(context).size.width * 0.85,
         decoration: BoxDecoration(
-          color: const Color(0xFFFFF9C4).withOpacity(0.3), // Very light yellow tint
+          color: const Color(0xFFFFF9C4).withValues(alpha: 0.3), // Very light yellow tint
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: const Color(0xFFE6C97A).withOpacity(0.4),
+            color: const Color(0xFFE6C97A).withValues(alpha: 0.4),
             width: 0.5,
           ),
         ),
@@ -1729,7 +1729,7 @@ class _ChatConversationScreenState
                 Icon(
                   Icons.lock_outline,
                   size: 14,
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
                 ),
                 const SizedBox(width: 6),
                 Text(
@@ -1737,7 +1737,7 @@ class _ChatConversationScreenState
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
                   ),
                 ),
               ],
@@ -1748,7 +1748,7 @@ class _ChatConversationScreenState
               text: TextSpan(
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.black.withOpacity(0.6),
+                  color: Colors.black.withValues(alpha: 0.6),
                   fontFamily: 'Poppins', // Match theme
                   height: 1.4,
                 ),
@@ -2157,7 +2157,7 @@ class _ChatConversationScreenState
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 4,
               offset: const Offset(0, -2),
             ),
@@ -2211,7 +2211,7 @@ class _ChatConversationScreenState
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 4,
               offset: const Offset(0, -2),
             ),
@@ -2698,7 +2698,7 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
           ? () => widget.onToggleSelection(widget.message)
           : _removeReactionOverlay,
       child: Container(
-        color: widget.isSelected ? Colors.blue.withOpacity(0.1) : Colors.transparent,
+        color: widget.isSelected ? Colors.blue.withValues(alpha: 0.1) : Colors.transparent,
         child: Row(
           children: [
             if (widget.selectionMode)
@@ -2815,7 +2815,7 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
           width: 12,
           child: CircularProgressIndicator(
             strokeWidth: 1.5,
-            color: textColor.withOpacity(.6),
+            color: textColor.withValues(alpha: .6),
           ),
         ),
       );
@@ -2846,7 +2846,7 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
           label,
           style: TextStyle(
             fontSize: 11,
-            color: textColor.withOpacity(.6),
+            color: textColor.withValues(alpha: .6),
             decoration: _translateFailed ? null : TextDecoration.underline,
           ),
         ),
@@ -2883,7 +2883,7 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
             Text(
               messageText,
               style: TextStyle(
-                color: textColor.withOpacity(opacity),
+                color: textColor.withValues(alpha: opacity),
                 fontSize: 15,
                 fontStyle: fontStyle,
               ),
@@ -2896,7 +2896,7 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
           children: [
             Text(
               widget.formatTime(widget.message.createdAt),
-              style: TextStyle(fontSize: 10, color: textColor.withOpacity(.7)),
+              style: TextStyle(fontSize: 10, color: textColor.withValues(alpha: .7)),
             ),
             const SizedBox(width: 4),
             widget.buildStatus(widget.message),
@@ -2925,7 +2925,7 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
               placeholder: (context, url) => Container(
                 width: 200,
                 height: 200,
-                color: textColor.withOpacity(0.1),
+                color: textColor.withValues(alpha: 0.1),
                 child: Center(
                   child: CircularProgressIndicator(color: textColor),
                 ),
@@ -2933,20 +2933,20 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
               errorWidget: (context, url, error) => Container(
                 width: 200,
                 height: 200,
-                color: textColor.withOpacity(0.1),
+                color: textColor.withValues(alpha: 0.1),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
                       Icons.broken_image,
-                      color: textColor.withOpacity(0.5),
+                      color: textColor.withValues(alpha: 0.5),
                       size: 40,
                     ),
                     const SizedBox(height: 8),
                     Text(
                       l10n.failedToLoad,
                       style: TextStyle(
-                        color: textColor.withOpacity(0.5),
+                        color: textColor.withValues(alpha: 0.5),
                         fontSize: 12,
                       ),
                     ),
@@ -2962,7 +2962,7 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
           children: [
             Text(
               widget.formatTime(widget.message.createdAt),
-              style: TextStyle(fontSize: 10, color: textColor.withOpacity(.7)),
+              style: TextStyle(fontSize: 10, color: textColor.withValues(alpha: .7)),
             ),
             const SizedBox(width: 4),
             widget.buildStatus(widget.message),
@@ -2989,7 +2989,7 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
               child: Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: textColor.withOpacity(0.2),
+                  color: textColor.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -3004,7 +3004,7 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
               width: 120,
               height: 30,
               decoration: BoxDecoration(
-                color: textColor.withOpacity(0.2),
+                color: textColor.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(15),
               ),
               child: CustomPaint(
@@ -3020,7 +3020,7 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
             const SizedBox(width: 8),
             Text(
               _formatDuration(duration),
-              style: TextStyle(fontSize: 11, color: textColor.withOpacity(.8)),
+              style: TextStyle(fontSize: 11, color: textColor.withValues(alpha: .8)),
             ),
           ],
         ),
@@ -3034,7 +3034,7 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
           children: [
             Text(
               widget.formatTime(widget.message.createdAt),
-              style: TextStyle(fontSize: 10, color: textColor.withOpacity(.7)),
+              style: TextStyle(fontSize: 10, color: textColor.withValues(alpha: .7)),
             ),
             const SizedBox(width: 4),
             widget.buildStatus(widget.message),
@@ -3102,7 +3102,7 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
                   placeholder: (context, url) => Container(
                     width: 200,
                     height: 150,
-                    color: textColor.withOpacity(0.1),
+                    color: textColor.withValues(alpha: 0.1),
                     child: const Center(child: CircularProgressIndicator()),
                   ),
                 ),
@@ -3137,7 +3137,7 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
           children: [
             Text(
               widget.formatTime(widget.message.createdAt),
-              style: TextStyle(fontSize: 10, color: textColor.withOpacity(.7)),
+              style: TextStyle(fontSize: 10, color: textColor.withValues(alpha: .7)),
             ),
             const SizedBox(width: 4),
             widget.buildStatus(widget.message),
@@ -3176,7 +3176,7 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
           placeholder: (context, url) => Container(
             width: 120,
             height: 120,
-            color: textColor.withOpacity(0.05),
+            color: textColor.withValues(alpha: 0.05),
             child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
           ),
           errorWidget: (context, url, error) {
@@ -3203,7 +3203,7 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
           children: [
             Text(
               widget.formatTime(widget.message.createdAt),
-              style: TextStyle(fontSize: 10, color: textColor.withOpacity(.7)),
+              style: TextStyle(fontSize: 10, color: textColor.withValues(alpha: .7)),
             ),
             const SizedBox(width: 4),
             widget.buildStatus(widget.message),
@@ -3229,7 +3229,7 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(.18),
+        color: Colors.black.withValues(alpha: .18),
         borderRadius: BorderRadius.circular(10),
       ),
       child: IntrinsicWidth(
@@ -3249,7 +3249,7 @@ class _SwipeableMessageState extends State<SwipeableMessage> {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withOpacity(.85),
+                    color: Colors.white.withValues(alpha: .85),
                   ),
                 ),
               ),
@@ -3274,7 +3274,7 @@ class WaveformPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = color.withOpacity(0.6)
+      ..color = color.withValues(alpha: 0.6)
       ..strokeWidth = 2
       ..strokeCap = StrokeCap.round;
 

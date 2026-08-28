@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../repository/discovery_repository.dart';
-import '../../../core/providers/connection_mode_provider.dart';
-import '../../onboarding/data/repositories/onboarding_repository.dart';
-import '../../onboarding/domain/models/interest_chip_model.dart';
+import 'package:blindly_dating_app/features/matching/repository/matching_repository.dart';
+import 'package:blindly_dating_app/core/providers/connection_mode_provider.dart';
+import 'package:blindly_dating_app/features/onboarding/data/repositories/onboarding_repository.dart';
+import 'package:blindly_dating_app/features/onboarding/domain/models/interest_chip_model.dart';
 
 class FilterState {
   final String genderPreference; // 'Women', 'Men', 'Everyone'
@@ -105,10 +105,10 @@ class FilterState {
 }
 
 class FilterNotifier extends StateNotifier<FilterState> {
-  final DiscoveryRepository? _repository;
+  final MatchingRepository? _repository;
   final String? _currentMode;
 
-  FilterNotifier({DiscoveryRepository? repository, String? mode})
+  FilterNotifier({MatchingRepository? repository, String? mode})
       : _repository = repository,
         _currentMode = mode,
         super(FilterState.initial()) {
@@ -117,7 +117,7 @@ class FilterNotifier extends StateNotifier<FilterState> {
 
   Future<void> _loadFilters() async {
     if (_repository != null && _currentMode != null) {
-      final savedFilters = await _repository.getDiscoveryFilters(_currentMode);
+      final savedFilters = await _repository.getFilters(_currentMode);
       if (!mounted) return;
       if (savedFilters != null) {
         state = FilterState.fromJson(savedFilters);
@@ -129,7 +129,7 @@ class FilterNotifier extends StateNotifier<FilterState> {
 
   void _saveFilters() {
     if (_repository != null && _currentMode != null) {
-      _pendingSave = _repository.saveDiscoveryFilters(_currentMode, state.toJson());
+      _pendingSave = _repository.saveFilters(_currentMode, state.toJson());
     }
   }
 
@@ -212,7 +212,7 @@ class FilterNotifier extends StateNotifier<FilterState> {
 final filterProvider = StateNotifierProvider<FilterNotifier, FilterState>((
   ref,
 ) {
-  final repo = ref.watch(discoveryRepositoryProvider);
+  final repo = ref.watch(matchingRepositoryProvider);
   final mode = ref.watch(connectionModeProvider);
   return FilterNotifier(repository: repo, mode: mode);
 });

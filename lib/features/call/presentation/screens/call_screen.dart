@@ -4,7 +4,7 @@ import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import './../../../../core/utils/app_state.dart';
+import 'package:blindly_dating_app/core/utils/app_state.dart';
 class CallScreen extends StatefulWidget {
   final String callId;
   final String channelName;
@@ -618,7 +618,7 @@ class _CallScreenState extends State<CallScreen> {
         ),
       ),
       child: Container(
-        color: Colors.black.withOpacity(0.6),
+        color: Colors.black.withValues(alpha: 0.6),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

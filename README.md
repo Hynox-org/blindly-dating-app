@@ -1,4 +1,4 @@
-# blindly_dating_app
+-# blindly_dating_app
 
 A new Flutter project.
 

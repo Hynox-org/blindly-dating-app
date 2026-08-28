@@ -5,13 +5,13 @@ import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/auth_providers.dart';
-import '../../onboarding/data/repositories/onboarding_repository.dart';
-import '../../../core/utils/app_logger.dart';
-import '../../onboarding/presentation/screens/onboarding_shell.dart';
+import 'package:blindly_dating_app/features/auth/providers/auth_providers.dart';
+import 'package:blindly_dating_app/features/onboarding/data/repositories/onboarding_repository.dart';
+import 'package:blindly_dating_app/core/utils/app_logger.dart';
+import 'package:blindly_dating_app/features/onboarding/presentation/screens/onboarding_shell.dart';
 // import '../../discovery/repository/discovery_repository.dart';
 import '../../../../core/widgets/app_loader.dart';
-import './../../../core/security/key_security.dart';
+import 'package:blindly_dating_app/core/security/key_security.dart';
 
 enum AuthMethod { selection, phone, phoneOTP, email, emailOTP, apple }
 
@@ -778,7 +778,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                       side: BorderSide(
                         color: Theme.of(
                           context,
-                        ).colorScheme.onSurface.withOpacity(0.12),
+                        ).colorScheme.onSurface.withValues(alpha: 0.12),
                         width: 1,
                       ),
                       backgroundColor: Colors.transparent,
@@ -793,7 +793,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                         Set<WidgetState> states,
                       ) {
                         if (states.contains(WidgetState.pressed)) {
-                          return Colors.black.withOpacity(0.03);
+                          return Colors.black.withValues(alpha: 0.03);
                         }
                         return null;
                       }),
@@ -883,7 +883,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               */
 
               /*
-              if (!DiscoveryRepository.kDevMode) ...[
+              if (!MatchingRepository.kDevMode) ...[
                 SizedBox(height: 12),
 
                 // Mobile number button
@@ -953,7 +953,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                       fontSize: 11,
                       color: Theme.of(
                         context,
-                      ).colorScheme.onSurface.withOpacity(0.7),
+                      ).colorScheme.onSurface.withValues(alpha: 0.7),
                       height: 1.4,
                     ),
                     children: [
@@ -1076,7 +1076,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     hintStyle: TextStyle(
                       color: Theme.of(
                         context,
-                      ).colorScheme.onSurface.withOpacity(0.5),
+                      ).colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -1182,7 +1182,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     Set<WidgetState> states,
                   ) {
                     if (states.contains(WidgetState.pressed)) {
-                      return Colors.white.withOpacity(0.1);
+                      return Colors.white.withValues(alpha: 0.1);
                     }
                     return null;
                   }),
@@ -1333,7 +1333,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                           ? Theme.of(context).colorScheme.primary
                           : Theme.of(
                               context,
-                            ).colorScheme.onSurface.withOpacity(0.6),
+                            ).colorScheme.onSurface.withValues(alpha: 0.6),
                       fontWeight: _canResend
                           ? FontWeight.w500
                           : FontWeight.w400,
@@ -1344,7 +1344,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               Icon(
                 Icons.arrow_forward_ios,
                 size: 16,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ],
           ),
@@ -1397,7 +1397,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     Set<WidgetState> states,
                   ) {
                     if (states.contains(WidgetState.pressed)) {
-                      return Colors.white.withOpacity(0.1);
+                      return Colors.white.withValues(alpha: 0.1);
                     }
                     return null;
                   }),
@@ -1437,7 +1437,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             l10n.emailLabel,
             style: TextStyle(
               fontSize: 14,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
           SizedBox(height: 8),
@@ -1454,7 +1454,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
             decoration: InputDecoration(
               hintText: l10n.emailHint,
               hintStyle: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -1490,7 +1490,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   fontSize: 11,
                   color: Theme.of(
                     context,
-                  ).colorScheme.onSurface.withOpacity(0.6),
+                  ).colorScheme.onSurface.withValues(alpha: 0.6),
                   height: 1.4,
                 ),
                 children: [
@@ -1553,7 +1553,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     Set<WidgetState> states,
                   ) {
                     if (states.contains(WidgetState.pressed)) {
-                      return Colors.white.withOpacity(0.1);
+                      return Colors.white.withValues(alpha: 0.1);
                     }
                     return null;
                   }),
@@ -1703,7 +1703,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                           ? Theme.of(context).colorScheme.primary
                           : Theme.of(
                               context,
-                            ).colorScheme.onSurface.withOpacity(0.6),
+                            ).colorScheme.onSurface.withValues(alpha: 0.6),
                       fontWeight: _canResend
                           ? FontWeight.w500
                           : FontWeight.w400,
@@ -1714,7 +1714,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
               Icon(
                 Icons.arrow_forward_ios,
                 size: 16,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ],
           ),
@@ -1766,7 +1766,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     Set<WidgetState> states,
                   ) {
                     if (states.contains(WidgetState.pressed)) {
-                      return Colors.white.withOpacity(0.1);
+                      return Colors.white.withValues(alpha: 0.1);
                     }
                     return null;
                   }),
@@ -1911,7 +1911,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                   fontSize: 11,
                   color: Theme.of(
                     context,
-                  ).colorScheme.onSurface.withOpacity(0.6),
+                  ).colorScheme.onSurface.withValues(alpha: 0.6),
                   height: 1.4,
                 ),
                 children: [
@@ -1974,7 +1974,7 @@ class _AuthenticationScreenState extends ConsumerState<AuthenticationScreen> {
                     Set<WidgetState> states,
                   ) {
                     if (states.contains(WidgetState.pressed)) {
-                      return Colors.white.withOpacity(0.1);
+                      return Colors.white.withValues(alpha: 0.1);
                     }
                     return null;
                   }),

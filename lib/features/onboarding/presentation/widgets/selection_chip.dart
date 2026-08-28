@@ -37,7 +37,7 @@ class SelectionChip extends StatelessWidget {
           boxShadow: [
             if (isSelected)
               BoxShadow(
-                color: colorScheme.primary.withOpacity(0.2), // Softer opacity
+                color: colorScheme.primary.withValues(alpha: 0.2), // Softer opacity
                 blurRadius: 6, // Slightly less spread
                 offset: const Offset(0, 2), // Reduced offset
               ),

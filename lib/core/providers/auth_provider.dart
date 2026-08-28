@@ -14,6 +14,6 @@ final currentUserIdProvider = Provider<String?>((ref) {
   return userAsync.when(
     data: (user) => user?.id,
     loading: () => Supabase.instance.client.auth.currentUser?.id, // Optimistic
-    error: (_, __) => null,
+    error: (_, _) => null,
   );
 });

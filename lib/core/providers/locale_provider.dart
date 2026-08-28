@@ -2,7 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../services/translation_service.dart';
+import 'package:blindly_dating_app/core/services/translation_service.dart';
 
 /// Overridden in [main] with the instance loaded before `runApp`.
 final sharedPreferencesProvider = Provider<SharedPreferences>(

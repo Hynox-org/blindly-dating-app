@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../auth/providers/auth_providers.dart';
-import 'presentation/screens/app_language_screen.dart';
+import 'package:blindly_dating_app/features/auth/providers/auth_providers.dart';
+import 'package:blindly_dating_app/features/profile/presentation/screens/app_language_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});

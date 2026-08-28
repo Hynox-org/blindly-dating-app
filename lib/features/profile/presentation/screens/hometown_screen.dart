@@ -6,10 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-import '../../../auth/providers/auth_providers.dart';
-import '../../../onboarding/data/repositories/onboarding_repository.dart';
-import '../../provider/profile_provider.dart';
-import '../../../../core/widgets/app_loader.dart';
+import 'package:blindly_dating_app/features/auth/providers/auth_providers.dart';
+import 'package:blindly_dating_app/features/onboarding/data/repositories/onboarding_repository.dart';
+import 'package:blindly_dating_app/features/profile/provider/profile_provider.dart';
+import 'package:blindly_dating_app/core/widgets/app_loader.dart';
 
 class HometownScreen extends ConsumerStatefulWidget {
   final bool isEditMode;

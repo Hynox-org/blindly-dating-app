@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../features/call/provider/global_call_listener.dart';
+import 'package:blindly_dating_app/features/call/provider/global_call_listener.dart';
 
 class GlobalCallInitializer extends ConsumerStatefulWidget {
   final Widget child;

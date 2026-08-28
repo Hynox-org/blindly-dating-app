@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
-import '../../../../core/utils/vocab.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/widgets/app_loader.dart';
-import '../../../auth/providers/auth_providers.dart';
-import '../../../onboarding/data/repositories/onboarding_repository.dart';
-import '../../provider/profile_provider.dart';
+import 'package:blindly_dating_app/core/widgets/app_loader.dart';
+import 'package:blindly_dating_app/features/auth/providers/auth_providers.dart';
+import 'package:blindly_dating_app/features/onboarding/data/repositories/onboarding_repository.dart';
+import 'package:blindly_dating_app/features/profile/provider/profile_provider.dart';
 
 class EducatedAtScreen extends ConsumerStatefulWidget {
   final bool isEditMode;

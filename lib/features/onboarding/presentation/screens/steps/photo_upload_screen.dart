@@ -5,12 +5,12 @@ import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 // CHECK YOUR IMPORTS
-import '../../../../auth/providers/auth_providers.dart';
-import '../../../../media/providers/media_provider.dart';
-import '../../providers/onboarding_provider.dart';
-import '../../../../../core/widgets/app_loader.dart';
-import '../../../../profile/provider/profile_provider.dart';
-import 'base_onboarding_step_screen.dart';
+import 'package:blindly_dating_app/features/auth/providers/auth_providers.dart';
+import 'package:blindly_dating_app/features/media/providers/media_provider.dart';
+import 'package:blindly_dating_app/features/onboarding/presentation/providers/onboarding_provider.dart';
+import 'package:blindly_dating_app/core/widgets/app_loader.dart';
+import 'package:blindly_dating_app/features/profile/provider/profile_provider.dart';
+import 'package:blindly_dating_app/features/onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
 
 class PhotoUploadScreen extends ConsumerStatefulWidget {
   final bool isEditMode;

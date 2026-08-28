@@ -1,10 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../repository/discovery_repository.dart';
-import '../repository/swipe_repository.dart';
-import '../domain/models/discovery_user_model.dart';
-import '../../../core/providers/connection_mode_provider.dart';
+import 'package:blindly_dating_app/features/matching/repository/matching_repository.dart';
+import 'package:blindly_dating_app/features/people/repository/people_feed_repository.dart';
+import 'package:blindly_dating_app/features/matching/repository/swipe_repository.dart';
+import 'package:blindly_dating_app/features/matching/domain/models/match_profile.dart';
+import 'package:blindly_dating_app/core/providers/connection_mode_provider.dart';
 
 /// like / pass / super_like, exactly as `record_swipe` expects them.
 enum SwipeIntent {
@@ -19,9 +20,9 @@ enum SwipeIntent {
 // ======================================================
 // 1. THE STATE
 // ======================================================
-class DiscoveryState {
-  final List<DiscoveryUser> deck; // cards still to be shown, top first
-  final List<DiscoveryUser> history; // swiped, newest last (for undo)
+class PeopleFeedState {
+  final List<MatchProfile> deck; // cards still to be shown, top first
+  final List<MatchProfile> history; // swiped, newest last (for undo)
   final Set<String> seenIds; // dedup across batches
   final bool isLoading; // first load, nothing to show yet
   final bool isFetchingMore; // background top-up
@@ -33,7 +34,7 @@ class DiscoveryState {
   /// celebration. Null the rest of the time.
   final String? matchedWith;
 
-  const DiscoveryState({
+  const PeopleFeedState({
     this.deck = const [],
     this.history = const [],
     this.seenIds = const {},
@@ -50,9 +51,9 @@ class DiscoveryState {
   bool get isOutOfProfiles =>
       deck.isEmpty && !isLoading && !isFetchingMore && isDeckExhausted;
 
-  DiscoveryState copyWith({
-    List<DiscoveryUser>? deck,
-    List<DiscoveryUser>? history,
+  PeopleFeedState copyWith({
+    List<MatchProfile>? deck,
+    List<MatchProfile>? history,
     Set<String>? seenIds,
     bool? isLoading,
     bool? isFetchingMore,
@@ -61,7 +62,7 @@ class DiscoveryState {
     String? error,
     String? matchedWith,
   }) {
-    return DiscoveryState(
+    return PeopleFeedState(
       deck: deck ?? this.deck,
       history: history ?? this.history,
       seenIds: seenIds ?? this.seenIds,
@@ -75,7 +76,7 @@ class DiscoveryState {
   }
 
   /// Both one-shot fields are dropped together once the UI has shown them.
-  DiscoveryState withoutNotices() => DiscoveryState(
+  PeopleFeedState withoutNotices() => PeopleFeedState(
         deck: deck,
         history: history,
         seenIds: seenIds,
@@ -92,19 +93,22 @@ class DiscoveryState {
 /// Owns the deck *and* the swipe actions on it. Keeping them together is what
 /// stops the deck and the database from drifting apart: one undo path, one
 /// place that decides which card the action belongs to.
-class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
-  DiscoveryFeedNotifier({
-    required DiscoveryRepository repository,
+class PeopleFeedNotifier extends StateNotifier<PeopleFeedState> {
+  PeopleFeedNotifier({
+    required PeopleFeedRepository repository,
+    required MatchingRepository modes,
     required SwipeRepository swipes,
     required String mode,
   })  : _repository = repository,
+        _modes = modes,
         _swipes = swipes,
         _currentMode = mode.toLowerCase(),
-        super(const DiscoveryState(isLoading: true)) {
+        super(const PeopleFeedState(isLoading: true)) {
     refreshFeed();
   }
 
-  final DiscoveryRepository _repository;
+  final PeopleFeedRepository _repository;
+  final MatchingRepository _modes;
   final SwipeRepository _swipes;
   String _currentMode;
 
@@ -117,11 +121,11 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
   Future<void> refreshFeed({String? mode}) async {
     if (mode != null) _currentMode = mode.toLowerCase();
 
-    state = const DiscoveryState(isLoading: true);
+    state = const PeopleFeedState(isLoading: true);
 
     // Cheap on a refresh, ruinous on every background top-up — which is where
     // it used to live.
-    await _repository.ensureProfileMode(_currentMode);
+    await _modes.ensureProfileMode(_currentMode);
     await _loadBatch();
 
     if (!mounted) return;
@@ -133,9 +137,9 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
   // --------------------------------------------------
   /// Drops the top card immediately and records it in the background — the
   /// animation must never wait on the network. A rejected write surfaces in
-  /// [DiscoveryState.error]; the profile simply comes back in a later batch,
+  /// [PeopleFeedState.error]; the profile simply comes back in a later batch,
   /// because without a swipe row the server still counts them as unseen.
-  Future<void> swipe(DiscoveryUser user, SwipeIntent intent) async {
+  Future<void> swipe(MatchProfile user, SwipeIntent intent) async {
     final history = [...state.history, user];
     state = state.copyWith(
       deck: [...state.deck]..removeWhere((u) => u.profileId == user.profileId),
@@ -211,7 +215,7 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
       // A full batch that dedups down to nothing would otherwise strand the
       // deck as "empty but not exhausted", so keep asking — bounded.
       for (var attempt = 0; attempt < 3; attempt++) {
-        final (candidates, serverHasNoMore) = await _repository.getDiscoveryFeed(
+        final (candidates, serverHasNoMore) = await _repository.getPeopleFeed(
           currentMode: _currentMode,
           limit: _batchSize,
         );
@@ -234,7 +238,7 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
         if (fresh.isNotEmpty || serverHasNoMore) break;
       }
     } catch (e) {
-      debugPrint('❌ Discovery fetch failed: $e');
+      debugPrint('❌ People feed fetch failed: $e');
       if (mounted) {
         state = state.copyWith(
           hasLocationError:
@@ -253,10 +257,11 @@ class DiscoveryFeedNotifier extends StateNotifier<DiscoveryState> {
 /// Deliberately does not watch the filters: they are read server-side from
 /// `profile_modes.filters`, and watching them rebuilt the whole deck on every
 /// slider tick. The filter screen asks for a refresh when the user is done.
-final discoveryFeedProvider =
-    StateNotifierProvider<DiscoveryFeedNotifier, DiscoveryState>((ref) {
-  return DiscoveryFeedNotifier(
-    repository: ref.watch(discoveryRepositoryProvider),
+final peopleFeedProvider =
+    StateNotifierProvider<PeopleFeedNotifier, PeopleFeedState>((ref) {
+  return PeopleFeedNotifier(
+    repository: ref.watch(peopleFeedRepositoryProvider),
+    modes: ref.watch(matchingRepositoryProvider),
     swipes: ref.watch(swipeRepositoryProvider),
     mode: ref.watch(connectionModeProvider),
   );

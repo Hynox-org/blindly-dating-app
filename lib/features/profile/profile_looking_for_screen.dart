@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
-import '../../core/utils/vocab.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'provider/profile_provider.dart';
+import 'package:blindly_dating_app/features/profile/provider/profile_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../core/providers/connection_mode_provider.dart';
+import 'package:blindly_dating_app/core/providers/connection_mode_provider.dart';
 
 class ProfileLookingForScreen extends ConsumerStatefulWidget {
   final bool isEditMode;

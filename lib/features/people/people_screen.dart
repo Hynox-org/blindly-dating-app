@@ -6,40 +6,40 @@ import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // ✅ 1. Providers
-import '../../../features/discovery/povider/discovery_provider.dart';
-import '../../discovery/povider/filter_provider.dart';
+import 'package:blindly_dating_app/features/people/provider/people_feed_provider.dart';
+import 'package:blindly_dating_app/features/matching/provider/filter_provider.dart';
 import '../../../../core/providers/session_provider.dart';
 import '../../../../core/widgets/app_loader.dart';
 import '../../../../core/providers/connection_mode_provider.dart';
 
 // ✅ 2. Models
-import '../../discovery/domain/models/discovery_user_model.dart';
-import '../../onboarding/domain/models/lifestyle_chip_model.dart';
+import 'package:blindly_dating_app/features/matching/domain/models/match_profile.dart';
+import 'package:blindly_dating_app/features/onboarding/domain/models/lifestyle_chip_model.dart';
 
 // ✅ 3. Components
-import '../component/ProfileSwipeCard.dart';
-import '../component/swipe_deck.dart';
+import 'package:blindly_dating_app/features/matching/presentation/widgets/profile_swipe_card.dart';
+import 'package:blindly_dating_app/features/people/component/swipe_deck.dart';
 import '../../../../core/utils/custom_popups.dart';
 import '../../../../core/widgets/match_dialog.dart';
-import '../../discovery/presentation/widgets/no_more_profiles_widget.dart';
+import 'package:blindly_dating_app/features/people/widgets/no_more_people_widget.dart';
 import '../../../../core/utils/navigation_utils.dart';
-import 'connection_type_screen.dart';
-import '../../discovery/presentation/screens/filter_screen.dart';
-import '../../notifications/screens/notifications_screen.dart';
-import '../../notifications/services/push_notification_service.dart';
+import 'package:blindly_dating_app/features/matching/presentation/screens/connection_type_screen.dart';
+import 'package:blindly_dating_app/features/people/screens/filter_screen.dart';
+import 'package:blindly_dating_app/features/notifications/screens/notifications_screen.dart';
+import 'package:blindly_dating_app/features/notifications/services/push_notification_service.dart';
 
 // ✅ 4. Layout
 import '../../../../core/widgets/app_layout.dart';
 
-class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({super.key});
+class PeopleScreen extends ConsumerStatefulWidget {
+  const PeopleScreen({super.key});
 
   @override
-  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<PeopleScreen> createState() => _PeopleScreenState();
 }
 
 // ✅ Added: with SingleTickerProviderStateMixin
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _PeopleScreenState extends ConsumerState<PeopleScreen> {
   AppLocalizations get l10n => AppLocalizations.of(context);
 
 
@@ -106,7 +106,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         params: {'p_lat': position.latitude, 'p_long': position.longitude},
       );
 
-      debugPrint('📍 Passport location updated (HomeScreen)');
+      debugPrint('📍 Passport location updated (PeopleScreen)');
     } catch (e) {
       debugPrint('⚠️ Passport location update skipped: $e');
     }
@@ -260,7 +260,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   // ✅ Helper to map API data to UI data
-  UserProfile _toUserProfile(DiscoveryUser user) {
+  UserProfile _toUserProfile(MatchProfile user) {
       // Photos are already signed by the repository, and the feed no longer
       // returns anyone without one.
       final profileImages = List<String>.from(user.imageUrls);
@@ -325,7 +325,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<DiscoveryState>(discoveryFeedProvider, (prev, next) {
+    ref.listen<PeopleFeedState>(peopleFeedProvider, (prev, next) {
       if (next.hasLocationError && (prev == null || !prev.hasLocationError)) {
         _showLocationRequiredDialog();
       }
@@ -338,18 +338,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             behavior: SnackBarBehavior.floating,
           ),
         );
-        ref.read(discoveryFeedProvider.notifier).clearNotices();
+        ref.read(peopleFeedProvider.notifier).clearNotices();
       }
       // That like was mutual — this is the one interruption worth making.
       if (next.matchedWith != null && next.matchedWith != prev?.matchedWith) {
         showMatchDialog(context, next.matchedWith!);
-        ref.read(discoveryFeedProvider.notifier).clearNotices();
+        ref.read(peopleFeedProvider.notifier).clearNotices();
       }
     });
 
     final feed = _isLocationReady
-        ? ref.watch(discoveryFeedProvider)
-        : const DiscoveryState(isLoading: true);
+        ? ref.watch(peopleFeedProvider)
+        : const PeopleFeedState(isLoading: true);
 
     final deck = feed.deck;
 
@@ -406,7 +406,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     HapticFeedback.mediumImpact();
                     // One path: the notifier restores the card and reverts
                     // the row for that same profile.
-                    ref.read(discoveryFeedProvider.notifier).undo();
+                    ref.read(peopleFeedProvider.notifier).undo();
                   },
           ),
           IconButton(
@@ -433,7 +433,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   // --------------------------------------------------------------- the deck
-  Widget _buildDeck(List<DiscoveryUser> deck) {
+  Widget _buildDeck(List<MatchProfile> deck) {
     return Stack(
       children: [
         Positioned.fill(
@@ -543,16 +543,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Future<void> _openFilters() async {
     await NavigationUtils.navigateToWithSlide(context, const FilterScreen());
     await ref.read(filterProvider.notifier).flush();
-    if (mounted) ref.read(discoveryFeedProvider.notifier).refreshFeed();
+    if (mounted) ref.read(peopleFeedProvider.notifier).refreshFeed();
   }
 
   // -----------------------------------------------------------------------
   // SWIPE
   // -----------------------------------------------------------------------
-  void _onSwipe(DiscoveryUser user, SwipeAction action) {
+  void _onSwipe(MatchProfile user, SwipeAction action) {
     HapticFeedback.selectionClick();
 
-    ref.read(discoveryFeedProvider.notifier).swipe(
+    ref.read(peopleFeedProvider.notifier).swipe(
           user,
           switch (action) {
             SwipeAction.like => SwipeIntent.like,
@@ -590,7 +590,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             onPressed: () {
               Navigator.pop(context);
-              ref.read(discoveryFeedProvider.notifier).refreshFeed();
+              ref.read(peopleFeedProvider.notifier).refreshFeed();
             },
             child: Text(l10n.retry, style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
@@ -600,7 +600,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildEmptyState() {
-    return NoMoreProfilesWidget(
+    return NoMorePeopleWidget(
       onAdjustFilters: _openFilters,
       onNotifyMe: () {
         debugPrint("Notify Me clicked");

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../providers/chat_providers.dart';
-import './chat_conversation_screen.dart';
-import './../../../../core/widgets/app_layout.dart';
+import 'package:blindly_dating_app/features/chat/providers/chat_providers.dart';
+import 'package:blindly_dating_app/features/chat/presentation/screens/chat_conversation_screen.dart';
+import 'package:blindly_dating_app/core/widgets/app_layout.dart';
 
 /// ===============================================================
 /// CHAT DETAIL SCREEN

@@ -1,5 +1,5 @@
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
-import '../utils/app_logger.dart';
+import 'package:blindly_dating_app/core/utils/app_logger.dart';
 
 class JwtValidator {
   /// Validates the structure and generic claims of a JWT.

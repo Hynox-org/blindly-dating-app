@@ -17,7 +17,7 @@ class EventsDiscoverScreen extends StatelessWidget {
             Icon(
               Icons.event_busy,
               size: 100,
-              color: colorScheme.onSurface.withOpacity(0.2),
+              color: colorScheme.onSurface.withValues(alpha: 0.2),
             ),
             const SizedBox(height: 24),
             Text(
@@ -34,7 +34,7 @@ class EventsDiscoverScreen extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
-                color: colorScheme.onSurface.withOpacity(0.7),
+                color: colorScheme.onSurface.withValues(alpha: 0.7),
                 height: 1.5,
               ),
             ),

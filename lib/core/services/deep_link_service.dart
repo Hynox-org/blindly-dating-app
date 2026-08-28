@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
-import '../utils/nav_key.dart';
-import '../../features/home/screens/shared_profile_screen.dart';
+import 'package:blindly_dating_app/core/utils/nav_key.dart';
+import 'package:blindly_dating_app/features/matching/presentation/screens/shared_profile_screen.dart';
 
 class DeepLinkService {
   DeepLinkService._();

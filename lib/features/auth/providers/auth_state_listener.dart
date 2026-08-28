@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../core/utils/app_logger.dart';
-import '../../../core/utils/nav_key.dart';
+import 'package:blindly_dating_app/core/utils/app_logger.dart';
+import 'package:blindly_dating_app/core/utils/nav_key.dart';
 
 /// A provider that listens to Supabase auth state changes and redirects accordingly.
 final authStateListenerProvider = Provider<void>((ref) {

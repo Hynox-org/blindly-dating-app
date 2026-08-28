@@ -3,8 +3,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import '../../../core/utils/app_logger.dart';
-import '../../../core/security/jwt_validator.dart';
+import 'package:blindly_dating_app/core/utils/app_logger.dart';
+import 'package:blindly_dating_app/core/security/jwt_validator.dart';
 
 class AuthRepository {
   final SupabaseClient _client;

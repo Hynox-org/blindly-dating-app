@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/core/utils/nav_key.dart';
 import 'dart:convert';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import '../../chat/presentation/screens/chat_conversation_screen.dart';
+import 'package:blindly_dating_app/features/chat/presentation/screens/chat_conversation_screen.dart';
 // import '../../profile/domain/models/profile_user_model.dart';
 
 class PushNotificationService {

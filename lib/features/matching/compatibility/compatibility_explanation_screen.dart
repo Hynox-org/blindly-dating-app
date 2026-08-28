@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../domain/models/compatibility_report_model.dart';
-import '../../repository/compatibility_repository.dart';
+import 'package:blindly_dating_app/features/matching/compatibility/compatibility_report_model.dart';
+import 'package:blindly_dating_app/features/matching/compatibility/compatibility_repository.dart';
 
 /// Opened from the compatibility button on a profile card. Watching the
 /// provider here is what triggers the scoring call -- nothing is computed for

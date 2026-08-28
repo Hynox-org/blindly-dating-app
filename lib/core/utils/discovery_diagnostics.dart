@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../features/auth/providers/auth_providers.dart';
+import 'package:blindly_dating_app/features/auth/providers/auth_providers.dart';
 import 'package:geolocator/geolocator.dart';
-import '../../features/location/data/location_repository.dart';
+import 'package:blindly_dating_app/features/location/data/location_repository.dart';
 
 class DiscoveryDiagnostics {
   static Future<void> fixProfile(WidgetRef ref) async {
@@ -76,7 +76,7 @@ class DiscoveryDiagnostics {
   static Future<void> runDiagnostics(WidgetRef ref) async {
     // ... existing diagnostics logic ...
     // For now, I'll keep runDiagnostics as READ ONLY.
-    // I will modify HomeScreen to call fixProfile.
+    // I will modify PeopleScreen to call fixProfile.
     final supabase = Supabase.instance.client;
     final user = ref.read(authRepositoryProvider).currentUser;
 

@@ -1,5 +1,5 @@
-import '../../../onboarding/domain/models/lifestyle_chip_model.dart';
-import '../../../onboarding/domain/models/profile_prompt_model.dart';
+import 'package:blindly_dating_app/features/onboarding/domain/models/lifestyle_chip_model.dart';
+import 'package:blindly_dating_app/features/onboarding/domain/models/profile_prompt_model.dart';
 
 class ProfileUser {
   final String id;

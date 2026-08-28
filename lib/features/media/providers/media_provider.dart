@@ -5,8 +5,8 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../data/repositories/media_repository.dart';
-import '../data/repositories/photo_moderation_repository.dart';
+import 'package:blindly_dating_app/features/media/data/repositories/media_repository.dart';
+import 'package:blindly_dating_app/features/media/data/repositories/photo_moderation_repository.dart';
 
 const int maxPhotos = PhotoModerationRepository.maxPhotos;
 

@@ -4,38 +4,38 @@ import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
+import 'package:blindly_dating_app/firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-import 'core/security/security_config.dart';
-import 'core/config/environment_config.dart';
-import 'core/config/jiobase_proxy_client.dart';
+import 'package:blindly_dating_app/core/security/security_config.dart';
+import 'package:blindly_dating_app/core/config/environment_config.dart';
+import 'package:blindly_dating_app/core/config/jiobase_proxy_client.dart';
 
 // Screens
-import 'features/splash/screens/splash_screen.dart';
-import 'features/onboarding/screens/welcome_screen.dart';
-import 'features/onboarding/screens/location_access_screen.dart';
-import 'features/auth/screens/authentication_screen.dart';
-import 'features/home/screens/home_screen.dart';
+import 'package:blindly_dating_app/features/splash/screens/splash_screen.dart';
+import 'package:blindly_dating_app/features/onboarding/screens/welcome_screen.dart';
+import 'package:blindly_dating_app/features/onboarding/screens/location_access_screen.dart';
+import 'package:blindly_dating_app/features/auth/screens/authentication_screen.dart';
+import 'package:blindly_dating_app/features/people/people_screen.dart';
 // Core
-import 'core/theme/app_theme.dart';
-import 'core/providers/locale_provider.dart';
-import 'core/utils/logging_navigator_observer.dart';
-import 'core/utils/nav_key.dart';
-import 'features/auth/providers/auth_state_listener.dart';
-import 'features/notifications/services/push_notification_service.dart';
+import 'package:blindly_dating_app/core/theme/app_theme.dart';
+import 'package:blindly_dating_app/core/providers/locale_provider.dart';
+import 'package:blindly_dating_app/core/utils/logging_navigator_observer.dart';
+import 'package:blindly_dating_app/core/utils/nav_key.dart';
+import 'package:blindly_dating_app/features/auth/providers/auth_state_listener.dart';
+import 'package:blindly_dating_app/features/notifications/services/push_notification_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 //CALL SYSTEM
 // import 'features/call/provider/global_call_listener.dart';
-import 'features/call/presentation/widgets/incoming_call_overlay.dart';
-import 'features/call/global_call_initializer.dart';
+import 'package:blindly_dating_app/features/call/presentation/widgets/incoming_call_overlay.dart';
+import 'package:blindly_dating_app/features/call/global_call_initializer.dart';
 import 'core/services/deep_link_service.dart'
     as import_deep_links; // deep link setup
-import 'core/services/translation_service.dart';
-import 'core/services/text_moderation_service.dart';
+import 'package:blindly_dating_app/core/services/translation_service.dart';
+import 'package:blindly_dating_app/core/services/text_moderation_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -154,7 +154,7 @@ class _MyAppState extends ConsumerState<MyApp> {
         '/location_access': (context) => const LocationAccessScreen(),
         '/welcome': (context) => const WelcomeScreen(),
         '/auth': (context) => const AuthenticationScreen(),
-        '/home': (context) => const HomeScreen(),
+        '/home': (context) => const PeopleScreen(),
       },
     );
   }

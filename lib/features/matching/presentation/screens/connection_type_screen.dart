@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/widgets/app_loader.dart';
-import '../../events/screens/events_home_screen.dart';
-import 'home_screen.dart';
+import 'package:blindly_dating_app/core/widgets/app_loader.dart';
+import 'package:blindly_dating_app/features/events/screens/events_home_screen.dart';
+import 'package:blindly_dating_app/features/people/people_screen.dart';
 
-import '../../../core/providers/connection_mode_provider.dart';
-import '../../profile/provider/profile_provider.dart';
+import 'package:blindly_dating_app/core/providers/connection_mode_provider.dart';
+import 'package:blindly_dating_app/features/profile/provider/profile_provider.dart';
 
 class ConnectionTypeScreen extends ConsumerStatefulWidget {
   final String? initialMode;
@@ -164,13 +164,13 @@ class _ConnectionTypeScreenState extends ConsumerState<ConnectionTypeScreen> {
         if (mounted) {
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
+            MaterialPageRoute(builder: (context) => const PeopleScreen()),
             (route) => false,
           );
         }
       }
     } catch (e) {
-      debugPrint('❌ Failed to update discovery mode: $e');
+      debugPrint('❌ Failed to update connection mode: $e');
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);

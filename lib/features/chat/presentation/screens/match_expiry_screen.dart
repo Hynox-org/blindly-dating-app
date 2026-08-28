@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
-import './chat_detail_screen.dart';
+import 'package:blindly_dating_app/features/chat/presentation/screens/chat_detail_screen.dart';
 
 class MatchExpiryScreen extends StatefulWidget {
   final String userName;

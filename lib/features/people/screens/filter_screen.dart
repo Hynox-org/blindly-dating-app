@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/providers/connection_mode_provider.dart';
-import '../../povider/filter_provider.dart';
-import '../../../onboarding/domain/models/interest_chip_model.dart';
-import '../../../../core/utils/vocab.dart';
+import 'package:blindly_dating_app/core/providers/connection_mode_provider.dart';
+import 'package:blindly_dating_app/features/matching/provider/filter_provider.dart';
+import 'package:blindly_dating_app/features/onboarding/domain/models/interest_chip_model.dart';
+import 'package:blindly_dating_app/core/utils/vocab.dart';
 
 class FilterScreen extends ConsumerWidget {
   const FilterScreen({super.key});

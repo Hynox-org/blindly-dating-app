@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/widgets/app_loader.dart';
-import '../../home/component/ProfileSwipeCard.dart';
-import '../../discovery/domain/models/discovery_user_model.dart';
-import '../../discovery/repository/discovery_repository.dart';
-import '../../discovery/povider/swipe_provider.dart';
+import 'package:blindly_dating_app/core/widgets/app_loader.dart';
+import 'package:blindly_dating_app/features/matching/presentation/widgets/profile_swipe_card.dart';
+import 'package:blindly_dating_app/features/matching/domain/models/match_profile.dart';
+import 'package:blindly_dating_app/features/matching/repository/matching_repository.dart';
+import 'package:blindly_dating_app/features/matching/provider/swipe_provider.dart';
 
 class SharedProfileScreen extends ConsumerStatefulWidget {
   final String profileId;
@@ -21,7 +21,7 @@ class _SharedProfileScreenState extends ConsumerState<SharedProfileScreen> {
 
 
   bool _isLoading = true;
-  DiscoveryUser? _user;
+  MatchProfile? _user;
   String? _errorMessage;
 
   @override
@@ -32,7 +32,7 @@ class _SharedProfileScreenState extends ConsumerState<SharedProfileScreen> {
 
   Future<void> _fetchProfile() async {
     try {
-      final repo = ref.read(discoveryRepositoryProvider);
+      final repo = ref.read(matchingRepositoryProvider);
       final user = await repo.getProfileWithRelationship(widget.profileId);
 
       if (user == null) {
@@ -195,7 +195,7 @@ class _SharedProfileScreenState extends ConsumerState<SharedProfileScreen> {
       );
     }
 
-    // Convert DiscoveryUser to UserProfile for the card
+    // Convert MatchProfile to UserProfile for the card
     final profile = UserProfile(
         id: _user!.profileId,
         name: _user!.displayName,
@@ -218,7 +218,7 @@ class _SharedProfileScreenState extends ConsumerState<SharedProfileScreen> {
         hometown: _user!.hometown ?? '',
         workCompany: _user!.workCompany ?? '',
         hobbies: _user!.interests,
-        summary: '', // discovery user doesn't have summary field but bio
+        summary: '', // match profile has no summary field, so bio stands in
         lookingForModes: _user!.lookingForModes,
         quickestWay: '',
         causes: _user!.causes,

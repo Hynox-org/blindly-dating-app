@@ -1,10 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../features/discovery/repository/discovery_repository.dart';
-import 'auth_provider.dart';
+import 'package:blindly_dating_app/features/matching/repository/matching_repository.dart';
+import 'package:blindly_dating_app/core/providers/auth_provider.dart';
 
 class ConnectionModeNotifier extends StateNotifier<String> {
-  final DiscoveryRepository _repository;
+  final MatchingRepository _repository;
   final String? _userId;
 
   ConnectionModeNotifier(this._repository, this._userId) : super('Date') {
@@ -47,7 +47,7 @@ class ConnectionModeNotifier extends StateNotifier<String> {
 
 final connectionModeProvider =
     StateNotifierProvider<ConnectionModeNotifier, String>((ref) {
-      final repository = ref.watch(discoveryRepositoryProvider);
+      final repository = ref.watch(matchingRepositoryProvider);
       final userId = ref.watch(currentUserIdProvider);
       return ConnectionModeNotifier(repository, userId);
     });

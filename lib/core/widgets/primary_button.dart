@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'app_loader.dart';
+import 'package:blindly_dating_app/core/widgets/app_loader.dart';
 
 class PrimaryButton extends StatelessWidget {
   final String text;
@@ -39,9 +39,9 @@ class PrimaryButton extends StatelessWidget {
           backgroundColor: backgroundColor ?? theme.colorScheme.primary,
           foregroundColor: foregroundColor ?? theme.colorScheme.onPrimary,
           disabledBackgroundColor:
-              (backgroundColor ?? theme.colorScheme.primary).withOpacity(0.5),
+              (backgroundColor ?? theme.colorScheme.primary).withValues(alpha: 0.5),
           disabledForegroundColor:
-              (foregroundColor ?? theme.colorScheme.onPrimary).withOpacity(0.5),
+              (foregroundColor ?? theme.colorScheme.onPrimary).withValues(alpha: 0.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(borderRadius),
           ),

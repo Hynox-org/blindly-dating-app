@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/onboarding_provider.dart';
-import '../../../../auth/providers/auth_providers.dart';
-import '../../../data/repositories/onboarding_repository.dart';
-import 'base_onboarding_step_screen.dart';
-import '../../../../../core/utils/custom_popups.dart';
+import 'package:blindly_dating_app/features/onboarding/presentation/providers/onboarding_provider.dart';
+import 'package:blindly_dating_app/features/auth/providers/auth_providers.dart';
+import 'package:blindly_dating_app/features/onboarding/data/repositories/onboarding_repository.dart';
+import 'package:blindly_dating_app/features/onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
+import 'package:blindly_dating_app/core/utils/custom_popups.dart';
 import 'package:blindly_dating_app/features/profile/provider/profile_provider.dart';
 
 /// Whole years elapsed between [birthDate] and [now].
@@ -204,7 +204,7 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: Theme.of(
                   context,
-                ).colorScheme.onSurface.withOpacity(0.54),
+                ).colorScheme.onSurface.withValues(alpha: 0.54),
               ),
             ),
             const SizedBox(height: 24),
@@ -217,7 +217,7 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
                 fontWeight: FontWeight.bold,
                 color: Theme.of(
                   context,
-                ).colorScheme.onSurface.withOpacity(0.87),
+                ).colorScheme.onSurface.withValues(alpha: 0.87),
               ),
             ),
             const SizedBox(height: 8),
@@ -231,7 +231,7 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
                 hintStyle: TextStyle(
                   color: Theme.of(
                     context,
-                  ).colorScheme.onSurface.withOpacity(0.4),
+                  ).colorScheme.onSurface.withValues(alpha: 0.4),
                 ),
                 filled: true,
                 fillColor: theme
@@ -250,7 +250,7 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
                   borderSide: BorderSide(
                     color: Theme.of(
                       context,
-                    ).colorScheme.onSurface.withOpacity(0.12),
+                    ).colorScheme.onSurface.withValues(alpha: 0.12),
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
@@ -268,7 +268,7 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: Theme.of(
                   context,
-                ).colorScheme.onSurface.withOpacity(0.54),
+                ).colorScheme.onSurface.withValues(alpha: 0.54),
               ),
             ),
             const SizedBox(height: 24),
@@ -281,7 +281,7 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
                 fontWeight: FontWeight.bold,
                 color: Theme.of(
                   context,
-                ).colorScheme.onSurface.withOpacity(0.87),
+                ).colorScheme.onSurface.withValues(alpha: 0.87),
               ),
             ),
             const SizedBox(height: 8),
@@ -333,7 +333,7 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
                 fontSize: 12,
                 color: Theme.of(
                   context,
-                ).colorScheme.onSurface.withOpacity(0.54),
+                ).colorScheme.onSurface.withValues(alpha: 0.54),
                 height: 1.5,
               ),
             ),
@@ -376,7 +376,7 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
         counterText: "", // Hide character counter
         hintText: hint,
         hintStyle: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
         ),
         filled: true,
         fillColor: theme.colorScheme.surface,
@@ -391,7 +391,7 @@ class _NameBirthEntryScreenState extends ConsumerState<NameBirthEntryScreen> {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.12),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12),
           ),
         ),
         focusedBorder: OutlineInputBorder(

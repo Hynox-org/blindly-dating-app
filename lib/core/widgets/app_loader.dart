@@ -23,7 +23,7 @@ class AppLoader extends StatelessWidget {
         child: CircularProgressIndicator(
           strokeWidth: strokeWidth,
           strokeCap: StrokeCap.round,
-          backgroundColor: themeColor.withOpacity(0.15),
+          backgroundColor: themeColor.withValues(alpha: 0.15),
           valueColor: AlwaysStoppedAnimation<Color>(themeColor),
         ),
       ),

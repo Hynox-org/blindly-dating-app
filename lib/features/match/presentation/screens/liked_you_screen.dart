@@ -3,21 +3,21 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/providers/connection_mode_provider.dart';
-import '../../../../core/utils/navigation_utils.dart';
-import '../../../../core/widgets/app_layout.dart';
-import '../../../../core/widgets/app_loader.dart';
-import '../../../../core/widgets/marquee_text.dart';
-import '../../../../core/widgets/match_dialog.dart';
-import '../../../discovery/domain/models/discovery_user_model.dart'
+import 'package:blindly_dating_app/core/providers/connection_mode_provider.dart';
+import 'package:blindly_dating_app/core/utils/navigation_utils.dart';
+import 'package:blindly_dating_app/core/widgets/app_layout.dart';
+import 'package:blindly_dating_app/core/widgets/app_loader.dart';
+import 'package:blindly_dating_app/core/widgets/marquee_text.dart';
+import 'package:blindly_dating_app/core/widgets/match_dialog.dart';
+import 'package:blindly_dating_app/features/matching/domain/models/match_profile.dart'
     show RelationshipState;
-import '../../../discovery/presentation/screens/discovery_profile_detail_screen.dart';
-import '../../../discovery/repository/discovery_repository.dart';
-import '../../../home/screens/connection_type_screen.dart';
-import '../../../home/screens/home_screen.dart';
-import '../../../profile/profile.dart';
-import '../../domain/models/liked_you_user_model.dart';
-import '../../provider/liked_you_provider.dart';
+import 'package:blindly_dating_app/features/discovery/presentation/screens/discovery_profile_detail_screen.dart';
+import 'package:blindly_dating_app/features/matching/repository/matching_repository.dart';
+import 'package:blindly_dating_app/features/matching/presentation/screens/connection_type_screen.dart';
+import 'package:blindly_dating_app/features/people/people_screen.dart';
+import 'package:blindly_dating_app/features/profile/profile.dart';
+import 'package:blindly_dating_app/features/match/domain/models/liked_you_user_model.dart';
+import 'package:blindly_dating_app/features/match/provider/liked_you_provider.dart';
 
 /// Who liked or super liked you. Super likes come first — the RPC orders,
 /// this screen just renders. Match and Pass are ordinary swipes recorded
@@ -78,7 +78,7 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
         child: ref.watch(likedYouProvider).when(
               skipLoadingOnReload: true,
               loading: () => const AppLoader(),
-              error: (_, __) => Center(child: Text(l10n.failedToLoadLikes)),
+              error: (_, _) => Center(child: Text(l10n.failedToLoadLikes)),
               data: (users) =>
                   users.isEmpty ? _buildEmptyState() : _buildGrid(users),
             ),
@@ -155,8 +155,8 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
                 ? CachedNetworkImage(
                     imageUrl: user.imageUrl!,
                     fit: BoxFit.cover,
-                    placeholder: (_, __) => _imageFallback(),
-                    errorWidget: (_, __, ___) => _imageFallback(),
+                    placeholder: (_, _) => _imageFallback(),
+                    errorWidget: (_, _, _) => _imageFallback(),
                   )
                 : _imageFallback(),
 
@@ -319,13 +319,13 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
     );
 
     try {
-      final repo = ref.read(discoveryRepositoryProvider);
+      final repo = ref.read(matchingRepositoryProvider);
       final mode = ref.read(connectionModeProvider);
 
       // The liker might only be active in the other mode, so fall back once
       // before giving up.
-      var full = await repo.getDiscoveryUser(user.profileId, mode: mode);
-      full ??= await repo.getDiscoveryUser(
+      var full = await repo.getProfile(user.profileId, mode: mode);
+      full ??= await repo.getProfile(
         user.profileId,
         mode: mode.toLowerCase() == 'date' ? 'bff' : 'date',
       );
@@ -400,7 +400,7 @@ class _LikedYouScreenState extends ConsumerState<LikedYouScreen> {
               child: ElevatedButton(
                 onPressed: () => Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (_) => const HomeScreen()),
+                  MaterialPageRoute(builder: (_) => const PeopleScreen()),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,

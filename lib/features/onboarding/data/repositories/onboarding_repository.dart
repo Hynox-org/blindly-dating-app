@@ -1,12 +1,12 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/onboarding_step_model.dart';
-import '../../../../core/utils/app_logger.dart';
-import '../../domain/models/lifestyle_category_model.dart';
-import '../../domain/models/lifestyle_chip_model.dart';
-import '../../domain/models/prompt_category_model.dart';
-import '../../domain/models/prompt_template_model.dart';
-import '../../domain/models/profile_prompt_model.dart';
+import 'package:blindly_dating_app/features/onboarding/data/models/onboarding_step_model.dart';
+import 'package:blindly_dating_app/core/utils/app_logger.dart';
+import 'package:blindly_dating_app/features/onboarding/domain/models/lifestyle_category_model.dart';
+import 'package:blindly_dating_app/features/onboarding/domain/models/lifestyle_chip_model.dart';
+import 'package:blindly_dating_app/features/onboarding/domain/models/prompt_category_model.dart';
+import 'package:blindly_dating_app/features/onboarding/domain/models/prompt_template_model.dart';
+import 'package:blindly_dating_app/features/onboarding/domain/models/profile_prompt_model.dart';
 
 final onboardingRepositoryProvider = Provider<OnboardingRepository>((ref) {
   return OnboardingRepository(Supabase.instance.client);

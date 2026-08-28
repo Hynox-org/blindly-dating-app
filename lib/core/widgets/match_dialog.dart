@@ -1,8 +1,8 @@
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
-import '../utils/navigation_utils.dart';
-import '../../features/chat/presentation/screens/chat_screen.dart';
+import 'package:blindly_dating_app/core/utils/navigation_utils.dart';
+import 'package:blindly_dating_app/features/chat/presentation/screens/chat_screen.dart';
 
 /// Shown the moment a swipe turns into a match, from the deck or the likes
 /// screen. Both call this rather than each growing their own celebration.
@@ -27,7 +27,7 @@ Future<void> showMatchDialog(BuildContext context, String name) {
             Image.asset(
               'assets/static/match_illustration.png',
               height: 180,
-              errorBuilder: (_, __, ___) => const SizedBox(height: 180),
+              errorBuilder: (_, _, _) => const SizedBox(height: 180),
             ),
             const SizedBox(height: 20),
             Text(

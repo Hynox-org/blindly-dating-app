@@ -2,23 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/onboarding_provider.dart';
-import '../../../../core/widgets/app_loader.dart';
+import 'package:blindly_dating_app/features/onboarding/presentation/providers/onboarding_provider.dart';
+import 'package:blindly_dating_app/core/widgets/app_loader.dart';
 
-import '../../../auth/providers/auth_providers.dart';
+import 'package:blindly_dating_app/features/auth/providers/auth_providers.dart';
 
 // Import all step screens
-import 'steps/terms_screen.dart';
-import 'steps/name_birth_entry_screen.dart';
-import 'steps/gender_select_screen.dart';
-import 'steps/photo_upload_screen.dart';
-import '../../../profile/presentation/screens/setup_steps/bio_entry_screen.dart';
-import '../../../profile/presentation/screens/setup_steps/interests_select_screen.dart';
-import '../../../profile/presentation/screens/setup_steps/lifestyle_prefs_screen.dart';
-import '../../../profile/presentation/screens/setup_steps/voice_intro_screen.dart';
-import '../../../profile/presentation/screens/setup_steps/profile_prompts_screen.dart';
-import '../../../profile/presentation/screens/setup_steps/gov_id_screen.dart';
-import '../../../profile/presentation/screens/setup_steps/language_select_screen.dart';
+import 'package:blindly_dating_app/features/onboarding/presentation/screens/steps/terms_screen.dart';
+import 'package:blindly_dating_app/features/onboarding/presentation/screens/steps/name_birth_entry_screen.dart';
+import 'package:blindly_dating_app/features/onboarding/presentation/screens/steps/gender_select_screen.dart';
+import 'package:blindly_dating_app/features/onboarding/presentation/screens/steps/photo_upload_screen.dart';
+import 'package:blindly_dating_app/features/profile/presentation/screens/setup_steps/bio_entry_screen.dart';
+import 'package:blindly_dating_app/features/profile/presentation/screens/setup_steps/interests_select_screen.dart';
+import 'package:blindly_dating_app/features/profile/presentation/screens/setup_steps/lifestyle_prefs_screen.dart';
+import 'package:blindly_dating_app/features/profile/presentation/screens/setup_steps/voice_intro_screen.dart';
+import 'package:blindly_dating_app/features/profile/presentation/screens/setup_steps/profile_prompts_screen.dart';
+import 'package:blindly_dating_app/features/profile/presentation/screens/setup_steps/gov_id_screen.dart';
+import 'package:blindly_dating_app/features/profile/presentation/screens/setup_steps/language_select_screen.dart';
 
 class OnboardingShell extends ConsumerStatefulWidget {
   const OnboardingShell({super.key});

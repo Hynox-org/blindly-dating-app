@@ -2,13 +2,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../data/match_repository.dart';
+import 'package:blindly_dating_app/features/chat/data/match_repository.dart';
 
-import '../../chat/domain/models/recent_matches_model.dart';
-import '../../chat/repository/recent_matches_repository.dart';
+import 'package:blindly_dating_app/features/chat/domain/models/recent_matches_model.dart';
+import 'package:blindly_dating_app/features/chat/repository/recent_matches_repository.dart';
 
 // 👉 ADD THIS — contains RecentMatchesNotifier
-import '../provider/recent_matches_provider.dart';
+import 'package:blindly_dating_app/features/chat/provider/recent_matches_provider.dart';
 
 /// =============================================================
 /// SUPABASE CLIENT

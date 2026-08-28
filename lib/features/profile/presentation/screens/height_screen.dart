@@ -1,10 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
-import '../../../../core/utils/vocab.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/repositories/profile_repository.dart';
-import '../../provider/profile_provider.dart';
+import 'package:blindly_dating_app/features/profile/domain/repositories/profile_repository.dart';
+import 'package:blindly_dating_app/features/profile/provider/profile_provider.dart';
 
 class HeightScreen extends ConsumerStatefulWidget {
   final bool isEditMode;

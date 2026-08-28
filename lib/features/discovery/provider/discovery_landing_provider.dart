@@ -1,20 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../domain/models/discovery_user_model.dart';
-import '../domain/models/discovery_landing_data.dart';
-import '../repository/discovery_repository.dart';
+import 'package:blindly_dating_app/features/matching/domain/models/match_profile.dart';
+import 'package:blindly_dating_app/features/discovery/domain/models/discovery_landing_data.dart';
+import 'package:blindly_dating_app/features/discovery/repository/discovery_feed_repository.dart';
 
 final discoveryLandingProvider =
     StateNotifierProvider<
       DiscoveryLandingNotifier,
       AsyncValue<DiscoveryLandingData>
     >((ref) {
-      final repository = ref.watch(discoveryRepositoryProvider);
+      final repository = ref.watch(discoveryFeedRepositoryProvider);
       return DiscoveryLandingNotifier(repository);
     });
 
 class DiscoveryLandingNotifier
     extends StateNotifier<AsyncValue<DiscoveryLandingData>> {
-  final DiscoveryRepository _repository;
+  final DiscoveryFeedRepository _repository;
   String? _lastFetchedMode;
   DateTime? _lastFetchTime;
 
@@ -50,7 +50,7 @@ class DiscoveryLandingNotifier
     }
 
     try {
-      final data = await _repository.getSmartDiscoveryFeed(
+      final data = await _repository.getDiscoveryFeed(
         mode: mode ?? 'date',
       );
       _lastFetchedMode = mode;
@@ -63,7 +63,7 @@ class DiscoveryLandingNotifier
 
   void removeUser(String userId) {
     state.whenData((data) {
-      final newData = <String, List<DiscoveryUser>>{};
+      final newData = <String, List<MatchProfile>>{};
       bool changed = false;
 
       for (var key in data.feeds.keys) {

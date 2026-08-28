@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
-import '../../home/screens/connection_type_screen.dart';
+import 'package:blindly_dating_app/features/matching/presentation/screens/connection_type_screen.dart';
 import '../../../../core/utils/navigation_utils.dart';
-import 'events_discover_screen.dart';
-import 'events_booked_screen.dart';
-import 'events_upcoming_screen.dart';
+import 'package:blindly_dating_app/features/events/screens/events_discover_screen.dart';
+import 'package:blindly_dating_app/features/events/screens/events_booked_screen.dart';
+import 'package:blindly_dating_app/features/events/screens/events_upcoming_screen.dart';
 
 class EventsHomeScreen extends StatefulWidget {
   const EventsHomeScreen({super.key});
@@ -59,7 +59,7 @@ class _EventsHomeScreenState extends State<EventsHomeScreen> {
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),

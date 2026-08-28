@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/providers/locale_provider.dart';
+import 'package:blindly_dating_app/core/providers/locale_provider.dart';
 
 /// Picks the language the *app UI* is shown in. Not to be confused with
 /// `LanguageSelectionScreen`, which edits the languages a user speaks.

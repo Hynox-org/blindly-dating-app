@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
 
-class NoMoreProfilesWidget extends StatelessWidget {
+class NoMorePeopleWidget extends StatelessWidget {
   final VoidCallback? onAdjustFilters;
   final VoidCallback? onNotifyMe;
 
-  const NoMoreProfilesWidget({
+  const NoMorePeopleWidget({
     super.key,
     this.onAdjustFilters,
     this.onNotifyMe,

@@ -1,6 +1,6 @@
 import 'package:safe_device/safe_device.dart';
 import 'package:flutter/services.dart';
-import '../utils/app_logger.dart';
+import 'package:blindly_dating_app/core/utils/app_logger.dart';
 
 class DeviceSecurity {
   /// Checks if the device is rooted or jailbroken.

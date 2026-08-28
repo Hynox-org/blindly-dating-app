@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'app_logger.dart';
+import 'package:blindly_dating_app/core/utils/app_logger.dart';
 
 class LoggingNavigatorObserver extends NavigatorObserver {
   @override

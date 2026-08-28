@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../repository/swipe_repository.dart';
+import 'package:blindly_dating_app/features/matching/repository/swipe_repository.dart';
 
 // ======================================================
 // Swipe Provider

@@ -1,4 +1,4 @@
-import '../../../onboarding/domain/models/profile_prompt_model.dart';
+import 'package:blindly_dating_app/features/onboarding/domain/models/profile_prompt_model.dart';
 
 enum RelationshipState {
   none,
@@ -10,7 +10,7 @@ enum RelationshipState {
   blocked,
 }
 
-class DiscoveryUser {
+class MatchProfile {
   final String profileId;
   final String displayName;
   final int age;
@@ -51,7 +51,7 @@ class DiscoveryUser {
   final int trustScore; // ✅ Added Trust Score
   final RelationshipState relationship; // ✅ New field
 
-  DiscoveryUser({
+  MatchProfile({
     required this.profileId,
     required this.displayName,
     required this.age,
@@ -91,8 +91,8 @@ class DiscoveryUser {
     this.relationship = RelationshipState.none,
   });
 
-  factory DiscoveryUser.fromJson(Map<String, dynamic> json) {
-    return DiscoveryUser(
+  factory MatchProfile.fromJson(Map<String, dynamic> json) {
+    return MatchProfile(
       profileId: json['profile_id'],
       displayName: json['display_name'] ?? 'Unknown',
       age: json['age'] ?? 0,
@@ -178,7 +178,7 @@ class DiscoveryUser {
     );
   }
 
-  DiscoveryUser copyWith({
+  MatchProfile copyWith({
     String? profileId,
     String? displayName,
     int? age,
@@ -217,7 +217,7 @@ class DiscoveryUser {
     int? trustScore,
     RelationshipState? relationship,
   }) {
-    return DiscoveryUser(
+    return MatchProfile(
       profileId: profileId ?? this.profileId,
       displayName: displayName ?? this.displayName,
       age: age ?? this.age,

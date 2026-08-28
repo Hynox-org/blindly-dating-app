@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:blindly_dating_app/features/onboarding/presentation/providers/onboarding_provider.dart';
-import '../../../../onboarding/data/repositories/onboarding_repository.dart';
-import '../../../../onboarding/domain/models/prompt_category_model.dart';
-import '../../../../onboarding/domain/models/prompt_template_model.dart';
-import '../../../../onboarding/domain/models/profile_prompt_model.dart';
-import '../../../../auth/providers/auth_providers.dart';
-import '../../../../../core/utils/custom_popups.dart';
+import 'package:blindly_dating_app/features/onboarding/data/repositories/onboarding_repository.dart';
+import 'package:blindly_dating_app/features/onboarding/domain/models/prompt_category_model.dart';
+import 'package:blindly_dating_app/features/onboarding/domain/models/prompt_template_model.dart';
+import 'package:blindly_dating_app/features/onboarding/domain/models/profile_prompt_model.dart';
+import 'package:blindly_dating_app/features/auth/providers/auth_providers.dart';
+import 'package:blindly_dating_app/core/utils/custom_popups.dart';
 import 'package:blindly_dating_app/features/onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
-import '../../../../../core/widgets/app_loader.dart';
-import '../../../../../core/providers/connection_mode_provider.dart';
+import 'package:blindly_dating_app/core/widgets/app_loader.dart';
+import 'package:blindly_dating_app/core/providers/connection_mode_provider.dart';
 import 'package:blindly_dating_app/features/profile/provider/profile_provider.dart';
 
 /// Onboarding asks for exactly three prompts. Editing later is looser -- the
@@ -348,7 +348,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
                 padding: EdgeInsets.zero,
                 scrollDirection: Axis.horizontal,
                 itemCount: _categories.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
                 itemBuilder: (context, index) {
                   final category = _categories[index];
                   final isSelected = index == _selectedCategoryIndex;
@@ -513,7 +513,7 @@ class _ProfilePromptsScreenState extends ConsumerState<ProfilePromptsScreen> {
     return ListView.separated(
       padding: const EdgeInsets.symmetric(vertical: 12),
       itemCount: templates.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final template = templates[index];
         final isSelected = _isTemplateSelected(template.id);

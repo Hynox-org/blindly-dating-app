@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
-import '../../../../core/utils/vocab.dart';
+import 'package:blindly_dating_app/core/utils/vocab.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/models/discovery_user_model.dart';
-import '../../../home/component/ProfileSwipeCard.dart';
-import '../../povider/swipe_provider.dart';
+import 'package:blindly_dating_app/features/matching/domain/models/match_profile.dart';
+import 'package:blindly_dating_app/features/matching/presentation/widgets/profile_swipe_card.dart';
+import 'package:blindly_dating_app/features/matching/provider/swipe_provider.dart';
 
 class DiscoveryProfileDetailScreen extends ConsumerStatefulWidget {
-  final DiscoveryUser user;
+  final MatchProfile user;
   final String initialState; // 'none', 'liked', or 'passed'
 
   const DiscoveryProfileDetailScreen({
@@ -35,7 +35,7 @@ class _DiscoveryProfileDetailScreenState
     _swipeState = widget.initialState;
   }
 
-  UserProfile _mapToUserProfile(DiscoveryUser user) {
+  UserProfile _mapToUserProfile(MatchProfile user) {
     List<String> profileImages = List.from(user.imageUrls);
     if (profileImages.isEmpty) {
       profileImages.add(

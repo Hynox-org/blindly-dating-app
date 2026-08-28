@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../../core/providers/connection_mode_provider.dart';
-import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
-import '../../../../auth/providers/auth_providers.dart';
-import '../../../../onboarding/data/repositories/onboarding_repository.dart';
-import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
-import '../../../../../core/utils/custom_popups.dart';
-import '../../../../../core/widgets/app_loader.dart';
-import '../../../provider/profile_provider.dart';
+import 'package:blindly_dating_app/core/providers/connection_mode_provider.dart';
+import 'package:blindly_dating_app/features/onboarding/presentation/providers/onboarding_provider.dart';
+import 'package:blindly_dating_app/features/auth/providers/auth_providers.dart';
+import 'package:blindly_dating_app/features/onboarding/data/repositories/onboarding_repository.dart';
+import 'package:blindly_dating_app/features/onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
+import 'package:blindly_dating_app/core/utils/custom_popups.dart';
+import 'package:blindly_dating_app/core/widgets/app_loader.dart';
+import 'package:blindly_dating_app/features/profile/provider/profile_provider.dart';
 
 /// A bio worth showing: long enough to say something, short enough to read.
 /// The 300 ceiling matches the input's maxLength and the column.

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
-import '../../auth/screens/authentication_screen.dart';
+import 'package:blindly_dating_app/features/auth/screens/authentication_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -80,7 +80,7 @@ class WelcomeScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(15),
                           ),
                           elevation: 0,
-                          shadowColor: Colors.black.withOpacity(0.05),
+                          shadowColor: Colors.black.withValues(alpha: 0.05),
                         ).copyWith(
                           backgroundColor: WidgetStateProperty.all(
                             Theme.of(context).colorScheme.primary,
@@ -91,7 +91,7 @@ class WelcomeScreen extends StatelessWidget {
                           overlayColor: WidgetStateProperty.resolveWith<Color?>(
                             (Set<WidgetState> states) {
                               if (states.contains(WidgetState.pressed)) {
-                                return Colors.white.withOpacity(0.1);
+                                return Colors.white.withValues(alpha: 0.1);
                               }
                               return null;
                             },
@@ -127,7 +127,7 @@ class WelcomeScreen extends StatelessWidget {
                           side: BorderSide(
                             color: Theme.of(
                               context,
-                            ).colorScheme.onSurface.withOpacity(0.12),
+                            ).colorScheme.onSurface.withValues(alpha: 0.12),
                             width: 1,
                           ),
                           shape: RoundedRectangleBorder(
@@ -140,13 +140,13 @@ class WelcomeScreen extends StatelessWidget {
                           ),
                           backgroundColor: WidgetStateProperty.all(
                             Theme.of(context).brightness == Brightness.dark
-                                ? Colors.white.withOpacity(0.05)
+                                ? Colors.white.withValues(alpha: 0.05)
                                 : Colors.white,
                           ),
                           overlayColor: WidgetStateProperty.resolveWith<Color?>(
                             (Set<WidgetState> states) {
                               if (states.contains(WidgetState.pressed)) {
-                                return Colors.black.withOpacity(0.03);
+                                return Colors.black.withValues(alpha: 0.03);
                               }
                               return null;
                             },
@@ -171,7 +171,7 @@ class WelcomeScreen extends StatelessWidget {
                           fontSize: 11,
                           color: Theme.of(
                             context,
-                          ).colorScheme.onSurface.withOpacity(0.7),
+                          ).colorScheme.onSurface.withValues(alpha: 0.7),
                           height: 1.4,
                         ),
                         children: [

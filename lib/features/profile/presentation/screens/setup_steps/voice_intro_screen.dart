@@ -9,12 +9,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 
-import '../../../../auth/providers/auth_providers.dart';
-import '../../../../media/providers/media_provider.dart';
-import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
-import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
-import '../../../../../core/widgets/app_loader.dart';
-import '../../../../profile/provider/profile_provider.dart';
+import 'package:blindly_dating_app/features/auth/providers/auth_providers.dart';
+import 'package:blindly_dating_app/features/media/providers/media_provider.dart';
+import 'package:blindly_dating_app/features/onboarding/presentation/providers/onboarding_provider.dart';
+import 'package:blindly_dating_app/features/onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
+import 'package:blindly_dating_app/core/widgets/app_loader.dart';
+import 'package:blindly_dating_app/features/profile/provider/profile_provider.dart';
 
 class VoiceIntroScreen extends ConsumerStatefulWidget {
   final bool isEditMode;

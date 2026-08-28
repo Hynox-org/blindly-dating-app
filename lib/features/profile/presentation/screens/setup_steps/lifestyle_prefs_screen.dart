@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
-import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
-import '../../../../onboarding/data/repositories/onboarding_repository.dart';
-import '../../../../onboarding/domain/models/lifestyle_category_model.dart';
-import '../../../../auth/providers/auth_providers.dart';
-import '../../../../onboarding/presentation/widgets/selection_chip.dart';
-import '../../../../../core/utils/custom_popups.dart';
-import '../../../../../core/widgets/app_loader.dart';
-import '../../../../../core/providers/connection_mode_provider.dart';
-import '../../../provider/profile_provider.dart';
-import '../../../domain/models/profile_user_model.dart';
-import '../../../../onboarding/domain/models/lifestyle_chip_model.dart';
+import 'package:blindly_dating_app/features/onboarding/presentation/providers/onboarding_provider.dart';
+import 'package:blindly_dating_app/features/onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
+import 'package:blindly_dating_app/features/onboarding/data/repositories/onboarding_repository.dart';
+import 'package:blindly_dating_app/features/onboarding/domain/models/lifestyle_category_model.dart';
+import 'package:blindly_dating_app/features/auth/providers/auth_providers.dart';
+import 'package:blindly_dating_app/features/onboarding/presentation/widgets/selection_chip.dart';
+import 'package:blindly_dating_app/core/utils/custom_popups.dart';
+import 'package:blindly_dating_app/core/widgets/app_loader.dart';
+import 'package:blindly_dating_app/core/providers/connection_mode_provider.dart';
+import 'package:blindly_dating_app/features/profile/provider/profile_provider.dart';
+import 'package:blindly_dating_app/features/profile/domain/models/profile_user_model.dart';
+import 'package:blindly_dating_app/features/onboarding/domain/models/lifestyle_chip_model.dart';
 
 /// Lifestyle answers are all or nothing: a half-filled set reads worse on a
 /// profile than an empty one, and Skip is there for people who want none.

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../providers/onboarding_provider.dart';
+import 'package:blindly_dating_app/features/onboarding/presentation/providers/onboarding_provider.dart';
 
 class BaseOnboardingStepScreen extends ConsumerWidget {
   final String title;

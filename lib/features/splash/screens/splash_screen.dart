@@ -5,11 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import '../../auth/providers/auth_providers.dart';
-import '../../onboarding/data/repositories/onboarding_repository.dart';
-import '../../onboarding/presentation/screens/onboarding_shell.dart';
+import 'package:blindly_dating_app/features/auth/providers/auth_providers.dart';
+import 'package:blindly_dating_app/features/onboarding/data/repositories/onboarding_repository.dart';
+import 'package:blindly_dating_app/features/onboarding/presentation/screens/onboarding_shell.dart';
 
-import '../../notifications/services/push_notification_service.dart';
+import 'package:blindly_dating_app/features/notifications/services/push_notification_service.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});

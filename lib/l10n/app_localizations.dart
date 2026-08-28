@@ -5,12 +5,12 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
-import 'app_localizations_bn.dart';
-import 'app_localizations_en.dart';
-import 'app_localizations_hi.dart';
-import 'app_localizations_mr.dart';
-import 'app_localizations_ta.dart';
-import 'app_localizations_te.dart';
+import 'package:blindly_dating_app/l10n/app_localizations_bn.dart';
+import 'package:blindly_dating_app/l10n/app_localizations_en.dart';
+import 'package:blindly_dating_app/l10n/app_localizations_hi.dart';
+import 'package:blindly_dating_app/l10n/app_localizations_mr.dart';
+import 'package:blindly_dating_app/l10n/app_localizations_ta.dart';
+import 'package:blindly_dating_app/l10n/app_localizations_te.dart';
 
 // ignore_for_file: type=lint
 

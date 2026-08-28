@@ -7,7 +7,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 
 import 'package:flutter/foundation.dart';
-import 'device_security.dart';
+import 'package:blindly_dating_app/core/security/device_security.dart';
 
 class SecurityConfig {
   static final _storage = const FlutterSecureStorage();

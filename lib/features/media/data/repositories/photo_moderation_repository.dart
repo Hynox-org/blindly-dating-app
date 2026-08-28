@@ -5,7 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../../../core/utils/app_logger.dart';
+import 'package:blindly_dating_app/core/utils/app_logger.dart';
 
 enum PhotoDecision {
   /// Passed, and already in storage at [PhotoModerationResult.path].

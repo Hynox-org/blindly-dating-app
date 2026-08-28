@@ -1,11 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../core/providers/connection_mode_provider.dart';
-import '../domain/models/profile_user_model.dart';
-import '../domain/repositories/profile_repository.dart';
-import '../../onboarding/domain/models/lifestyle_chip_model.dart';
-import '../../onboarding/domain/models/profile_prompt_model.dart';
+import 'package:blindly_dating_app/core/providers/connection_mode_provider.dart';
+import 'package:blindly_dating_app/features/profile/domain/models/profile_user_model.dart';
+import 'package:blindly_dating_app/features/profile/domain/repositories/profile_repository.dart';
+import 'package:blindly_dating_app/features/onboarding/domain/models/lifestyle_chip_model.dart';
+import 'package:blindly_dating_app/features/onboarding/domain/models/profile_prompt_model.dart';
 
 final currentUserProfileProvider =
     AsyncNotifierProvider<CurrentUserProfileNotifier, ProfileUser>(

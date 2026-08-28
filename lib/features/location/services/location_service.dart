@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../data/location_repository.dart';
+import 'package:blindly_dating_app/features/location/data/location_repository.dart';
 
 enum LocationServiceStatus {
   unknown,

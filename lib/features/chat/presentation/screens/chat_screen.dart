@@ -3,12 +3,12 @@ import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 // For Uri.encodeComponent
 
-import '../../providers/chat_providers.dart';
-import '../../../../core/widgets/app_layout.dart';
-import '../../../../core/widgets/app_loader.dart';
-import '../../../home/screens/home_screen.dart';
-import './chat_conversation_screen.dart';
-import './match_expiry_screen.dart';
+import 'package:blindly_dating_app/features/chat/providers/chat_providers.dart';
+import 'package:blindly_dating_app/core/widgets/app_layout.dart';
+import 'package:blindly_dating_app/core/widgets/app_loader.dart';
+import 'package:blindly_dating_app/features/people/people_screen.dart';
+import 'package:blindly_dating_app/features/chat/presentation/screens/chat_conversation_screen.dart';
+import 'package:blindly_dating_app/features/chat/presentation/screens/match_expiry_screen.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
@@ -157,7 +157,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                                     context,
                                                     animation,
                                                     secondaryAnimation,
-                                                  ) => const HomeScreen(),
+                                                  ) => const PeopleScreen(),
                                               transitionDuration: Duration.zero,
                                               reverseTransitionDuration:
                                                   Duration.zero,

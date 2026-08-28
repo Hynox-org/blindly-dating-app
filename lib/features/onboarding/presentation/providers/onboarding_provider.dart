@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/models/onboarding_step_model.dart';
-import '../../data/repositories/onboarding_repository.dart';
-import '../../../../features/auth/providers/auth_providers.dart';
-import '../../../../features/profile/provider/profile_provider.dart';
-import '../../../../core/utils/app_logger.dart';
+import 'package:blindly_dating_app/features/onboarding/data/models/onboarding_step_model.dart';
+import 'package:blindly_dating_app/features/onboarding/data/repositories/onboarding_repository.dart';
+import 'package:blindly_dating_app/features/auth/providers/auth_providers.dart';
+import 'package:blindly_dating_app/features/profile/provider/profile_provider.dart';
+import 'package:blindly_dating_app/core/utils/app_logger.dart';
 
 // State for the onboarding flow
 class OnboardingState {

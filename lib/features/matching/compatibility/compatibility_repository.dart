@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../domain/models/compatibility_report_model.dart';
+import 'package:blindly_dating_app/features/matching/compatibility/compatibility_report_model.dart';
 
 final compatibilityRepositoryProvider = Provider<CompatibilityRepository>((ref) {
   return CompatibilityRepository(Supabase.instance.client);

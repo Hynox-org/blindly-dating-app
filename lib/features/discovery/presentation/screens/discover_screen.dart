@@ -4,17 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'dart:async';
-import '../../../../core/widgets/app_layout.dart';
-import '../../../../core/widgets/app_loader.dart';
-import '../../../home/screens/connection_type_screen.dart';
-import '../../../home/screens/home_screen.dart';
-import '../../../../core/utils/navigation_utils.dart';
-import '../../povider/discovery_landing_provider.dart';
-import '../../../../core/providers/connection_mode_provider.dart';
-import '../../domain/models/discovery_user_model.dart';
-import '../../domain/models/discovery_landing_data.dart';
-import 'discovery_profile_detail_screen.dart';
-import '../../povider/swipe_provider.dart';
+import 'package:blindly_dating_app/core/widgets/app_layout.dart';
+import 'package:blindly_dating_app/core/widgets/app_loader.dart';
+import 'package:blindly_dating_app/features/matching/presentation/screens/connection_type_screen.dart';
+import 'package:blindly_dating_app/features/people/people_screen.dart';
+import 'package:blindly_dating_app/core/utils/navigation_utils.dart';
+import 'package:blindly_dating_app/features/discovery/provider/discovery_landing_provider.dart';
+import 'package:blindly_dating_app/core/providers/connection_mode_provider.dart';
+import 'package:blindly_dating_app/features/matching/domain/models/match_profile.dart';
+import 'package:blindly_dating_app/features/discovery/domain/models/discovery_landing_data.dart';
+import 'package:blindly_dating_app/features/discovery/presentation/screens/discovery_profile_detail_screen.dart';
+import 'package:blindly_dating_app/features/matching/provider/swipe_provider.dart';
 
 class DiscoverScreen extends ConsumerStatefulWidget {
   const DiscoverScreen({super.key});
@@ -82,7 +82,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     }
   }
 
-  Future<void> _toggleVoiceIntro(DiscoveryUser user) async {
+  Future<void> _toggleVoiceIntro(MatchProfile user) async {
     if (_currentlyPlayingProfileId == user.profileId) {
       await _audioPlayer.stop();
       setState(() {
@@ -199,7 +199,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   height: 1.4,
                   color: Theme.of(
                     context,
-                  ).colorScheme.onSurface.withOpacity(0.8),
+                  ).colorScheme.onSurface.withValues(alpha: 0.8),
                 ),
               ),
             ),
@@ -212,7 +212,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     context,
                     PageRouteBuilder(
                       pageBuilder: (context, animation, secondaryAnimation) =>
-                          const HomeScreen(),
+                          const PeopleScreen(),
                       transitionDuration: Duration.zero,
                       reverseTransitionDuration: Duration.zero,
                     ),
@@ -261,7 +261,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     );
   }
 
-  Widget _buildSection(String title, List<DiscoveryUser> users) {
+  Widget _buildSection(String title, List<MatchProfile> users) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -311,7 +311,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     );
   }
 
-  Widget _buildUserCard(DiscoveryUser user) {
+  Widget _buildUserCard(MatchProfile user) {
     final interactionState =
         _userInteractions[user.profileId] ?? user.swipeAction ?? 'none';
 
@@ -355,7 +355,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       ? Image.network(
                           user.imageUrls.first,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
+                          errorBuilder: (_, _, _) =>
                               Container(color: Colors.grey[300]),
                         )
                       : Container(
@@ -393,7 +393,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.9),
+                              color: Colors.green.withValues(alpha: 0.9),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Row(
@@ -503,7 +503,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                                       ? Theme.of(context).colorScheme.primary
                                       : Theme.of(
                                         context,
-                                      ).colorScheme.primary.withOpacity(0.1),
+                                      ).colorScheme.primary.withValues(alpha: 0.1),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(

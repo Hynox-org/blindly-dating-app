@@ -6,8 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veriff_flutter/veriff_flutter.dart';
 
-import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
-import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
+import 'package:blindly_dating_app/features/onboarding/presentation/providers/onboarding_provider.dart';
+import 'package:blindly_dating_app/features/onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
 
 const String _stepKey = 'gov_id_optional';
 

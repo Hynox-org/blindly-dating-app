@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
-import '../../features/profile/profile.dart';
-import '../../features/home/screens/home_screen.dart';
-import '../../features/match/presentation/screens/liked_you_screen.dart';
-import '../../features/discovery/presentation/screens/discover_screen.dart';
-import '../../features/chat/presentation/screens/chat_screen.dart';
+import 'package:blindly_dating_app/features/profile/profile.dart';
+import 'package:blindly_dating_app/features/people/people_screen.dart';
+import 'package:blindly_dating_app/features/match/presentation/screens/liked_you_screen.dart';
+import 'package:blindly_dating_app/features/discovery/presentation/screens/discover_screen.dart';
+import 'package:blindly_dating_app/features/chat/presentation/screens/chat_screen.dart';
 
 class AppLayout extends StatelessWidget {
   final Widget child;
@@ -46,7 +46,7 @@ class AppLayout extends StatelessWidget {
     } else if (index == 1) {
       page = const DiscoverScreen();
     } else if (index == 2) {
-      page = const HomeScreen();
+      page = const PeopleScreen();
     } else if (index == 3) {
       page = const LikedYouScreen();
     } else if (index == 4) {

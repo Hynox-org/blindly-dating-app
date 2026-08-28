@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../../../onboarding/presentation/providers/onboarding_provider.dart';
-import '../../../../auth/providers/auth_providers.dart';
-import '../../../../onboarding/data/repositories/onboarding_repository.dart';
-import '../../../../onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
-import '../../../../../core/utils/custom_popups.dart';
+import 'package:blindly_dating_app/features/onboarding/presentation/providers/onboarding_provider.dart';
+import 'package:blindly_dating_app/features/auth/providers/auth_providers.dart';
+import 'package:blindly_dating_app/features/onboarding/data/repositories/onboarding_repository.dart';
+import 'package:blindly_dating_app/features/onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
+import 'package:blindly_dating_app/core/utils/custom_popups.dart';
 
 /// At least one language, or there is nothing to match people on.
 bool languagesAreValid(int count) => count > 0;
@@ -311,7 +311,7 @@ class _LanguageSelectScreenState extends ConsumerState<LanguageSelectScreen> {
             ),
             if (isSelected)
               Icon(
-                FontAwesomeIcons.solidCircleCheck,
+                FontAwesomeIcons.solidCircleCheck.data,
                 color: Theme.of(context).colorScheme.primary, // Match border
                 size: 20,
               )

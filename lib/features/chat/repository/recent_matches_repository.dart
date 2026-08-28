@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../chat/data/match_repository.dart';
+import 'package:blindly_dating_app/features/chat/data/match_repository.dart';
 
 // ======================================================
 // PROVIDERS

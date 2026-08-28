@@ -1,4 +1,4 @@
-import 'lifestyle_chip_model.dart';
+import 'package:blindly_dating_app/features/onboarding/domain/models/lifestyle_chip_model.dart';
 
 class LifestyleCategory {
   final int id;

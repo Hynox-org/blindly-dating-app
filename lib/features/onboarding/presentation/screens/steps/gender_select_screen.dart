@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../providers/onboarding_provider.dart';
-import '../../../../auth/providers/auth_providers.dart';
-import '../../../data/repositories/onboarding_repository.dart';
-import 'base_onboarding_step_screen.dart';
-import '../../../../../core/utils/custom_popups.dart';
-import '../../../../profile/provider/profile_provider.dart';
+import 'package:blindly_dating_app/features/onboarding/presentation/providers/onboarding_provider.dart';
+import 'package:blindly_dating_app/features/auth/providers/auth_providers.dart';
+import 'package:blindly_dating_app/features/onboarding/data/repositories/onboarding_repository.dart';
+import 'package:blindly_dating_app/features/onboarding/presentation/screens/steps/base_onboarding_step_screen.dart';
+import 'package:blindly_dating_app/core/utils/custom_popups.dart';
+import 'package:blindly_dating_app/features/profile/provider/profile_provider.dart';
 
 class GenderSelectScreen extends ConsumerStatefulWidget {
   final bool isEditMode;
@@ -138,7 +138,7 @@ class _GenderSelectScreenState extends ConsumerState<GenderSelectScreen> {
             l10n.genderHelpsMatches,
             style: TextStyle(
               fontSize: 14,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
             ),
           ),
           const SizedBox(height: 32),
@@ -172,7 +172,7 @@ class _GenderSelectScreenState extends ConsumerState<GenderSelectScreen> {
                         BoxShadow(
                           color: Theme.of(
                             context,
-                          ).colorScheme.onSurface.withOpacity(0.05),
+                          ).colorScheme.onSurface.withValues(alpha: 0.05),
                           blurRadius: 10,
                           offset: const Offset(0, 2),
                         ),
@@ -190,12 +190,12 @@ class _GenderSelectScreenState extends ConsumerState<GenderSelectScreen> {
                               ? Theme.of(context).colorScheme.onPrimary
                               : Theme.of(
                                   context,
-                                ).colorScheme.onSurface.withOpacity(0.87),
+                                ).colorScheme.onSurface.withValues(alpha: 0.87),
                         ),
                       ),
                       if (isSelected)
                         Icon(
-                          FontAwesomeIcons.circleCheck,
+                          FontAwesomeIcons.circleCheck.data,
                           color: Theme.of(context).colorScheme.onPrimary,
                           size: 24,
                         )
@@ -207,7 +207,7 @@ class _GenderSelectScreenState extends ConsumerState<GenderSelectScreen> {
                             shape: BoxShape.circle,
                             color: Theme.of(
                               context,
-                            ).colorScheme.onSurface.withOpacity(0.12),
+                            ).colorScheme.onSurface.withValues(alpha: 0.12),
                           ),
                         ),
                     ],

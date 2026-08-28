@@ -1,5 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/notification_model.dart';
+import 'package:blindly_dating_app/features/notifications/models/notification_model.dart';
 
 class NotificationDbService {
   final SupabaseClient _supabase = Supabase.instance.client;

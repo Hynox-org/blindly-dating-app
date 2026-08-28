@@ -3,10 +3,10 @@ import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../provider/global_call_listener.dart';
-import '../screens/call_screen.dart';
-import './../../../../core/utils/nav_key.dart';
-import './../../../../core/utils/app_state.dart';
+import 'package:blindly_dating_app/features/call/provider/global_call_listener.dart';
+import 'package:blindly_dating_app/features/call/presentation/screens/call_screen.dart';
+import 'package:blindly_dating_app/core/utils/nav_key.dart';
+import 'package:blindly_dating_app/core/utils/app_state.dart';
 
 class IncomingCallOverlay extends ConsumerStatefulWidget {
   const IncomingCallOverlay({super.key});
@@ -61,7 +61,7 @@ class _IncomingCallOverlayState extends ConsumerState<IncomingCallOverlay> {
               margin: const EdgeInsets.all(12),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.9),
+                color: Colors.black.withValues(alpha: 0.9),
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: const [
                   BoxShadow(

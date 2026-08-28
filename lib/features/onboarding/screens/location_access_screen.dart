@@ -3,9 +3,9 @@ import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import '../../auth/providers/auth_providers.dart';
-import '../data/repositories/onboarding_repository.dart';
-import '../presentation/screens/onboarding_shell.dart';
+import 'package:blindly_dating_app/features/auth/providers/auth_providers.dart';
+import 'package:blindly_dating_app/features/onboarding/data/repositories/onboarding_repository.dart';
+import 'package:blindly_dating_app/features/onboarding/presentation/screens/onboarding_shell.dart';
 
 class LocationAccessScreen extends ConsumerStatefulWidget {
   const LocationAccessScreen({super.key});

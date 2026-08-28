@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../services/notification_db_service.dart';
-import '../models/notification_model.dart';
+import 'package:blindly_dating_app/features/notifications/services/notification_db_service.dart';
+import 'package:blindly_dating_app/features/notifications/models/notification_model.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 class NotificationsScreen extends StatelessWidget {

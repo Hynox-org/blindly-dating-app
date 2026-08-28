@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../core/utils/app_state.dart';
+import 'package:blindly_dating_app/core/utils/app_state.dart';
 
 final incomingCallProvider =
     StateNotifierProvider<IncomingCallNotifier, Map<String, dynamic>?>(

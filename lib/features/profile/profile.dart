@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
-import '../../core/utils/vocab.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // ✅ Added Riverpod
 
-import '../../core/widgets/app_layout.dart';
-import '../../core/widgets/app_loader.dart';
-import '../../core/utils/navigation_utils.dart';
-import '../home/screens/connection_type_screen.dart';
-import '../home/component/ProfileSwipeCard.dart';
+import 'package:blindly_dating_app/core/widgets/app_layout.dart';
+import 'package:blindly_dating_app/core/widgets/app_loader.dart';
+import 'package:blindly_dating_app/core/utils/navigation_utils.dart';
+import 'package:blindly_dating_app/features/matching/presentation/screens/connection_type_screen.dart';
+import 'package:blindly_dating_app/features/matching/presentation/widgets/profile_swipe_card.dart';
 // Needed for UserProfile mapping
-import './profile_edit_screen.dart';
+import 'package:blindly_dating_app/features/profile/profile_edit_screen.dart';
 
 // ✅ Import Provider & Model
-import 'domain/models/profile_user_model.dart';
-import '../profile/provider/profile_provider.dart';
-import './settings_screen.dart';
+import 'package:blindly_dating_app/features/profile/domain/models/profile_user_model.dart';
+import 'package:blindly_dating_app/features/profile/provider/profile_provider.dart';
+import 'package:blindly_dating_app/features/profile/settings_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   // ✅ Changed to ConsumerStatefulWidget
