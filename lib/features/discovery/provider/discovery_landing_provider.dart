@@ -17,6 +17,14 @@ class DiscoveryLandingNotifier
   String? _lastFetchedMode;
   DateTime? _lastFetchTime;
 
+  /// Bumped on every fetch. A response whose token is no longer the current
+  /// one is dropped: switching mode twice quickly used to let the slower
+  /// first request land last and show the wrong mode's feed.
+  int _requestId = 0;
+
+  /// How long a feed is served from memory before the next visit refetches.
+  static const cacheTtl = Duration(minutes: 5);
+
   DiscoveryLandingNotifier(this._repository)
     : super(const AsyncValue.loading());
 
@@ -31,25 +39,29 @@ class DiscoveryLandingNotifier
 
     final hasData = state.valueOrNull != null;
     final isSameMode = _lastFetchedMode == normalised;
-    final fetchRecently =
+    final isFresh =
         _lastFetchTime != null &&
-        DateTime.now().difference(_lastFetchTime!).inMinutes < 5;
+        DateTime.now().difference(_lastFetchTime!) < cacheTtl;
 
-    if (hasData && isSameMode && !forceRefresh && fetchRecently) {
+    if (hasData && isSameMode && !forceRefresh && isFresh) {
       return; // Use cache
     }
 
-    if (!hasData || forceRefresh) {
+    final token = ++_requestId;
+
+    if (!hasData || forceRefresh || !isSameMode) {
       state = const AsyncValue.loading();
     }
 
     try {
       final data = await _repository.getDiscoveryFeed(mode: normalised);
+      if (!mounted || token != _requestId) return;
       _lastFetchedMode = normalised;
       _lastFetchTime = DateTime.now();
-      if (mounted) state = AsyncValue.data(data);
+      state = AsyncValue.data(data);
     } catch (e, st) {
-      if (mounted) state = AsyncValue.error(e, st);
+      if (!mounted || token != _requestId) return;
+      state = AsyncValue.error(e, st);
     }
   }
 }

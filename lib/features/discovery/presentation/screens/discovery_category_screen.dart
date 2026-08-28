@@ -81,7 +81,7 @@ class _DiscoveryCategoryScreenState
           crossAxisCount: 2,
           crossAxisSpacing: 14,
           mainAxisSpacing: 16,
-          childAspectRatio: 158 / 244, // same proportions as the carousel card
+          childAspectRatio: kDiscoveryCardWidth / kDiscoveryCardHeight,
         ),
         itemCount: widget.users.length,
         itemBuilder: (context, i) {

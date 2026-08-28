@@ -4,6 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:blindly_dating_app/features/matching/domain/models/match_profile.dart';
 
+/// The tile's proportions. The carousel, the skeleton and the "See all" grid
+/// all size themselves from these, so the three never drift apart.
+const double kDiscoveryCardWidth = 158;
+const double kDiscoveryCardHeight = 244;
+
 /// One profile tile. Shared by the Discover carousels and the "See all" grid
 /// so the two never drift apart; the caller owns the size and the state.
 class DiscoveryProfileCard extends StatelessWidget {

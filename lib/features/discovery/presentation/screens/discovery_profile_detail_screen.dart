@@ -9,7 +9,10 @@ import 'package:blindly_dating_app/core/widgets/match_dialog.dart';
 
 class DiscoveryProfileDetailScreen extends ConsumerStatefulWidget {
   final MatchProfile user;
-  final String initialState; // 'none', 'liked', or 'passed'
+
+  /// 'none' | 'liked' | 'super_liked' | 'passed' — as resolved by
+  /// [DiscoveryCardActions.interactionFor].
+  final String initialState;
 
   const DiscoveryProfileDetailScreen({
     super.key,
@@ -26,8 +29,9 @@ class _DiscoveryProfileDetailScreenState
     extends ConsumerState<DiscoveryProfileDetailScreen> {
   AppLocalizations get l10n => AppLocalizations.of(context);
 
-
-  // Local state to track the interaction on this specific card
+  /// The interaction this card is showing. A super like is still a like, and
+  /// [ProfileSwipeCard] only knows 'liked' — left as 'super_liked' it fell
+  /// through to the un-swiped branch and offered Like/Pass all over again.
   late String _swipeState;
 
   /// Blocks a second tap while a swipe or undo is in flight. This screen is a
@@ -38,7 +42,9 @@ class _DiscoveryProfileDetailScreenState
   @override
   void initState() {
     super.initState();
-    _swipeState = widget.initialState;
+    _swipeState = widget.initialState == 'super_liked'
+        ? 'liked'
+        : widget.initialState;
   }
 
   UserProfile _mapToUserProfile(MatchProfile user) {
@@ -81,7 +87,7 @@ class _DiscoveryProfileDetailScreenState
       summary: user.bio.isNotEmpty ? user.bio : l10n.swipeRightHint,
       lookingForModes: user.lookingForModes,
       quickestWay: '',
-      prompts: user.prompts, // ✅ Pass fetched Prompts here
+      prompts: user.prompts,
       hobbies: user.interests,
       causes: user.causes,
       simplePleasure: '',
@@ -89,7 +95,7 @@ class _DiscoveryProfileDetailScreenState
       spotifyArtists: user.spotifyArtists,
       isVerified: user.isVerified,
       verificationLevel: user.verificationLevel,
-      trustScore: user.trustScore, // ✅ Pass Trust Score
+      trustScore: user.trustScore,
       voiceIntroUrl: user.voiceIntroUrl,
       voiceIntroDuration: user.voiceIntroDuration,
     );
@@ -118,7 +124,7 @@ class _DiscoveryProfileDetailScreenState
       if (!mounted) return;
       Navigator.pop(context, action == 'like' ? 'liked' : 'passed');
     } catch (e) {
-      debugPrint('❌ Swipe action $action failed: $e');
+      debugPrint('Swipe action $action failed: $e');
       if (!mounted) return;
       setState(() => _busy = false);
       _toast(l10n.somethingWentWrong);
@@ -144,7 +150,7 @@ class _DiscoveryProfileDetailScreenState
       }
       Navigator.pop(context, 'none');
     } catch (e) {
-      debugPrint('❌ Undo err: $e');
+      debugPrint('Undo failed: $e');
       if (!mounted) return;
       setState(() => _busy = false);
       _toast(l10n.somethingWentWrong);
@@ -156,23 +162,21 @@ class _DiscoveryProfileDetailScreenState
     final uiProfile = _mapToUserProfile(widget.user);
 
     return Scaffold(
-      backgroundColor: Colors.transparent, // ✅ Allow backdrop to show
+      backgroundColor: Colors.transparent, // lets the backdrop show through
       body: SafeArea(
         child: Container(
           width: double.infinity,
           height: double.infinity,
           decoration: BoxDecoration(
-            color: Colors.white, // ✅ The white background he asked for
-            borderRadius: BorderRadius.circular(
-              20,
-            ), // ✅ The curved edges he asked for
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
           ),
           child: Stack(
             alignment: Alignment.center,
             children: [
               Padding(
                 padding: const EdgeInsets.only(
-                  top: 60, // Matching profile.dart exactly
+                  top: 60,
                   bottom: 80,
                   left: 20,
                   right: 20,
@@ -181,38 +185,37 @@ class _DiscoveryProfileDetailScreenState
                   borderRadius: BorderRadius.circular(20),
                   child: ProfileSwipeCard(
                     profile: uiProfile,
-                    mode: ProfileCardMode
-                        .discovery, // Preserve discovery mode for action buttons
+                    // Discovery mode is what puts Like / Not for me on the
+                    // card instead of the deck's swipe gestures.
+                    mode: ProfileCardMode.discovery,
                     // Someone who already liked you isn't being rated, they're
                     // being answered — so the buttons say Match / Pass.
                     likeText:
                         widget.user.relationship == RelationshipState.likedMe
-                            ? l10n.matchLabel
-                            : null,
+                        ? l10n.matchLabel
+                        : null,
                     passText:
                         widget.user.relationship == RelationshipState.likedMe
-                            ? l10n.passLabel
-                            : null,
-                    swipeState: _swipeState, // ✅ Pass down the state
+                        ? l10n.passLabel
+                        : null,
+                    swipeState: _swipeState,
                     onLike: _busy ? null : () => _handleAction('like'),
                     onBlock: _busy ? null : () => _handleAction('pass'),
-                    onUndo: _busy ? null : _handleUndo, // ✅ Pass down the undo handler
-                    onReport: () {
-                      // Report Logic (Placeholder)
-                      Navigator.pop(context);
-                    },
+                    onUndo: _busy ? null : _handleUndo,
+                    // ponytail: reporting just closes the sheet for now;
+                    // wire it to the report flow when that screen exists.
+                    onReport: () => Navigator.pop(context),
                   ),
                 ),
               ),
 
               Positioned(
-                top: 10, // ✅ Restored back to 10
+                top: 10,
                 right: 10,
                 child: GestureDetector(
-                  onTap: () => Navigator.pop(
-                    context,
-                    null,
-                  ), // Return whatever the state was initially basically without change
+                  // null means "nothing changed" — the caller keeps the
+                  // interaction it already had for this profile.
+                  onTap: () => Navigator.pop(context, null),
                   child: CircleAvatar(
                     backgroundColor: Colors.black,
                     radius: 20,
@@ -223,13 +226,6 @@ class _DiscoveryProfileDetailScreenState
                     ),
                   ),
                 ),
-              ),
-
-              Positioned(
-                bottom: 10,
-                left: 0,
-                right: 0,
-                child: const SizedBox.shrink(), // Button moved inside card
               ),
             ],
           ),

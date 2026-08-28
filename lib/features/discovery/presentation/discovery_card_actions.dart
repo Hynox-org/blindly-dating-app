@@ -45,11 +45,22 @@ mixin DiscoveryCardActions<T extends ConsumerStatefulWidget>
 
   Future<void> toggleVoice(MatchProfile user) async {
     if (playingProfileId == user.profileId) return stopVoice();
-    if (user.voiceIntroUrl == null) return;
+    final url = user.voiceIntroUrl;
+    if (url == null || url.isEmpty) return;
 
-    await audioPlayer.stop();
-    await audioPlayer.play(UrlSource(user.voiceIntroUrl!));
-    if (mounted) setState(() => playingProfileId = user.profileId);
+    // A signed URL that has expired throws here. Unguarded it escaped as an
+    // unhandled async error and left the button stuck on the previous track.
+    try {
+      await audioPlayer.stop();
+      await audioPlayer.play(UrlSource(url));
+      if (mounted) setState(() => playingProfileId = user.profileId);
+    } catch (e) {
+      debugPrint('Voice playback failed: $e');
+      if (mounted) {
+        setState(() => playingProfileId = null);
+        toast(l10n.somethingWentWrong);
+      }
+    }
   }
 
   Future<void> openProfile(MatchProfile user) async {
