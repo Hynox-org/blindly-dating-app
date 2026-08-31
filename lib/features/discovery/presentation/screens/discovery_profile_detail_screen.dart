@@ -98,6 +98,9 @@ class _DiscoveryProfileDetailScreenState
       trustScore: user.trustScore,
       voiceIntroUrl: user.voiceIntroUrl,
       voiceIntroDuration: user.voiceIntroDuration,
+      // Carried through so a spotlighted card keeps its badge when it is
+      // opened from the deck, not just in the deck.
+      isSpotlight: user.isSpotlight,
     );
   }
 

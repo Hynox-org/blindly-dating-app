@@ -2575,4 +2575,77 @@ class AppLocalizationsBn extends AppLocalizations {
   @override
   String get photosExpired =>
       'কিছু ছবির মেয়াদ শেষ হয়ে যাওয়ায় সরিয়ে ফেলা হয়েছে। অনুগ্রহ করে আবার যোগ করুন।';
+
+  @override
+  String get spotlightHeadline => 'Be the first card they see';
+
+  @override
+  String get spotlightExplainer =>
+      'For as long as your spotlight runs, you sit at the top of the deck for everyone in your district — even people whose filters you don\'t match.';
+
+  @override
+  String spotlightDistrictLine(String district) {
+    return 'Your district: $district';
+  }
+
+  @override
+  String get spotlightDistrictUnknown => 'Working out where you are…';
+
+  @override
+  String get spotlightChooseDuration => 'Choose how long';
+
+  @override
+  String spotlightMinutes(String count) {
+    return '$count minutes';
+  }
+
+  @override
+  String get spotlightOneHour => '1 hour';
+
+  @override
+  String spotlightPrice(String amount) {
+    return '₹$amount';
+  }
+
+  @override
+  String get spotlightBuy => 'Purchase';
+
+  @override
+  String get spotlightExtend => 'Extend spotlight';
+
+  @override
+  String spotlightLiveIn(String district) {
+    return 'Live in $district';
+  }
+
+  @override
+  String spotlightTimeLeft(String time) {
+    return '$time left';
+  }
+
+  @override
+  String get spotlightSuccess => 'You\'re in the spotlight';
+
+  @override
+  String get spotlightNoDistrict =>
+      'We couldn\'t work out which district you\'re in. Turn location on and try again.';
+
+  @override
+  String get spotlightFailed => 'That didn\'t go through. Please try again.';
+
+  @override
+  String get spotlightTestPurchase =>
+      'No payment is taken yet. This completes the purchase for testing.';
+
+  @override
+  String get spotlightRuleFilters =>
+      'Filters are ignored — age, distance, interests, everything except who they asked to see.';
+
+  @override
+  String get spotlightRuleAudience =>
+      'Only people in the same district as you.';
+
+  @override
+  String get spotlightRuleSkipped =>
+      'People who already swiped you, matched you or blocked you will not see you again.';
 }

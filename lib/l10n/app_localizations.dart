@@ -4917,6 +4917,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Some photos expired and were removed. Please add them again.'**
   String get photosExpired;
+
+  /// No description provided for @spotlightHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Be the first card they see'**
+  String get spotlightHeadline;
+
+  /// No description provided for @spotlightExplainer.
+  ///
+  /// In en, this message translates to:
+  /// **'For as long as your spotlight runs, you sit at the top of the deck for everyone in your district — even people whose filters you don\'t match.'**
+  String get spotlightExplainer;
+
+  /// No description provided for @spotlightDistrictLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Your district: {district}'**
+  String spotlightDistrictLine(String district);
+
+  /// No description provided for @spotlightDistrictUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Working out where you are…'**
+  String get spotlightDistrictUnknown;
+
+  /// No description provided for @spotlightChooseDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how long'**
+  String get spotlightChooseDuration;
+
+  /// No description provided for @spotlightMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} minutes'**
+  String spotlightMinutes(String count);
+
+  /// No description provided for @spotlightOneHour.
+  ///
+  /// In en, this message translates to:
+  /// **'1 hour'**
+  String get spotlightOneHour;
+
+  /// No description provided for @spotlightPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'₹{amount}'**
+  String spotlightPrice(String amount);
+
+  /// No description provided for @spotlightBuy.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase'**
+  String get spotlightBuy;
+
+  /// No description provided for @spotlightExtend.
+  ///
+  /// In en, this message translates to:
+  /// **'Extend spotlight'**
+  String get spotlightExtend;
+
+  /// No description provided for @spotlightLiveIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Live in {district}'**
+  String spotlightLiveIn(String district);
+
+  /// No description provided for @spotlightTimeLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{time} left'**
+  String spotlightTimeLeft(String time);
+
+  /// No description provided for @spotlightSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re in the spotlight'**
+  String get spotlightSuccess;
+
+  /// No description provided for @spotlightNoDistrict.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t work out which district you\'re in. Turn location on and try again.'**
+  String get spotlightNoDistrict;
+
+  /// No description provided for @spotlightFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t go through. Please try again.'**
+  String get spotlightFailed;
+
+  /// No description provided for @spotlightTestPurchase.
+  ///
+  /// In en, this message translates to:
+  /// **'No payment is taken yet. This completes the purchase for testing.'**
+  String get spotlightTestPurchase;
+
+  /// No description provided for @spotlightRuleFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters are ignored — age, distance, interests, everything except who they asked to see.'**
+  String get spotlightRuleFilters;
+
+  /// No description provided for @spotlightRuleAudience.
+  ///
+  /// In en, this message translates to:
+  /// **'Only people in the same district as you.'**
+  String get spotlightRuleAudience;
+
+  /// No description provided for @spotlightRuleSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'People who already swiped you, matched you or blocked you will not see you again.'**
+  String get spotlightRuleSkipped;
 }
 
 class _AppLocalizationsDelegate

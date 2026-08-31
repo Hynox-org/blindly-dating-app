@@ -1122,5 +1122,59 @@
       }
     }
   },
-  "photosExpired": "Some photos expired and were removed. Please add them again."
+  "photosExpired": "Some photos expired and were removed. Please add them again.",
+  "spotlightHeadline": "Be the first card they see",
+  "spotlightExplainer": "For as long as your spotlight runs, you sit at the top of the deck for everyone in your district — even people whose filters you don't match.",
+  "spotlightDistrictLine": "Your district: {district}",
+  "@spotlightDistrictLine": {
+    "placeholders": {
+      "district": {
+        "type": "String"
+      }
+    }
+  },
+  "spotlightDistrictUnknown": "Working out where you are…",
+  "spotlightChooseDuration": "Choose how long",
+  "spotlightMinutes": "{count} minutes",
+  "@spotlightMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "spotlightOneHour": "1 hour",
+  "spotlightPrice": "₹{amount}",
+  "@spotlightPrice": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "spotlightBuy": "Purchase",
+  "spotlightExtend": "Extend spotlight",
+  "spotlightLiveIn": "Live in {district}",
+  "@spotlightLiveIn": {
+    "placeholders": {
+      "district": {
+        "type": "String"
+      }
+    }
+  },
+  "spotlightTimeLeft": "{time} left",
+  "@spotlightTimeLeft": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "spotlightSuccess": "You're in the spotlight",
+  "spotlightNoDistrict": "We couldn't work out which district you're in. Turn location on and try again.",
+  "spotlightFailed": "That didn't go through. Please try again.",
+  "spotlightTestPurchase": "No payment is taken yet. This completes the purchase for testing.",
+  "spotlightRuleFilters": "Filters are ignored — age, distance, interests, everything except who they asked to see.",
+  "spotlightRuleAudience": "Only people in the same district as you.",
+  "spotlightRuleSkipped": "People who already swiped you, matched you or blocked you will not see you again."
 }

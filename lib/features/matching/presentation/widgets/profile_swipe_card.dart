@@ -53,6 +53,10 @@ class UserProfile {
   final String verificationLevel;
   final int trustScore; // ✅ Added Trust Score
 
+  /// Paid spotlight, live in the viewer's district. Only the swipe deck sets
+  /// this — the other cards map from profiles that carry no spotlight flag.
+  final bool isSpotlight;
+
   UserProfile({
     required this.id,
     required this.name,
@@ -90,6 +94,7 @@ class UserProfile {
     this.isVerified = false,
     this.verificationLevel = 'unverified',
     this.trustScore = 0, // ✅ Default to 0
+    this.isSpotlight = false,
   });
 }
 
@@ -141,7 +146,6 @@ class ProfileSwipeCard extends StatefulWidget {
 class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
   AppLocalizations get l10n => AppLocalizations.of(context);
 
-
   final ScrollController _scrollController = ScrollController();
 
   /// Check if section data is empty
@@ -177,158 +181,158 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
   Widget build(BuildContext context) {
     // Tilt and translation belong to the deck; the card just draws itself.
     return Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: Colors
-              .transparent, // ✅ Allow parent container to define background color
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return Container(
-              color: Colors
-                  .white, // ✅ Solid white background for the scrolling card content
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: SingleChildScrollView(
-                  controller: _scrollController,
-                  child: Column(
-                    children: [
-                      // ============ IMAGE 1 ============
-                      _buildImageSection(0, cardHeight: constraints.maxHeight),
-                      if (widget.profile.voiceIntroUrl != null) ...[
-                        const SizedBox(height: 12),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: _buildVoiceIntroSection(),
-                        ),
-                      ],
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: Colors
+            .transparent, // ✅ Allow parent container to define background color
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return Container(
+            color: Colors
+                .white, // ✅ Solid white background for the scrolling card content
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                child: Column(
+                  children: [
+                    // ============ IMAGE 1 ============
+                    _buildImageSection(0, cardHeight: constraints.maxHeight),
+                    if (widget.profile.voiceIntroUrl != null) ...[
                       const SizedBox(height: 12),
-                      // ============ ABOUT ME SECTION ============
-                      if (!_isAboutMeEmpty()) ...[
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: _buildAboutMeSection(),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      // ============ BIO SECTION ============
-                      if (widget.profile.bio.isNotEmpty) ...[
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: _buildBioSection(),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      // ============ IMAGE 2 ============
-                      if (widget.profile.imageUrls.length > 1) ...[
-                        _buildImageSection(1),
-                        const SizedBox(height: 16),
-                      ],
-                      // ============ KUDOS SECTION ============
-                      if (widget.profile.prompts.any(
-                        (p) => p.userResponse.isNotEmpty,
-                      )) ...[
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: _buildKudosSection(),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      // ============ LOOKING FOR SECTION ============
-                      if (!_isLookingForEmpty()) ...[
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: _buildLookingForSection(),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      // ============ HEART SECTION ============
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildHeartSection(),
+                        child: _buildVoiceIntroSection(),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    // ============ ABOUT ME SECTION ============
+                    if (!_isAboutMeEmpty()) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildAboutMeSection(),
                       ),
                       const SizedBox(height: 16),
-                      // ============ INTERESTS SECTION ============
-                      if (!_isInterestsEmpty()) ...[
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: _buildInterestsSection(),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      // ============ LIFESTYLE SECTION ============
-                      if (!_isLifestyleEmpty()) ...[
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: _buildLifestyleSection(),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      // ============ IMAGE 3 ============
-                      if (widget.profile.imageUrls.length > 2) ...[
-                        _buildImageSection(2),
-                        const SizedBox(height: 16),
-                      ],
-                      // ============ CAUSES SECTION ============
-                      if (!_isCausesEmpty()) ...[
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: _buildCausesSection(),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      // ============ LANGUAGES SECTION ============
-                      if (!_isLanguagesEmpty()) ...[
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: _buildLanguagesSection(),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      // ============ LOCATION SECTION ============
-                      if (!_isLocationEmpty()) ...[
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: _buildLocationSection(),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      // ============ SPOTIFY SECTION ============
-                      if (!_isSpotifyEmpty()) ...[
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: _buildSpotifySection(),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      const SizedBox(height: 16),
-                      // ============ COMPATIBILITY ============
-                      // Scoring a pair costs an LLM call, so it sits behind a
-                      // button rather than running for every profile shown.
-                      if (widget.mode != ProfileCardMode.preview) ...[
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: compatibilityButton(),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      // ============ ACTION BUTTONS ============
-                      _buildActionButtons(),
-                      const SizedBox(height: 32),
-                      // ============ BLOCK / REPORT ============
-                      // Only show block/report in Swipe or Discovery modes, not Preview
-                      if (widget.mode != ProfileCardMode.preview) ...[
-                        _buildBlockReportButtons(),
-                        const SizedBox(height: 48),
-                      ] else
-                        const SizedBox(height: 48),
                     ],
-                  ),
+                    // ============ BIO SECTION ============
+                    if (widget.profile.bio.isNotEmpty) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildBioSection(),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    // ============ IMAGE 2 ============
+                    if (widget.profile.imageUrls.length > 1) ...[
+                      _buildImageSection(1),
+                      const SizedBox(height: 16),
+                    ],
+                    // ============ KUDOS SECTION ============
+                    if (widget.profile.prompts.any(
+                      (p) => p.userResponse.isNotEmpty,
+                    )) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildKudosSection(),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    // ============ LOOKING FOR SECTION ============
+                    if (!_isLookingForEmpty()) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildLookingForSection(),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    // ============ HEART SECTION ============
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _buildHeartSection(),
+                    ),
+                    const SizedBox(height: 16),
+                    // ============ INTERESTS SECTION ============
+                    if (!_isInterestsEmpty()) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildInterestsSection(),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    // ============ LIFESTYLE SECTION ============
+                    if (!_isLifestyleEmpty()) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildLifestyleSection(),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    // ============ IMAGE 3 ============
+                    if (widget.profile.imageUrls.length > 2) ...[
+                      _buildImageSection(2),
+                      const SizedBox(height: 16),
+                    ],
+                    // ============ CAUSES SECTION ============
+                    if (!_isCausesEmpty()) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildCausesSection(),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    // ============ LANGUAGES SECTION ============
+                    if (!_isLanguagesEmpty()) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildLanguagesSection(),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    // ============ LOCATION SECTION ============
+                    if (!_isLocationEmpty()) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildLocationSection(),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    // ============ SPOTIFY SECTION ============
+                    if (!_isSpotifyEmpty()) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildSpotifySection(),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    const SizedBox(height: 16),
+                    // ============ COMPATIBILITY ============
+                    // Scoring a pair costs an LLM call, so it sits behind a
+                    // button rather than running for every profile shown.
+                    if (widget.mode != ProfileCardMode.preview) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: compatibilityButton(),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    // ============ ACTION BUTTONS ============
+                    _buildActionButtons(),
+                    const SizedBox(height: 32),
+                    // ============ BLOCK / REPORT ============
+                    // Only show block/report in Swipe or Discovery modes, not Preview
+                    if (widget.mode != ProfileCardMode.preview) ...[
+                      _buildBlockReportButtons(),
+                      const SizedBox(height: 48),
+                    ] else
+                      const SizedBox(height: 48),
+                  ],
                 ),
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -368,7 +372,6 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
       ),
     );
   }
-
 
   Widget _buildBioSection() {
     final colorScheme = Theme.of(context).colorScheme;
@@ -696,13 +699,22 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (widget.profile.isSpotlight) ...[
+                      _spotlightTag(scaleFactor),
+                      SizedBox(height: 4 * scaleFactor),
+                    ],
                     if (widget.profile.isVerified &&
                         widget.profile.verificationLevel ==
                             'full_verified') ...[
-                      verifiedTag(l10n.profileVerified, Colors.blue, scaleFactor),
-                      SizedBox(height: 4 * scaleFactor),
-                      // Verified "Photo Verified" is blue, as requested ("show the two badges in bluue colour profile verified and photo verified")
-                      verifiedTag(l10n.photoVerified, Colors.blue, scaleFactor),
+                      // One badge, not two. "Photo Verified" used to sit here
+                      // as well, gated on this same expression — there is no
+                      // separate photo-verification signal on the profile, so
+                      // it was the same bit drawn twice.
+                      verifiedTag(
+                        l10n.profileVerified,
+                        Colors.blue,
+                        scaleFactor,
+                      ),
                     ] else ...[
                       // "if they are noot verified the show a black badge mentioning not verified"
                       verifiedTag(l10n.notVerified, Colors.black, scaleFactor),
@@ -756,7 +768,9 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                         ),
                         SizedBox(width: 4 * scaleFactor),
                         Text(
-                          l10n.kmAway(widget.profile.distance.toStringAsFixed(1)),
+                          l10n.kmAway(
+                            widget.profile.distance.toStringAsFixed(1),
+                          ),
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 11 * scaleFactor,
@@ -773,7 +787,10 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                     children: [
                       GestureDetector(
                         onTap: widget.onLike,
-                        child: goldButton(loveChatIcon(scaleFactor), scaleFactor),
+                        child: goldButton(
+                          loveChatIcon(scaleFactor),
+                          scaleFactor,
+                        ),
                       ),
                       const Spacer(),
                       scoreBox(scaleFactor),
@@ -798,6 +815,36 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
         ),
       ],
     ];
+  }
+
+  /// Amber pill on a paid card, so it is obvious why someone who is outside
+  /// the viewer's filters is sitting at the top of the deck.
+  Widget _spotlightTag(double scaleFactor) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: 8 * scaleFactor,
+        vertical: 4 * scaleFactor,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFFB8860B),
+        borderRadius: BorderRadius.circular(16 * scaleFactor),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.cyclone, size: 14 * scaleFactor, color: Colors.white),
+          SizedBox(width: 4 * scaleFactor),
+          Text(
+            l10n.spotlight,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 10 * scaleFactor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget verifiedTag(String text, Color bg, double scaleFactor) {
@@ -1633,7 +1680,9 @@ class _ProfileSwipeCardState extends State<ProfileSwipeCard> {
                   textColor: Colors.black87,
                   backgroundColor: Colors.white,
                   borderColor: Colors.grey.shade300,
-                  onTap: widget.onPause ?? widget.onBlock, // Use onPause if available
+                  onTap:
+                      widget.onPause ??
+                      widget.onBlock, // Use onPause if available
                 ),
               ),
               const SizedBox(width: 16),

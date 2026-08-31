@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:blindly_dating_app/features/spotlight/presentation/spotlight_screen.dart';
 import 'package:blindly_dating_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // ✅ Added Riverpod
 
@@ -25,7 +26,6 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   AppLocalizations get l10n => AppLocalizations.of(context);
-
 
   @override
   void initState() {
@@ -212,7 +212,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 decoration: BoxDecoration(
                   color: Colors.green.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green.withValues(alpha: 0.5)),
+                  border: Border.all(
+                    color: Colors.green.withValues(alpha: 0.5),
+                  ),
                 ),
                 child: Text(
                   l10n.percentTrust('${user.trustScore}'),
@@ -266,7 +268,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       bio: user.bio.isNotEmpty ? user.bio : l10n.noBioYet,
       // ✅ IMAGE LOGIC: This list will have 2 or 3 images based on provider fetch
       imageUrls: user.imageUrls,
-      height: user.height != null ? l10n.heightCm('${user.height}') : l10n.askMe,
+      height: user.height != null
+          ? l10n.heightCm('${user.height}')
+          : l10n.askMe,
       activityLevel: user.exercise ?? l10n.activeLabel,
       education: user.educationLevel ?? user.education,
       school: user.educatedAt ?? '',
@@ -446,6 +450,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             iconColor: const Color(
               0xFF6B5E3C,
             ), // Keep distinct specific color or move to theme extension? Keeping for now
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SpotlightScreen()),
+            ),
           ),
         ),
         const SizedBox(width: 16),
@@ -468,47 +476,51 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     required String subtitle,
     required Color color,
     required Color iconColor,
+    VoidCallback? onTap,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.2),
-              shape: BoxShape.circle,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: iconColor.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: iconColor),
             ),
-            child: Icon(icon, color: iconColor),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: Theme.of(context).colorScheme.onSurface,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
-                ),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -659,8 +671,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           padding: EdgeInsets.symmetric(horizontal: 16.0),
           child: Text.rich(
             TextSpan(
-              text:
-                  l10n.verificationDataSecure,
+              text: l10n.verificationDataSecure,
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 12,

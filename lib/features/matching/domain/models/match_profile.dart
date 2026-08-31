@@ -49,6 +49,10 @@ class MatchProfile {
   final bool isVerified;
   final String verificationLevel;
   final int trustScore; // ✅ Added Trust Score
+
+  /// True while this profile holds a paid spotlight in the viewer's district.
+  /// Set by get_discovery_prospects; the deck pins these to the front.
+  final bool isSpotlight;
   final RelationshipState relationship; // ✅ New field
 
   MatchProfile({
@@ -88,6 +92,7 @@ class MatchProfile {
     this.isVerified = false,
     this.verificationLevel = 'unverified',
     this.trustScore = 0, // ✅ Default to 0
+    this.isSpotlight = false,
     this.relationship = RelationshipState.none,
   });
 
@@ -164,17 +169,18 @@ class MatchProfile {
               .toList() ??
           [],
       voiceIntroUrl: json['voice_into_url'] ?? json['voice_intro_url'],
-      voiceIntroDuration: json['voice_intro_duration'] ?? json['duration_seconds'],
+      voiceIntroDuration:
+          json['voice_intro_duration'] ?? json['duration_seconds'],
       isVerified: json['is_verified'] ?? false,
       verificationLevel: json['verification_level'] ?? 'unverified',
       trustScore: json['trust_score'] ?? 0, // ✅ Map Trust Score
-      relationship:
-          json['relationship'] != null
-              ? RelationshipState.values.firstWhere(
-                (e) => e.name == json['relationship'],
-                orElse: () => RelationshipState.none,
-              )
-              : RelationshipState.none,
+      isSpotlight: json['is_spotlight'] ?? false,
+      relationship: json['relationship'] != null
+          ? RelationshipState.values.firstWhere(
+              (e) => e.name == json['relationship'],
+              orElse: () => RelationshipState.none,
+            )
+          : RelationshipState.none,
     );
   }
 
@@ -215,6 +221,7 @@ class MatchProfile {
     bool? isVerified,
     String? verificationLevel,
     int? trustScore,
+    bool? isSpotlight,
     RelationshipState? relationship,
   }) {
     return MatchProfile(
@@ -254,6 +261,7 @@ class MatchProfile {
       isVerified: isVerified ?? this.isVerified,
       verificationLevel: verificationLevel ?? this.verificationLevel,
       trustScore: trustScore ?? this.trustScore,
+      isSpotlight: isSpotlight ?? this.isSpotlight,
       relationship: relationship ?? this.relationship,
     );
   }

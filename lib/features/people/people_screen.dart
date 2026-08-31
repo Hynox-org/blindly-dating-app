@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:blindly_dating_app/features/auth/repositories/Location_repository.dart';
 
 // ✅ 1. Providers
 import 'package:blindly_dating_app/features/people/provider/people_feed_provider.dart';
@@ -42,7 +43,6 @@ class PeopleScreen extends ConsumerStatefulWidget {
 class _PeopleScreenState extends ConsumerState<PeopleScreen> {
   AppLocalizations get l10n => AppLocalizations.of(context);
 
-
   final SwipeDeckController _deck = SwipeDeckController();
 
   /// Live drag offset of the top card. A ValueNotifier rather than state so
@@ -60,7 +60,9 @@ class _PeopleScreenState extends ConsumerState<PeopleScreen> {
     _initLocationAndFeed();
 
     // 🔔 Listen for multi-device conflicts as they happen
-    PushNotificationService.multiDeviceConflictToken.addListener(_onTokenConflictChanged);
+    PushNotificationService.multiDeviceConflictToken.addListener(
+      _onTokenConflictChanged,
+    );
   }
 
   void _onTokenConflictChanged() {
@@ -73,7 +75,9 @@ class _PeopleScreenState extends ConsumerState<PeopleScreen> {
   @override
   void dispose() {
     _dragOffset.dispose();
-    PushNotificationService.multiDeviceConflictToken.removeListener(_onTokenConflictChanged);
+    PushNotificationService.multiDeviceConflictToken.removeListener(
+      _onTokenConflictChanged,
+    );
     super.dispose();
   }
 
@@ -96,15 +100,22 @@ class _PeopleScreenState extends ConsumerState<PeopleScreen> {
         return;
       }
 
+      // Was LocationAccuracy.low, then medium — both take a coarse network
+      // fix that can land tens of km away. Measured: a real device sitting in
+      // Chennai reported a point that reverse-geocodes to Tada, Andhra
+      // Pradesh, a different state. The district is what Spotlight is sold
+      // against, so this path uses the GPS provider like the login-time
+      // update already does.
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.low,
+        desiredAccuracy: LocationAccuracy.high,
         timeLimit: const Duration(seconds: 6),
       );
 
-      await Supabase.instance.client.rpc(
-        'update_passport_location',
-        params: {'p_lat': position.latitude, 'p_long': position.longitude},
-      );
+      // Shared with the login-time update so the district is resolved the
+      // same way in both places.
+      await LocationService(
+        Supabase.instance.client,
+      ).pushLocation(position.latitude, position.longitude);
 
       debugPrint('📍 Passport location updated (PeopleScreen)');
     } catch (e) {
@@ -153,7 +164,6 @@ class _PeopleScreenState extends ConsumerState<PeopleScreen> {
     });
   }
 
-
   void _showEnforcedMultiDeviceDialog(String currentToken) {
     showDialog(
       context: context,
@@ -161,7 +171,9 @@ class _PeopleScreenState extends ConsumerState<PeopleScreen> {
       builder: (context) => WillPopScope(
         onWillPop: () async => false, // Prevent back button dismissal
         child: Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
           elevation: 0,
           backgroundColor: Colors.transparent,
           child: Container(
@@ -183,7 +195,9 @@ class _PeopleScreenState extends ConsumerState<PeopleScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -195,10 +209,7 @@ class _PeopleScreenState extends ConsumerState<PeopleScreen> {
                 const SizedBox(height: 24),
                 Text(
                   l10n.multiDeviceTitle,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -219,16 +230,22 @@ class _PeopleScreenState extends ConsumerState<PeopleScreen> {
                       backgroundColor: Theme.of(context).colorScheme.primary,
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     onPressed: () async {
                       Navigator.pop(context);
-                      final success = await PushNotificationService.instance.clearOtherDevices(currentToken);
+                      final success = await PushNotificationService.instance
+                          .clearOtherDevices(currentToken);
                       if (success && mounted) {
                         showSuccessPopup(context, l10n.signedOutOtherDevices);
                       }
                     },
-                    child: Text(l10n.signOutOtherDevices, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    child: Text(
+                      l10n.signOutOtherDevices,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -238,14 +255,18 @@ class _PeopleScreenState extends ConsumerState<PeopleScreen> {
                   child: TextButton(
                     style: TextButton.styleFrom(
                       foregroundColor: Colors.grey[600],
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     onPressed: () async {
                       // ❌ Log out current device if they refuse
                       Navigator.pop(context);
                       await Supabase.instance.client.auth.signOut();
                       if (mounted) {
-                        Navigator.of(context).pushNamedAndRemoveUntil('/auth', (route) => false);
+                        Navigator.of(
+                          context,
+                        ).pushNamedAndRemoveUntil('/auth', (route) => false);
                       }
                     },
                     child: Text(l10n.logOutThisDevice),
@@ -261,66 +282,66 @@ class _PeopleScreenState extends ConsumerState<PeopleScreen> {
 
   // ✅ Helper to map API data to UI data
   UserProfile _toUserProfile(MatchProfile user) {
-      // Photos are already signed by the repository, and the feed no longer
-      // returns anyone without one.
-      final profileImages = List<String>.from(user.imageUrls);
+    // Photos are already signed by the repository, and the feed no longer
+    // returns anyone without one.
+    final profileImages = List<String>.from(user.imageUrls);
 
-      // Determine Gender String (for UI display)
-      final genderStr = user.gender.isNotEmpty
-          ? (user.gender.startsWith('M')
-                ? 'Male'
-                : (user.gender.startsWith('F') ? 'Female' : 'Male'))
-          : 'Male';
+    // Determine Gender String (for UI display)
+    final genderStr = user.gender.isNotEmpty
+        ? (user.gender.startsWith('M')
+              ? 'Male'
+              : (user.gender.startsWith('F') ? 'Female' : 'Male'))
+        : 'Male';
 
-      return UserProfile(
-        id: user.profileId,
-        name: user.displayName,
-        age: user.age,
-        // The RPC already returns kilometres.
-        distance: user.distanceKm,
-        location:
-            user.hometown ?? l10n.nearby, // Dynamic Location
-        gender: genderStr,
-        imageUrls: profileImages, // ✅ PASS THE LIST FROM DB
-        bio: user.bio, // Use actual bio or empty
-        subTitle: user.workTitle ?? '', // Fallback to empty if null
-        height: user.height != null ? l10n.heightCm('${user.height}') : '',
-        activityLevel: user.exercise ?? '',
-        education: user.education ?? '',
-        school: user.school ?? '',
-        religion: user.religion ?? '',
-        zodiac: user.zodiac ?? '',
-        drinking: user.drinking ?? '',
-        smoking: user.smoking ?? '',
-        politics: user.politics ?? '',
-        kids: user.kids ?? '',
-        hometown: user.hometown ?? '',
-        workCompany: user.workCompany ?? '',
-        summary: user.bio.isNotEmpty ? user.bio : l10n.swipeRightHint,
-        lookingForModes: user.lookingForModes,
-        quickestWay: '', // Add if available
-        prompts: user.prompts, // ✅ Pass Prompts here
-        hobbies: user.interests,
-        lifestyleItems: user.lifestyle
-            .map(
-              (label) => LifestyleChip(
-                id: '',
-                categoryId: 0,
-                label: label,
-                isActive: true,
-              ),
-            )
-            .toList(), // ✅ Map strings to dummy LifestyleChips
-        causes: user.causes, // ✅ Dynamic Causes
-        simplePleasure: '',
-        languages: user.languages, // ✅ Dynamic Languages
-        spotifyArtists: user.spotifyArtists, // ✅ Dynamic Spotify
-        isVerified: user.isVerified,
-        verificationLevel: user.verificationLevel,
-        trustScore: user.trustScore, // ✅ Pass Trust Score
-        voiceIntroUrl: user.voiceIntroUrl,
-        voiceIntroDuration: user.voiceIntroDuration,
-      );
+    return UserProfile(
+      id: user.profileId,
+      name: user.displayName,
+      age: user.age,
+      // The RPC already returns kilometres.
+      distance: user.distanceKm,
+      location: user.hometown ?? l10n.nearby, // Dynamic Location
+      gender: genderStr,
+      imageUrls: profileImages, // ✅ PASS THE LIST FROM DB
+      bio: user.bio, // Use actual bio or empty
+      subTitle: user.workTitle ?? '', // Fallback to empty if null
+      height: user.height != null ? l10n.heightCm('${user.height}') : '',
+      activityLevel: user.exercise ?? '',
+      education: user.education ?? '',
+      school: user.school ?? '',
+      religion: user.religion ?? '',
+      zodiac: user.zodiac ?? '',
+      drinking: user.drinking ?? '',
+      smoking: user.smoking ?? '',
+      politics: user.politics ?? '',
+      kids: user.kids ?? '',
+      hometown: user.hometown ?? '',
+      workCompany: user.workCompany ?? '',
+      summary: user.bio.isNotEmpty ? user.bio : l10n.swipeRightHint,
+      isSpotlight: user.isSpotlight,
+      lookingForModes: user.lookingForModes,
+      quickestWay: '', // Add if available
+      prompts: user.prompts, // ✅ Pass Prompts here
+      hobbies: user.interests,
+      lifestyleItems: user.lifestyle
+          .map(
+            (label) => LifestyleChip(
+              id: '',
+              categoryId: 0,
+              label: label,
+              isActive: true,
+            ),
+          )
+          .toList(), // ✅ Map strings to dummy LifestyleChips
+      causes: user.causes, // ✅ Dynamic Causes
+      simplePleasure: '',
+      languages: user.languages, // ✅ Dynamic Languages
+      spotifyArtists: user.spotifyArtists, // ✅ Dynamic Spotify
+      isVerified: user.isVerified,
+      verificationLevel: user.verificationLevel,
+      trustScore: user.trustScore, // ✅ Pass Trust Score
+      voiceIntroUrl: user.voiceIntroUrl,
+      voiceIntroDuration: user.voiceIntroDuration,
+    );
   }
 
   @override
@@ -424,10 +445,10 @@ class _PeopleScreenState extends ConsumerState<PeopleScreen> {
         child: !_isLocationReady || feed.isLoading
             ? _buildInitializingState()
             : deck.isEmpty
-                ? (feed.isFetchingMore
-                    ? _buildInitializingState()
-                    : _buildEmptyState())
-                : _buildDeck(deck),
+            ? (feed.isFetchingMore
+                  ? _buildInitializingState()
+                  : _buildEmptyState())
+            : _buildDeck(deck),
       ),
     );
   }
@@ -508,10 +529,9 @@ class _PeopleScreenState extends ConsumerState<PeopleScreen> {
           height: 80,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Theme.of(context)
-                .colorScheme
-                .onSurface
-                .withValues(alpha: 0.4),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.4),
           ),
           child: Icon(icon, color: Colors.white, size: 50),
         ),
@@ -552,14 +572,11 @@ class _PeopleScreenState extends ConsumerState<PeopleScreen> {
   void _onSwipe(MatchProfile user, SwipeAction action) {
     HapticFeedback.selectionClick();
 
-    ref.read(peopleFeedProvider.notifier).swipe(
-          user,
-          switch (action) {
-            SwipeAction.like => SwipeIntent.like,
-            SwipeAction.pass => SwipeIntent.pass,
-            SwipeAction.superLike => SwipeIntent.superLike,
-          },
-        );
+    ref.read(peopleFeedProvider.notifier).swipe(user, switch (action) {
+      SwipeAction.like => SwipeIntent.like,
+      SwipeAction.pass => SwipeIntent.pass,
+      SwipeAction.superLike => SwipeIntent.superLike,
+    });
   }
 
   void _showLocationRequiredDialog() {
@@ -568,7 +585,10 @@ class _PeopleScreenState extends ConsumerState<PeopleScreen> {
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(l10n.locationRequiredTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          l10n.locationRequiredTitle,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         content: Text(
           l10n.locationRequiredBody,
           style: const TextStyle(height: 1.4),
@@ -580,19 +600,30 @@ class _PeopleScreenState extends ConsumerState<PeopleScreen> {
               Geolocator.openAppSettings();
             },
             // Using app theme colors as per guidelines
-            child: Text(l10n.settingsTitle, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+            child: Text(
+              l10n.settingsTitle,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             onPressed: () {
               Navigator.pop(context);
               ref.read(peopleFeedProvider.notifier).refreshFeed();
             },
-            child: Text(l10n.retry, style: const TextStyle(fontWeight: FontWeight.bold)),
+            child: Text(
+              l10n.retry,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
