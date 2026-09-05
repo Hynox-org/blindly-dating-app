@@ -24,3 +24,5 @@ flutter run --dart-define=ENV=prod
 
 flutter build apk --release --dart-define=ENV=dev
 flutter build apk --release --dart-define=ENV=prod  
+
+flutter build apk --release --split-per-abi

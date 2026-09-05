@@ -47,6 +47,35 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
+
+    // Agora packs one .so per optional feature. The call screen uses plain
+    // audio + video only, so these ~33 MB of extensions are dead weight.
+    // Delete an entry here before enabling the matching Agora feature.
+    packaging {
+        jniLibs {
+            excludes += listOf(
+                "**/libagora_lip_sync_extension.so",
+                "**/libagora_spatial_audio_extension.so",
+                "**/libagora_clear_vision_extension.so",
+                "**/libagora_face_capture_extension.so",
+                "**/libagora_face_detection_extension.so",
+                "**/libagora_segmentation_extension.so",
+                "**/libagora_audio_beauty_extension.so",
+                "**/libagora_content_inspect_extension.so",
+                "**/libagora_video_av1_encoder_extension.so",
+                "**/libagora_video_av1_decoder_extension.so",
+                "**/libagora_video_quality_analyzer_extension.so",
+                "**/libagora_ai_echo_cancellation_extension.so",
+                "**/libagora_ai_echo_cancellation_ll_extension.so",
+                "**/libagora-fdkaac.so",
+                // Media player + screen share. Nothing in lib/ calls
+                // createMediaPlayer or startScreenCapture. Revert these two
+                // first if a call ever fails to connect.
+                "**/libagora-ffmpeg.so",
+                "**/libagora_screen_capture_extension.so",
+            )
+        }
+    }
 }
 
 dependencies {
