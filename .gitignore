@@ -78,3 +78,6 @@ openapi.json
 .agents/
 .claude/
 skills-lock.json
+
+# Shareable build output
+dist/
